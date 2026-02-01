@@ -60,6 +60,20 @@ export default async function EditListingPage({ params }: EditListingPageProps) 
         elevator: listing.elevator,
         security: listing.security,
         seaView: listing.seaView,
+        // Land-specific fields
+        parcelNo: listing.parcelNo,
+        emsal: listing.emsal,
+        zoningStatus: listing.zoningStatus,
+        // Commercial-specific fields
+        groundFloorArea: listing.groundFloorArea,
+        basementArea: listing.basementArea,
+        // Farm-specific fields
+        hasWaterSource: listing.hasWaterSource,
+        hasFruitTrees: listing.hasFruitTrees,
+        existingStructure: listing.existingStructure,
+        // Eligibility fields
+        citizenshipEligible: listing.citizenshipEligible,
+        residenceEligible: listing.residenceEligible,
         translations: listing.translations.map((t) => ({
             id: t.id,
             locale: t.locale,

@@ -12,8 +12,12 @@ import {
     Home,
     Languages,
     Image as ImageIcon,
+    Sparkles,
+    Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TagInput } from "./tag-input";
+import { AiFillModal, ParsedData } from "./ai-fill-modal";
 
 interface ListingTranslation {
     id?: string;
@@ -35,6 +39,12 @@ interface PendingMedia {
     id: string;
     file: File;
     previewUrl: string;
+}
+
+interface TagData {
+    id: string;
+    name: string;
+    color: string;
 }
 
 interface ListingData {
@@ -67,8 +77,24 @@ interface ListingData {
     elevator: boolean;
     security: boolean;
     seaView: boolean;
+    // Land-specific fields
+    parcelNo: string | null;
+    emsal: number | null;
+    zoningStatus: string | null;
+    // Commercial-specific fields
+    groundFloorArea: number | null;
+    basementArea: number | null;
+    // Farm-specific fields
+    hasWaterSource: boolean;
+    hasFruitTrees: boolean;
+    existingStructure: string | null;
+    // Eligibility
+    citizenshipEligible: boolean;
+    residenceEligible: boolean;
+    // Relations
     translations: ListingTranslation[];
     media?: Media[];
+    tags?: TagData[];
 }
 
 interface ListingFormProps {
@@ -103,9 +129,16 @@ const TABS = [
     { id: "details", label: "Detaylar", icon: Building2 },
     { id: "location", label: "Konum", icon: MapPin },
     { id: "features", label: "Özellikler", icon: Home },
+    { id: "tags", label: "Etiketler", icon: Tag },
     { id: "translations", label: "Çeviriler", icon: Languages },
     { id: "media", label: "Medya", icon: ImageIcon },
 ];
+
+// Property types that show residential-specific fields
+const RESIDENTIAL_TYPES = ["APARTMENT", "VILLA", "PENTHOUSE"];
+const LAND_TYPES = ["LAND"];
+const COMMERCIAL_TYPES = ["COMMERCIAL", "SHOP", "OFFICE"];
+const FARM_TYPES = ["FARM"];
 
 const defaultTranslations: ListingTranslation[] = LOCALES.map((locale) => ({
     locale: locale.code,
@@ -142,8 +175,20 @@ const defaultListing: ListingData = {
     elevator: false,
     security: false,
     seaView: false,
+    // New fields
+    parcelNo: null,
+    emsal: null,
+    zoningStatus: null,
+    groundFloorArea: null,
+    basementArea: null,
+    hasWaterSource: false,
+    hasFruitTrees: false,
+    existingStructure: null,
+    citizenshipEligible: false,
+    residenceEligible: false,
     translations: defaultTranslations,
     media: [],
+    tags: [],
 };
 
 export function ListingForm({ listing, isNew = false }: ListingFormProps) {
@@ -157,9 +202,89 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]);
+    const [isAiFillOpen, setIsAiFillOpen] = useState(false);
+    const [selectedTags, setSelectedTags] = useState<TagData[]>(listing?.tags || []);
     const mediaBaseUrl = `${process.env.NEXT_PUBLIC_MINIO_URL || "http://localhost:9000"}/guzel-invest/`;
     const resolveMediaUrl = (path: string) =>
         path.startsWith("http") ? path : `${mediaBaseUrl}${path}`;
+
+    // Check property type categories
+    const isResidential = RESIDENTIAL_TYPES.includes(formData.type);
+    const isLand = LAND_TYPES.includes(formData.type);
+    const isCommercial = COMMERCIAL_TYPES.includes(formData.type);
+    const isFarm = FARM_TYPES.includes(formData.type);
+
+    // Handle AI fill data
+    const handleAiFillApply = (data: ParsedData) => {
+        setFormData((prev) => {
+            const updated = { ...prev };
+
+            // Map AI data to form fields
+            if (data.type) updated.type = String(data.type);
+            if (data.saleType) updated.saleType = String(data.saleType);
+            if (data.price) updated.price = Number(data.price);
+            if (data.currency) updated.currency = String(data.currency);
+            if (data.area) updated.area = Number(data.area);
+            if (data.rooms !== undefined) updated.rooms = Number(data.rooms) || null;
+            if (data.bedrooms !== undefined) updated.bedrooms = Number(data.bedrooms) || null;
+            if (data.bathrooms !== undefined) updated.bathrooms = Number(data.bathrooms) || null;
+            if (data.floor !== undefined) updated.floor = Number(data.floor) || null;
+            if (data.totalFloors !== undefined) updated.totalFloors = Number(data.totalFloors) || null;
+            if (data.buildYear !== undefined) updated.buildYear = Number(data.buildYear) || null;
+            if (data.heating) updated.heating = String(data.heating);
+            if (data.city) updated.city = String(data.city);
+            if (data.district) updated.district = String(data.district);
+            if (data.neighborhood) updated.neighborhood = String(data.neighborhood);
+            if (data.latitude !== undefined) updated.latitude = Number(data.latitude) || null;
+            if (data.longitude !== undefined) updated.longitude = Number(data.longitude) || null;
+
+            // Boolean features
+            if (typeof data.furnished === 'boolean') updated.furnished = data.furnished;
+            if (typeof data.balcony === 'boolean') updated.balcony = data.balcony;
+            if (typeof data.garden === 'boolean') updated.garden = data.garden;
+            if (typeof data.pool === 'boolean') updated.pool = data.pool;
+            if (typeof data.parking === 'boolean') updated.parking = data.parking;
+            if (typeof data.elevator === 'boolean') updated.elevator = data.elevator;
+            if (typeof data.security === 'boolean') updated.security = data.security;
+            if (typeof data.seaView === 'boolean') updated.seaView = data.seaView;
+
+            // Land-specific
+            if (data.parcelNo) updated.parcelNo = String(data.parcelNo);
+            if (data.emsal !== undefined) updated.emsal = Number(data.emsal) || null;
+            if (data.zoningStatus) updated.zoningStatus = String(data.zoningStatus);
+
+            // Commercial-specific
+            if (data.groundFloorArea !== undefined) updated.groundFloorArea = Number(data.groundFloorArea) || null;
+            if (data.basementArea !== undefined) updated.basementArea = Number(data.basementArea) || null;
+
+            // Farm-specific
+            if (typeof data.hasWaterSource === 'boolean') updated.hasWaterSource = data.hasWaterSource;
+            if (typeof data.hasFruitTrees === 'boolean') updated.hasFruitTrees = data.hasFruitTrees;
+            if (data.existingStructure) updated.existingStructure = String(data.existingStructure);
+
+            // Eligibility
+            if (typeof data.citizenshipEligible === 'boolean') updated.citizenshipEligible = data.citizenshipEligible;
+            if (typeof data.residenceEligible === 'boolean') updated.residenceEligible = data.residenceEligible;
+
+            // Update Turkish translation with title and description
+            if (data.title || data.description) {
+                updated.translations = updated.translations.map((t) => {
+                    if (t.locale === 'tr') {
+                        return {
+                            ...t,
+                            title: data.title ? String(data.title) : t.title,
+                            description: data.description ? String(data.description) : t.description,
+                            features: Array.isArray(data.features) ? data.features.map(String) : t.features,
+                        };
+                    }
+                    return t;
+                });
+            }
+
+            return updated;
+        });
+    };
+
 
     const handleInputChange = (
         e: React.ChangeEvent<
@@ -353,6 +478,13 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsAiFillOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-medium rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-sm"
+                    >
+                        <Sparkles className="w-4 h-4" />
+                        AI ile Doldur
+                    </button>
                     {!isNew && (
                         <span
                             className={cn(
@@ -403,184 +535,374 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                 <div className="p-6">
                     {/* Details Tab */}
                     {activeTab === "details" && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Mülk Tipi
-                                </label>
-                                <select
-                                    name="type"
-                                    value={formData.type}
-                                    onChange={handleInputChange}
-                                    className="input"
-                                >
-                                    {PROPERTY_TYPES.map((type) => (
-                                        <option key={type.value} value={type.value}>
-                                            {type.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Satış Tipi
-                                </label>
-                                <select
-                                    name="saleType"
-                                    value={formData.saleType}
-                                    onChange={handleInputChange}
-                                    className="input"
-                                >
-                                    {SALE_TYPES.map((type) => (
-                                        <option key={type.value} value={type.value}>
-                                            {type.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Fiyat
-                                </label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="number"
-                                        name="price"
-                                        value={formData.price || ""}
-                                        onChange={handleInputChange}
-                                        className="input flex-1"
-                                        placeholder="0"
-                                    />
+                        <div className="space-y-8">
+                            {/* Core Fields - Always Visible */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Mülk Tipi
+                                    </label>
                                     <select
-                                        name="currency"
-                                        value={formData.currency}
+                                        name="type"
+                                        value={formData.type}
                                         onChange={handleInputChange}
-                                        className="input w-24"
+                                        className="input"
                                     >
-                                        <option value="EUR">€</option>
-                                        <option value="USD">$</option>
-                                        <option value="TRY">₺</option>
-                                        <option value="GBP">£</option>
+                                        {PROPERTY_TYPES.map((type) => (
+                                            <option key={type.value} value={type.value}>
+                                                {type.label}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
-                            </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Alan (m²)
-                                </label>
-                                <input
-                                    type="number"
-                                    name="area"
-                                    value={formData.area || ""}
-                                    onChange={handleInputChange}
-                                    className="input"
-                                    placeholder="0"
-                                />
-                            </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Satış Tipi
+                                    </label>
+                                    <select
+                                        name="saleType"
+                                        value={formData.saleType}
+                                        onChange={handleInputChange}
+                                        className="input"
+                                    >
+                                        {SALE_TYPES.map((type) => (
+                                            <option key={type.value} value={type.value}>
+                                                {type.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Oda Sayısı
-                                </label>
-                                <input
-                                    type="number"
-                                    name="rooms"
-                                    value={formData.rooms || ""}
-                                    onChange={handleInputChange}
-                                    className="input"
-                                    placeholder="3+1"
-                                />
-                            </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Fiyat
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="number"
+                                            name="price"
+                                            value={formData.price || ""}
+                                            onChange={handleInputChange}
+                                            className="input flex-1"
+                                            placeholder="0"
+                                        />
+                                        <select
+                                            name="currency"
+                                            value={formData.currency}
+                                            onChange={handleInputChange}
+                                            className="input w-24"
+                                        >
+                                            <option value="EUR">€</option>
+                                            <option value="USD">$</option>
+                                            <option value="TRY">₺</option>
+                                            <option value="GBP">£</option>
+                                        </select>
+                                    </div>
+                                </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Yatak Odası
-                                </label>
-                                <input
-                                    type="number"
-                                    name="bedrooms"
-                                    value={formData.bedrooms || ""}
-                                    onChange={handleInputChange}
-                                    className="input"
-                                    placeholder="3"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Banyo
-                                </label>
-                                <input
-                                    type="number"
-                                    name="bathrooms"
-                                    value={formData.bathrooms || ""}
-                                    onChange={handleInputChange}
-                                    className="input"
-                                    placeholder="2"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Kat
-                                </label>
-                                <div className="flex gap-2">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Alan (m²)
+                                    </label>
                                     <input
                                         type="number"
-                                        name="floor"
-                                        value={formData.floor || ""}
+                                        name="area"
+                                        value={formData.area || ""}
                                         onChange={handleInputChange}
-                                        className="input flex-1"
-                                        placeholder="Bulunduğu Kat"
-                                    />
-                                    <input
-                                        type="number"
-                                        name="totalFloors"
-                                        value={formData.totalFloors || ""}
-                                        onChange={handleInputChange}
-                                        className="input flex-1"
-                                        placeholder="Toplam Kat"
+                                        className="input"
+                                        placeholder="0"
                                     />
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Yapım Yılı
-                                </label>
-                                <input
-                                    type="number"
-                                    name="buildYear"
-                                    value={formData.buildYear || ""}
-                                    onChange={handleInputChange}
-                                    className="input"
-                                    placeholder="2024"
-                                />
-                            </div>
+                            {/* Residential Fields - Apartments, Villas, Penthouses */}
+                            {isResidential && (
+                                <>
+                                    <div className="border-t border-gray-100 pt-6">
+                                        <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                                            Konut Detayları
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Oda Sayısı
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    name="rooms"
+                                                    value={formData.rooms || ""}
+                                                    onChange={handleInputChange}
+                                                    className="input"
+                                                    placeholder="3+1"
+                                                />
+                                            </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Isıtma
-                                </label>
-                                <select
-                                    name="heating"
-                                    value={formData.heating || ""}
-                                    onChange={handleInputChange}
-                                    className="input"
-                                >
-                                    <option value="">Seçiniz</option>
-                                    <option value="central">Merkezi</option>
-                                    <option value="individual">Bireysel</option>
-                                    <option value="floor">Yerden Isıtma</option>
-                                    <option value="ac">Klima</option>
-                                    <option value="none">Yok</option>
-                                </select>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Yatak Odası
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    name="bedrooms"
+                                                    value={formData.bedrooms || ""}
+                                                    onChange={handleInputChange}
+                                                    className="input"
+                                                    placeholder="3"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Banyo
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    name="bathrooms"
+                                                    value={formData.bathrooms || ""}
+                                                    onChange={handleInputChange}
+                                                    className="input"
+                                                    placeholder="2"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Kat
+                                                </label>
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="number"
+                                                        name="floor"
+                                                        value={formData.floor || ""}
+                                                        onChange={handleInputChange}
+                                                        className="input flex-1"
+                                                        placeholder="Bulunduğu Kat"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        name="totalFloors"
+                                                        value={formData.totalFloors || ""}
+                                                        onChange={handleInputChange}
+                                                        className="input flex-1"
+                                                        placeholder="Toplam Kat"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Yapım Yılı
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    name="buildYear"
+                                                    value={formData.buildYear || ""}
+                                                    onChange={handleInputChange}
+                                                    className="input"
+                                                    placeholder="2024"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Isıtma
+                                                </label>
+                                                <select
+                                                    name="heating"
+                                                    value={formData.heating || ""}
+                                                    onChange={handleInputChange}
+                                                    className="input"
+                                                >
+                                                    <option value="">Seçiniz</option>
+                                                    <option value="central">Merkezi</option>
+                                                    <option value="individual">Bireysel</option>
+                                                    <option value="floor">Yerden Isıtma</option>
+                                                    <option value="ac">Klima</option>
+                                                    <option value="none">Yok</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Land Fields */}
+                            {isLand && (
+                                <div className="border-t border-gray-100 pt-6">
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                                        Arsa Detayları
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Ada / Parsel
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="parcelNo"
+                                                value={formData.parcelNo || ""}
+                                                onChange={handleInputChange}
+                                                className="input"
+                                                placeholder="308 Ada 7 Parsel"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Emsal (KAKS)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                name="emsal"
+                                                value={formData.emsal || ""}
+                                                onChange={handleInputChange}
+                                                className="input"
+                                                placeholder="0.40"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                İmar Durumu
+                                            </label>
+                                            <select
+                                                name="zoningStatus"
+                                                value={formData.zoningStatus || ""}
+                                                onChange={handleInputChange}
+                                                className="input"
+                                            >
+                                                <option value="">Seçiniz</option>
+                                                <option value="imarlı">İmarlı</option>
+                                                <option value="imarsız">İmarsız</option>
+                                                <option value="tarla">Tarla</option>
+                                                <option value="konut">Konut İmarlı</option>
+                                                <option value="ticari">Ticari İmarlı</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Commercial Fields */}
+                            {isCommercial && (
+                                <div className="border-t border-gray-100 pt-6">
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                                        Ticari Mülk Detayları
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Zemin Kat Alanı (m²)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                name="groundFloorArea"
+                                                value={formData.groundFloorArea || ""}
+                                                onChange={handleInputChange}
+                                                className="input"
+                                                placeholder="220"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Bodrum Kat Alanı (m²)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                name="basementArea"
+                                                value={formData.basementArea || ""}
+                                                onChange={handleInputChange}
+                                                className="input"
+                                                placeholder="230"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Farm Fields */}
+                            {isFarm && (
+                                <div className="border-t border-gray-100 pt-6">
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                                        Çiftlik / Tarla Detayları
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Mevcut Yapı
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="existingStructure"
+                                                value={formData.existingStructure || ""}
+                                                onChange={handleInputChange}
+                                                className="input"
+                                                placeholder="2 katlı ev, havuz"
+                                            />
+                                        </div>
+
+                                        <div className="flex items-center gap-6 pt-6">
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    name="hasWaterSource"
+                                                    checked={formData.hasWaterSource}
+                                                    onChange={handleInputChange}
+                                                    className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                                                />
+                                                <span className="text-sm text-gray-700">Su Kaynağı</span>
+                                            </label>
+
+                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    name="hasFruitTrees"
+                                                    checked={formData.hasFruitTrees}
+                                                    onChange={handleInputChange}
+                                                    className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                                                />
+                                                <span className="text-sm text-gray-700">Meyve Ağaçları</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Eligibility Section - Always Visible */}
+                            <div className="border-t border-gray-100 pt-6">
+                                <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                                    Uygunluk Durumu
+                                </h3>
+                                <div className="flex flex-wrap gap-6">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="citizenshipEligible"
+                                            checked={formData.citizenshipEligible}
+                                            onChange={handleInputChange}
+                                            className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                                        />
+                                        <span className="text-sm text-gray-700">Vatandaşlığa Uygun</span>
+                                    </label>
+
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            name="residenceEligible"
+                                            checked={formData.residenceEligible}
+                                            onChange={handleInputChange}
+                                            className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                                        />
+                                        <span className="text-sm text-gray-700">İkametgaha Uygun</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     )}
+
 
                     {/* Location Tab */}
                     {activeTab === "location" && (
@@ -712,7 +1034,24 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                         </div>
                     )}
 
-                    {/* Translations Tab */}
+                    {/* Tags Tab */}
+                    {activeTab === "tags" && (
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                                    İlan Etiketleri
+                                </h3>
+                                <p className="text-sm text-gray-500 mb-4">
+                                    Bu ilana etiketler ekleyerek kategorize edebilir ve filtrelenebilir hale getirebilirsiniz.
+                                </p>
+                                <TagInput
+                                    selectedTags={selectedTags}
+                                    onTagsChange={setSelectedTags}
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     {activeTab === "translations" && (
                         <div>
                             {/* Locale Tabs */}
@@ -900,6 +1239,14 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                     </button>
                 </div>
             </div>
+
+            {/* AI Fill Modal */}
+            <AiFillModal
+                isOpen={isAiFillOpen}
+                onClose={() => setIsAiFillOpen(false)}
+                onApply={handleAiFillApply}
+                currentType={formData.type}
+            />
         </div>
     );
 }

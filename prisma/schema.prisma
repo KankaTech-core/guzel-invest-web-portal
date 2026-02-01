@@ -88,6 +88,24 @@ model Listing {
   security    Boolean @default(false)
   seaView     Boolean @default(false)
 
+  // Land-specific fields (LAND type)
+  parcelNo     String?  // Ada/Parsel (e.g., "308 Ada 7 Parsel")
+  emsal        Float?   // KAKS ratio (e.g., 0.40)
+  zoningStatus String?  // İmarlı, İmarsız, Tarla, etc.
+
+  // Commercial-specific fields (COMMERCIAL, SHOP types)
+  groundFloorArea Int?  // Zemin kat m²
+  basementArea    Int?  // Bodrum kat m²
+
+  // Farm-specific fields (FARM type)
+  hasWaterSource    Boolean @default(false)
+  hasFruitTrees     Boolean @default(false)
+  existingStructure String? // e.g., "2 katlı ev, havuz"
+
+  // Citizenship eligibility
+  citizenshipEligible  Boolean @default(false)
+  residenceEligible    Boolean @default(false)
+
   // AI Generated
   aiTags        String[]
   aiProcessedAt DateTime?
@@ -103,6 +121,7 @@ model Listing {
   translations ListingTranslation[]
   media       Media[]
   syncLogs    SyncLog[]
+  tags        ListingTag[]
 
   @@index([status])
   @@index([type])
@@ -111,6 +130,32 @@ model Listing {
   @@index([price])
   @@map("listings")
 }
+
+// ============================================
+// Tags (Taxonomy System)
+// ============================================
+
+model Tag {
+  id        String       @id @default(cuid())
+  name      String       @unique
+  color     String       @default("#EC6803") // hex color
+  createdAt DateTime     @default(now())
+  listings  ListingTag[]
+
+  @@map("tags")
+}
+
+model ListingTag {
+  id        String  @id @default(cuid())
+  listingId String
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  tagId     String
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, tagId])
+  @@map("listing_tags")
+}
+
 
 enum ListingStatus {
   DRAFT
