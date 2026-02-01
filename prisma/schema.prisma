@@ -1,0 +1,261 @@
+// Güzel Invest Database Schema
+// AI-powered real estate listing management platform
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// User & Authentication
+// ============================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(VIEWER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  listings   Listing[]
+  exportJobs ExportJob[]
+  sessions   Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("sessions")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+// ============================================
+// Listings (Core Model)
+// ============================================
+
+model Listing {
+  id     String        @id @default(cuid())
+  slug   String        @unique
+  status ListingStatus @default(DRAFT)
+  type   PropertyType
+  saleType SaleType
+
+  // Location
+  city         String
+  district     String
+  neighborhood String?
+  address      String?
+  latitude     Float?
+  longitude    Float?
+
+  // Property Details
+  price       Decimal
+  currency    String  @default("EUR")
+  area        Int     // m²
+  rooms       Int?
+  bedrooms    Int?
+  bathrooms   Int?
+  floor       Int?
+  totalFloors Int?
+  buildYear   Int?
+  heating     String?
+  furnished   Boolean @default(false)
+  balcony     Boolean @default(false)
+  garden      Boolean @default(false)
+  pool        Boolean @default(false)
+  parking     Boolean @default(false)
+  elevator    Boolean @default(false)
+  security    Boolean @default(false)
+  seaView     Boolean @default(false)
+
+  // AI Generated
+  aiTags        String[]
+  aiProcessedAt DateTime?
+
+  // Timestamps
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
+  // Relations
+  createdBy   User                 @relation(fields: [createdById], references: [id])
+  createdById String
+  translations ListingTranslation[]
+  media       Media[]
+  syncLogs    SyncLog[]
+
+  @@index([status])
+  @@index([type])
+  @@index([saleType])
+  @@index([city, district])
+  @@index([price])
+  @@map("listings")
+}
+
+enum ListingStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PropertyType {
+  APARTMENT
+  VILLA
+  PENTHOUSE
+  LAND
+  COMMERCIAL
+  OFFICE
+  SHOP
+  FARM
+}
+
+enum SaleType {
+  SALE
+  RENT
+}
+
+// ============================================
+// Listing Translations (i18n)
+// ============================================
+
+model ListingTranslation {
+  id          String  @id @default(cuid())
+  listingId   String
+  listing     Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  locale      String  // tr, en, de, ar
+  title       String
+  description String  @db.Text
+  features    String[]
+
+  @@unique([listingId, locale])
+  @@index([locale])
+  @@map("listing_translations")
+}
+
+// ============================================
+// Media (Images & Videos)
+// ============================================
+
+model Media {
+  id           String    @id @default(cuid())
+  listingId    String
+  listing      Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url          String
+  thumbnailUrl String?
+  type         MediaType @default(IMAGE)
+  order        Int       @default(0)
+  isCover      Boolean   @default(false)
+  aiTags       String[]
+  width        Int?
+  height       Int?
+  size         Int?      // bytes
+  createdAt    DateTime  @default(now())
+
+  @@index([listingId, order])
+  @@map("media")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+// ============================================
+// Sync Logs (Sahibinden Integration)
+// ============================================
+
+model SyncLog {
+  id           String     @id @default(cuid())
+  listingId    String
+  listing      Listing    @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  platform     String     @default("sahibinden")
+  action       String     // create, update, delete
+  status       SyncStatus
+  externalId   String?
+  errorMessage String?
+  requestData  Json?
+  responseData Json?
+  createdAt    DateTime   @default(now())
+
+  @@index([listingId])
+  @@index([status])
+  @@map("sync_logs")
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCING
+  SUCCESS
+  FAILED
+}
+
+// ============================================
+// Export Jobs (CSV Export)
+// ============================================
+
+model ExportJob {
+  id          String       @id @default(cuid())
+  type        String       @default("csv")
+  status      ExportStatus @default(PENDING)
+  filters     Json?
+  fileUrl     String?
+  fileName    String?
+  rowCount    Int?
+  createdBy   User         @relation(fields: [createdById], references: [id])
+  createdById String
+  createdAt   DateTime     @default(now())
+  completedAt DateTime?
+  error       String?
+
+  @@index([status])
+  @@map("export_jobs")
+}
+
+enum ExportStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ============================================
+// Contact Submissions (Lead Generation)
+// ============================================
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  listingId String?
+  name      String
+  email     String
+  phone     String?
+  message   String   @db.Text
+  locale    String   @default("tr")
+  source    String   @default("website") // website, whatsapp
+  createdAt DateTime @default(now())
+  read      Boolean  @default(false)
+  readAt    DateTime?
+
+  @@index([createdAt])
+  @@index([read])
+  @@map("contact_submissions")
+}

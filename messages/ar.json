@@ -1,0 +1,325 @@
+{
+    "common": {
+        "loading": "جاري التحميل...",
+        "error": "حدث خطأ",
+        "save": "حفظ",
+        "cancel": "إلغاء",
+        "delete": "حذف",
+        "edit": "تعديل",
+        "create": "إنشاء",
+        "search": "بحث",
+        "filter": "تصفية",
+        "sortBy": "ترتيب حسب",
+        "noResults": "لم يتم العثور على نتائج",
+        "seeAll": "عرض الكل",
+        "learnMore": "معرفة المزيد",
+        "contactUs": "اتصل بنا",
+        "whatsapp": "واتساب",
+        "call": "اتصال",
+        "share": "مشاركة",
+        "back": "رجوع"
+    },
+    "nav": {
+        "home": "الرئيسية",
+        "portfolio": "المحفظة",
+        "map": "الخريطة",
+        "about": "من نحن",
+        "contact": "اتصل بنا"
+    },
+    "hero": {
+        "title": "مشاريع جميلة لمدينة جميلة",
+        "subtitle": "استشارات عقارية موثوقة في ألانيا منذ عام 2001",
+        "cta": "استكشف المحفظة"
+    },
+    "listings": {
+        "forSale": "للبيع",
+        "forRent": "للإيجار",
+        "featured": "العقارات المميزة",
+        "allListings": "جميع العقارات",
+        "price": "السعر",
+        "area": "المساحة",
+        "rooms": "الغرف",
+        "bedrooms": "غرف النوم",
+        "bathrooms": "الحمامات",
+        "floor": "الطابق",
+        "year": "سنة البناء",
+        "features": "المميزات",
+        "description": "الوصف",
+        "location": "الموقع",
+        "similarListings": "عقارات مشابهة",
+        "requestInfo": "طلب معلومات",
+        "scheduleVisit": "جدولة زيارة"
+    },
+    "propertyTypes": {
+        "apartment": "شقة",
+        "villa": "فيلا",
+        "penthouse": "بنتهاوس",
+        "land": "أرض",
+        "commercial": "تجاري",
+        "office": "مكتب",
+        "shop": "محل",
+        "farm": "مزرعة"
+    },
+    "categories": {
+        "residentialProjects": "المشاريع السكنية",
+        "villasForSale": "فلل للبيع",
+        "apartmentsForSale": "شقق للبيع",
+        "landForSale": "أراضي للبيع",
+        "commercialProperties": "العقارات التجارية",
+        "citizenshipEligible": "مؤهل للجنسية"
+    },
+    "contact": {
+        "title": "اتصل بنا",
+        "name": "اسمك",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "message": "رسالتك",
+        "send": "إرسال",
+        "success": "تم إرسال رسالتك. سنتواصل معك قريباً.",
+        "addressTitle": "عنواننا",
+        "phoneTitle": "الهاتف",
+        "emailTitle": "البريد الإلكتروني",
+        "socialMedia": "وسائل التواصل الاجتماعي"
+    },
+    "about": {
+        "title": "من نحن",
+        "story": "قصتنا",
+        "mission": "مهمتنا",
+        "values": "قيمنا",
+        "team": "فريقنا",
+        "since": "منذ عام 2001"
+    },
+    "filters": {
+        "priceRange": "نطاق السعر",
+        "areaRange": "نطاق المساحة",
+        "minPrice": "الحد الأدنى للسعر",
+        "maxPrice": "الحد الأقصى للسعر",
+        "minArea": "الحد الأدنى للمساحة",
+        "maxArea": "الحد الأقصى للمساحة",
+        "propertyType": "نوع العقار",
+        "city": "المدينة",
+        "district": "المنطقة",
+        "clearFilters": "مسح الفلاتر",
+        "apply": "تطبيق"
+    },
+    "uxGuide": {
+        "title": "دليل UX",
+        "subtitle": "نظرة عامة على نظام التصميم",
+        "description": "وثائق شاملة لنظام التصميم وفقاً لمبادئ التصميم الذري. المصدر الوحيد لتطوير واجهة المستخدم.",
+        "note": "مرجع داخلي: أبقِ هذه الصفحة متزامنة مع globals.css ومكوّنات الواجهة.",
+        "sections": {
+            "colors": "الألوان",
+            "typography": "الطباعة",
+            "tokens": "رموز التصميم",
+            "components": "المكوّنات",
+            "forms": "عناصر النماذج",
+            "fontFamily": "عائلة الخط",
+            "typographyScale": "مقياس الطباعة",
+            "listingCard": "بطاقة العقار",
+            "atomicDesign": "التصميم الذري",
+            "layout": "التخطيط والشبكة",
+            "icons": "الأيقونات",
+            "animations": "الحركات"
+        },
+        "colors": {
+            "primary": "أساسي (برتقالي)",
+            "neutral": "درجات محايدة",
+            "status": "الحالات واللمسات"
+        },
+        "colorsHint": "استخدم البرتقالي كلون علامة أساسي مع درجات محايدة نظيفة للبنية.",
+        "fontFamily": {
+            "title": "Outfit",
+            "description": "خط sans-serif هندسي حديث بخطوط نظيفة. مثالي لواجهة العقارات.",
+            "source": "المصدر: Google Fonts",
+            "weights": {
+                "regular": "Regular 400",
+                "regularUsage": "النص الأساسي، الوصف",
+                "medium": "Medium 500",
+                "mediumUsage": "التسميات، التنقل",
+                "semibold": "SemiBold 600",
+                "semiboldUsage": "العناوين الفرعية، التأكيد",
+                "bold": "Bold 700",
+                "boldUsage": "العناوين الرئيسية"
+            },
+            "specimen": "Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz",
+            "numbers": "0 1 2 3 4 5 6 7 8 9"
+        },
+        "typographyScale": {
+            "description": "مقياس طباعة متسق لتنظيم المحتوى الهرمي.",
+            "sizes": {
+                "xs": "13px - التسميات، البيانات الوصفية",
+                "sm": "15px - النص المساعد، التسميات",
+                "base": "17px - النص الأساسي",
+                "lg": "18px - نص أساسي كبير",
+                "xl": "20px - عناوين الأقسام",
+                "2xl": "24px - عناوين البطاقات",
+                "3xl": "30px - عناوين الصفحات",
+                "4xl": "36px - عناوين البطل",
+                "5xl": "48px - عرض",
+                "6xl": "60px - عرض كبير"
+            }
+        },
+        "listingCard": {
+            "title": "بطاقة قائمة العقارات",
+            "description": "المكون الرئيسي لعرض قوائم العقارات في عرض الشبكة والقائمة.",
+            "structure": {
+                "image": "نسبة عرض 4:3 مع تدرج متراكب",
+                "badge": "شارة نوع العقار (فيلا، شقة، إلخ)",
+                "bookmark": "زر حفظ/مفضلة",
+                "title": "عنوان العقار مع الموقع",
+                "price": "السعر مع لاحقة إيجار اختيارية",
+                "rating": "عرض تقييم النجوم",
+                "details": "أيقونات غرف النوم، الحمامات، المساحة"
+            },
+            "variants": {
+                "sale": "للبيع",
+                "rent": "للإيجار"
+            }
+        },
+        "atomicDesign": {
+            "title": "هرمية المكونات",
+            "description": "تتبع واجهتنا منهجية التصميم الذري لمكونات متسقة وقابلة للتوسع.",
+            "atoms": {
+                "title": "الذرات",
+                "description": "اللبنات الأساسية: الأزرار، الشارات، الحقول، مربعات الاختيار"
+            },
+            "molecules": {
+                "title": "الجزيئات",
+                "description": "مجموعات مكونات بسيطة: البطاقات، أشرطة التمرير، أقسام التصفية"
+            },
+            "organisms": {
+                "title": "الكائنات الحية",
+                "description": "أقسام واجهة معقدة: بطاقات القوائم، لوحات التصفية، شريط التنقل، التذييل"
+            },
+            "templates": {
+                "title": "القوالب",
+                "description": "تخطيطات الصفحات: المحفظة، تفاصيل العقار، الاتصال"
+            }
+        },
+        "layout": {
+            "title": "نظام التخطيط",
+            "container": "الحد الأقصى للعرض: 1280px مع حشو متجاوب",
+            "grid": "شبكة متجاوبة: 1 ← 2 ← 3 ← 4 أعمدة",
+            "breakpoints": {
+                "sm": "640px",
+                "md": "768px",
+                "lg": "1024px",
+                "xl": "1280px"
+            }
+        },
+        "icons": {
+            "title": "أيقونات Lucide React",
+            "description": "مكتبة أيقونات متسقة مع حجم ولون قابلين للتخصيص.",
+            "usage": "استيراد من lucide-react، استخدم className للتنسيق",
+            "common": "Building2, MapPin, BedDouble, Bath, Square, Star, Bookmark, Search, Menu"
+        },
+        "animations": {
+            "title": "أنماط الحركة",
+            "description": "حركات دقيقة لتحسين تجربة المستخدم.",
+            "types": {
+                "fadeIn": "تلاشي الشفافية (0.3s)",
+                "slideUp": "انزلاق للأعلى (0.4s)",
+                "pulse": "نبض الانتباه (2s لانهائي)",
+                "hover": "تكبير وظل عند التمرير"
+            }
+        },
+        "typography": {
+            "display": "عنوان رئيسي كبير",
+            "headline": "عنوان القسم",
+            "title": "عنوان البطاقة",
+            "body": "نص أساسي",
+            "bodyText": "نص قابل للقراءة للوصف والفقرات وتفاصيل العقار.",
+            "muted": "نص مساعد باهت",
+            "mutedText": "نص مساعد باهت للمعلومات الثانوية.",
+            "caption": "تسمية توضيحية",
+            "captionText": "تسميات صغيرة للبيانات الوصفية والعناوين."
+        },
+        "components": {
+            "buttons": "الأزرار",
+            "badges": "الشارات",
+            "cards": "البطاقات"
+        },
+        "forms": {
+            "title": "الحقول والاختيارات",
+            "hint": "حالات التركيز تستخدم البرتقالي لزيادة الوضوح.",
+            "nameLabel": "الاسم الكامل",
+            "emailLabel": "البريد الإلكتروني",
+            "messageLabel": "الرسالة",
+            "namePlaceholder": "محمد علي",
+            "emailPlaceholder": "name@example.com",
+            "messagePlaceholder": "اكتب رسالتك..."
+        },
+        "tokens": {
+            "radius": "استدارة الحواف",
+            "shadows": "الظلال",
+            "spacing": "المسافات"
+        },
+        "labels": {
+            "primary": "أساسي",
+            "secondary": "ثانوي",
+            "outline": "إطار",
+            "ghost": "شفاف",
+            "disabled": "معطّل",
+            "loading": "جارٍ التحميل"
+        },
+        "examples": {
+            "cardTitle": "بطاقة نموذجية",
+            "cardText": "استخدم البطاقات لإبراز العقارات أو الإحصاءات أو الميزات.",
+            "cardCta": "اعرف المزيد",
+            "badgeNew": "جديد",
+            "badgeFeatured": "مميّز",
+            "sliderLabel": "نطاق",
+            "checkboxUpdates": "أرسل لي تحديثات",
+            "checkboxTerms": "أوافق على الشروط"
+        }
+    },
+    "normalized21st": {
+        "title": "مكوّنات 21st المُطبّعة",
+        "subtitle": "بيئة دمج",
+        "description": "اعرض وتحقّق من مكوّنات 21st.dev بعد تطبيعها مع نظام تصميم Güzel Invest.",
+        "note": "هذه الصفحة للمراجعة الداخلية فقط. يجب تطبيع المكوّنات قبل استخدامها في الإنتاج.",
+        "sections": {
+            "status": "الحالة",
+            "queue": "قائمة المكوّنات",
+            "preview": "المعاينة",
+            "guidelines": "قائمة التحقق للتطبيع"
+        },
+        "status": {
+            "normalized": "مُطبّع",
+            "pending": "بانتظار المراجعة",
+            "blocked": "محظور",
+            "normalizedDesc": "متوافق مع المظهر الفاتح ولوحة البرتقالي والطباعة.",
+            "pendingDesc": "بانتظار موافقة التصميم/UX.",
+            "blockedDesc": "يتعارض مع الأنماط العامة أو الأداء."
+        },
+        "queue": {
+            "emptyTitle": "لا توجد مكوّنات في القائمة",
+            "emptyDescription": "أضف مكوّناً من 21st عبر قاعدة الاستيراد ليظهر هنا."
+        },
+        "preview": {
+            "title": "منطقة المعاينة",
+            "description": "استخدم هذه المنطقة لعرض المكوّن الحقيقي مع بيانات تجريبية."
+        },
+        "guidelines": {
+            "item1": "بدون أصناف الوضع الداكن؛ مظهر فاتح فقط.",
+            "item2": "استبدال الألوان غير التابعة للعلامة بلوحة البرتقالي.",
+            "item3": "تجنّب CSS العام واحصر الأنماط.",
+            "item4": "التصدير من فهرس components/ui."
+        },
+        "actions": {
+            "openUxGuide": "افتح دليل UX",
+            "addComponent": "أضف مكوّن"
+        }
+    },
+    "footer": {
+        "slogan": "مشاريع جميلة لمدينة جميلة",
+        "quickLinks": "روابط سريعة",
+        "contactInfo": "معلومات الاتصال",
+        "followUs": "تابعنا",
+        "copyright": "© 2024 غوزال إنفست. جميع الحقوق محفوظة."
+    },
+    "meta": {
+        "title": "غوزال إنفست | عقارات ألانيا",
+        "description": "فلل وشقق وأراضي للبيع في ألانيا. استشارات عقارية موثوقة منذ عام 2001."
+    }
+}

@@ -1,0 +1,325 @@
+{
+    "common": {
+        "loading": "Yükleniyor...",
+        "error": "Bir hata oluştu",
+        "save": "Kaydet",
+        "cancel": "İptal",
+        "delete": "Sil",
+        "edit": "Düzenle",
+        "create": "Oluştur",
+        "search": "Ara",
+        "filter": "Filtrele",
+        "sortBy": "Sırala",
+        "noResults": "Sonuç bulunamadı",
+        "seeAll": "Tümünü Gör",
+        "learnMore": "Daha Fazla",
+        "contactUs": "Bize Ulaşın",
+        "whatsapp": "WhatsApp",
+        "call": "Ara",
+        "share": "Paylaş",
+        "back": "Geri"
+    },
+    "nav": {
+        "home": "Ana Sayfa",
+        "portfolio": "Portföy",
+        "map": "Harita",
+        "about": "Hakkımızda",
+        "contact": "İletişim"
+    },
+    "hero": {
+        "title": "Güzel Şehre Güzel Projeler",
+        "subtitle": "2001'den bu yana Alanya'da güvenilir gayrimenkul danışmanlığı",
+        "cta": "Portföyü Keşfet"
+    },
+    "listings": {
+        "forSale": "Satılık",
+        "forRent": "Kiralık",
+        "featured": "Öne Çıkan İlanlar",
+        "allListings": "Tüm İlanlar",
+        "price": "Fiyat",
+        "area": "Alan",
+        "rooms": "Oda",
+        "bedrooms": "Yatak Odası",
+        "bathrooms": "Banyo",
+        "floor": "Kat",
+        "year": "İnşaat Yılı",
+        "features": "Özellikler",
+        "description": "Açıklama",
+        "location": "Konum",
+        "similarListings": "Benzer İlanlar",
+        "requestInfo": "Bilgi Al",
+        "scheduleVisit": "Görüşme Planla"
+    },
+    "propertyTypes": {
+        "apartment": "Daire",
+        "villa": "Villa",
+        "penthouse": "Penthouse",
+        "land": "Arsa",
+        "commercial": "Ticari",
+        "office": "Ofis",
+        "shop": "Dükkan",
+        "farm": "Çiftlik"
+    },
+    "categories": {
+        "residentialProjects": "Konut Projeleri",
+        "villasForSale": "Satılık Villalar",
+        "apartmentsForSale": "Satılık Daireler",
+        "landForSale": "Satılık Arsalar",
+        "commercialProperties": "Ticari Gayrimenkuller",
+        "citizenshipEligible": "Vatandaşlığa Uygun"
+    },
+    "contact": {
+        "title": "İletişim",
+        "name": "Adınız",
+        "email": "E-posta",
+        "phone": "Telefon",
+        "message": "Mesajınız",
+        "send": "Gönder",
+        "success": "Mesajınız gönderildi. En kısa sürede size dönüş yapacağız.",
+        "addressTitle": "Adresimiz",
+        "phoneTitle": "Telefon",
+        "emailTitle": "E-posta",
+        "socialMedia": "Sosyal Medya"
+    },
+    "about": {
+        "title": "Hakkımızda",
+        "story": "Hikayemiz",
+        "mission": "Misyonumuz",
+        "values": "Değerlerimiz",
+        "team": "Ekibimiz",
+        "since": "2001'den beri"
+    },
+    "filters": {
+        "priceRange": "Fiyat Aralığı",
+        "areaRange": "Alan Aralığı",
+        "minPrice": "Min Fiyat",
+        "maxPrice": "Max Fiyat",
+        "minArea": "Min Alan",
+        "maxArea": "Max Alan",
+        "propertyType": "Emlak Tipi",
+        "city": "Şehir",
+        "district": "İlçe",
+        "clearFilters": "Filtreleri Temizle",
+        "apply": "Uygula"
+    },
+    "uxGuide": {
+        "title": "UX Rehberi",
+        "subtitle": "Tasarım sistemi özeti",
+        "description": "Atomik tasarım prensiplerine dayalı kapsamlı tasarım sistemi dokümantasyonu. UI geliştirme için tek kaynak.",
+        "note": "Dahili referans: Bu sayfayı globals.css ve UI bileşenleriyle senkron tutun.",
+        "sections": {
+            "colors": "Renkler",
+            "typography": "Tipografi",
+            "tokens": "Tasarım Token'ları",
+            "components": "Bileşenler",
+            "forms": "Form Elemanları",
+            "fontFamily": "Yazı Tipi",
+            "typographyScale": "Tipografi Skalası",
+            "listingCard": "İlan Kartı",
+            "atomicDesign": "Atomik Tasarım",
+            "layout": "Yerleşim ve Grid",
+            "icons": "İkonlar",
+            "animations": "Animasyonlar"
+        },
+        "colors": {
+            "primary": "Birincil (Turuncu)",
+            "neutral": "Nötrler",
+            "status": "Durum ve Vurgu"
+        },
+        "colorsHint": "Marka rengi olarak turuncuyu, yapı için temiz nötrleri kullanın.",
+        "fontFamily": {
+            "title": "Outfit",
+            "description": "Temiz çizgilere sahip modern geometrik sans-serif yazı tipi. Gayrimenkul UI'ı için mükemmel.",
+            "source": "Kaynak: Google Fonts",
+            "weights": {
+                "regular": "Regular 400",
+                "regularUsage": "Gövde metni, açıklamalar",
+                "medium": "Medium 500",
+                "mediumUsage": "Etiketler, navigasyon",
+                "semibold": "SemiBold 600",
+                "semiboldUsage": "Alt başlıklar, vurgu",
+                "bold": "Bold 700",
+                "boldUsage": "Başlıklar, titller"
+            },
+            "specimen": "Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz",
+            "numbers": "0 1 2 3 4 5 6 7 8 9"
+        },
+        "typographyScale": {
+            "description": "Hiyerarşik içerik organizasyonu için tutarlı tipografi skalası.",
+            "sizes": {
+                "xs": "13px - Açıklamalar, meta veriler",
+                "sm": "15px - Yardımcı metin, etiketler",
+                "base": "17px - Gövde metni",
+                "lg": "18px - Büyük gövde",
+                "xl": "20px - Bölüm başlıkları",
+                "2xl": "24px - Kart başlıkları",
+                "3xl": "30px - Sayfa başlıkları",
+                "4xl": "36px - Hero başlıkları",
+                "5xl": "48px - Display",
+                "6xl": "60px - Büyük display"
+            }
+        },
+        "listingCard": {
+            "title": "Emlak İlan Kartı",
+            "description": "Grid ve liste görünümlerinde emlak ilanlarını göstermek için ana bileşen.",
+            "structure": {
+                "image": "4:3 en-boy oranı ve gradient kaplama",
+                "badge": "Emlak tipi rozeti (Villa, Daire, vb.)",
+                "bookmark": "Kaydet/favori aksiyon butonu",
+                "title": "Emlak başlığı ve konum",
+                "price": "Opsiyonel kiralık son eki ile fiyat",
+                "rating": "Yıldız puanlama gösterimi",
+                "details": "Yatak odası, banyo, alan ikonları"
+            },
+            "variants": {
+                "sale": "Satılık",
+                "rent": "Kiralık"
+            }
+        },
+        "atomicDesign": {
+            "title": "Bileşen Hiyerarşisi",
+            "description": "UI'ımız tutarlı, ölçeklenebilir bileşenler için atomik tasarım metodolojisini takip eder.",
+            "atoms": {
+                "title": "Atomlar",
+                "description": "Temel yapı taşları: butonlar, rozetler, girdiler, onay kutuları"
+            },
+            "molecules": {
+                "title": "Moleküller",
+                "description": "Basit bileşen grupları: kartlar, slider'lar, filtre bölümleri"
+            },
+            "organisms": {
+                "title": "Organizmalar",
+                "description": "Karmaşık UI bölümleri: ilan kartları, filtre panelleri, navbar, footer"
+            },
+            "templates": {
+                "title": "Şablonlar",
+                "description": "Sayfa düzenleri: portföy, ilan detay, iletişim"
+            }
+        },
+        "layout": {
+            "title": "Yerleşim Sistemi",
+            "container": "Maksimum genişlik: 1280px, responsive padding ile",
+            "grid": "Responsive grid: 1 → 2 → 3 → 4 sütun",
+            "breakpoints": {
+                "sm": "640px",
+                "md": "768px",
+                "lg": "1024px",
+                "xl": "1280px"
+            }
+        },
+        "icons": {
+            "title": "Lucide React İkonları",
+            "description": "Özelleştirilebilir boyut ve renk ile tutarlı ikon kütüphanesi.",
+            "usage": "lucide-react'tan import edin, stil için className kullanın",
+            "common": "Building2, MapPin, BedDouble, Bath, Square, Star, Bookmark, Search, Menu"
+        },
+        "animations": {
+            "title": "Hareket Desenleri",
+            "description": "Gelişmiş kullanıcı deneyimi için ince animasyonlar.",
+            "types": {
+                "fadeIn": "Opaklık fade (0.3s)",
+                "slideUp": "Yukarı kayma girişi (0.4s)",
+                "pulse": "Dikkat çekici nabız (2s sonsuz)",
+                "hover": "Hover'da ölçek ve gölge"
+            }
+        },
+        "typography": {
+            "display": "Büyük başlık",
+            "headline": "Bölüm başlığı",
+            "title": "Kart başlığı",
+            "body": "Gövde metni",
+            "bodyText": "Açıklamalar, paragraflar ve ilan detayları için okunaklı metin.",
+            "muted": "Sönük yardımcı metin",
+            "mutedText": "İkincil bilgi için sönük yardımcı metin.",
+            "caption": "Küçük açıklama",
+            "captionText": "Meta veriler ve etiketler için küçük açıklamalar."
+        },
+        "components": {
+            "buttons": "Butonlar",
+            "badges": "Rozetler",
+            "cards": "Kartlar"
+        },
+        "forms": {
+            "title": "Girdiler ve seçimler",
+            "hint": "Odak durumları netlik için marka turuncusu kullanır.",
+            "nameLabel": "Ad Soyad",
+            "emailLabel": "E-posta",
+            "messageLabel": "Mesaj",
+            "namePlaceholder": "Ada Soyad",
+            "emailPlaceholder": "ad@ornek.com",
+            "messagePlaceholder": "Mesajınızı yazın..."
+        },
+        "tokens": {
+            "radius": "Köşe yuvarlaklığı",
+            "shadows": "Gölgeler",
+            "spacing": "Boşluk"
+        },
+        "labels": {
+            "primary": "Birincil",
+            "secondary": "İkincil",
+            "outline": "Çerçeve",
+            "ghost": "Şeffaf",
+            "disabled": "Devre dışı",
+            "loading": "Yükleniyor"
+        },
+        "examples": {
+            "cardTitle": "Örnek Kart",
+            "cardText": "Kartları ilan öne çıkarma, istatistik veya özellikler için kullanın.",
+            "cardCta": "Detayları gör",
+            "badgeNew": "Yeni",
+            "badgeFeatured": "Öne çıkan",
+            "sliderLabel": "Aralık",
+            "checkboxUpdates": "Güncellemeleri gönder",
+            "checkboxTerms": "Şartları kabul ediyorum"
+        }
+    },
+    "normalized21st": {
+        "title": "Normalize Edilmiş 21st Bileşenleri",
+        "subtitle": "Entegrasyon önizleme",
+        "description": "21st.dev bileşenlerini Güzel Invest tasarım sistemine normalize ettikten sonra burada önizleyip doğrulayın.",
+        "note": "Yalnızca iç değerlendirme. Bileşenler üretimde kullanılmadan önce normalize edilmelidir.",
+        "sections": {
+            "status": "Durum",
+            "queue": "Bileşen Kuyruğu",
+            "preview": "Önizleme",
+            "guidelines": "Normalize Kontrol Listesi"
+        },
+        "status": {
+            "normalized": "Normalize Edildi",
+            "pending": "İnceleme Bekliyor",
+            "blocked": "Engellendi",
+            "normalizedDesc": "Açık tema, turuncu palet ve tipografi ile uyumlu.",
+            "pendingDesc": "Tasarım/UX onayı bekleniyor.",
+            "blockedDesc": "Global stillerle veya performansla çakışıyor."
+        },
+        "queue": {
+            "emptyTitle": "Kuyrukta bileşen yok",
+            "emptyDescription": "Burada görmek için import kuralı ile bir 21st bileşeni ekleyin."
+        },
+        "preview": {
+            "title": "Önizleme Alanı",
+            "description": "Gerçek bileşeni örnek verilerle render etmek için bu alanı kullanın."
+        },
+        "guidelines": {
+            "item1": "Dark mode sınıfları yok; yalnızca açık tema.",
+            "item2": "Marka dışı renkleri turuncu paletle değiştirin.",
+            "item3": "Global CSS kullanmayın; stiller scoped olsun.",
+            "item4": "components/ui index dosyasından export edin."
+        },
+        "actions": {
+            "openUxGuide": "UX Rehberi'ni Aç",
+            "addComponent": "Bileşen Ekle"
+        }
+    },
+    "footer": {
+        "slogan": "Güzel şehre güzel projeler yakışır",
+        "quickLinks": "Hızlı Linkler",
+        "contactInfo": "İletişim Bilgileri",
+        "followUs": "Bizi Takip Edin",
+        "copyright": "© 2024 Güzel Invest. Tüm hakları saklıdır."
+    },
+    "meta": {
+        "title": "Güzel Invest | Alanya Gayrimenkul",
+        "description": "Alanya'da satılık villa, daire ve arsa. 2001'den beri güvenilir gayrimenkul danışmanlığı."
+    }
+}

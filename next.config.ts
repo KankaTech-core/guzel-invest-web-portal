@@ -1,7 +1,45 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Image optimization
+  images: {
+    remotePatterns: [
+      {
+        protocol: "http",
+        hostname: "localhost",
+        port: "9000",
+        pathname: "/guzel-invest/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.minio.io",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+        pathname: "/**",
+      },
+    ],
+  },
+
+  // Logging
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
+  },
+
+  // Experimental features
+  experimental: {
+    // Enable server actions
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

@@ -1,26 +1,509 @@
 @import "tailwindcss";
+@source "../**/*.{ts,tsx,js,jsx}";
+
+/* ============================================
+   GÜZEL INVEST DESIGN SYSTEM
+   Brand Color: #EC6803 (Vibrant Orange)
+   Style: Light, Clean, Modern Real Estate
+   ============================================ */
+
+@theme {
+  /* Primary Brand Colors */
+  --color-primary-50: #FFF7ED;
+  --color-primary-100: #FFEDD5;
+  --color-primary-200: #FED7AA;
+  --color-primary-300: #FDBA74;
+  --color-primary-400: #FB923C;
+  --color-primary-500: #EC6803;
+  --color-primary-600: #EA580C;
+  --color-primary-700: #C2410C;
+  --color-primary-800: #9A3412;
+  --color-primary-900: #7C2D12;
+
+  /* Use primary-500 as default 'primary' */
+  --color-primary: #EC6803;
+}
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ---- Border Radius ---- */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* ---- Shadows ---- */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-card: 0 2px 8px rgb(0 0 0 / 0.08);
+
+  /* ---- Spacing ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ============================================
+   BASE STYLES
+   ============================================ */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #ffffff;
+  color: #111827;
+  font-family: "Outfit", system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+}
+
+/* RTL Support */
+[dir="rtl"] {
+  text-align: right;
+}
+
+/* Focus Ring */
+*:focus-visible {
+  outline: 2px solid #EC6803;
+  outline-offset: 2px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Container */
+.container-custom {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .container-custom {
+    padding-left: var(--space-6);
+    padding-right: var(--space-6);
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-custom {
+    padding-left: var(--space-8);
+    padding-right: var(--space-8);
+  }
+}
+
+/* ============================================
+   BUTTON STYLES
+   ============================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-weight: 500;
+  border-radius: var(--radius-lg);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary Button */
+.btn-primary {
+  background-color: #EC6803;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #C2410C;
+}
+
+/* Secondary Button */
+.btn-secondary {
+  background-color: #111827;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #1f2937;
+}
+
+/* Outline Button */
+.btn-outline {
+  background: transparent;
+  border: 2px solid #EC6803;
+  color: #EC6803;
+}
+
+.btn-outline:hover:not(:disabled) {
+  background-color: #EC6803;
+  color: white;
+}
+
+/* Ghost Button */
+.btn-ghost {
+  background: transparent;
+  color: #4b5563;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+/* Button Sizes */
+.btn-sm {
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.875rem;
+}
+
+.btn-md {
+  padding: var(--space-3) var(--space-5);
+  font-size: 0.9375rem;
+}
+
+.btn-lg {
+  padding: var(--space-4) var(--space-6);
+  font-size: 1rem;
+}
+
+/* ============================================
+   CARD STYLES
+   ============================================ */
+
+.card {
+  background: white;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.card-interactive:hover {
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   INPUT STYLES
+   ============================================ */
+
+.input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-lg);
+  font-size: 0.9375rem;
+  background: white;
+  color: #111827;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input::placeholder {
+  color: #9ca3af;
+}
+
+.input:focus {
+  border-color: #EC6803;
+  box-shadow: 0 0 0 3px rgba(236, 104, 3, 0.1);
+  outline: none;
+}
+
+.input:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   BADGE STYLES
+   ============================================ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  border-radius: var(--radius-md);
+}
+
+.badge-primary {
+  background-color: #EC6803;
+  color: white;
+}
+
+.badge-secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.badge-success {
+  background-color: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+}
+
+.badge-warning {
+  background-color: rgba(234, 179, 8, 0.15);
+  color: #a16207;
+}
+
+.badge-info {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #1d4ed8;
+}
+
+/* Property Type Badges */
+.badge-villa {
+  background-color: #3B82F6;
+  color: white;
+}
+
+.badge-apartment {
+  background-color: #8B5CF6;
+  color: white;
+}
+
+.badge-home {
+  background-color: #EC6803;
+  color: white;
+}
+
+.badge-land {
+  background-color: #10B981;
+  color: white;
+}
+
+.badge-commercial {
+  background-color: #6366F1;
+  color: white;
+}
+
+/* ============================================
+   FILTER PANEL STYLES
+   ============================================ */
+
+.filter-section {
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.filter-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: var(--space-2) 0;
+}
+
+.filter-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ============================================
+   CHECKBOX STYLES
+   ============================================ */
+
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 2px solid #d1d5db;
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.checkbox.checked {
+  background-color: #EC6803;
+  border-color: #EC6803;
+}
+
+.checkbox-label {
+  font-size: 0.9375rem;
+  color: #374151;
+}
+
+/* ============================================
+   SLIDER STYLES
+   ============================================ */
+
+.slider-track-base {
+  @apply absolute top-1/2 -translate-y-1/2 w-full h-1.5 bg-gray-200 rounded-full;
+}
+
+.slider-track-range {
+  @apply absolute top-1/2 -translate-y-1/2 h-1.5 bg-orange-500 rounded-full;
+}
+
+.slider-input {
+  @apply absolute w-full h-6 appearance-none bg-transparent pointer-events-none z-20 outline-none;
+}
+
+.slider-input::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: white !important;
+  border: 3px solid #EC6803 !important;
+  border-radius: 9999px;
+  cursor: grab;
+  pointer-events: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+  z-index: 30;
+  position: relative;
+}
+
+.slider-input::-moz-range-thumb {
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  background-color: white !important;
+  border: 3px solid #EC6803 !important;
+  border-radius: 9999px;
+  cursor: grab;
+  pointer-events: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+  z-index: 30;
+}
+
+.slider-input::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.1);
+}
+
+.slider-input::-moz-range-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.1);
+}
+
+/* ============================================
+   TEXT COLOR HELPERS
+   ============================================ */
+
+.text-primary {
+  color: #EC6803 !important;
+}
+
+.bg-primary {
+  background-color: #EC6803 !important;
+}
+
+.border-primary {
+  border-color: #EC6803 !important;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite;
 }

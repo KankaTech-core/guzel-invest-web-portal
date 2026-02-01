@@ -1,0 +1,325 @@
+{
+    "common": {
+        "loading": "Wird geladen...",
+        "error": "Ein Fehler ist aufgetreten",
+        "save": "Speichern",
+        "cancel": "Abbrechen",
+        "delete": "Löschen",
+        "edit": "Bearbeiten",
+        "create": "Erstellen",
+        "search": "Suchen",
+        "filter": "Filtern",
+        "sortBy": "Sortieren",
+        "noResults": "Keine Ergebnisse gefunden",
+        "seeAll": "Alle anzeigen",
+        "learnMore": "Mehr erfahren",
+        "contactUs": "Kontakt",
+        "whatsapp": "WhatsApp",
+        "call": "Anrufen",
+        "share": "Teilen",
+        "back": "Zurück"
+    },
+    "nav": {
+        "home": "Startseite",
+        "portfolio": "Portfolio",
+        "map": "Karte",
+        "about": "Über uns",
+        "contact": "Kontakt"
+    },
+    "hero": {
+        "title": "Schöne Projekte für eine schöne Stadt",
+        "subtitle": "Vertrauenswürdige Immobilienberatung in Alanya seit 2001",
+        "cta": "Portfolio entdecken"
+    },
+    "listings": {
+        "forSale": "Zu Verkaufen",
+        "forRent": "Zu Vermieten",
+        "featured": "Ausgewählte Immobilien",
+        "allListings": "Alle Immobilien",
+        "price": "Preis",
+        "area": "Fläche",
+        "rooms": "Zimmer",
+        "bedrooms": "Schlafzimmer",
+        "bathrooms": "Badezimmer",
+        "floor": "Stockwerk",
+        "year": "Baujahr",
+        "features": "Ausstattung",
+        "description": "Beschreibung",
+        "location": "Lage",
+        "similarListings": "Ähnliche Immobilien",
+        "requestInfo": "Informationen anfordern",
+        "scheduleVisit": "Besichtigung planen"
+    },
+    "propertyTypes": {
+        "apartment": "Wohnung",
+        "villa": "Villa",
+        "penthouse": "Penthouse",
+        "land": "Grundstück",
+        "commercial": "Gewerbe",
+        "office": "Büro",
+        "shop": "Laden",
+        "farm": "Bauernhof"
+    },
+    "categories": {
+        "residentialProjects": "Wohnprojekte",
+        "villasForSale": "Villen zu verkaufen",
+        "apartmentsForSale": "Wohnungen zu verkaufen",
+        "landForSale": "Grundstücke zu verkaufen",
+        "commercialProperties": "Gewerbeimmobilien",
+        "citizenshipEligible": "Staatsbürgerschaft berechtigt"
+    },
+    "contact": {
+        "title": "Kontakt",
+        "name": "Ihr Name",
+        "email": "E-Mail",
+        "phone": "Telefon",
+        "message": "Ihre Nachricht",
+        "send": "Senden",
+        "success": "Ihre Nachricht wurde gesendet. Wir werden uns in Kürze bei Ihnen melden.",
+        "addressTitle": "Unsere Adresse",
+        "phoneTitle": "Telefon",
+        "emailTitle": "E-Mail",
+        "socialMedia": "Soziale Medien"
+    },
+    "about": {
+        "title": "Über uns",
+        "story": "Unsere Geschichte",
+        "mission": "Unsere Mission",
+        "values": "Unsere Werte",
+        "team": "Unser Team",
+        "since": "Seit 2001"
+    },
+    "filters": {
+        "priceRange": "Preisbereich",
+        "areaRange": "Flächenbereich",
+        "minPrice": "Min. Preis",
+        "maxPrice": "Max. Preis",
+        "minArea": "Min. Fläche",
+        "maxArea": "Max. Fläche",
+        "propertyType": "Immobilientyp",
+        "city": "Stadt",
+        "district": "Bezirk",
+        "clearFilters": "Filter löschen",
+        "apply": "Anwenden"
+    },
+    "uxGuide": {
+        "title": "UX Guide",
+        "subtitle": "Designsystem-Übersicht",
+        "description": "Umfassende Designsystem-Dokumentation nach Atomic-Design-Prinzipien. Zentrale Referenz für UI-Entwicklung.",
+        "note": "Interne Referenz: Diese Seite mit globals.css und UI-Komponenten synchron halten.",
+        "sections": {
+            "colors": "Farben",
+            "typography": "Typografie",
+            "tokens": "Design-Tokens",
+            "components": "Komponenten",
+            "forms": "Formularelemente",
+            "fontFamily": "Schriftfamilie",
+            "typographyScale": "Typografie-Skala",
+            "listingCard": "Immobilienkarte",
+            "atomicDesign": "Atomic Design",
+            "layout": "Layout & Grid",
+            "icons": "Icons",
+            "animations": "Animationen"
+        },
+        "colors": {
+            "primary": "Primär (Orange)",
+            "neutral": "Neutrals",
+            "status": "Status & Akzente"
+        },
+        "colorsHint": "Orange als primäre Markenfarbe, neutrale Töne für die Struktur.",
+        "fontFamily": {
+            "title": "Outfit",
+            "description": "Moderne geometrische Sans-Serif-Schrift mit klaren Linien. Perfekt für Immobilien-UI.",
+            "source": "Quelle: Google Fonts",
+            "weights": {
+                "regular": "Regular 400",
+                "regularUsage": "Fließtext, Beschreibungen",
+                "medium": "Medium 500",
+                "mediumUsage": "Labels, Navigation",
+                "semibold": "SemiBold 600",
+                "semiboldUsage": "Untertitel, Betonung",
+                "bold": "Bold 700",
+                "boldUsage": "Überschriften, Titel"
+            },
+            "specimen": "Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz",
+            "numbers": "0 1 2 3 4 5 6 7 8 9"
+        },
+        "typographyScale": {
+            "description": "Konsistente Typografie-Skala für hierarchische Inhaltsorganisation.",
+            "sizes": {
+                "xs": "13px - Beschriftungen, Metadaten",
+                "sm": "15px - Hilfstext, Labels",
+                "base": "17px - Fließtext",
+                "lg": "18px - Größerer Fließtext",
+                "xl": "20px - Abschnittstitel",
+                "2xl": "24px - Kartenüberschriften",
+                "3xl": "30px - Seitenüberschriften",
+                "4xl": "36px - Hero-Titel",
+                "5xl": "48px - Display",
+                "6xl": "60px - Großes Display"
+            }
+        },
+        "listingCard": {
+            "title": "Immobilien-Listenkarte",
+            "description": "Hauptkomponente zur Anzeige von Immobilienangeboten in Grid- und Listenansichten.",
+            "structure": {
+                "image": "4:3 Seitenverhältnis mit Verlaufsüberlagerung",
+                "badge": "Immobilientyp-Badge (Villa, Wohnung, etc.)",
+                "bookmark": "Speichern/Favoriten-Aktionsbutton",
+                "title": "Immobilientitel mit Standort",
+                "price": "Preis mit optionalem Mietzusatz",
+                "rating": "Sternebewertung",
+                "details": "Schlafzimmer, Badezimmer, Flächen-Icons"
+            },
+            "variants": {
+                "sale": "Zu Verkaufen",
+                "rent": "Zu Vermieten"
+            }
+        },
+        "atomicDesign": {
+            "title": "Komponentenhierarchie",
+            "description": "Unsere UI folgt der Atomic-Design-Methodik für konsistente, skalierbare Komponenten.",
+            "atoms": {
+                "title": "Atome",
+                "description": "Grundbausteine: Buttons, Badges, Inputs, Checkboxen"
+            },
+            "molecules": {
+                "title": "Moleküle",
+                "description": "Einfache Komponentengruppen: Cards, Slider, Filterabschnitte"
+            },
+            "organisms": {
+                "title": "Organismen",
+                "description": "Komplexe UI-Abschnitte: Listenkarten, Filterpanels, Navbar, Footer"
+            },
+            "templates": {
+                "title": "Templates",
+                "description": "Seitenlayouts: Portfolio, Immobiliendetails, Kontakt"
+            }
+        },
+        "layout": {
+            "title": "Layout-System",
+            "container": "Maximale Breite: 1280px mit responsivem Padding",
+            "grid": "Responsives Grid: 1 → 2 → 3 → 4 Spalten",
+            "breakpoints": {
+                "sm": "640px",
+                "md": "768px",
+                "lg": "1024px",
+                "xl": "1280px"
+            }
+        },
+        "icons": {
+            "title": "Lucide React Icons",
+            "description": "Konsistente Icon-Bibliothek mit anpassbarer Größe und Farbe.",
+            "usage": "Import aus lucide-react, className für Styling verwenden",
+            "common": "Building2, MapPin, BedDouble, Bath, Square, Star, Bookmark, Search, Menu"
+        },
+        "animations": {
+            "title": "Bewegungsmuster",
+            "description": "Subtile Animationen für verbesserte Benutzererfahrung.",
+            "types": {
+                "fadeIn": "Opazitäts-Fade (0.3s)",
+                "slideUp": "Nach-oben-Gleiten (0.4s)",
+                "pulse": "Aufmerksamkeitspuls (2s unendlich)",
+                "hover": "Skalierung und Schatten bei Hover"
+            }
+        },
+        "typography": {
+            "display": "Display-Überschrift",
+            "headline": "Abschnittsüberschrift",
+            "title": "Kartentitel",
+            "body": "Fließtext",
+            "bodyText": "Gut lesbarer Text für Beschreibungen, Absätze und Exposé-Details.",
+            "muted": "Zurückhaltender Hilfstext",
+            "mutedText": "Zurückhaltender Hilfstext für sekundäre Informationen.",
+            "caption": "Beschriftung",
+            "captionText": "Kleine Beschriftungen für Metadaten und Labels."
+        },
+        "components": {
+            "buttons": "Buttons",
+            "badges": "Badges",
+            "cards": "Cards"
+        },
+        "forms": {
+            "title": "Inputs & Auswahlen",
+            "hint": "Fokuszustände nutzen das Markenorange für Klarheit.",
+            "nameLabel": "Vollständiger Name",
+            "emailLabel": "E-Mail",
+            "messageLabel": "Nachricht",
+            "namePlaceholder": "Max Mustermann",
+            "emailPlaceholder": "name@beispiel.de",
+            "messagePlaceholder": "Nachricht eingeben..."
+        },
+        "tokens": {
+            "radius": "Eckenradius",
+            "shadows": "Schatten",
+            "spacing": "Abstände"
+        },
+        "labels": {
+            "primary": "Primär",
+            "secondary": "Sekundär",
+            "outline": "Kontur",
+            "ghost": "Transparent",
+            "disabled": "Deaktiviert",
+            "loading": "Lädt"
+        },
+        "examples": {
+            "cardTitle": "Beispielkarte",
+            "cardText": "Karten eignen sich für Highlights, Kennzahlen und Kernfeatures.",
+            "cardCta": "Mehr erfahren",
+            "badgeNew": "Neu",
+            "badgeFeatured": "Empfohlen",
+            "sliderLabel": "Bereich",
+            "checkboxUpdates": "Updates senden",
+            "checkboxTerms": "Ich stimme den Bedingungen zu"
+        }
+    },
+    "normalized21st": {
+        "title": "Normalisierte 21st-Komponenten",
+        "subtitle": "Integrations-Staging",
+        "description": "21st.dev-Komponenten nach der Normalisierung ins Güzel-Invest-Designsystem hier prüfen.",
+        "note": "Nur für interne Prüfung. Komponenten erst nach Normalisierung produktiv nutzen.",
+        "sections": {
+            "status": "Status",
+            "queue": "Komponenten-Warteschlange",
+            "preview": "Vorschau",
+            "guidelines": "Normalisierungs-Checkliste"
+        },
+        "status": {
+            "normalized": "Normalisiert",
+            "pending": "Prüfung ausstehend",
+            "blocked": "Blockiert",
+            "normalizedDesc": "Passt zu hellem Theme, orangener Palette und Typografie.",
+            "pendingDesc": "Wartet auf Design/UX-Freigabe.",
+            "blockedDesc": "Konflikte mit globalen Styles oder Performance."
+        },
+        "queue": {
+            "emptyTitle": "Keine Komponenten in der Warteschlange",
+            "emptyDescription": "Füge eine 21st-Komponente über die Import-Regel hinzu, um sie hier zu sehen."
+        },
+        "preview": {
+            "title": "Vorschaufläche",
+            "description": "Nutze diesen Bereich, um die echte Komponente mit Beispieldaten zu rendern."
+        },
+        "guidelines": {
+            "item1": "Keine Dark-Mode-Klassen; nur helles Theme.",
+            "item2": "Nicht-Markfarben durch die orange Palette ersetzen.",
+            "item3": "Globales CSS vermeiden und Styles scopen.",
+            "item4": "Über das components/ui-Index exportieren."
+        },
+        "actions": {
+            "openUxGuide": "UX-Guide öffnen",
+            "addComponent": "Komponente hinzufügen"
+        }
+    },
+    "footer": {
+        "slogan": "Schöne Projekte für eine schöne Stadt",
+        "quickLinks": "Schnelllinks",
+        "contactInfo": "Kontaktinformationen",
+        "followUs": "Folgen Sie uns",
+        "copyright": "© 2024 Güzel Invest. Alle Rechte vorbehalten."
+    },
+    "meta": {
+        "title": "Güzel Invest | Alanya Immobilien",
+        "description": "Villen, Wohnungen und Grundstücke in Alanya zu verkaufen. Vertrauenswürdige Immobilienberatung seit 2001."
+    }
+}
