@@ -34,6 +34,11 @@ export default async function ListingDetailPage({
     const translation = listing.translations[0] || {};
     const minioUrl = process.env.NEXT_PUBLIC_MINIO_URL || 'http://localhost:9000';
 
+    const priceValue =
+        typeof listing.price === "object" && listing.price !== null && "toString" in listing.price
+            ? listing.price.toString()
+            : listing.price;
+
     return (
         <main className="pt-24 pb-20">
             <div className="container-custom">
@@ -90,7 +95,7 @@ export default async function ListingDetailPage({
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 p-6 bg-slate-50 rounded-2xl border border-slate-100">
                                 <div className="flex flex-col gap-1">
                                     <span className="text-slate-400 text-xs uppercase font-bold tracking-wider">Fiyat</span>
-                                    <span className="text-xl font-bold text-amber-600">{formatPrice(listing.price, listing.currency)}</span>
+                                    <span className="text-xl font-bold text-amber-600">{formatPrice(priceValue, listing.currency)}</span>
                                 </div>
                                 <div className="flex flex-col gap-1">
                                     <span className="text-slate-400 text-xs uppercase font-bold tracking-wider">Alan</span>
