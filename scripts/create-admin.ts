@@ -3,25 +3,29 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-async function createAdmin(email: string, password: string) {
-    if (!email || !password) {
+async function createAdmin(email?: string, password?: string) {
+    const adminEmail = email || process.env.INITIAL_ADMIN_EMAIL;
+    const adminPassword = password || process.env.INITIAL_ADMIN_PASSWORD;
+
+    if (!adminEmail || !adminPassword) {
         console.error("Usage: npx tsx scripts/create-admin.ts <email> <password>");
+        console.error("Or set INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD env vars.");
         process.exit(1);
     }
 
-    console.log(`🚀 Attempting to create/reset admin user: ${email}`);
+    console.log(`🚀 Attempting to create/reset admin user: ${adminEmail}`);
 
     try {
-        const passwordHash = await bcrypt.hash(password, 10);
+        const passwordHash = await bcrypt.hash(adminPassword, 10);
 
         const user = await prisma.user.upsert({
-            where: { email: email.toLowerCase() },
+            where: { email: adminEmail.toLowerCase() },
             update: {
                 passwordHash: passwordHash,
                 role: Role.ADMIN,
             },
             create: {
-                email: email.toLowerCase(),
+                email: adminEmail.toLowerCase(),
                 passwordHash: passwordHash,
                 name: "System Admin",
                 role: Role.ADMIN,
