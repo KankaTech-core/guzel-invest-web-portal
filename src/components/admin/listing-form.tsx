@@ -399,6 +399,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             const body = {
                 ...formData,
                 status: publish ? "PUBLISHED" : formData.status,
+                tags: selectedTags,
             };
 
             const response = await fetch(endpoint, {

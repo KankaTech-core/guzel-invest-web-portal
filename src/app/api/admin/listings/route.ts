@@ -71,6 +71,20 @@ export async function POST(request: NextRequest) {
                 elevator: body.elevator || false,
                 security: body.security || false,
                 seaView: body.seaView || false,
+                // Land-specific
+                parcelNo: body.parcelNo || null,
+                emsal: body.emsal || null,
+                zoningStatus: body.zoningStatus || null,
+                // Commercial-specific
+                groundFloorArea: body.groundFloorArea || null,
+                basementArea: body.basementArea || null,
+                // Farm-specific
+                hasWaterSource: body.hasWaterSource || false,
+                hasFruitTrees: body.hasFruitTrees || false,
+                existingStructure: body.existingStructure || null,
+                // Eligibility
+                citizenshipEligible: body.citizenshipEligible || false,
+                residenceEligible: body.residenceEligible || false,
                 createdById: session.userId,
                 translations: {
                     create: (body.translations || [])
@@ -82,9 +96,19 @@ export async function POST(request: NextRequest) {
                             features: t.features || [],
                         })),
                 },
+                tags: body.tags ? {
+                    create: body.tags.map((tag: { id: string }) => ({
+                        tagId: tag.id
+                    }))
+                } : undefined,
             },
             include: {
                 translations: true,
+                tags: {
+                    include: {
+                        tag: true
+                    }
+                }
             },
         });
 

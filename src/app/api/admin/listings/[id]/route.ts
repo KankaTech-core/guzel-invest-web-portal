@@ -64,12 +64,44 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 elevator: body.elevator ?? false,
                 security: body.security ?? false,
                 seaView: body.seaView ?? false,
+                // Land-specific
+                parcelNo: body.parcelNo || null,
+                emsal: body.emsal || null,
+                zoningStatus: body.zoningStatus || null,
+                // Commercial-specific
+                groundFloorArea: body.groundFloorArea || null,
+                basementArea: body.basementArea || null,
+                // Farm-specific
+                hasWaterSource: body.hasWaterSource || false,
+                hasFruitTrees: body.hasFruitTrees || false,
+                existingStructure: body.existingStructure || null,
+                // Eligibility
+                citizenshipEligible: body.citizenshipEligible || false,
+                residenceEligible: body.residenceEligible || false,
                 publishedAt:
                     body.status === "PUBLISHED" && existing.status !== "PUBLISHED"
                         ? new Date()
                         : existing.publishedAt,
             },
         });
+
+        // Update tags if provided
+        if (body.tags) {
+            // Delete existing tag relations
+            await prisma.listingTag.deleteMany({
+                where: { listingId: id },
+            });
+
+            // Create new tag relations
+            if (body.tags.length > 0) {
+                await prisma.listingTag.createMany({
+                    data: body.tags.map((tag: { id: string }) => ({
+                        listingId: id,
+                        tagId: tag.id,
+                    })),
+                });
+            }
+        }
 
         // Update translations
         if (body.translations) {
@@ -106,6 +138,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 translations: true,
                 media: {
                     orderBy: { order: "asc" },
+                },
+                tags: {
+                    include: {
+                        tag: true
+                    }
                 },
             },
         });
@@ -175,6 +212,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
                 translations: true,
                 media: {
                     orderBy: { order: "asc" },
+                },
+                tags: {
+                    include: {
+                        tag: true
+                    }
                 },
                 syncLogs: {
                     orderBy: { createdAt: "desc" },

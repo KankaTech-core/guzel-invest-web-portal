@@ -22,6 +22,11 @@ export default async function EditListingPage({ params }: EditListingPageProps) 
             media: {
                 orderBy: { order: "asc" },
             },
+            tags: {
+                include: {
+                    tag: true,
+                },
+            },
         },
     });
 
@@ -87,6 +92,11 @@ export default async function EditListingPage({ params }: EditListingPageProps) 
             thumbnailUrl: m.thumbnailUrl,
             order: m.order,
             isCover: m.isCover,
+        })),
+        tags: listing.tags.map((lt) => ({
+            id: lt.tag.id,
+            name: lt.tag.name,
+            color: lt.tag.color,
         })),
     };
 
