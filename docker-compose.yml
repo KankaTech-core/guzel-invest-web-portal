@@ -26,8 +26,8 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
     ports:
       - "9000:9000"   # API
       - "9001:9001"   # Console
@@ -48,9 +48,9 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY} ${MINIO_SECRET_KEY};
       mc mb myminio/guzel-invest --ignore-existing;
-      mc anonymous set public myminio/guzel-invest/public;
+      mc anonymous set download myminio/guzel-invest/public;
       echo 'Bucket created successfully';
       exit 0;
       "
