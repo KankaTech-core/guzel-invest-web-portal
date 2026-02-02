@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "*.minio.io",
+        hostname: "minio-v4og8k40sk8okc8840ck4wwg.b2bleadgenius.com",
         pathname: "/**",
       },
       {
