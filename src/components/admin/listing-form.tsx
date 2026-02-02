@@ -14,6 +14,8 @@ import {
     Image as ImageIcon,
     Sparkles,
     Tag,
+    Upload,
+    CloudUpload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TagInput } from "./tag-input";
@@ -203,6 +205,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     const [error, setError] = useState<string | null>(null);
     const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]);
     const [isAiFillOpen, setIsAiFillOpen] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
     const [selectedTags, setSelectedTags] = useState<TagData[]>(listing?.tags || []);
     const mediaBaseUrl = `${process.env.NEXT_PUBLIC_MINIO_URL || "http://localhost:9000"}/guzel-invest/`;
     const resolveMediaUrl = (path: string) =>
@@ -364,13 +367,8 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         }
     };
 
-    const handleMediaSelect = async (
-        event: React.ChangeEvent<HTMLInputElement>
-    ) => {
-        const files = Array.from(event.target.files || []);
+    const handleFiles = async (files: File[]) => {
         if (files.length === 0) return;
-
-        event.target.value = "";
 
         if (!formData.id) {
             const pendingItems = files.map((file) => ({
@@ -383,6 +381,37 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         }
 
         await uploadMediaFiles(formData.id, files);
+    };
+
+    const handleMediaSelect = async (
+        event: React.ChangeEvent<HTMLInputElement>
+    ) => {
+        const files = Array.from(event.target.files || []);
+        handleFiles(files);
+        event.target.value = "";
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+
+        const files = Array.from(e.dataTransfer.files).filter((file) =>
+            file.type.startsWith("image/")
+        );
+        handleFiles(files);
     };
 
     const handleSubmit = async (publish: boolean = false) => {
@@ -1119,24 +1148,60 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                     {/* Media Tab */}
                     {activeTab === "media" && (
                         <div className="space-y-6">
-                            <div className="flex flex-wrap items-center gap-3">
-                                <label className="btn btn-outline btn-md cursor-pointer">
-                                    <ImageIcon className="w-4 h-4" />
-                                    Görsel Yükle
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        onChange={handleMediaSelect}
-                                        disabled={isUploading || isSaving}
-                                        className="sr-only"
-                                    />
-                                </label>
-                                <span className="text-sm text-gray-500">
-                                    {isUploading
-                                        ? "Görseller yükleniyor..."
-                                        : "WebP optimizasyonu otomatik yapılır."}
-                                </span>
+                            <div
+                                onDragOver={handleDragOver}
+                                onDragLeave={handleDragLeave}
+                                onDrop={handleDrop}
+                                className={cn(
+                                    "relative border-2 border-dashed rounded-xl transition-all duration-200 ease-in-out p-12 text-center cursor-pointer",
+                                    isDragging
+                                        ? "border-orange-500 bg-orange-50/50 scale-[1.01]"
+                                        : "border-gray-100 hover:border-orange-200 hover:bg-orange-50/30"
+                                )}
+                                onClick={() => {
+                                    const input = document.getElementById(
+                                        "media-upload"
+                                    ) as HTMLInputElement;
+                                    input?.click();
+                                }}
+                            >
+                                <input
+                                    id="media-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleMediaSelect}
+                                    disabled={isUploading || isSaving}
+                                    className="sr-only"
+                                />
+                                <div className="flex flex-col items-center gap-4">
+                                    <div
+                                        className={cn(
+                                            "p-4 rounded-full transition-colors",
+                                            isDragging
+                                                ? "bg-orange-100 text-orange-600"
+                                                : "bg-gray-100 text-gray-400"
+                                        )}
+                                    >
+                                        {isDragging ? (
+                                            <CloudUpload className="w-10 h-10 animate-bounce" />
+                                        ) : (
+                                            <Upload className="w-10 h-10" />
+                                        )}
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-semibold text-gray-900">
+                                            {isDragging
+                                                ? "Görselleri buraya bırakın"
+                                                : "Görsel yüklemek için tıklayın veya sürükleyin"}
+                                        </p>
+                                        <p className="text-sm text-gray-500 mt-1">
+                                            {isUploading
+                                                ? "Görseller yükleniyor..."
+                                                : "PNG, JPG, WebP formatları desteklenmektedir."}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
 
                             {pendingMedia.length > 0 && !formData.id && (
