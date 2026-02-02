@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { getMediaUrl } from "@/lib/utils";
 import { Plus, Edit, Trash2, Eye, MoreVertical } from "lucide-react";
 
 export default async function AdminListingsPage() {
@@ -66,7 +67,7 @@ export default async function AdminListingsPage() {
                                         <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
                                             {listing.media[0] ? (
                                                 <img
-                                                    src={`http://localhost:9000/guzel-invest/${listing.media[0].url}`}
+                                                    src={getMediaUrl(listing.media[0].url)}
                                                     alt=""
                                                     className="w-full h-full object-cover"
                                                 />
@@ -97,10 +98,10 @@ export default async function AdminListingsPage() {
                                 <td className="px-6 py-4">
                                     <span
                                         className={`px-2 py-1 rounded text-xs font-medium ${listing.status === "PUBLISHED"
-                                                ? "bg-green-100 text-green-700"
-                                                : listing.status === "DRAFT"
-                                                    ? "bg-yellow-100 text-yellow-700"
-                                                    : "bg-gray-100 text-gray-600"
+                                            ? "bg-green-100 text-green-700"
+                                            : listing.status === "DRAFT"
+                                                ? "bg-yellow-100 text-yellow-700"
+                                                : "bg-gray-100 text-gray-600"
                                             }`}
                                     >
                                         {listing.status === "PUBLISHED"

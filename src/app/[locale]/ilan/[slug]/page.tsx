@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { ListingStatus } from "@/generated/prisma";
-import { formatPrice, formatArea } from "@/lib/utils";
+import { formatPrice, formatArea, getMediaUrl } from "@/lib/utils";
 import { BedDouble, Bath, Square, MapPin, Share2, Printer, Map as MapIcon, ChevronRight } from "lucide-react";
 
 export default async function ListingDetailPage({
@@ -32,7 +32,6 @@ export default async function ListingDetailPage({
     }
 
     const translation = listing.translations[0] || {};
-    const minioUrl = process.env.NEXT_PUBLIC_MINIO_URL || 'http://localhost:9000';
 
     const priceValue =
         typeof listing.price === "object" && listing.price !== null && "toString" in listing.price
@@ -59,7 +58,7 @@ export default async function ListingDetailPage({
                             {listing.media.map((item: any, index: number) => (
                                 <div key={item.id} className={index === 0 ? "md:col-span-2 aspect-video relative rounded-2xl overflow-hidden" : "aspect-video relative rounded-xl overflow-hidden"}>
                                     <Image
-                                        src={`${minioUrl}/guzel-invest/${item.url}`}
+                                        src={getMediaUrl(item.url)}
                                         alt={`${translation.title} - ${index + 1}`}
                                         fill
                                         className="object-cover"

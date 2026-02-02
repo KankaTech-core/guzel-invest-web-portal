@@ -146,3 +146,19 @@ export function generateListingSlug(
     const uniqueSuffix = Date.now().toString(36);
     return `${base}-${uniqueSuffix}`;
 }
+export function getMediaUrl(path: string | null | undefined): string {
+    if (!path) return "";
+    if (path.startsWith("http")) return path;
+
+    const baseUrl =
+        process.env.NEXT_PUBLIC_MINIO_URL || "http://localhost:9000";
+    const bucket = process.env.NEXT_PUBLIC_MINIO_BUCKET || "guzel-invest";
+
+    // Ensure double slashes don't happen
+    const cleanBaseUrl = baseUrl.endsWith("/")
+        ? baseUrl.slice(0, -1)
+        : baseUrl;
+    const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+
+    return `${cleanBaseUrl}/${bucket}/${cleanPath}`;
+}

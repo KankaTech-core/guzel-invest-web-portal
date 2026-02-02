@@ -17,7 +17,11 @@ import {
     Upload,
     CloudUpload,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+    formatPrice,
+    getMediaUrl,
+    cn,
+} from "@/lib/utils";
 import { TagInput } from "./tag-input";
 import { AiFillModal, ParsedData } from "./ai-fill-modal";
 
@@ -207,9 +211,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     const [isAiFillOpen, setIsAiFillOpen] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [selectedTags, setSelectedTags] = useState<TagData[]>(listing?.tags || []);
-    const mediaBaseUrl = `${process.env.NEXT_PUBLIC_MINIO_URL || "http://localhost:9000"}/guzel-invest/`;
-    const resolveMediaUrl = (path: string) =>
-        path.startsWith("http") ? path : `${mediaBaseUrl}${path}`;
+    const resolveMediaUrl = (path: string) => getMediaUrl(path);
 
     // Check property type categories
     const isResidential = RESIDENTIAL_TYPES.includes(formData.type);

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { BedDouble, Bath, Square, MapPin, Star, Bookmark } from "lucide-react";
-import { formatPrice, formatArea } from "@/lib/utils";
+import { formatPrice, formatArea, getMediaUrl } from "@/lib/utils";
 import { Badge, getPropertyTypeBadge } from "@/components/ui/badge";
 
 interface ListingCardProps {
@@ -14,9 +14,7 @@ interface ListingCardProps {
 export function ListingCard({ listing, locale }: ListingCardProps) {
     const translation = listing.translations?.[0] || {};
     const mainImage = listing.media?.[0];
-    const imageUrl = mainImage
-        ? `${process.env.NEXT_PUBLIC_MINIO_URL || "http://localhost:9000"}/guzel-invest/${mainImage.url}`
-        : null;
+    const imageUrl = mainImage ? getMediaUrl(mainImage.url) : null;
 
     return (
         <div className="card card-interactive group bg-white">
