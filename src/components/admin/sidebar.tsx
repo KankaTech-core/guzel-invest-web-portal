@@ -18,11 +18,8 @@ import { cn } from "@/lib/utils";
 const navigation = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "İlanlar", href: "/admin/ilanlar", icon: FileText },
-    { name: "Medya", href: "/admin/medya", icon: Image },
-    { name: "Sahibinden Sync", href: "/admin/sync", icon: RefreshCw },
     { name: "Export", href: "/admin/export", icon: Download },
     { name: "Kullanıcılar", href: "/admin/kullanicilar", icon: Users },
-    { name: "Ayarlar", href: "/admin/ayarlar", icon: Settings },
 ];
 
 export function Sidebar() {

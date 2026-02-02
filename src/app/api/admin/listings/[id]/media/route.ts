@@ -91,9 +91,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         return NextResponse.json({ media: createdMedia }, { status: 201 });
     } catch (error) {
-        console.error("Error uploading listing media:", error);
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        const errorStack = error instanceof Error ? error.stack : "";
+        console.error("Error uploading listing media:", { errorMessage, errorStack, error });
         return NextResponse.json(
-            { error: "Failed to upload media" },
+            { error: `Failed to upload media: ${errorMessage}` },
             { status: 500 }
         );
     }
