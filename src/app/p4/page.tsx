@@ -236,7 +236,7 @@ export default function PortfolioScandinavianCalmPage() {
                                     >
                                         <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-0">
                                             {/* Image */}
-                                            <div className="relative aspect-[4/3] md:aspect-auto overflow-hidden">
+                                            <div className="relative aspect-[4/3] md:aspect-auto md:h-full md:min-h-[240px] overflow-hidden">
                                                 <img
                                                     src={listing.images[0]}
                                                     alt={listing.title}

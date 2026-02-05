@@ -175,13 +175,13 @@ export default function PortfolioMediterraneanCoastalPage() {
                                         <input
                                             type="text"
                                             placeholder="Min €"
-                                            className="flex-1 px-4 py-3 bg-gray-50 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
+                                            className="min-w-0 flex-1 px-4 py-3 bg-gray-50 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
                                         />
                                         <span className="text-gray-300">—</span>
                                         <input
                                             type="text"
                                             placeholder="Max €"
-                                            className="flex-1 px-4 py-3 bg-gray-50 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
+                                            className="min-w-0 flex-1 px-4 py-3 bg-gray-50 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200"
                                         />
                                     </div>
                                 </div>
@@ -236,7 +236,7 @@ export default function PortfolioMediterraneanCoastalPage() {
                                     >
                                         <div className="grid grid-cols-1 md:grid-cols-[340px_1fr] gap-0">
                                             {/* Image */}
-                                            <div className="relative aspect-[4/3] md:aspect-auto overflow-hidden">
+                                            <div className="relative aspect-[4/3] md:aspect-auto md:h-full md:min-h-[250px] overflow-hidden">
                                                 <img
                                                     src={listing.images[0]}
                                                     alt={listing.title}

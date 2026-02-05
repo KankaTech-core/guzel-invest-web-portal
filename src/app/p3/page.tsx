@@ -211,13 +211,13 @@ export default function PortfolioFintechTrustClarityPage() {
                                         <input
                                             type="text"
                                             placeholder="Min €"
-                                            className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                                             style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                                         />
                                         <input
                                             type="text"
                                             placeholder="Max €"
-                                            className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                                             style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                                         />
                                     </div>
@@ -274,7 +274,7 @@ export default function PortfolioFintechTrustClarityPage() {
                                     >
                                         <div className="grid grid-cols-1 md:grid-cols-[300px_1fr_180px] gap-0">
                                             {/* Image */}
-                                            <div className="relative aspect-[4/3] md:aspect-auto overflow-hidden bg-gray-100">
+                                            <div className="relative aspect-[4/3] md:aspect-auto md:h-full md:min-h-[200px] overflow-hidden bg-gray-100">
                                                 <img
                                                     src={listing.images[0]}
                                                     alt={listing.title}

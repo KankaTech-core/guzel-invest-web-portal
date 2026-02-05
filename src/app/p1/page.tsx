@@ -171,13 +171,13 @@ export default function PortfolioHeritageModernMinimalPage() {
                                         <input
                                             type="text"
                                             placeholder="Min €"
-                                            className="flex-1 px-3 py-2 border border-gray-200 text-sm focus:outline-none focus:border-gray-400"
+                                            className="min-w-0 flex-1 px-3 py-2 border border-gray-200 text-sm focus:outline-none focus:border-gray-400"
                                         />
                                         <span className="text-gray-300">—</span>
                                         <input
                                             type="text"
                                             placeholder="Max €"
-                                            className="flex-1 px-3 py-2 border border-gray-200 text-sm focus:outline-none focus:border-gray-400"
+                                            className="min-w-0 flex-1 px-3 py-2 border border-gray-200 text-sm focus:outline-none focus:border-gray-400"
                                         />
                                     </div>
                                 </div>
@@ -233,7 +233,7 @@ export default function PortfolioHeritageModernMinimalPage() {
                                         className="group grid grid-cols-1 md:grid-cols-[320px_1fr_auto] gap-6 p-6 border border-gray-100 hover:border-gray-200 transition-colors"
                                     >
                                         {/* Image */}
-                                        <div className="relative aspect-[4/3] md:aspect-auto md:h-full overflow-hidden bg-gray-100">
+                                        <div className="relative aspect-[4/3] md:aspect-auto md:h-full md:min-h-[240px] overflow-hidden bg-gray-100">
                                             <img
                                                 src={listing.images[0]}
                                                 alt={listing.title}
