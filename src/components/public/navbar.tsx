@@ -32,8 +32,8 @@ export function Navbar({ locale }: { locale: string }) {
     }, []);
 
     useEffect(() => {
-        setIsOpen(false);
-    }, [pathname]);
+        if (isOpen) setIsOpen(false);
+    }, [pathname, isOpen]);
 
     return (
         <nav className="fixed top-0 w-full z-50 transition-all duration-300 bg-white shadow-sm border-b border-gray-100 py-3">

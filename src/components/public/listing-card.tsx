@@ -6,8 +6,24 @@ import { BedDouble, Bath, Square, MapPin, Star, Bookmark } from "lucide-react";
 import { formatPrice, formatArea, getMediaUrl } from "@/lib/utils";
 import { Badge, getPropertyTypeBadge } from "@/components/ui/badge";
 
+export interface Listing {
+    id: string;
+    slug: string;
+    type: string;
+    saleType: string;
+    price: number;
+    currency: string;
+    bedrooms?: number;
+    bathrooms?: number;
+    area: number;
+    district: string;
+    city: string;
+    translations?: { title?: string }[];
+    media?: { url: string }[];
+}
+
 interface ListingCardProps {
-    listing: any;
+    listing: Listing;
     locale: string;
 }
 

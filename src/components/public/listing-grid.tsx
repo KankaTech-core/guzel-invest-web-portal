@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ListingCard } from "./listing-card";
+import { ListingCard, Listing } from "./listing-card";
 import { Loader2, Search, LayoutGrid, List } from "lucide-react";
 
 interface ListingGridProps {
@@ -17,7 +17,7 @@ interface ListingGridProps {
 }
 
 export function ListingGrid({ locale, filters = {} }: ListingGridProps) {
-    const [listings, setListings] = useState<any[]>([]);
+    const [listings, setListings] = useState<Listing[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -94,8 +94,8 @@ export function ListingGrid({ locale, filters = {} }: ListingGridProps) {
                     <button
                         onClick={() => setViewMode("grid")}
                         className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${viewMode === "grid"
-                                ? "bg-orange-500 text-white"
-                                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                            ? "bg-orange-500 text-white"
+                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                             }`}
                     >
                         <LayoutGrid className="w-4 h-4" />
@@ -103,8 +103,8 @@ export function ListingGrid({ locale, filters = {} }: ListingGridProps) {
                     <button
                         onClick={() => setViewMode("list")}
                         className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${viewMode === "list"
-                                ? "bg-orange-500 text-white"
-                                : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                            ? "bg-orange-500 text-white"
+                            : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                             }`}
                     >
                         <List className="w-4 h-4" />

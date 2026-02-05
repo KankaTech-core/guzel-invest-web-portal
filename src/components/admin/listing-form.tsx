@@ -1209,7 +1209,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                             {pendingMedia.length > 0 && !formData.id && (
                                 <p className="text-xs text-gray-500">
                                     Seçtiğiniz görseller, ilanı kaydettikten sonra
-                                    yüklenir ve WebP'ye dönüştürülür.
+                                    yüklenir ve WebP&apos;ye dönüştürülür.
                                 </p>
                             )}
 

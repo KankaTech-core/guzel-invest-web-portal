@@ -30,7 +30,7 @@ export default function PhotographyLedBrightPage() {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                         <div className="absolute bottom-0 left-0 right-0 p-10 md:p-16">
                             <div className="max-w-[1440px] mx-auto">
-                                <p className="text-orange-400 text-sm mb-3 tracking-wide">Alanya'da Gayrimenkul</p>
+                                <p className="text-orange-400 text-sm mb-3 tracking-wide">Alanya&apos;da Gayrimenkul</p>
                                 <h1 className="text-4xl md:text-6xl lg:text-7xl font-semibold text-white leading-tight mb-4">
                                     Güzel Şehre<br />Güzel Projeler
                                 </h1>

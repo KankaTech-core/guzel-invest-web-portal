@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
     if (
         pathname.startsWith("/admin") ||
         pathname.startsWith("/api") ||
-        /^\/(?:10|[1-9])(\/|$)/.test(pathname)
+        /^\/(?:p)?(?:10|[1-9])(\/|$)/.test(pathname)
     ) {
         return NextResponse.next();
     }
