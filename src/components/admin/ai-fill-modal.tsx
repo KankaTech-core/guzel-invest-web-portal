@@ -11,7 +11,7 @@ export interface ParsedData {
     price?: number;
     currency?: string;
     area?: number;
-    rooms?: string;
+    rooms?: string | number;
     bedrooms?: number;
     bathrooms?: number;
     floor?: number;
@@ -23,6 +23,7 @@ export interface ParsedData {
     neighborhood?: string;
     latitude?: number;
     longitude?: number;
+    googleMapsLink?: string;
     furnished?: boolean;
     balcony?: boolean;
     garden?: boolean;
@@ -71,6 +72,7 @@ const FIELD_LABELS: Record<string, string> = {
     neighborhood: "Mahalle",
     latitude: "Enlem",
     longitude: "Boylam",
+    googleMapsLink: "Google Maps Linki",
     furnished: "Eşyalı",
     balcony: "Balkon",
     garden: "Bahçe",

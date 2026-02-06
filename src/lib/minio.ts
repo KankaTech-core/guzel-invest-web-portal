@@ -2,10 +2,21 @@ import * as Minio from "minio";
 import sharp from "sharp";
 import { randomUUID } from "crypto";
 
+const rawEndpoint = process.env.MINIO_ENDPOINT || "localhost";
+const hasProtocol = rawEndpoint.startsWith("http://") || rawEndpoint.startsWith("https://");
+const parsedEndpoint = hasProtocol ? new URL(rawEndpoint) : null;
+const endPoint = parsedEndpoint ? parsedEndpoint.hostname : rawEndpoint;
+const port = parsedEndpoint
+    ? Number(parsedEndpoint.port || (parsedEndpoint.protocol === "https:" ? "443" : "80"))
+    : Number.parseInt(process.env.MINIO_PORT || "9000", 10);
+const useSSL = parsedEndpoint
+    ? parsedEndpoint.protocol === "https:"
+    : process.env.MINIO_USE_SSL === "true";
+
 const minioClient = new Minio.Client({
-    endPoint: process.env.MINIO_ENDPOINT || "localhost",
-    port: parseInt(process.env.MINIO_PORT || "9000"),
-    useSSL: process.env.MINIO_USE_SSL === "true",
+    endPoint,
+    port,
+    useSSL,
     accessKey: process.env.MINIO_ACCESS_KEY || "minioadmin",
     secretKey: process.env.MINIO_SECRET_KEY || "minioadmin",
 });

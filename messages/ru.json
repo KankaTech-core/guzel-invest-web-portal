@@ -1,0 +1,325 @@
+{
+    "common": {
+        "loading": "Loading...",
+        "error": "An error occurred",
+        "save": "Save",
+        "cancel": "Cancel",
+        "delete": "Delete",
+        "edit": "Edit",
+        "create": "Create",
+        "search": "Search",
+        "filter": "Filter",
+        "sortBy": "Sort by",
+        "noResults": "No results found",
+        "seeAll": "See All",
+        "learnMore": "Learn More",
+        "contactUs": "Contact Us",
+        "whatsapp": "WhatsApp",
+        "call": "Call",
+        "share": "Share",
+        "back": "Back"
+    },
+    "nav": {
+        "home": "Home",
+        "portfolio": "Portfolio",
+        "map": "Map",
+        "about": "About Us",
+        "contact": "Contact"
+    },
+    "hero": {
+        "title": "Beautiful Projects for a Beautiful City",
+        "subtitle": "Trusted real estate advisory in Alanya since 2001",
+        "cta": "Explore Portfolio"
+    },
+    "listings": {
+        "forSale": "For Sale",
+        "forRent": "For Rent",
+        "featured": "Featured Listings",
+        "allListings": "All Listings",
+        "price": "Price",
+        "area": "Area",
+        "rooms": "Rooms",
+        "bedrooms": "Bedrooms",
+        "bathrooms": "Bathrooms",
+        "floor": "Floor",
+        "year": "Year Built",
+        "features": "Features",
+        "description": "Description",
+        "location": "Location",
+        "similarListings": "Similar Listings",
+        "requestInfo": "Request Info",
+        "scheduleVisit": "Schedule Visit"
+    },
+    "propertyTypes": {
+        "apartment": "Apartment",
+        "villa": "Villa",
+        "penthouse": "Penthouse",
+        "land": "Land",
+        "commercial": "Commercial",
+        "office": "Office",
+        "shop": "Shop",
+        "farm": "Farm"
+    },
+    "categories": {
+        "residentialProjects": "Residential Projects",
+        "villasForSale": "Villas for Sale",
+        "apartmentsForSale": "Apartments for Sale",
+        "landForSale": "Land for Sale",
+        "commercialProperties": "Commercial Properties",
+        "citizenshipEligible": "Citizenship Eligible"
+    },
+    "contact": {
+        "title": "Contact",
+        "name": "Your Name",
+        "email": "Email",
+        "phone": "Phone",
+        "message": "Your Message",
+        "send": "Send",
+        "success": "Your message has been sent. We will get back to you shortly.",
+        "addressTitle": "Our Address",
+        "phoneTitle": "Phone",
+        "emailTitle": "Email",
+        "socialMedia": "Social Media"
+    },
+    "about": {
+        "title": "About Us",
+        "story": "Our Story",
+        "mission": "Our Mission",
+        "values": "Our Values",
+        "team": "Our Team",
+        "since": "Since 2001"
+    },
+    "filters": {
+        "priceRange": "Price Range",
+        "areaRange": "Area Range",
+        "minPrice": "Min Price",
+        "maxPrice": "Max Price",
+        "minArea": "Min Area",
+        "maxArea": "Max Area",
+        "propertyType": "Property Type",
+        "city": "City",
+        "district": "District",
+        "clearFilters": "Clear Filters",
+        "apply": "Apply"
+    },
+    "uxGuide": {
+        "title": "UX Guide",
+        "subtitle": "Design system overview",
+        "description": "Comprehensive design system documentation following atomic design principles. Single source of truth for UI development.",
+        "note": "Internal reference: keep this page in sync with globals.css and UI components.",
+        "sections": {
+            "colors": "Colors",
+            "typography": "Typography",
+            "tokens": "Design Tokens",
+            "components": "Components",
+            "forms": "Form Elements",
+            "fontFamily": "Font Family",
+            "typographyScale": "Typography Scale",
+            "listingCard": "Listing Card",
+            "atomicDesign": "Atomic Design",
+            "layout": "Layout & Grid",
+            "icons": "Icons",
+            "animations": "Animations"
+        },
+        "colors": {
+            "primary": "Primary (Orange)",
+            "neutral": "Neutrals",
+            "status": "Status & Accents"
+        },
+        "colorsHint": "Use orange as the primary brand hue with clean neutrals for structure.",
+        "fontFamily": {
+            "title": "Outfit",
+            "description": "Modern geometric sans-serif font with clean lines. Perfect for real estate UI.",
+            "source": "Source: Google Fonts",
+            "weights": {
+                "regular": "Regular 400",
+                "regularUsage": "Body text, descriptions",
+                "medium": "Medium 500",
+                "mediumUsage": "Labels, navigation",
+                "semibold": "SemiBold 600",
+                "semiboldUsage": "Subtitles, emphasis",
+                "bold": "Bold 700",
+                "boldUsage": "Headings, titles"
+            },
+            "specimen": "Aa Bb Cc Dd Ee Ff Gg Hh Ii Jj Kk Ll Mm Nn Oo Pp Qq Rr Ss Tt Uu Vv Ww Xx Yy Zz",
+            "numbers": "0 1 2 3 4 5 6 7 8 9"
+        },
+        "typographyScale": {
+            "description": "Consistent typography scale for hierarchical content organization.",
+            "sizes": {
+                "xs": "13px - Captions, metadata",
+                "sm": "15px - Helper text, labels",
+                "base": "17px - Body text",
+                "lg": "18px - Large body",
+                "xl": "20px - Section titles",
+                "2xl": "24px - Card headings",
+                "3xl": "30px - Page headings",
+                "4xl": "36px - Hero titles",
+                "5xl": "48px - Display",
+                "6xl": "60px - Large display"
+            }
+        },
+        "listingCard": {
+            "title": "Property Listing Card",
+            "description": "Main component for displaying property listings in grid and list views.",
+            "structure": {
+                "image": "4:3 aspect ratio with gradient overlay",
+                "badge": "Property type badge (Villa, Apartment, etc.)",
+                "bookmark": "Save/favorite action button",
+                "title": "Property title with location",
+                "price": "Price with optional rental suffix",
+                "rating": "Star rating display",
+                "details": "Bedrooms, bathrooms, area icons"
+            },
+            "variants": {
+                "sale": "For Sale",
+                "rent": "For Rent"
+            }
+        },
+        "atomicDesign": {
+            "title": "Component Hierarchy",
+            "description": "Our UI follows atomic design methodology for consistent, scalable components.",
+            "atoms": {
+                "title": "Atoms",
+                "description": "Basic building blocks: buttons, badges, inputs, checkboxes"
+            },
+            "molecules": {
+                "title": "Molecules",
+                "description": "Simple component groups: cards, sliders, filter sections"
+            },
+            "organisms": {
+                "title": "Organisms",
+                "description": "Complex UI sections: listing cards, filter panels, navbar, footer"
+            },
+            "templates": {
+                "title": "Templates",
+                "description": "Page layouts: portfolio, listing detail, contact"
+            }
+        },
+        "layout": {
+            "title": "Layout System",
+            "container": "Max width: 1280px with responsive padding",
+            "grid": "Responsive grid: 1 → 2 → 3 → 4 columns",
+            "breakpoints": {
+                "sm": "640px",
+                "md": "768px",
+                "lg": "1024px",
+                "xl": "1280px"
+            }
+        },
+        "icons": {
+            "title": "Lucide React Icons",
+            "description": "Consistent icon library with customizable size and color.",
+            "usage": "Import from lucide-react, use className for styling",
+            "common": "Building2, MapPin, BedDouble, Bath, Square, Star, Bookmark, Search, Menu"
+        },
+        "animations": {
+            "title": "Motion Patterns",
+            "description": "Subtle animations for enhanced user experience.",
+            "types": {
+                "fadeIn": "Opacity fade (0.3s)",
+                "slideUp": "Slide up entrance (0.4s)",
+                "pulse": "Attention pulse (2s infinite)",
+                "hover": "Scale and shadow on hover"
+            }
+        },
+        "typography": {
+            "display": "Display heading",
+            "headline": "Section headline",
+            "title": "Card title",
+            "body": "Body text",
+            "bodyText": "Readable body copy for descriptions, paragraphs, and listing details.",
+            "muted": "Muted helper text",
+            "mutedText": "Muted helper text for secondary information.",
+            "caption": "Caption text",
+            "captionText": "Small captions for metadata and labels."
+        },
+        "components": {
+            "buttons": "Buttons",
+            "badges": "Badges",
+            "cards": "Cards"
+        },
+        "forms": {
+            "title": "Inputs & selections",
+            "hint": "Focus states use the brand orange for clarity.",
+            "nameLabel": "Full name",
+            "emailLabel": "Email",
+            "messageLabel": "Message",
+            "namePlaceholder": "Jane Doe",
+            "emailPlaceholder": "name@example.com",
+            "messagePlaceholder": "Type your message..."
+        },
+        "tokens": {
+            "radius": "Border radius",
+            "shadows": "Shadows",
+            "spacing": "Spacing"
+        },
+        "labels": {
+            "primary": "Primary",
+            "secondary": "Secondary",
+            "outline": "Outline",
+            "ghost": "Ghost",
+            "disabled": "Disabled",
+            "loading": "Loading"
+        },
+        "examples": {
+            "cardTitle": "Sample Card",
+            "cardText": "Use cards for property highlights, stats, or key features.",
+            "cardCta": "Learn more",
+            "badgeNew": "New",
+            "badgeFeatured": "Featured",
+            "sliderLabel": "Range",
+            "checkboxUpdates": "Send me updates",
+            "checkboxTerms": "I agree to the terms"
+        }
+    },
+    "normalized21st": {
+        "title": "Normalized 21st Components",
+        "subtitle": "Integration staging",
+        "description": "Preview and validate 21st.dev components after normalization to the Güzel Invest design system.",
+        "note": "Internal review only. Components must be normalized before production use.",
+        "sections": {
+            "status": "Status",
+            "queue": "Component Queue",
+            "preview": "Preview",
+            "guidelines": "Normalization Checklist"
+        },
+        "status": {
+            "normalized": "Normalized",
+            "pending": "Pending Review",
+            "blocked": "Blocked",
+            "normalizedDesc": "Matches light theme, orange palette, and typography.",
+            "pendingDesc": "Waiting for design/UX approval.",
+            "blockedDesc": "Conflicts with globals or performance."
+        },
+        "queue": {
+            "emptyTitle": "No components queued",
+            "emptyDescription": "Add a 21st component via the import rule to see it here."
+        },
+        "preview": {
+            "title": "Preview Surface",
+            "description": "Use this area to render the real component with sample data."
+        },
+        "guidelines": {
+            "item1": "No dark mode classes; light theme only.",
+            "item2": "Replace non-brand colors with the orange palette.",
+            "item3": "Avoid global CSS and keep styles scoped.",
+            "item4": "Export from the components/ui index."
+        },
+        "actions": {
+            "openUxGuide": "Open UX Guide",
+            "addComponent": "Add Component"
+        }
+    },
+    "footer": {
+        "slogan": "Beautiful projects for a beautiful city",
+        "quickLinks": "Quick Links",
+        "contactInfo": "Contact Info",
+        "followUs": "Follow Us",
+        "copyright": "© 2024 Güzel Invest. All rights reserved."
+    },
+    "meta": {
+        "title": "Güzel Invest | Alanya Real Estate",
+        "description": "Villas, apartments and land for sale in Alanya. Trusted real estate advisory since 2001."
+    }
+}

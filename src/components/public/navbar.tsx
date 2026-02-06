@@ -98,7 +98,7 @@ export function Navbar({ locale }: { locale: string }) {
                             <option value="tr">TR</option>
                             <option value="en">EN</option>
                             <option value="de">DE</option>
-                            <option value="ar">AR</option>
+                            <option value="ru">RU</option>
                         </select>
                     </div>
                 </div>
@@ -147,7 +147,7 @@ export function Navbar({ locale }: { locale: string }) {
                     <div className="mt-6 pt-6 border-t border-gray-100">
                         <p className="text-sm text-gray-400 mb-3">Dil Seçimi</p>
                         <div className="flex gap-2">
-                            {["tr", "en", "de", "ar"].map((lang) => (
+                            {["tr", "en", "de", "ru"].map((lang) => (
                                 <button
                                     key={lang}
                                     className={cn(

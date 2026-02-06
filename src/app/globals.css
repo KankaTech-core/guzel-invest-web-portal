@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 @source "../**/*.{ts,tsx,js,jsx}";
 
 /* ============================================
@@ -228,6 +229,45 @@ body {
 }
 
 /* ============================================
+   MAP STYLES
+   ============================================ */
+
+.listing-marker-wrapper {
+  background: transparent;
+  border: none;
+  transform: translate(-50%, -100%);
+}
+
+.listing-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.listing-marker__label {
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+  background: var(--marker-bg);
+  color: var(--marker-text);
+}
+
+.listing-marker.is-active .listing-marker__label {
+  box-shadow: 0 0 0 2px var(--marker-ring), 0 8px 16px rgba(15, 23, 42, 0.2);
+}
+
+.listing-marker__pointer {
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 10px solid var(--marker-bg);
+  margin-top: -1px;
+}
+
+/* ============================================
    INPUT STYLES
    ============================================ */
 
@@ -240,6 +280,18 @@ body {
   background: white;
   color: #111827;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+select.input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M6 8l4 4 4-4' stroke='%236b7280' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 14px;
+  padding-right: 2.6rem;
+  cursor: pointer;
 }
 
 .input::placeholder {

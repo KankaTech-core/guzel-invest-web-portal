@@ -8,3 +8,4 @@ export { Input } from "./input";
 export { Checkbox } from "./checkbox";
 export { FilterSection, FilterPanel } from "./filter";
 export { RangeSlider } from "./range-slider";
+export { Select } from "./select";

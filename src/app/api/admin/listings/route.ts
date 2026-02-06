@@ -3,8 +3,6 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateListingSlug } from "@/lib/utils";
 import { PropertyType, ListingStatus } from "@/generated/prisma";
-
-// POST /api/admin/listings - Create new listing
 export async function POST(request: NextRequest) {
     try {
         const session = await getSession();
@@ -40,6 +38,8 @@ export async function POST(request: NextRequest) {
         // Generate unique slug
         const slug = generateListingSlug(title, body.city, body.type);
 
+        console.log("Creating listing with body:", JSON.stringify(body, null, 2));
+
         // Create listing with translations
         const listing = await prisma.listing.create({
             data: {
@@ -51,17 +51,18 @@ export async function POST(request: NextRequest) {
                 district: body.district,
                 neighborhood: body.neighborhood || null,
                 address: body.address || null,
-                latitude: body.latitude || null,
-                longitude: body.longitude || null,
-                price: body.price,
+                googleMapsLink: body.googleMapsLink || null,
+                latitude: body.latitude !== null && body.latitude !== undefined ? Number(body.latitude) : null,
+                longitude: body.longitude !== null && body.longitude !== undefined ? Number(body.longitude) : null,
+                price: body.price.toString(), // Convert to string for Decimal field
                 currency: body.currency || "EUR",
-                area: body.area,
-                rooms: body.rooms || null,
-                bedrooms: body.bedrooms || null,
-                bathrooms: body.bathrooms || null,
-                floor: body.floor || null,
-                totalFloors: body.totalFloors || null,
-                buildYear: body.buildYear || null,
+                area: Number(body.area),
+                rooms: body.rooms !== null && body.rooms !== undefined ? body.rooms.toString() : null,
+                bedrooms: body.bedrooms !== null && body.bedrooms !== undefined ? Number(body.bedrooms) : null,
+                bathrooms: body.bathrooms !== null && body.bathrooms !== undefined ? Number(body.bathrooms) : null,
+                floor: body.floor !== null && body.floor !== undefined ? Number(body.floor) : null,
+                totalFloors: body.totalFloors !== null && body.totalFloors !== undefined ? Number(body.totalFloors) : null,
+                buildYear: body.buildYear !== null && body.buildYear !== undefined ? Number(body.buildYear) : null,
                 heating: body.heating || null,
                 furnished: body.furnished || false,
                 balcony: body.balcony || false,
@@ -73,11 +74,11 @@ export async function POST(request: NextRequest) {
                 seaView: body.seaView || false,
                 // Land-specific
                 parcelNo: body.parcelNo || null,
-                emsal: body.emsal || null,
+                emsal: body.emsal !== null && body.emsal !== undefined ? body.emsal.toString() : null,
                 zoningStatus: body.zoningStatus || null,
                 // Commercial-specific
-                groundFloorArea: body.groundFloorArea || null,
-                basementArea: body.basementArea || null,
+                groundFloorArea: body.groundFloorArea !== null && body.groundFloorArea !== undefined ? Number(body.groundFloorArea) : null,
+                basementArea: body.basementArea !== null && body.basementArea !== undefined ? Number(body.basementArea) : null,
                 // Farm-specific
                 hasWaterSource: body.hasWaterSource || false,
                 hasFruitTrees: body.hasFruitTrees || false,
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
                             features: t.features || [],
                         })),
                 },
-                tags: body.tags ? {
+                tags: body.tags && body.tags.length > 0 ? {
                     create: body.tags.map((tag: { id: string }) => ({
                         tagId: tag.id
                     }))
@@ -113,10 +114,10 @@ export async function POST(request: NextRequest) {
         });
 
         return NextResponse.json(listing, { status: 201 });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error creating listing:", error);
         return NextResponse.json(
-            { error: "Failed to create listing" },
+            { error: "Failed to create listing", details: error.message },
             { status: 500 }
         );
     }

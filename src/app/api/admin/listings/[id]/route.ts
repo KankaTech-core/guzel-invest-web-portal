@@ -37,47 +37,48 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         const listing = await prisma.listing.update({
             where: { id },
             data: {
-                status: body.status,
-                type: body.type,
-                saleType: body.saleType,
-                city: body.city,
-                district: body.district,
-                neighborhood: body.neighborhood || null,
-                address: body.address || null,
-                latitude: body.latitude || null,
-                longitude: body.longitude || null,
-                price: body.price,
-                currency: body.currency || "EUR",
-                area: body.area,
-                rooms: body.rooms || null,
-                bedrooms: body.bedrooms || null,
-                bathrooms: body.bathrooms || null,
-                floor: body.floor || null,
-                totalFloors: body.totalFloors || null,
-                buildYear: body.buildYear || null,
-                heating: body.heating || null,
-                furnished: body.furnished ?? false,
-                balcony: body.balcony ?? false,
-                garden: body.garden ?? false,
-                pool: body.pool ?? false,
-                parking: body.parking ?? false,
-                elevator: body.elevator ?? false,
-                security: body.security ?? false,
-                seaView: body.seaView ?? false,
+                status: body.status ?? existing.status,
+                type: body.type ?? existing.type,
+                saleType: body.saleType ?? existing.saleType,
+                city: body.city ?? existing.city,
+                district: body.district ?? existing.district,
+                neighborhood: body.neighborhood !== undefined ? body.neighborhood : existing.neighborhood,
+                address: body.address !== undefined ? body.address : existing.address,
+                googleMapsLink: body.googleMapsLink !== undefined ? body.googleMapsLink : existing.googleMapsLink,
+                latitude: body.latitude !== undefined ? body.latitude : existing.latitude,
+                longitude: body.longitude !== undefined ? body.longitude : existing.longitude,
+                price: body.price !== undefined ? body.price.toString() : existing.price,
+                currency: body.currency ?? existing.currency,
+                area: body.area !== undefined ? Number(body.area) : existing.area,
+                rooms: body.rooms !== undefined ? (body.rooms !== null ? body.rooms.toString() : null) : existing.rooms,
+                bedrooms: body.bedrooms !== undefined ? (body.bedrooms !== null ? Number(body.bedrooms) : null) : existing.bedrooms,
+                bathrooms: body.bathrooms !== undefined ? (body.bathrooms !== null ? Number(body.bathrooms) : null) : existing.bathrooms,
+                floor: body.floor !== undefined ? (body.floor !== null ? Number(body.floor) : null) : existing.floor,
+                totalFloors: body.totalFloors !== undefined ? (body.totalFloors !== null ? Number(body.totalFloors) : null) : existing.totalFloors,
+                buildYear: body.buildYear !== undefined ? (body.buildYear !== null ? Number(body.buildYear) : null) : existing.buildYear,
+                heating: body.heating !== undefined ? body.heating : existing.heating,
+                furnished: body.furnished ?? existing.furnished,
+                balcony: body.balcony ?? existing.balcony,
+                garden: body.garden ?? existing.garden,
+                pool: body.pool ?? existing.pool,
+                parking: body.parking ?? existing.parking,
+                elevator: body.elevator ?? existing.elevator,
+                security: body.security ?? existing.security,
+                seaView: body.seaView ?? existing.seaView,
                 // Land-specific
-                parcelNo: body.parcelNo || null,
-                emsal: body.emsal || null,
-                zoningStatus: body.zoningStatus || null,
+                parcelNo: body.parcelNo !== undefined ? body.parcelNo : existing.parcelNo,
+                emsal: body.emsal !== undefined ? (body.emsal !== null ? Number(body.emsal) : null) : existing.emsal,
+                zoningStatus: body.zoningStatus !== undefined ? body.zoningStatus : existing.zoningStatus,
                 // Commercial-specific
-                groundFloorArea: body.groundFloorArea || null,
-                basementArea: body.basementArea || null,
+                groundFloorArea: body.groundFloorArea !== undefined ? (body.groundFloorArea !== null ? Number(body.groundFloorArea) : null) : existing.groundFloorArea,
+                basementArea: body.basementArea !== undefined ? (body.basementArea !== null ? Number(body.basementArea) : null) : existing.basementArea,
                 // Farm-specific
-                hasWaterSource: body.hasWaterSource || false,
-                hasFruitTrees: body.hasFruitTrees || false,
-                existingStructure: body.existingStructure || null,
+                hasWaterSource: body.hasWaterSource ?? existing.hasWaterSource,
+                hasFruitTrees: body.hasFruitTrees ?? existing.hasFruitTrees,
+                existingStructure: body.existingStructure !== undefined ? body.existingStructure : existing.existingStructure,
                 // Eligibility
-                citizenshipEligible: body.citizenshipEligible || false,
-                residenceEligible: body.residenceEligible || false,
+                citizenshipEligible: body.citizenshipEligible ?? existing.citizenshipEligible,
+                residenceEligible: body.residenceEligible ?? existing.residenceEligible,
                 publishedAt:
                     body.status === "PUBLISHED" && existing.status !== "PUBLISHED"
                         ? new Date()
@@ -126,6 +127,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                         title: translation.title,
                         description: translation.description || "",
                         features: translation.features || [],
+                    },
+                });
+            }
+        }
+
+        // Update media order and cover status
+        if (body.media) {
+            for (const item of body.media) {
+                await prisma.media.update({
+                    where: { id: item.id },
+                    data: {
+                        order: item.order,
+                        isCover: item.isCover,
                     },
                 });
             }

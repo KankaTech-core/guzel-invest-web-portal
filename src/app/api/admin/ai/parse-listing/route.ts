@@ -30,6 +30,7 @@ interface ParsedListingData {
     neighborhood?: string;
     latitude?: number;
     longitude?: number;
+    googleMapsLink?: string;
 
     // Features
     furnished?: boolean;
@@ -86,6 +87,7 @@ const SYSTEM_PROMPT = `Sen bir gayrimenkul ilan analiz asistanısın. Sana veril
   "neighborhood": "Kestel",
   "latitude": 36.5531,
   "longitude": 32.0584,
+  "googleMapsLink": "https://www.google.com/maps?q=36.5531,32.0584",
   "furnished": true/false,
   "balcony": true/false,
   "garden": true/false,
@@ -125,7 +127,134 @@ Kurallar:
    - "ofis" -> OFFICE
    - "ticari" -> COMMERCIAL
 9. Location bilgilerini çıkar (Alanya, Kestel, Mahmutlar, Kargıcak vb.)
-10. Sadece JSON döndür, başka metin ekleme.`;
+10. Eğer metinde Google Maps linki varsa googleMapsLink alanına ekle
+11. Sadece JSON döndür, başka metin ekleme.`;
+
+const GOOGLE_MAPS_HOSTS = ["maps.app.goo.gl", "goo.gl"];
+
+const isLikelyGoogleMapsUrl = (url: URL): boolean => {
+    const host = url.hostname.toLowerCase();
+    if (GOOGLE_MAPS_HOSTS.some((shortHost) => host === shortHost || host.endsWith(`.${shortHost}`))) {
+        return true;
+    }
+    if (!host.includes("google.")) return false;
+    return host.startsWith("maps.") || url.pathname.startsWith("/maps");
+};
+
+const trimTrailingPunctuation = (value: string): string =>
+    value.replace(/[\]\)\},.;]+$/g, "");
+
+const normalizeGoogleMapsLink = (value: unknown): string | null => {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const cleaned = trimTrailingPunctuation(trimmed);
+    try {
+        const url = new URL(cleaned);
+        return isLikelyGoogleMapsUrl(url) ? cleaned : null;
+    } catch {
+        return null;
+    }
+};
+
+const extractGoogleMapsLink = (text: string): string | null => {
+    const matches = text.match(/https?:\/\/\S+/gi);
+    if (!matches) return null;
+
+    for (const raw of matches) {
+        const cleaned = trimTrailingPunctuation(raw);
+        try {
+            const url = new URL(cleaned);
+            if (isLikelyGoogleMapsUrl(url)) {
+                return cleaned;
+            }
+        } catch {
+            continue;
+        }
+    }
+
+    return null;
+};
+
+const parseLatLngFromText = (value: string | null | undefined):
+    | { latitude: number; longitude: number }
+    | null => {
+    if (!value) return null;
+    const match = value.match(/(-?\d{1,2}(?:\.\d+)?)[,\s]+(-?\d{1,3}(?:\.\d+)?)/);
+    if (!match) return null;
+    const latitude = Number(match[1]);
+    const longitude = Number(match[2]);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+    if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return null;
+    return { latitude, longitude };
+};
+
+const extractCoordinatesFromUrl = (value: string):
+    | { latitude: number; longitude: number }
+    | null => {
+    try {
+        const url = new URL(value);
+        const candidates = [
+            url.searchParams.get("q"),
+            url.searchParams.get("query"),
+            url.searchParams.get("ll"),
+            url.searchParams.get("center"),
+        ];
+        for (const candidate of candidates) {
+            const parsed = parseLatLngFromText(candidate);
+            if (parsed) return parsed;
+        }
+
+        const atMatch = url.pathname.match(/@(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)/);
+        if (atMatch) {
+            const parsed = parseLatLngFromText(`${atMatch[1]},${atMatch[2]}`);
+            if (parsed) return parsed;
+        }
+
+        const bangMatch = url.pathname.match(/!3d(-?\d{1,2}(?:\.\d+)?)!4d(-?\d{1,3}(?:\.\d+)?)/);
+        if (bangMatch) {
+            const parsed = parseLatLngFromText(`${bangMatch[1]},${bangMatch[2]}`);
+            if (parsed) return parsed;
+        }
+
+        const reverseBangMatch = url.pathname.match(/!4d(-?\d{1,3}(?:\.\d+)?)!3d(-?\d{1,2}(?:\.\d+)?)/);
+        if (reverseBangMatch) {
+            const parsed = parseLatLngFromText(`${reverseBangMatch[2]},${reverseBangMatch[1]}`);
+            if (parsed) return parsed;
+        }
+    } catch {
+        return null;
+    }
+
+    return null;
+};
+
+const expandGoogleMapsShortLink = async (value: string): Promise<string> => {
+    try {
+        const url = new URL(value);
+        const host = url.hostname.toLowerCase();
+        const isShort = GOOGLE_MAPS_HOSTS.some(
+            (shortHost) => host === shortHost || host.endsWith(`.${shortHost}`)
+        );
+        if (!isShort) return value;
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        try {
+            const response = await fetch(value, {
+                redirect: "follow",
+                signal: controller.signal,
+            });
+            if (response?.url) return response.url;
+        } finally {
+            clearTimeout(timeout);
+        }
+    } catch {
+        return value;
+    }
+
+    return value;
+};
 
 export async function POST(req: NextRequest) {
     try {
@@ -175,6 +304,26 @@ export async function POST(req: NextRequest) {
                 { error: "Failed to parse AI response" },
                 { status: 500 }
             );
+        }
+
+        const aiMapsLink = normalizeGoogleMapsLink(parsedData.googleMapsLink);
+        const extractedMapsLink = extractGoogleMapsLink(text);
+        let resolvedMapsLink = aiMapsLink || extractedMapsLink;
+
+        if (resolvedMapsLink) {
+            resolvedMapsLink = await expandGoogleMapsShortLink(resolvedMapsLink);
+            parsedData.googleMapsLink = resolvedMapsLink;
+
+            const needsLatitude = parsedData.latitude === undefined || parsedData.latitude === null;
+            const needsLongitude =
+                parsedData.longitude === undefined || parsedData.longitude === null;
+            if (needsLatitude || needsLongitude) {
+                const coordsFromUrl = extractCoordinatesFromUrl(resolvedMapsLink);
+                if (coordsFromUrl) {
+                    if (needsLatitude) parsedData.latitude = coordsFromUrl.latitude;
+                    if (needsLongitude) parsedData.longitude = coordsFromUrl.longitude;
+                }
+            }
         }
 
         return NextResponse.json({

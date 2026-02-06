@@ -90,7 +90,9 @@ export async function POST(request: NextRequest) {
                     ? "Yayında"
                     : listing.status === "DRAFT"
                         ? "Taslak"
-                        : "Arşiv";
+                        : listing.status === "REMOVED"
+                            ? "Kaldırıldı"
+                            : "Arşiv";
             const typeLabels: Record<string, string> = {
                 APARTMENT: "Daire",
                 VILLA: "Villa",

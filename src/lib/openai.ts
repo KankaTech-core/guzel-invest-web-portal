@@ -128,12 +128,12 @@ Only return the JSON object, no other text.`,
 
 export async function translateText(
     text: string,
-    targetLocale: "en" | "de" | "ar"
+    targetLocale: "en" | "de" | "ru"
 ): Promise<string> {
     const languageNames: Record<string, string> = {
         en: "English",
         de: "German",
-        ar: "Arabic",
+        ru: "Russian",
     };
 
     const response = await openai.chat.completions.create({
@@ -143,7 +143,6 @@ export async function translateText(
                 role: "system",
                 content: `You are a professional real estate translator. Translate the following Turkish text to ${languageNames[targetLocale]}.
 Maintain the professional tone suitable for real estate listings.
-${targetLocale === "ar" ? "Use Modern Standard Arabic." : ""}
 Only return the translated text, no other explanation.`,
             },
             {

@@ -56,11 +56,12 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         setAreaRange([0, 500]);
     };
 
-    const formatPrice = (value: number) => {
+    const formatPriceLabel = (value: number) => {
+        const sign = "€"; // Base currency for filters is EUR
         if (value >= 1000000) {
-            return `€${(value / 1000000).toFixed(1)}M`;
+            return `${sign}${(value / 1000000).toFixed(1)}M`;
         }
-        return `€${(value / 1000).toFixed(0)}K`;
+        return `${sign}${(value / 1000).toFixed(0)}K`;
     };
 
     const formatArea = (value: number) => `${value} m²`;
@@ -106,13 +107,13 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         step={50000}
                         value={priceRange}
                         onChange={setPriceRange}
-                        formatLabel={formatPrice}
+                        formatLabel={formatPriceLabel}
                     />
                     <div className="flex gap-2 mt-4">
                         {[
-                            { label: "< €100K", value: [0, 100000] as [number, number] },
-                            { label: "€100K - €500K", value: [100000, 500000] as [number, number] },
-                            { label: "> €500K", value: [500000, 2000000] as [number, number] },
+                            { label: "< 100K €", value: [0, 100000] as [number, number] },
+                            { label: "100K € - 500K €", value: [100000, 500000] as [number, number] },
+                            { label: "> 500K €", value: [500000, 2000000] as [number, number] },
                         ].map((preset) => (
                             <button
                                 key={preset.label}

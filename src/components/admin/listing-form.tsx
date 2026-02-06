@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import {
     Save,
     Send,
     Archive,
+    CircleOff,
+    Trash2,
     ArrowLeft,
     Building2,
     MapPin,
@@ -16,14 +19,40 @@ import {
     Tag,
     Upload,
     CloudUpload,
+    X,
+    GripVertical,
+    ExternalLink,
 } from "lucide-react";
 import {
-    formatPrice,
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+    DragStartEvent,
+    DragOverlay,
+    defaultDropAnimationSideEffects,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+    rectSortingStrategy,
+    useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
     getMediaUrl,
     cn,
 } from "@/lib/utils";
+import { Select } from "@/components/ui";
 import { TagInput } from "./tag-input";
 import { AiFillModal, ParsedData } from "./ai-fill-modal";
+import { ConfirmModal } from "./confirm-modal";
+import { UnsavedChangesModal } from "./unsaved-changes-modal";
 
 interface ListingTranslation {
     id?: string;
@@ -53,22 +82,25 @@ interface TagData {
     color: string;
 }
 
+type ListingStatusValue = "DRAFT" | "PUBLISHED" | "ARCHIVED" | "REMOVED";
+
 interface ListingData {
     id?: string;
     slug?: string;
-    status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+    status: ListingStatusValue;
     type: string;
     saleType: string;
     city: string;
     district: string;
     neighborhood: string | null;
     address: string | null;
+    googleMapsLink: string | null;
     latitude: number | null;
     longitude: number | null;
     price: number;
     currency: string;
     area: number;
-    rooms: number | null;
+    rooms: string | null;
     bedrooms: number | null;
     bathrooms: number | null;
     floor: number | null;
@@ -108,6 +140,13 @@ interface ListingFormProps {
     isNew?: boolean;
 }
 
+const CURRENCY_OPTIONS = [
+    { value: "EUR", label: "€" },
+    { value: "USD", label: "$" },
+    { value: "TRY", label: "₺" },
+    { value: "GBP", label: "£" },
+];
+
 const PROPERTY_TYPES = [
     { value: "APARTMENT", label: "Daire" },
     { value: "VILLA", label: "Villa" },
@@ -128,17 +167,261 @@ const LOCALES = [
     { code: "tr", label: "Türkçe", flag: "🇹🇷" },
     { code: "en", label: "English", flag: "🇬🇧" },
     { code: "de", label: "Deutsch", flag: "🇩🇪" },
-    { code: "ar", label: "العربية", flag: "🇸🇦" },
-];
+    { code: "ru", label: "Русский", flag: "🇷🇺" },
+] as const;
+
+type LocaleCode = (typeof LOCALES)[number]["code"];
+
+const FIELD_LABELS: Record<
+    "title" | "description" | "propertyType" | "saleType" | "heating" | "features" | "tags",
+    Record<LocaleCode, string>
+> = {
+    title: { tr: "Başlık", en: "Title", de: "Titel", ru: "Заголовок" },
+    description: { tr: "Açıklama", en: "Description", de: "Beschreibung", ru: "Описание" },
+    propertyType: { tr: "Mülk Tipi", en: "Property Type", de: "Objekttyp", ru: "Тип недвижимости" },
+    saleType: { tr: "Satış Tipi", en: "Sale Type", de: "Verkaufsart", ru: "Тип сделки" },
+    heating: { tr: "Isıtma", en: "Heating", de: "Heizung", ru: "Отопление" },
+    features: { tr: "Özellikler", en: "Features", de: "Ausstattung", ru: "Особенности" },
+    tags: { tr: "Etiketler", en: "Tags", de: "Tags", ru: "Теги" },
+};
+
+const PROPERTY_TYPE_LABELS: Record<string, Record<LocaleCode, string>> = {
+    APARTMENT: { tr: "Daire", en: "Apartment", de: "Wohnung", ru: "Квартира" },
+    VILLA: { tr: "Villa", en: "Villa", de: "Villa", ru: "Вилла" },
+    PENTHOUSE: { tr: "Penthouse", en: "Penthouse", de: "Penthouse", ru: "Пентхаус" },
+    LAND: { tr: "Arsa", en: "Land", de: "Grundstück", ru: "Участок" },
+    COMMERCIAL: { tr: "Ticari", en: "Commercial", de: "Gewerbe", ru: "Коммерческая" },
+    OFFICE: { tr: "Ofis", en: "Office", de: "Büro", ru: "Офис" },
+    SHOP: { tr: "Dükkan", en: "Shop", de: "Laden", ru: "Магазин" },
+    FARM: { tr: "Çiftlik", en: "Farm", de: "Bauernhof", ru: "Ферма" },
+};
+
+const SALE_TYPE_LABELS: Record<string, Record<LocaleCode, string>> = {
+    SALE: { tr: "Satılık", en: "For Sale", de: "Zum Verkauf", ru: "Продажа" },
+    RENT: { tr: "Kiralık", en: "For Rent", de: "Zur Miete", ru: "Аренда" },
+};
+
+const HEATING_LABELS: Record<string, Record<LocaleCode, string>> = {
+    central: { tr: "Merkezi", en: "Central Heating", de: "Zentralheizung", ru: "Центральное отопление" },
+    individual: { tr: "Bireysel", en: "Individual Heating", de: "Individuelle Heizung", ru: "Индивидуальное отопление" },
+    floor: { tr: "Yerden Isıtma", en: "Underfloor Heating", de: "Fußbodenheizung", ru: "Теплый пол" },
+    ac: { tr: "Klima", en: "Air Conditioning", de: "Klimaanlage", ru: "Кондиционер" },
+    none: { tr: "Yok", en: "None", de: "Keine", ru: "Нет" },
+};
+
+const FEATURE_LABELS: Record<string, Record<LocaleCode, string>> = {
+    furnished: { tr: "Eşyalı", en: "Furnished", de: "Möbliert", ru: "Меблировано" },
+    balcony: { tr: "Balkon", en: "Balcony", de: "Balkon", ru: "Балкон" },
+    garden: { tr: "Bahçe", en: "Garden", de: "Garten", ru: "Сад" },
+    pool: { tr: "Havuz", en: "Pool", de: "Pool", ru: "Бассейн" },
+    parking: { tr: "Otopark", en: "Parking", de: "Parkplatz", ru: "Парковка" },
+    elevator: { tr: "Asansör", en: "Elevator", de: "Aufzug", ru: "Лифт" },
+    security: { tr: "Güvenlik", en: "Security", de: "Sicherheit", ru: "Охрана" },
+    seaView: { tr: "Deniz Manzarası", en: "Sea View", de: "Meerblick", ru: "Вид на море" },
+};
+
+const TAG_TRANSLATION_PREFIX = "tag:";
+
+const buildTranslations = (
+    existing: ListingTranslation[] = []
+): ListingTranslation[] => {
+    const byLocale = new Map(existing.map((item) => [item.locale, item]));
+    return LOCALES.map((locale) => {
+        const current = byLocale.get(locale.code);
+        return {
+            id: current?.id,
+            locale: locale.code,
+            title: current?.title ?? "",
+            description: current?.description ?? "",
+            features: current?.features ?? [],
+        };
+    });
+};
+
+const hasNonTurkishTranslations = (
+    translations: ListingTranslation[] | undefined
+): boolean =>
+    (translations ?? []).some(
+        (translation) =>
+            translation.locale !== "tr" &&
+            ((translation.title && translation.title.trim().length > 0) ||
+                (translation.description && translation.description.trim().length > 0))
+    );
+
+const formatTranslatedValue = (translated: string, turkish: string): string => {
+    const translatedValue = translated?.trim() ?? "";
+    const turkishValue = turkish?.trim() ?? "";
+
+    if (translatedValue && turkishValue) {
+        return `${translatedValue} (${turkishValue})`;
+    }
+    if (translatedValue) return translatedValue;
+    if (turkishValue) return `(${turkishValue})`;
+    return "";
+};
+
+const getLocalizedLabel = (
+    labels: Record<LocaleCode, string>,
+    locale: LocaleCode
+): string => {
+    const trLabel = labels.tr;
+    if (locale === "tr") return trLabel;
+    const translatedLabel = labels[locale] || trLabel;
+    return formatTranslatedValue(translatedLabel, trLabel);
+};
+
+const getLocalizedValue = (
+    labels: Record<LocaleCode, string> | undefined,
+    locale: LocaleCode
+): string => {
+    if (!labels) return "";
+    return getLocalizedLabel(labels, locale);
+};
+
+const buildTagTranslationEntries = (
+    tags: { id: string; name: string }[] | undefined
+): string[] =>
+    (tags || [])
+        .map((tag) => {
+            const name = tag.name?.trim();
+            if (!tag.id || !name) return null;
+            return `${TAG_TRANSLATION_PREFIX}${tag.id}:${name}`;
+        })
+        .filter((value): value is string => Boolean(value));
+
+const mergeTagTranslationEntries = (
+    existing: string[] | undefined,
+    entries: string[]
+): string[] => {
+    if (entries.length === 0) return existing || [];
+    const preserved = (existing || []).filter(
+        (item) => !item.startsWith(TAG_TRANSLATION_PREFIX)
+    );
+    return [...preserved, ...entries];
+};
+
+const parseTagTranslations = (items: string[] | undefined): Record<string, string> => {
+    const map: Record<string, string> = {};
+    (items || []).forEach((item) => {
+        if (!item.startsWith(TAG_TRANSLATION_PREFIX)) return;
+        const parts = item.split(":");
+        if (parts.length < 3) return;
+        const id = parts[1];
+        const value = parts.slice(2).join(":").trim();
+        if (id && value) {
+            map[id] = value;
+        }
+    });
+    return map;
+};
 
 const TABS = [
     { id: "details", label: "Detaylar", icon: Building2 },
     { id: "location", label: "Konum", icon: MapPin },
     { id: "features", label: "Özellikler", icon: Home },
     { id: "tags", label: "Etiketler", icon: Tag },
-    { id: "translations", label: "Çeviriler", icon: Languages },
     { id: "media", label: "Medya", icon: ImageIcon },
 ];
+
+const ROOM_OPTIONS = ["1+0", "1+1", "2+1", "3+1", "4+1", "5+1"];
+
+const formatRoomLabel = (value: string | number | null): string => {
+    if (!value) return "Seçiniz";
+    return String(value);
+};
+
+const DISTRICT_OPTIONS = ["Alanya"];
+
+const NEIGHBORHOOD_CORE_OPTIONS = [
+    "Çarşı",
+    "Güllerpınarı",
+    "Şekerhane",
+    "Hacet",
+    "Kadıpaşa",
+    "Saray",
+    "Tophane",
+    "Kızlar Pınarı",
+    "Cumhuriyet",
+    "Büyükhasbahçe",
+    "Küçükhasbahçe",
+    "Merkez",
+    "Mahmutlar",
+    "Kestel",
+    "Oba",
+    "Çıkcilli",
+    "Tosmur",
+    "Kargıcak",
+    "Konaklı",
+    "Avsallar",
+    "Payallar",
+    "Türkler",
+    "İncekum",
+    "Okurcalar",
+    "Demirtaş",
+];
+
+const NEIGHBORHOOD_OPTIONS = Array.from(new Set(NEIGHBORHOOD_CORE_OPTIONS));
+
+const PROPERTY_TYPE_ALIASES: Record<string, string> = {
+    APARTMENT: "APARTMENT",
+    DAIRE: "APARTMENT",
+    VILLA: "VILLA",
+    PENTHOUSE: "PENTHOUSE",
+    LAND: "LAND",
+    ARSA: "LAND",
+    COMMERCIAL: "COMMERCIAL",
+    TICARI: "COMMERCIAL",
+    OFFICE: "OFFICE",
+    OFIS: "OFFICE",
+    SHOP: "SHOP",
+    DUKKAN: "SHOP",
+    FARM: "FARM",
+    CIFTLIK: "FARM",
+    TARLA: "FARM",
+};
+
+const SALE_TYPE_ALIASES: Record<string, string> = {
+    SALE: "SALE",
+    SATILIK: "SALE",
+    SATIS: "SALE",
+    RENT: "RENT",
+    KIRALIK: "RENT",
+    KIRA: "RENT",
+};
+
+const CURRENCY_ALIASES: Record<string, string> = {
+    EUR: "EUR",
+    EURO: "EUR",
+    USD: "USD",
+    DOLAR: "USD",
+    DOLLAR: "USD",
+    TRY: "TRY",
+    TL: "TRY",
+    GBP: "GBP",
+    STERLIN: "GBP",
+    POUND: "GBP",
+};
+
+const HEATING_ALIASES: Record<string, string> = {
+    CENTRAL: "central",
+    MERKEZI: "central",
+    INDIVIDUAL: "individual",
+    BIREYSEL: "individual",
+    FLOOR: "floor",
+    YERDENISITMA: "floor",
+    AC: "ac",
+    KLIMA: "ac",
+    NONE: "none",
+    YOK: "none",
+};
+
+const ZONING_STATUS_ALIASES: Record<string, string> = {
+    IMARLI: "imarlı",
+    IMARSIZ: "imarsız",
+    TARLA: "tarla",
+    KONUT: "konut",
+    TICARI: "ticari",
+};
 
 // Property types that show residential-specific fields
 const RESIDENTIAL_TYPES = ["APARTMENT", "VILLA", "PENTHOUSE"];
@@ -146,21 +429,17 @@ const LAND_TYPES = ["LAND"];
 const COMMERCIAL_TYPES = ["COMMERCIAL", "SHOP", "OFFICE"];
 const FARM_TYPES = ["FARM"];
 
-const defaultTranslations: ListingTranslation[] = LOCALES.map((locale) => ({
-    locale: locale.code,
-    title: "",
-    description: "",
-    features: [],
-}));
+const defaultTranslations: ListingTranslation[] = buildTranslations();
 
 const defaultListing: ListingData = {
     status: "DRAFT",
     type: "APARTMENT",
     saleType: "SALE",
-    city: "Alanya",
-    district: "",
+    city: "Antalya",
+    district: "Alanya",
     neighborhood: null,
     address: null,
+    googleMapsLink: null,
     latitude: null,
     longitude: null,
     price: 0,
@@ -197,27 +476,633 @@ const defaultListing: ListingData = {
     tags: [],
 };
 
+const normalizeLookupKey = (value: unknown): string =>
+    String(value ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/ı/g, "i")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]/g, "")
+        .toUpperCase();
+
+const NEIGHBORHOOD_LOOKUP = new Set(
+    NEIGHBORHOOD_OPTIONS.map((option) => normalizeLookupKey(option))
+);
+
+const normalizeTextValue = (value: unknown): string | null => {
+    if (value === undefined || value === null) return null;
+    const normalized = String(value).trim();
+    return normalized.length > 0 ? normalized : null;
+};
+
+const parseNumberValue = (value: unknown): number | null => {
+    if (value === undefined || value === null || value === "") return null;
+    if (typeof value === "number") return Number.isFinite(value) ? value : null;
+
+    const raw = String(value).trim();
+    if (!raw) return null;
+
+    const cleaned = raw.replace(/[^0-9,.-]/g, "");
+    if (!cleaned) return null;
+
+    const lastComma = cleaned.lastIndexOf(",");
+    const lastDot = cleaned.lastIndexOf(".");
+    let normalized = cleaned;
+
+    if (lastComma > -1 && lastDot > -1) {
+        normalized =
+            lastComma > lastDot
+                ? cleaned.replace(/\./g, "").replace(",", ".")
+                : cleaned.replace(/,/g, "");
+    } else if (lastComma > -1) {
+        const decimalLength = cleaned.length - lastComma - 1;
+        normalized =
+            decimalLength === 3
+                ? cleaned.replace(/,/g, "")
+                : cleaned.replace(",", ".");
+    } else if (lastDot > -1) {
+        const decimalLength = cleaned.length - lastDot - 1;
+        normalized =
+            decimalLength === 3 ? cleaned.replace(/\./g, "") : cleaned;
+    }
+
+    const parsed = Number.parseFloat(normalized);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+const parseIntegerValue = (value: unknown): number | null => {
+    const parsed = parseNumberValue(value);
+    return parsed === null ? null : Math.round(parsed);
+};
+
+const buildGoogleMapsLink = (
+    latitude: number | null,
+    longitude: number | null,
+    locationLabel: string
+): string => {
+    if (
+        latitude !== null &&
+        longitude !== null &&
+        !(latitude === 0 && longitude === 0)
+    ) {
+        return `https://www.google.com/maps?q=${latitude},${longitude}`;
+    }
+    if (locationLabel) {
+        return `https://www.google.com/maps?q=${encodeURIComponent(locationLabel)}`;
+    }
+    return "";
+};
+
+const toGoogleMapsEmbedLink = (value: string | null): string | null => {
+    if (!value) return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    try {
+        const url = new URL(trimmed);
+        if (!url.hostname.includes("google")) {
+            return null;
+        }
+        url.searchParams.set("output", "embed");
+        return url.toString();
+    } catch {
+        return null;
+    }
+};
+
+const parseRoomsValue = (value: unknown): string | null => {
+    if (value === undefined || value === null || value === "") return null;
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (/^\d+\+\d+$/.test(trimmed)) return trimmed;
+        // Handle "3 oda 1 salon" style
+        const match = trimmed.toLowerCase().match(/(\d+)\s*(?:oda|odalı)?\s*(\d+)\s*(?:salon|salonu)?/);
+        if (match) return `${match[1]}+${match[2]}`;
+    }
+
+    // Fallback for numbers or total sums
+    const num = typeof value === "number" ? value : Number.parseInt(String(value), 10);
+    if (isNaN(num)) return null;
+    if (num <= 1) return "1+0";
+    return `${num - 1}+1`;
+};
+
+const parseBooleanValue = (value: unknown): boolean | null => {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") {
+        if (value === 1) return true;
+        if (value === 0) return false;
+        return null;
+    }
+
+    if (typeof value === "string") {
+        const normalized = normalizeLookupKey(value);
+        if (["TRUE", "EVET", "YES", "VAR", "1"].includes(normalized)) return true;
+        if (["FALSE", "HAYIR", "NO", "YOK", "0"].includes(normalized)) return false;
+    }
+
+    return null;
+};
+
+const normalizePropertyType = (value: unknown): string | null => {
+    const normalized = normalizeLookupKey(value);
+    return normalized ? PROPERTY_TYPE_ALIASES[normalized] || null : null;
+};
+
+const normalizeSaleType = (value: unknown): string | null => {
+    const normalized = normalizeLookupKey(value);
+    return normalized ? SALE_TYPE_ALIASES[normalized] || null : null;
+};
+
+const normalizeCurrency = (value: unknown): string | null => {
+    if (value === "€") return "EUR";
+    if (value === "$") return "USD";
+    if (value === "₺") return "TRY";
+    if (value === "£") return "GBP";
+
+    const normalized = normalizeLookupKey(value);
+    return normalized ? CURRENCY_ALIASES[normalized] || null : null;
+};
+
+const normalizeHeating = (value: unknown): string | null => {
+    const normalized = normalizeLookupKey(value);
+    return normalized ? HEATING_ALIASES[normalized] || null : null;
+};
+
+const normalizeZoningStatus = (value: unknown): string | null => {
+    const normalized = normalizeLookupKey(value);
+    return normalized ? ZONING_STATUS_ALIASES[normalized] || null : null;
+};
+
+const normalizeFeatureList = (value: unknown): string[] | null => {
+    if (Array.isArray(value)) {
+        const normalized = value
+            .map((item) => normalizeTextValue(item))
+            .filter((item): item is string => Boolean(item));
+        return normalized.length > 0 ? normalized : null;
+    }
+
+    const textValue = normalizeTextValue(value);
+    if (!textValue) return null;
+
+    const normalized = textValue
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    return normalized.length > 0 ? normalized : null;
+};
+
+interface SortableMediaItemProps {
+    item: Media;
+    index: number;
+    resolveMediaUrl: (path: string) => string;
+    onRemove?: (id: string | null | undefined) => void;
+}
+
+function SortableMediaItem({
+    item,
+    index,
+    resolveMediaUrl,
+    onRemove,
+}: SortableMediaItemProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: item.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : undefined,
+        opacity: isDragging ? 0 : undefined,
+    };
+
+    const isCover = index === 0;
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
+            className={cn(
+                "relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-grab active:cursor-grabbing group",
+                isCover ? "border-orange-500 shadow-md" : "border-transparent hover:border-orange-200",
+                isDragging && "scale-105 shadow-xl ring-2 ring-orange-400 z-50 opacity-80"
+            )}
+        >
+            <img
+                src={resolveMediaUrl(item.url)}
+                alt=""
+                className="w-full h-full object-cover"
+            />
+
+            {isCover && (
+                <span className="absolute top-2 left-2 px-2 py-1 bg-orange-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-sm shadow-sm z-10">
+                    Kapak
+                </span>
+            )}
+
+            {/* Actions Overlay */}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-start justify-end p-2 pointer-events-none">
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove?.(item.id);
+                    }}
+                    className="p-1.5 bg-white rounded-full text-red-600 hover:bg-red-50 transition-colors shadow-lg pointer-events-auto cursor-pointer"
+                    title="Sil"
+                >
+                    <X className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function SortablePendingMediaItem({
+    item,
+    index,
+    onRemove,
+}: {
+    item: PendingMedia;
+    index: number;
+    onRemove?: (id: string) => void;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: item.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : undefined,
+        opacity: isDragging ? 0 : undefined,
+    };
+
+    const isCover = index === 0;
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
+            className={cn(
+                "relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-grab active:cursor-grabbing group",
+                isCover ? "border-orange-500 shadow-md" : "border-gray-100 hover:border-orange-200",
+                isDragging && "scale-105 shadow-xl ring-2 ring-orange-400 z-50 opacity-80"
+            )}
+        >
+            <img
+                src={item.previewUrl}
+                alt=""
+                className="w-full h-full object-cover"
+            />
+
+            {isCover && (
+                <span className="absolute top-2 left-2 px-2 py-1 bg-orange-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-sm shadow-sm z-10">
+                    Kapak
+                </span>
+            )}
+
+            {/* Remove Action */}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-start justify-end p-2 pointer-events-none">
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove?.(item.id);
+                    }}
+                    className="p-1.5 bg-white rounded-full text-red-600 hover:bg-red-50 transition-colors shadow-lg pointer-events-auto cursor-pointer"
+                    title="Seçimi Kaldır"
+                >
+                    <X className="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     const router = useRouter();
+    const pathname = usePathname();
     const [activeTab, setActiveTab] = useState("details");
-    const [activeLocale, setActiveLocale] = useState("tr");
-    const [formData, setFormData] = useState<ListingData>(
-        listing || defaultListing
-    );
+    const [activeLocale, setActiveLocale] = useState<LocaleCode>("tr");
+    const [formData, setFormData] = useState<ListingData>(() => {
+        if (!listing) return defaultListing;
+        return {
+            ...listing,
+            rooms: listing.rooms ? String(listing.rooms) : null,
+            translations: buildTranslations(listing.translations),
+        };
+    });
     const [isSaving, setIsSaving] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [isTranslating, setIsTranslating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]);
     const [isAiFillOpen, setIsAiFillOpen] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const [selectedTags, setSelectedTags] = useState<TagData[]>(listing?.tags || []);
+    const [activeId, setActiveId] = useState<string | null>(null);
+    const [confirmAction, setConfirmAction] = useState<
+        null | "archive" | "remove" | "delete"
+    >(null);
+    const [isActionLoading, setIsActionLoading] = useState(false);
+    const [translationsLocked, setTranslationsLocked] = useState(
+        hasNonTurkishTranslations(listing?.translations)
+    );
+    const [isMounted, setIsMounted] = useState(false);
+    const [leaveIntent, setLeaveIntent] = useState<{
+        type: "href" | "back";
+        href?: string;
+        external?: boolean;
+    } | null>(null);
+    const [isLeavePromptOpen, setIsLeavePromptOpen] = useState(false);
+    const [leaveAction, setLeaveAction] = useState<null | "draft" | "publish">(null);
+    const bypassUnsavedCheckRef = useRef(false);
+    const initialSnapshotRef = useRef<string>("");
+    const currentUrlRef = useRef<string>("");
+    const autoMapsLinkRef = useRef<string>("");
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
     const resolveMediaUrl = (path: string) => getMediaUrl(path);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const runWithNavigationBypass = (callback: () => void) => {
+        bypassUnsavedCheckRef.current = true;
+        callback();
+        setTimeout(() => {
+            bypassUnsavedCheckRef.current = false;
+        }, 0);
+    };
+
+    const safePush = (href: string) => {
+        runWithNavigationBypass(() => router.push(href));
+    };
+
+    const safeBack = () => {
+        runWithNavigationBypass(() => router.back());
+    };
+
+    const buildUnsavedSnapshot = (
+        data: ListingData,
+        tags: TagData[],
+        pending: PendingMedia[]
+    ) => ({
+        formData: data,
+        tags: tags.map((tag) => ({ id: tag.id, name: tag.name, color: tag.color })),
+        pendingMedia: pending.map((item) => ({
+            id: item.id,
+            name: item.file.name,
+            size: item.file.size,
+            lastModified: item.file.lastModified,
+            type: item.file.type,
+        })),
+    });
+
+    const currentSnapshot = useMemo(
+        () => JSON.stringify(buildUnsavedSnapshot(formData, selectedTags, pendingMedia)),
+        [formData, selectedTags, pendingMedia]
+    );
+
+    useEffect(() => {
+        if (!initialSnapshotRef.current) {
+            initialSnapshotRef.current = currentSnapshot;
+        }
+    }, [currentSnapshot]);
+
+    const hasUnsavedChanges = useMemo(() => {
+        if (!initialSnapshotRef.current) return false;
+        return initialSnapshotRef.current !== currentSnapshot;
+    }, [currentSnapshot]);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            currentUrlRef.current = window.location.href;
+        }
+    }, [pathname]);
+
+    const openLeavePrompt = useCallback((intent: {
+        type: "href" | "back";
+        href?: string;
+        external?: boolean;
+    }) => {
+        if (isLeavePromptOpen) return;
+        setLeaveIntent(intent);
+        setIsLeavePromptOpen(true);
+    }, [isLeavePromptOpen]);
+
+    const closeLeavePrompt = useCallback(() => {
+        setIsLeavePromptOpen(false);
+        setLeaveIntent(null);
+        setLeaveAction(null);
+    }, []);
+
+    useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (!hasUnsavedChanges || bypassUnsavedCheckRef.current) return;
+            event.preventDefault();
+            event.returnValue = "";
+        };
+
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => {
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
+    }, [hasUnsavedChanges]);
+
+    useEffect(() => {
+        const handleLinkClick = (event: MouseEvent) => {
+            if (!hasUnsavedChanges || bypassUnsavedCheckRef.current) return;
+            const target = event.target as HTMLElement | null;
+            const anchor = target?.closest("a") as HTMLAnchorElement | null;
+            if (!anchor) return;
+
+            const href = anchor.getAttribute("href");
+            if (!href || href.startsWith("#")) return;
+            if (anchor.target && anchor.target !== "_self") return;
+            if (anchor.hasAttribute("download")) return;
+            if (anchor.getAttribute("data-skip-unsaved") === "true") return;
+
+            const url = new URL(href, window.location.href);
+            event.preventDefault();
+            event.stopPropagation();
+            // Stop Next.js Link handler in capture phase
+            if ("stopImmediatePropagation" in event) {
+                (event as unknown as { stopImmediatePropagation: () => void }).stopImmediatePropagation();
+            }
+            openLeavePrompt({
+                type: "href",
+                href: url.href,
+                external: url.origin !== window.location.origin,
+            });
+        };
+
+        document.addEventListener("click", handleLinkClick, true);
+        return () => {
+            document.removeEventListener("click", handleLinkClick, true);
+        };
+    }, [hasUnsavedChanges, isLeavePromptOpen, openLeavePrompt]);
+
+    useEffect(() => {
+        const handlePopState = () => {
+            if (!hasUnsavedChanges || bypassUnsavedCheckRef.current) {
+                currentUrlRef.current = window.location.href;
+                return;
+            }
+
+            const destination = window.location.href;
+            const fallbackUrl = currentUrlRef.current || "/admin/ilanlar";
+            runWithNavigationBypass(() => router.push(fallbackUrl));
+            openLeavePrompt({
+                type: "href",
+                href: destination,
+                external: new URL(destination).origin !== window.location.origin,
+            });
+        };
+
+        window.addEventListener("popstate", handlePopState);
+        return () => {
+            window.removeEventListener("popstate", handlePopState);
+        };
+    }, [hasUnsavedChanges, router, openLeavePrompt]);
+
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveId(event.active.id as string);
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        setActiveId(null);
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            setFormData((prev) => {
+                if (!prev.media) return prev;
+                const oldIndex = prev.media.findIndex((m) => m.id === active.id);
+                const newIndex = prev.media.findIndex((m) => m.id === over.id);
+
+                const newMedia = arrayMove(prev.media, oldIndex, newIndex).map(
+                    (item, index) => ({
+                        ...item,
+                        order: index,
+                        isCover: index === 0,
+                    })
+                );
+
+                return {
+                    ...prev,
+                    media: newMedia,
+                };
+            });
+        }
+    };
+
+    const handlePendingDragEnd = (event: DragEndEvent) => {
+        setActiveId(null);
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            setPendingMedia((prev) => {
+                const oldIndex = prev.findIndex((m) => m.id === active.id);
+                const newIndex = prev.findIndex((m) => m.id === over.id);
+                return arrayMove(prev, oldIndex, newIndex);
+            });
+        }
+    };
+
+    const handleRemoveMedia = (id: string | null | undefined) => {
+        if (!id) return;
+        setFormData((prev) => {
+            const newMedia = (prev.media?.filter((m) => m.id !== id) || []).map((m, i) => ({
+                ...m,
+                order: i,
+                isCover: i === 0,
+            }));
+            return {
+                ...prev,
+                media: newMedia,
+            };
+        });
+    };
 
     // Check property type categories
     const isResidential = RESIDENTIAL_TYPES.includes(formData.type);
     const isLand = LAND_TYPES.includes(formData.type);
     const isCommercial = COMMERCIAL_TYPES.includes(formData.type);
     const isFarm = FARM_TYPES.includes(formData.type);
+    const districtOptions =
+        formData.district && !DISTRICT_OPTIONS.includes(formData.district)
+            ? [formData.district, ...DISTRICT_OPTIONS]
+            : DISTRICT_OPTIONS;
+    const neighborhoodOptions =
+        formData.neighborhood && !NEIGHBORHOOD_OPTIONS.includes(formData.neighborhood)
+            ? [formData.neighborhood, ...NEIGHBORHOOD_OPTIONS]
+            : NEIGHBORHOOD_OPTIONS;
+    const locationLabel = [
+        formData.address,
+        formData.neighborhood,
+        formData.district,
+        formData.city,
+    ]
+        .filter(Boolean)
+        .join(", ");
+    const latitudeValue =
+        typeof formData.latitude === "number" && !Number.isNaN(formData.latitude)
+            ? formData.latitude
+            : null;
+    const longitudeValue =
+        typeof formData.longitude === "number" && !Number.isNaN(formData.longitude)
+            ? formData.longitude
+            : null;
+    const hasCoordinates =
+        latitudeValue !== null &&
+        longitudeValue !== null &&
+        !(latitudeValue === 0 && longitudeValue === 0);
+    const autoMapsLink = buildGoogleMapsLink(
+        latitudeValue,
+        longitudeValue,
+        locationLabel
+    );
+    const manualEmbedLink = toGoogleMapsEmbedLink(formData.googleMapsLink);
+    const autoEmbedLink = toGoogleMapsEmbedLink(autoMapsLink);
+    const mapSrc = manualEmbedLink || autoEmbedLink;
+
+    useEffect(() => {
+        if (!autoMapsLink) return;
+        setFormData((prev) => {
+            const current = prev.googleMapsLink?.trim() || "";
+            const shouldUpdate =
+                !current || current === autoMapsLinkRef.current;
+            autoMapsLinkRef.current = autoMapsLink;
+            if (!shouldUpdate) return prev;
+            if (current === autoMapsLink) return prev;
+            return { ...prev, googleMapsLink: autoMapsLink };
+        });
+    }, [autoMapsLink]);
 
     // Handle AI fill data
     const handleAiFillApply = (data: ParsedData) => {
@@ -225,61 +1110,159 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             const updated = { ...prev };
 
             // Map AI data to form fields
-            if (data.type) updated.type = String(data.type);
-            if (data.saleType) updated.saleType = String(data.saleType);
-            if (data.price) updated.price = Number(data.price);
-            if (data.currency) updated.currency = String(data.currency);
-            if (data.area) updated.area = Number(data.area);
-            if (data.rooms !== undefined) updated.rooms = Number(data.rooms) || null;
-            if (data.bedrooms !== undefined) updated.bedrooms = Number(data.bedrooms) || null;
-            if (data.bathrooms !== undefined) updated.bathrooms = Number(data.bathrooms) || null;
-            if (data.floor !== undefined) updated.floor = Number(data.floor) || null;
-            if (data.totalFloors !== undefined) updated.totalFloors = Number(data.totalFloors) || null;
-            if (data.buildYear !== undefined) updated.buildYear = Number(data.buildYear) || null;
-            if (data.heating) updated.heating = String(data.heating);
-            if (data.city) updated.city = String(data.city);
-            if (data.district) updated.district = String(data.district);
-            if (data.neighborhood) updated.neighborhood = String(data.neighborhood);
-            if (data.latitude !== undefined) updated.latitude = Number(data.latitude) || null;
-            if (data.longitude !== undefined) updated.longitude = Number(data.longitude) || null;
+            const normalizedType = normalizePropertyType(data.type);
+            if (normalizedType) updated.type = normalizedType;
+
+            const normalizedSaleType = normalizeSaleType(data.saleType);
+            if (normalizedSaleType) updated.saleType = normalizedSaleType;
+
+            const parsedPrice = parseNumberValue(data.price);
+            if (parsedPrice !== null) updated.price = parsedPrice;
+
+            const normalizedCurrency = normalizeCurrency(data.currency);
+            if (normalizedCurrency) updated.currency = normalizedCurrency;
+
+            const parsedArea = parseIntegerValue(data.area);
+            if (parsedArea !== null) updated.area = parsedArea;
+
+            const parsedRooms = parseRoomsValue(data.rooms);
+            if (parsedRooms !== null) updated.rooms = parsedRooms;
+
+            const parsedBedrooms = parseIntegerValue(data.bedrooms);
+            if (parsedBedrooms !== null) updated.bedrooms = parsedBedrooms;
+
+            const parsedBathrooms = parseIntegerValue(data.bathrooms);
+            if (parsedBathrooms !== null) updated.bathrooms = parsedBathrooms;
+
+            const parsedFloor = parseIntegerValue(data.floor);
+            if (parsedFloor !== null) updated.floor = parsedFloor;
+
+            const parsedTotalFloors = parseIntegerValue(data.totalFloors);
+            if (parsedTotalFloors !== null) updated.totalFloors = parsedTotalFloors;
+
+            const parsedBuildYear = parseIntegerValue(data.buildYear);
+            if (parsedBuildYear !== null) updated.buildYear = parsedBuildYear;
+
+            const normalizedHeating = normalizeHeating(data.heating);
+            if (normalizedHeating) updated.heating = normalizedHeating;
+
+            const normalizedCity = normalizeTextValue(data.city);
+            const normalizedDistrict = normalizeTextValue(data.district);
+            const normalizedNeighborhood = normalizeTextValue(data.neighborhood);
+            const locationCandidates = [
+                normalizedNeighborhood,
+                normalizedDistrict,
+                normalizedCity,
+            ].filter(Boolean) as string[];
+            let neighborhoodFromAi: string | null = null;
+
+            for (const candidate of locationCandidates) {
+                const key = normalizeLookupKey(candidate);
+                if (key === "ANTALYA" || key === "ALANYA") {
+                    continue;
+                }
+                if (NEIGHBORHOOD_LOOKUP.has(key)) {
+                    neighborhoodFromAi = candidate;
+                    break;
+                }
+                if (!neighborhoodFromAi) {
+                    neighborhoodFromAi = candidate;
+                }
+            }
+
+            updated.city = "Antalya";
+            updated.district = "Alanya";
+            if (neighborhoodFromAi) {
+                updated.neighborhood = neighborhoodFromAi;
+            }
+
+            const parsedLatitude = parseNumberValue(data.latitude);
+            if (parsedLatitude !== null) updated.latitude = parsedLatitude;
+
+            const parsedLongitude = parseNumberValue(data.longitude);
+            if (parsedLongitude !== null) updated.longitude = parsedLongitude;
+
+            const normalizedMapsLink = normalizeTextValue(data.googleMapsLink);
+            if (normalizedMapsLink) updated.googleMapsLink = normalizedMapsLink;
 
             // Boolean features
-            if (typeof data.furnished === 'boolean') updated.furnished = data.furnished;
-            if (typeof data.balcony === 'boolean') updated.balcony = data.balcony;
-            if (typeof data.garden === 'boolean') updated.garden = data.garden;
-            if (typeof data.pool === 'boolean') updated.pool = data.pool;
-            if (typeof data.parking === 'boolean') updated.parking = data.parking;
-            if (typeof data.elevator === 'boolean') updated.elevator = data.elevator;
-            if (typeof data.security === 'boolean') updated.security = data.security;
-            if (typeof data.seaView === 'boolean') updated.seaView = data.seaView;
+            const furnished = parseBooleanValue(data.furnished);
+            if (furnished !== null) updated.furnished = furnished;
+
+            const balcony = parseBooleanValue(data.balcony);
+            if (balcony !== null) updated.balcony = balcony;
+
+            const garden = parseBooleanValue(data.garden);
+            if (garden !== null) updated.garden = garden;
+
+            const pool = parseBooleanValue(data.pool);
+            if (pool !== null) updated.pool = pool;
+
+            const parking = parseBooleanValue(data.parking);
+            if (parking !== null) updated.parking = parking;
+
+            const elevator = parseBooleanValue(data.elevator);
+            if (elevator !== null) updated.elevator = elevator;
+
+            const security = parseBooleanValue(data.security);
+            if (security !== null) updated.security = security;
+
+            const seaView = parseBooleanValue(data.seaView);
+            if (seaView !== null) updated.seaView = seaView;
 
             // Land-specific
-            if (data.parcelNo) updated.parcelNo = String(data.parcelNo);
-            if (data.emsal !== undefined) updated.emsal = Number(data.emsal) || null;
-            if (data.zoningStatus) updated.zoningStatus = String(data.zoningStatus);
+            const normalizedParcelNo = normalizeTextValue(data.parcelNo);
+            if (normalizedParcelNo) updated.parcelNo = normalizedParcelNo;
+
+            const parsedEmsal = parseNumberValue(data.emsal);
+            if (parsedEmsal !== null) updated.emsal = parsedEmsal;
+
+            const normalizedZoningStatus =
+                normalizeZoningStatus(data.zoningStatus) ||
+                normalizeTextValue(data.zoningStatus);
+            if (normalizedZoningStatus) updated.zoningStatus = normalizedZoningStatus;
 
             // Commercial-specific
-            if (data.groundFloorArea !== undefined) updated.groundFloorArea = Number(data.groundFloorArea) || null;
-            if (data.basementArea !== undefined) updated.basementArea = Number(data.basementArea) || null;
+            const parsedGroundFloorArea = parseIntegerValue(data.groundFloorArea);
+            if (parsedGroundFloorArea !== null) updated.groundFloorArea = parsedGroundFloorArea;
+
+            const parsedBasementArea = parseIntegerValue(data.basementArea);
+            if (parsedBasementArea !== null) updated.basementArea = parsedBasementArea;
 
             // Farm-specific
-            if (typeof data.hasWaterSource === 'boolean') updated.hasWaterSource = data.hasWaterSource;
-            if (typeof data.hasFruitTrees === 'boolean') updated.hasFruitTrees = data.hasFruitTrees;
-            if (data.existingStructure) updated.existingStructure = String(data.existingStructure);
+            const hasWaterSource = parseBooleanValue(data.hasWaterSource);
+            if (hasWaterSource !== null) updated.hasWaterSource = hasWaterSource;
+
+            const hasFruitTrees = parseBooleanValue(data.hasFruitTrees);
+            if (hasFruitTrees !== null) updated.hasFruitTrees = hasFruitTrees;
+
+            const normalizedExistingStructure = normalizeTextValue(data.existingStructure);
+            if (normalizedExistingStructure) updated.existingStructure = normalizedExistingStructure;
 
             // Eligibility
-            if (typeof data.citizenshipEligible === 'boolean') updated.citizenshipEligible = data.citizenshipEligible;
-            if (typeof data.residenceEligible === 'boolean') updated.residenceEligible = data.residenceEligible;
+            const citizenshipEligible = parseBooleanValue(data.citizenshipEligible);
+            if (citizenshipEligible !== null) {
+                updated.citizenshipEligible = citizenshipEligible;
+            }
+
+            const residenceEligible = parseBooleanValue(data.residenceEligible);
+            if (residenceEligible !== null) {
+                updated.residenceEligible = residenceEligible;
+            }
+
+            const normalizedTitle = normalizeTextValue(data.title);
+            const normalizedDescription = normalizeTextValue(data.description);
+            const normalizedFeatures = normalizeFeatureList(data.features);
 
             // Update Turkish translation with title and description
-            if (data.title || data.description) {
+            if (normalizedTitle || normalizedDescription || normalizedFeatures) {
                 updated.translations = updated.translations.map((t) => {
-                    if (t.locale === 'tr') {
+                    if (t.locale === "tr") {
                         return {
                             ...t,
-                            title: data.title ? String(data.title) : t.title,
-                            description: data.description ? String(data.description) : t.description,
-                            features: Array.isArray(data.features) ? data.features.map(String) : t.features,
+                            title: normalizedTitle ?? t.title,
+                            description: normalizedDescription ?? t.description,
+                            features: normalizedFeatures ?? t.features,
                         };
                     }
                     return t;
@@ -324,6 +1307,91 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         }));
     };
 
+    const handleTranslate = async () => {
+        if (isTranslating || translationsLocked) return;
+
+        const trTranslation = formData.translations.find((t) => t.locale === "tr");
+        const title = trTranslation?.title?.trim() ?? "";
+        const description = trTranslation?.description?.trim() ?? "";
+
+        if (!title && !description) {
+            setError("Çeviri için önce Türkçe başlık veya açıklama ekleyin.");
+            return;
+        }
+
+        setIsTranslating(true);
+        setError(null);
+
+        try {
+            const response = await fetch("/api/admin/ai/translate-listing", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title,
+                    description,
+                    listingId: formData.id || null,
+                    tags: selectedTags.map((tag) => ({ id: tag.id, name: tag.name })),
+                }),
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                if (response.status === 409) {
+                    setTranslationsLocked(true);
+                }
+                throw new Error(data.error || "Çeviri başarısız");
+            }
+
+            const translations = data.translations;
+
+            if (!translations) {
+                throw new Error("Çeviri yanıtı alınamadı");
+            }
+
+            const enTagEntries = buildTagTranslationEntries(translations.en?.tags);
+            const deTagEntries = buildTagTranslationEntries(translations.de?.tags);
+            const ruTagEntries = buildTagTranslationEntries(translations.ru?.tags);
+
+            setFormData((prev) => ({
+                ...prev,
+                translations: prev.translations.map((t) => {
+                    if (t.locale === "en") {
+                        return {
+                            ...t,
+                            title: translations.en?.title ?? t.title,
+                            description: translations.en?.description ?? t.description,
+                            features: mergeTagTranslationEntries(t.features, enTagEntries),
+                        };
+                    }
+                    if (t.locale === "de") {
+                        return {
+                            ...t,
+                            title: translations.de?.title ?? t.title,
+                            description: translations.de?.description ?? t.description,
+                            features: mergeTagTranslationEntries(t.features, deTagEntries),
+                        };
+                    }
+                    if (t.locale === "ru") {
+                        return {
+                            ...t,
+                            title: translations.ru?.title ?? t.title,
+                            description: translations.ru?.description ?? t.description,
+                            features: mergeTagTranslationEntries(t.features, ruTagEntries),
+                        };
+                    }
+                    return t;
+                }),
+            }));
+
+            setTranslationsLocked(true);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Çeviri başarısız");
+        } finally {
+            setIsTranslating(false);
+        }
+    };
+
     const createPendingId = () =>
         typeof crypto !== "undefined" && "randomUUID" in crypto
             ? crypto.randomUUID()
@@ -331,6 +1399,16 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
 
     const revokePendingMedia = (items: PendingMedia[]) => {
         items.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+    };
+
+    const removePendingMedia = (id: string) => {
+        setPendingMedia((prev) => {
+            const target = prev.find((item) => item.id === id);
+            if (target) {
+                URL.revokeObjectURL(target.previewUrl);
+            }
+            return prev.filter((item) => item.id !== id);
+        });
     };
 
     const uploadMediaFiles = async (listingId: string, files: File[]) => {
@@ -416,7 +1494,13 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         handleFiles(files);
     };
 
-    const handleSubmit = async (publish: boolean = false) => {
+    const handleSubmit = async (
+        options: {
+            statusOverride?: ListingStatusValue;
+            redirectTo?: string;
+            skipRedirect?: boolean;
+        } = {}
+    ): Promise<boolean> => {
         setIsSaving(true);
         setError(null);
 
@@ -429,7 +1513,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
 
             const body = {
                 ...formData,
-                status: publish ? "PUBLISHED" : formData.status,
+                status: options.statusOverride ?? formData.status,
                 tags: selectedTags,
             };
 
@@ -463,37 +1547,237 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                 );
 
                 if (uploaded.length === 0) {
-                    return;
+                    return false;
                 }
 
                 revokePendingMedia(pendingMedia);
                 setPendingMedia([]);
             }
 
-            router.push("/admin/ilanlar");
-            router.refresh();
+            if (!options.skipRedirect) {
+                const target = options.redirectTo ?? "/admin/ilanlar";
+                safePush(target);
+                router.refresh();
+            }
+            return true;
         } catch (err) {
             setError(err instanceof Error ? err.message : "Bir hata oluştu");
+            return false;
         } finally {
             setIsSaving(false);
         }
     };
 
-    const handleStatusChange = async (newStatus: "DRAFT" | "PUBLISHED" | "ARCHIVED") => {
-        setFormData((prev) => ({ ...prev, status: newStatus }));
+    const handleDelete = async () => {
+        if (!formData.id) return;
+
+        const response = await fetch(`/api/admin/listings/${formData.id}`, {
+            method: "DELETE",
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || "Silme başarısız");
+        }
+    };
+
+    const handleStatusOnlyUpdate = async (status: ListingStatusValue) => {
+        if (!formData.id) return;
+
+        const response = await fetch(`/api/admin/listings/${formData.id}/status`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || "Durum güncellenemedi");
+        }
+    };
+
+    const handleConfirmAction = async () => {
+        if (!confirmAction) return;
+
+        setIsActionLoading(true);
+        setError(null);
+
+        try {
+            if (confirmAction === "archive") {
+                await handleStatusOnlyUpdate("ARCHIVED");
+                safePush("/admin/ilanlar");
+                router.refresh();
+                return;
+            }
+            if (confirmAction === "remove") {
+                await handleStatusOnlyUpdate("REMOVED");
+                safePush("/admin/ilanlar");
+                router.refresh();
+                return;
+            }
+            if (confirmAction === "delete") {
+                await handleDelete();
+                safePush("/admin/ilanlar");
+                router.refresh();
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Bir hata oluştu");
+        } finally {
+            setIsActionLoading(false);
+            setConfirmAction(null);
+        }
+    };
+
+    const handleLeaveSave = async (statusOverride: ListingStatusValue) => {
+        if (!leaveIntent) return;
+        setLeaveAction(statusOverride === "DRAFT" ? "draft" : "publish");
+        const success = await handleSubmit({ statusOverride, skipRedirect: true });
+        if (!success) {
+            setLeaveAction(null);
+            return;
+        }
+
+        const intent = leaveIntent;
+        closeLeavePrompt();
+
+        if (intent.type === "back") {
+            safeBack();
+            return;
+        }
+
+        if (intent.href) {
+            if (intent.external) {
+                bypassUnsavedCheckRef.current = true;
+                window.location.assign(intent.href);
+            } else {
+                safePush(intent.href);
+            }
+        }
+    };
+
+    const handleLeaveDiscard = () => {
+        if (!leaveIntent) return;
+        const intent = leaveIntent;
+        closeLeavePrompt();
+
+        if (intent.type === "back") {
+            safeBack();
+            return;
+        }
+
+        if (intent.href) {
+            if (intent.external) {
+                bypassUnsavedCheckRef.current = true;
+                window.location.assign(intent.href);
+            } else {
+                safePush(intent.href);
+            }
+        }
     };
 
     const currentTranslation =
         formData.translations.find((t) => t.locale === activeLocale) ||
         formData.translations[0];
+    const turkishTranslation =
+        formData.translations.find((t) => t.locale === "tr") ||
+        currentTranslation;
+    const isTranslationView = activeLocale !== "tr";
+    const displayTitle = isTranslationView
+        ? formatTranslatedValue(currentTranslation?.title || "", turkishTranslation?.title || "")
+        : currentTranslation?.title || "";
+    const displayDescription = isTranslationView
+        ? formatTranslatedValue(
+            currentTranslation?.description || "",
+            turkishTranslation?.description || ""
+        )
+        : currentTranslation?.description || "";
+    const tagTranslationMap = useMemo(
+        () => parseTagTranslations(currentTranslation?.features),
+        [currentTranslation?.features]
+    );
+    const confirmConfig: Record<string, { title: string; description: string; tone: "warning" | "danger"; confirmLabel: string }> = {
+        archive: {
+            title: "İlan arşivlensin mi?",
+            description: "Arşivlenen ilan sitede görünmez.",
+            tone: "warning",
+            confirmLabel: "Arşivle",
+        },
+        remove: {
+            title: "İlan yayından kaldırılsın mı?",
+            description: "Bu işlem ilanın durumunu Kaldırıldı olarak günceller.",
+            tone: "danger",
+            confirmLabel: "Yayından Kaldır",
+        },
+        delete: {
+            title: "İlan tamamen silinsin mi?",
+            description: "Bu işlem geri alınamaz.",
+            tone: "danger",
+            confirmLabel: "İlanı Sil",
+        },
+    };
+    const activeConfirm = confirmAction ? confirmConfig[confirmAction] : null;
+
+    const handleSectionNavigation = (sectionId: string) => {
+        setActiveTab(sectionId);
+        const targetSection = document.getElementById(`section-${sectionId}`);
+        if (targetSection) {
+            const offset = 80; // Account for the sticky header
+            const bodyRect = document.body.getBoundingClientRect().top;
+            const elementRect = targetSection.getBoundingClientRect().top;
+            const elementPosition = elementRect - bodyRect;
+            const offsetPosition = elementPosition - offset;
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: "smooth",
+            });
+        }
+    };
+
+    // Scroll Spy Logic
+    useEffect(() => {
+        const observerOptions = {
+            root: null,
+            rootMargin: "-10% 0px -80% 0px",
+            threshold: 0,
+        };
+
+        const handleIntersection = (entries: IntersectionObserverEntry[]) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    const sectionId = entry.target.id.replace("section-", "");
+                    setActiveTab(sectionId);
+                }
+            });
+        };
+
+        const observer = new IntersectionObserver(handleIntersection, observerOptions);
+        const sections = TABS.map((tab) => document.getElementById(`section-${tab.id}`));
+
+        sections.forEach((section) => {
+            if (section) observer.observe(section);
+        });
+
+        return () => {
+            sections.forEach((section) => {
+                if (section) observer.unobserve(section);
+            });
+        };
+    }, []);
 
     return (
-        <div className="max-w-5xl">
+        <div className="w-full max-w-[1400px] mx-auto px-2 sm:px-4 lg:px-8">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
                     <button
-                        onClick={() => router.back()}
+                        onClick={() => {
+                            if (hasUnsavedChanges) {
+                                openLeavePrompt({ type: "back" });
+                                return;
+                            }
+                            safeBack();
+                        }}
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5 text-gray-500" />
@@ -505,35 +1789,52 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                         <p className="text-gray-500 mt-1">
                             {isNew
                                 ? "Yeni bir ilan oluşturun"
-                                : currentTranslation?.title || "İsimsiz İlan"}
+                                : displayTitle || "İsimsiz İlan"}
                         </p>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setIsAiFillOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-medium rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-sm"
-                    >
-                        <Sparkles className="w-4 h-4" />
-                        AI ile Doldur
-                    </button>
-                    {!isNew && (
-                        <span
-                            className={cn(
-                                "px-3 py-1 rounded-full text-sm font-medium",
-                                formData.status === "PUBLISHED"
-                                    ? "bg-green-100 text-green-700"
-                                    : formData.status === "DRAFT"
-                                        ? "bg-yellow-100 text-yellow-700"
-                                        : "bg-gray-100 text-gray-600"
-                            )}
+                <div className="flex flex-col items-end gap-3">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setIsAiFillOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-medium rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-sm cursor-pointer"
                         >
-                            {formData.status === "PUBLISHED"
-                                ? "Yayında"
-                                : formData.status === "DRAFT"
-                                    ? "Taslak"
-                                    : "Arşiv"}
-                        </span>
+                            <Sparkles className="w-4 h-4" />
+                            AI ile Doldur
+                        </button>
+                        {!isNew && (
+                            <span
+                                className={cn(
+                                    "px-3 py-1 rounded-full text-sm font-medium",
+                                    formData.status === "PUBLISHED"
+                                        ? "bg-green-100 text-green-700 shadow-[0_0_0_1px_rgba(34,197,94,0.1)]"
+                                        : formData.status === "DRAFT"
+                                            ? "bg-yellow-100 text-yellow-700 shadow-[0_0_0_1px_rgba(234,179,8,0.1)]"
+                                            : formData.status === "REMOVED"
+                                                ? "bg-red-100 text-red-700 shadow-[0_0_0_1px_rgba(239,68,68,0.1)]"
+                                                : "bg-gray-100 text-gray-600 shadow-[0_0_0_1px_rgba(107,114,128,0.1)]"
+                                )}
+                            >
+                                {formData.status === "PUBLISHED"
+                                    ? "Yayında"
+                                    : formData.status === "DRAFT"
+                                        ? "Taslak"
+                                        : formData.status === "REMOVED"
+                                            ? "Kaldırıldı"
+                                            : "Arşiv"}
+                            </span>
+                        )}
+                    </div>
+                    {!isNew && formData.status === "PUBLISHED" && formData.slug && (
+                        <Link
+                            href={`/tr/ilan/${formData.slug}`}
+                            target="_blank"
+                            className="flex items-center gap-2 px-4 py-1.5 bg-green-50 text-green-700 border border-green-200 text-sm font-semibold rounded-lg hover:bg-green-100 hover:border-green-300 hover:text-green-800 transition-all shadow-sm group"
+                            title="İlanı Gör"
+                        >
+                            <span>İlanı Gör</span>
+                            <ExternalLink className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                        </Link>
                     )}
                 </div>
             </div>
@@ -544,400 +1845,596 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                 </div>
             )}
 
-            {/* Tabs */}
+            {/* Section Navigation */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
-                <div className="flex border-b border-gray-100">
-                    {TABS.map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={cn(
-                                "flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors border-b-2 -mb-px",
-                                activeTab === tab.id
-                                    ? "border-orange-500 text-orange-600"
-                                    : "border-transparent text-gray-500 hover:text-gray-700"
+                <div className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-100 rounded-t-xl transition-all duration-200">
+                    <div className="flex flex-wrap items-center gap-2 p-3">
+                        <div className="flex flex-wrap gap-2">
+                            {TABS.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => handleSectionNavigation(tab.id)}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                                        activeTab === tab.id
+                                            ? "bg-orange-50 text-orange-600"
+                                            : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                                    )}
+                                >
+                                    <tab.icon className="w-4 h-4" />
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="ml-auto flex items-center gap-2">
+                            {translationsLocked ? (
+                                LOCALES.map((locale) => (
+                                    <button
+                                        key={locale.code}
+                                        type="button"
+                                        onClick={() => setActiveLocale(locale.code)}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+                                            activeLocale === locale.code
+                                                ? "bg-gray-900 text-white border-gray-900"
+                                                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                                        )}
+                                        title={locale.label}
+                                    >
+                                        {locale.code.toUpperCase()}
+                                    </button>
+                                ))
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleTranslate}
+                                    disabled={isTranslating}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold border transition-colors",
+                                        isTranslating
+                                            ? "border-gray-200 text-gray-400 bg-gray-50"
+                                            : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                                    )}
+                                >
+                                    <Languages className="w-4 h-4" />
+                                    {isTranslating ? "Çeviriliyor..." : "Çeviri Ekle"}
+                                </button>
                             )}
-                        >
-                            <tab.icon className="w-4 h-4" />
-                            {tab.label}
-                        </button>
-                    ))}
+                        </div>
+                    </div>
                 </div>
 
                 <div className="p-6">
-                    {/* Details Tab */}
-                    {activeTab === "details" && (
-                        <div className="space-y-8">
-                            {/* Core Fields - Always Visible */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Mülk Tipi
-                                    </label>
-                                    <select
-                                        name="type"
+                    <section id="section-details" className="space-y-8 scroll-mt-28">
+                        <div className="border-b border-gray-100 pb-4">
+                            <h2 className="text-lg font-semibold text-gray-900">Detaylar</h2>
+                        </div>
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    {getLocalizedLabel(FIELD_LABELS.title, activeLocale)}
+                                </label>
+                                <input
+                                    type="text"
+                                    value={displayTitle}
+                                    onChange={
+                                        activeLocale === "tr"
+                                            ? (e) =>
+                                                handleTranslationChange(
+                                                    "tr",
+                                                    "title",
+                                                    e.target.value
+                                                )
+                                            : undefined
+                                    }
+                                    readOnly={activeLocale !== "tr"}
+                                    className={cn(
+                                        "input",
+                                        activeLocale !== "tr" && "bg-gray-50 text-gray-600"
+                                    )}
+                                    placeholder="İlan başlığı"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    {getLocalizedLabel(FIELD_LABELS.description, activeLocale)}
+                                </label>
+                                <textarea
+                                    value={displayDescription}
+                                    onChange={
+                                        activeLocale === "tr"
+                                            ? (e) =>
+                                                handleTranslationChange(
+                                                    "tr",
+                                                    "description",
+                                                    e.target.value
+                                                )
+                                            : undefined
+                                    }
+                                    readOnly={activeLocale !== "tr"}
+                                    className={cn(
+                                        "input min-h-[200px]",
+                                        activeLocale !== "tr" && "bg-gray-50 text-gray-600"
+                                    )}
+                                    placeholder="İlan açıklaması"
+                                />
+                            </div>
+                        </div>
+                        {/* Core Fields - Always Visible */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                {activeLocale === "tr" ? (
+                                    <Select
+                                        label={getLocalizedLabel(FIELD_LABELS.propertyType, activeLocale)}
                                         value={formData.type}
-                                        onChange={handleInputChange}
-                                        className="input"
-                                    >
-                                        {PROPERTY_TYPES.map((type) => (
-                                            <option key={type.value} value={type.value}>
-                                                {type.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                        onChange={(value) =>
+                                            setFormData((prev) => ({ ...prev, type: value }))
+                                        }
+                                        options={PROPERTY_TYPES}
+                                    />
+                                ) : (
+                                    <>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            {getLocalizedLabel(FIELD_LABELS.propertyType, activeLocale)}
+                                        </label>
+                                        <div className="input bg-gray-50 text-gray-600">
+                                            {getLocalizedValue(
+                                                PROPERTY_TYPE_LABELS[formData.type],
+                                                activeLocale
+                                            ) || "-"}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Satış Tipi
-                                    </label>
-                                    <select
-                                        name="saleType"
-                                        value={formData.saleType}
-                                        onChange={handleInputChange}
-                                        className="input"
-                                    >
-                                        {SALE_TYPES.map((type) => (
-                                            <option key={type.value} value={type.value}>
-                                                {type.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                            <div>
+                                {activeLocale === "tr" ? (
+                                    <>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            {getLocalizedLabel(FIELD_LABELS.saleType, activeLocale)}
+                                        </label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {SALE_TYPES.map((type) => (
+                                                <button
+                                                    key={type.value}
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            saleType: type.value,
+                                                        }))
+                                                    }
+                                                    className={cn(
+                                                        "px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors",
+                                                        formData.saleType === type.value
+                                                            ? "border-orange-500 bg-orange-50 text-orange-600"
+                                                            : "border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+                                                    )}
+                                                >
+                                                    {type.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            {getLocalizedLabel(FIELD_LABELS.saleType, activeLocale)}
+                                        </label>
+                                        <div className="input bg-gray-50 text-gray-600">
+                                            {getLocalizedValue(
+                                                SALE_TYPE_LABELS[formData.saleType],
+                                                activeLocale
+                                            ) || "-"}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Fiyat
-                                    </label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="number"
-                                            name="price"
-                                            value={formData.price || ""}
-                                            onChange={handleInputChange}
-                                            className="input flex-1"
-                                            placeholder="0"
-                                        />
-                                        <select
-                                            name="currency"
-                                            value={formData.currency}
-                                            onChange={handleInputChange}
-                                            className="input w-24"
-                                        >
-                                            <option value="EUR">€</option>
-                                            <option value="USD">$</option>
-                                            <option value="TRY">₺</option>
-                                            <option value="GBP">£</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Alan (m²)
-                                    </label>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Fiyat
+                                </label>
+                                <div className="flex gap-2">
                                     <input
                                         type="number"
-                                        name="area"
-                                        value={formData.area || ""}
+                                        name="price"
+                                        value={formData.price || ""}
                                         onChange={handleInputChange}
-                                        className="input"
+                                        className="input flex-1 min-w-0"
                                         placeholder="0"
+                                    />
+                                    <Select
+                                        value={formData.currency}
+                                        onChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
+                                        options={CURRENCY_OPTIONS}
+                                        className="!w-24 shrink-0"
                                     />
                                 </div>
                             </div>
 
-                            {/* Residential Fields - Apartments, Villas, Penthouses */}
-                            {isResidential && (
-                                <>
-                                    <div className="border-t border-gray-100 pt-6">
-                                        <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                                            Konut Detayları
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Oda Sayısı
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    name="rooms"
-                                                    value={formData.rooms || ""}
-                                                    onChange={handleInputChange}
-                                                    className="input"
-                                                    placeholder="3+1"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Yatak Odası
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    name="bedrooms"
-                                                    value={formData.bedrooms || ""}
-                                                    onChange={handleInputChange}
-                                                    className="input"
-                                                    placeholder="3"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Banyo
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    name="bathrooms"
-                                                    value={formData.bathrooms || ""}
-                                                    onChange={handleInputChange}
-                                                    className="input"
-                                                    placeholder="2"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Kat
-                                                </label>
-                                                <div className="flex gap-2">
-                                                    <input
-                                                        type="number"
-                                                        name="floor"
-                                                        value={formData.floor || ""}
-                                                        onChange={handleInputChange}
-                                                        className="input flex-1"
-                                                        placeholder="Bulunduğu Kat"
-                                                    />
-                                                    <input
-                                                        type="number"
-                                                        name="totalFloors"
-                                                        value={formData.totalFloors || ""}
-                                                        onChange={handleInputChange}
-                                                        className="input flex-1"
-                                                        placeholder="Toplam Kat"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Yapım Yılı
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    name="buildYear"
-                                                    value={formData.buildYear || ""}
-                                                    onChange={handleInputChange}
-                                                    className="input"
-                                                    placeholder="2024"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                    Isıtma
-                                                </label>
-                                                <select
-                                                    name="heating"
-                                                    value={formData.heating || ""}
-                                                    onChange={handleInputChange}
-                                                    className="input"
-                                                >
-                                                    <option value="">Seçiniz</option>
-                                                    <option value="central">Merkezi</option>
-                                                    <option value="individual">Bireysel</option>
-                                                    <option value="floor">Yerden Isıtma</option>
-                                                    <option value="ac">Klima</option>
-                                                    <option value="none">Yok</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-
-                            {/* Land Fields */}
-                            {isLand && (
-                                <div className="border-t border-gray-100 pt-6">
-                                    <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                                        Arsa Detayları
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Ada / Parsel
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="parcelNo"
-                                                value={formData.parcelNo || ""}
-                                                onChange={handleInputChange}
-                                                className="input"
-                                                placeholder="308 Ada 7 Parsel"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Emsal (KAKS)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                name="emsal"
-                                                value={formData.emsal || ""}
-                                                onChange={handleInputChange}
-                                                className="input"
-                                                placeholder="0.40"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                İmar Durumu
-                                            </label>
-                                            <select
-                                                name="zoningStatus"
-                                                value={formData.zoningStatus || ""}
-                                                onChange={handleInputChange}
-                                                className="input"
-                                            >
-                                                <option value="">Seçiniz</option>
-                                                <option value="imarlı">İmarlı</option>
-                                                <option value="imarsız">İmarsız</option>
-                                                <option value="tarla">Tarla</option>
-                                                <option value="konut">Konut İmarlı</option>
-                                                <option value="ticari">Ticari İmarlı</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Commercial Fields */}
-                            {isCommercial && (
-                                <div className="border-t border-gray-100 pt-6">
-                                    <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                                        Ticari Mülk Detayları
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Zemin Kat Alanı (m²)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                name="groundFloorArea"
-                                                value={formData.groundFloorArea || ""}
-                                                onChange={handleInputChange}
-                                                className="input"
-                                                placeholder="220"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Bodrum Kat Alanı (m²)
-                                            </label>
-                                            <input
-                                                type="number"
-                                                name="basementArea"
-                                                value={formData.basementArea || ""}
-                                                onChange={handleInputChange}
-                                                className="input"
-                                                placeholder="230"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Farm Fields */}
-                            {isFarm && (
-                                <div className="border-t border-gray-100 pt-6">
-                                    <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                                        Çiftlik / Tarla Detayları
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Mevcut Yapı
-                                            </label>
-                                            <input
-                                                type="text"
-                                                name="existingStructure"
-                                                value={formData.existingStructure || ""}
-                                                onChange={handleInputChange}
-                                                className="input"
-                                                placeholder="2 katlı ev, havuz"
-                                            />
-                                        </div>
-
-                                        <div className="flex items-center gap-6 pt-6">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    name="hasWaterSource"
-                                                    checked={formData.hasWaterSource}
-                                                    onChange={handleInputChange}
-                                                    className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-                                                />
-                                                <span className="text-sm text-gray-700">Su Kaynağı</span>
-                                            </label>
-
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    name="hasFruitTrees"
-                                                    checked={formData.hasFruitTrees}
-                                                    onChange={handleInputChange}
-                                                    className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-                                                />
-                                                <span className="text-sm text-gray-700">Meyve Ağaçları</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Eligibility Section - Always Visible */}
-                            <div className="border-t border-gray-100 pt-6">
-                                <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                                    Uygunluk Durumu
-                                </h3>
-                                <div className="flex flex-wrap gap-6">
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            name="citizenshipEligible"
-                                            checked={formData.citizenshipEligible}
-                                            onChange={handleInputChange}
-                                            className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-                                        />
-                                        <span className="text-sm text-gray-700">Vatandaşlığa Uygun</span>
-                                    </label>
-
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            name="residenceEligible"
-                                            checked={formData.residenceEligible}
-                                            onChange={handleInputChange}
-                                            className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-                                        />
-                                        <span className="text-sm text-gray-700">İkametgaha Uygun</span>
-                                    </label>
-                                </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Alan (m²)
+                                </label>
+                                <input
+                                    type="number"
+                                    name="area"
+                                    value={formData.area || ""}
+                                    onChange={handleInputChange}
+                                    className="input"
+                                    placeholder="0"
+                                />
                             </div>
                         </div>
-                    )}
 
+                        {/* Residential Fields - Apartments, Villas, Penthouses */}
+                        {isResidential && (
+                            <>
+                                <div className="border-t border-gray-100 pt-6">
+                                    <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                                        Konut Detayları
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="col-span-full">
+                                            <label className="block text-sm font-medium text-gray-700 mb-3">
+                                                Oda Sayısı
+                                            </label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {ROOM_OPTIONS.map((option) => (
+                                                    <button
+                                                        key={option}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setFormData((prev) => ({
+                                                                ...prev,
+                                                                rooms: option,
+                                                            }));
+                                                        }}
+                                                        className={cn(
+                                                            "px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-200",
+                                                            formData.rooms === option
+                                                                ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                                                                : "bg-white text-gray-600 border-gray-200 hover:border-orange-200 hover:bg-orange-50/30"
+                                                        )}
+                                                    >
+                                                        {option}
+                                                    </button>
+                                                ))}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (!ROOM_OPTIONS.includes(formData.rooms || "")) {
+                                                            // If already custom, do nothing or focus input
+                                                        } else {
+                                                            setFormData((prev) => ({
+                                                                ...prev,
+                                                                rooms: "",
+                                                            }));
+                                                        }
+                                                    }}
+                                                    className={cn(
+                                                        "px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-200",
+                                                        formData.rooms && !ROOM_OPTIONS.includes(formData.rooms)
+                                                            ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                                                            : formData.rooms === "" || (formData.rooms === null && !ROOM_OPTIONS.includes(""))
+                                                                ? "bg-orange-50 text-orange-600 border-orange-200"
+                                                                : "bg-white text-gray-600 border-gray-200 hover:border-orange-200 hover:bg-orange-50/30"
+                                                    )}
+                                                >
+                                                    Özel
+                                                </button>
+                                            </div>
 
-                    {/* Location Tab */}
-                    {activeTab === "location" && (
+                                            {/* Custom Input */}
+                                            {(formData.rooms === "" || (formData.rooms && !ROOM_OPTIONS.includes(formData.rooms))) && (
+                                                <div className="mt-3 max-w-xs animate-in fade-in slide-in-from-top-2 duration-200">
+                                                    <input
+                                                        type="text"
+                                                        value={formData.rooms || ""}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            setFormData((prev) => ({
+                                                                ...prev,
+                                                                rooms: val,
+                                                            }));
+                                                        }}
+                                                        placeholder="Örn: 6+2"
+                                                        className="input"
+                                                        autoFocus
+                                                    />
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                        Lütfen "6+2" formatında giriniz.
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Yatak Odası
+                                            </label>
+                                            <input
+                                                type="number"
+                                                name="bedrooms"
+                                                value={formData.bedrooms || ""}
+                                                onChange={handleInputChange}
+                                                className="input"
+                                                placeholder="3"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Banyo
+                                            </label>
+                                            <input
+                                                type="number"
+                                                name="bathrooms"
+                                                value={formData.bathrooms || ""}
+                                                onChange={handleInputChange}
+                                                className="input"
+                                                placeholder="2"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Kat
+                                            </label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="number"
+                                                    name="floor"
+                                                    value={formData.floor || ""}
+                                                    onChange={handleInputChange}
+                                                    className="input flex-1"
+                                                    placeholder="Bulunduğu Kat"
+                                                />
+                                                <input
+                                                    type="number"
+                                                    name="totalFloors"
+                                                    value={formData.totalFloors || ""}
+                                                    onChange={handleInputChange}
+                                                    className="input flex-1"
+                                                    placeholder="Toplam Kat"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                Yapım Yılı
+                                            </label>
+                                            <input
+                                                type="number"
+                                                name="buildYear"
+                                                value={formData.buildYear || ""}
+                                                onChange={handleInputChange}
+                                                className="input"
+                                                placeholder="2024"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            {activeLocale === "tr" ? (
+                                                <Select
+                                                    label={getLocalizedLabel(FIELD_LABELS.heating, activeLocale)}
+                                                    value={formData.heating || ""}
+                                                    onChange={(value) =>
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            heating: value || null,
+                                                        }))
+                                                    }
+                                                    options={[
+                                                        { value: "", label: "Seçiniz" },
+                                                        { value: "central", label: "Merkezi" },
+                                                        { value: "individual", label: "Bireysel" },
+                                                        { value: "floor", label: "Yerden Isıtma" },
+                                                        { value: "ac", label: "Klima" },
+                                                        { value: "none", label: "Yok" },
+                                                    ]}
+                                                />
+                                            ) : (
+                                                <>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        {getLocalizedLabel(FIELD_LABELS.heating, activeLocale)}
+                                                    </label>
+                                                    <div className="input bg-gray-50 text-gray-600">
+                                                        {getLocalizedValue(
+                                                            formData.heating
+                                                                ? HEATING_LABELS[formData.heating]
+                                                                : undefined,
+                                                            activeLocale
+                                                        ) || "-"}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {/* Land Fields */}
+                        {isLand && (
+                            <div className="border-t border-gray-100 pt-6">
+                                <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                                    Arsa Detayları
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Ada / Parsel
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="parcelNo"
+                                            value={formData.parcelNo || ""}
+                                            onChange={handleInputChange}
+                                            className="input"
+                                            placeholder="308 Ada 7 Parsel"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Emsal (KAKS)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            name="emsal"
+                                            value={formData.emsal || ""}
+                                            onChange={handleInputChange}
+                                            className="input"
+                                            placeholder="0.40"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <Select
+                                            label="İmar Durumu"
+                                            value={formData.zoningStatus || ""}
+                                            onChange={(value) => setFormData(prev => ({ ...prev, zoningStatus: value || null }))}
+                                            options={[
+                                                { value: "", label: "Seçiniz" },
+                                                { value: "imarlı", label: "İmarlı" },
+                                                { value: "imarsız", label: "İmarsız" },
+                                                { value: "tarla", label: "Tarla" },
+                                                { value: "konut", label: "Konut İmarlı" },
+                                                { value: "ticari", label: "Ticari İmarlı" },
+                                            ]}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Commercial Fields */}
+                        {isCommercial && (
+                            <div className="border-t border-gray-100 pt-6">
+                                <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                                    Ticari Mülk Detayları
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Zemin Kat Alanı (m²)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="groundFloorArea"
+                                            value={formData.groundFloorArea || ""}
+                                            onChange={handleInputChange}
+                                            className="input"
+                                            placeholder="220"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Bodrum Kat Alanı (m²)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="basementArea"
+                                            value={formData.basementArea || ""}
+                                            onChange={handleInputChange}
+                                            className="input"
+                                            placeholder="230"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Farm Fields */}
+                        {isFarm && (
+                            <div className="border-t border-gray-100 pt-6">
+                                <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                                    Çiftlik / Tarla Detayları
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Mevcut Yapı
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="existingStructure"
+                                            value={formData.existingStructure || ""}
+                                            onChange={handleInputChange}
+                                            className="input"
+                                            placeholder="2 katlı ev, havuz"
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center gap-6 pt-6">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                name="hasWaterSource"
+                                                checked={formData.hasWaterSource}
+                                                onChange={handleInputChange}
+                                                className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                                            />
+                                            <span className="text-sm text-gray-700">Su Kaynağı</span>
+                                        </label>
+
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                name="hasFruitTrees"
+                                                checked={formData.hasFruitTrees}
+                                                onChange={handleInputChange}
+                                                className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                                            />
+                                            <span className="text-sm text-gray-700">Meyve Ağaçları</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Eligibility Section - Always Visible */}
+                        <div className="border-t border-gray-100 pt-6">
+                            <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                                Uygunluk Durumu
+                            </h3>
+                            <div className="flex flex-wrap gap-6">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        name="citizenshipEligible"
+                                        checked={formData.citizenshipEligible}
+                                        onChange={handleInputChange}
+                                        className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                                    />
+                                    <span className="text-sm text-gray-700">Vatandaşlığa Uygun</span>
+                                </label>
+
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        name="residenceEligible"
+                                        checked={formData.residenceEligible}
+                                        onChange={handleInputChange}
+                                        className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                                    />
+                                    <span className="text-sm text-gray-700">İkametgaha Uygun</span>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="section-location" className="scroll-mt-28 mt-10 space-y-6">
+                        <div className="border-t border-gray-100 pt-8">
+                            <h2 className="text-lg font-semibold text-gray-900">Konum</h2>
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -954,30 +2451,29 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    İlçe
-                                </label>
-                                <input
-                                    type="text"
-                                    name="district"
+                                <Select
+                                    label="İlçe"
                                     value={formData.district}
-                                    onChange={handleInputChange}
-                                    className="input"
-                                    placeholder="Mahmutlar"
+                                    onChange={(value) => setFormData(prev => ({ ...prev, district: value }))}
+                                    options={[
+                                        { value: "", label: "Seçiniz" },
+                                        ...districtOptions.map(option => ({ value: option, label: option }))
+                                    ]}
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Mahalle
-                                </label>
-                                <input
-                                    type="text"
-                                    name="neighborhood"
+                                <Select
+                                    label="Mahalle"
                                     value={formData.neighborhood || ""}
-                                    onChange={handleInputChange}
-                                    className="input"
-                                    placeholder="Mahalle adı"
+                                    onChange={(value) => setFormData((prev) => ({
+                                        ...prev,
+                                        neighborhood: value || null,
+                                    }))}
+                                    options={[
+                                        { value: "", label: "Seçiniz" },
+                                        ...neighborhoodOptions.map(option => ({ value: option, label: option }))
+                                    ]}
                                 />
                             </div>
 
@@ -1024,29 +2520,104 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                                     placeholder="32.0489"
                                 />
                             </div>
-                        </div>
-                    )}
 
-                    {/* Features Tab */}
-                    {activeTab === "features" && (
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Google Maps Linki
+                                </label>
+                                <div className="flex flex-col gap-2">
+                                    <input
+                                        type="text"
+                                        name="googleMapsLink"
+                                        value={formData.googleMapsLink || ""}
+                                        onChange={handleInputChange}
+                                        className="input"
+                                        placeholder="https://www.google.com/maps?q=36.5489,32.0489"
+                                    />
+                                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
+                                        <span>
+                                            Koordinat veya adres girince otomatik dolar,
+                                            istersen düzenleyebilirsin.
+                                        </span>
+                                        <button
+                                            type="button"
+                                            className="text-orange-600 hover:text-orange-700 font-medium"
+                                            onClick={() =>
+                                                autoMapsLink &&
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    googleMapsLink: autoMapsLink,
+                                                }))
+                                            }
+                                            disabled={!autoMapsLink}
+                                        >
+                                            Otomatik Doldur
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="md:col-span-2">
+                                {mapSrc ? (
+                                    <div className="rounded-2xl border border-gray-200 overflow-hidden bg-gray-50">
+                                        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
+                                            <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                                                <MapPin className="w-4 h-4 text-orange-500" />
+                                                Harita Önizleme
+                                            </div>
+                                            <span className="text-xs text-gray-400">Google Maps</span>
+                                        </div>
+                                        <div className="h-44 md:h-52 w-full">
+                                            <iframe
+                                                title="İlan konumu"
+                                                src={mapSrc}
+                                                className="w-full h-full"
+                                                loading="lazy"
+                                                referrerPolicy="no-referrer-when-downgrade"
+                                            />
+                                        </div>
+                                        {locationLabel && (
+                                            <div className="px-4 py-3 bg-white border-t border-gray-100 text-xs text-gray-500">
+                                                {locationLabel}
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500">
+                                        Harita önizlemesi için adres veya koordinat bilgisi girin.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="section-features" className="scroll-mt-28 mt-10 space-y-6">
+                        <div className="border-t border-gray-100 pt-8">
+                            <h2 className="text-lg font-semibold text-gray-900">
+                                {getLocalizedLabel(FIELD_LABELS.features, activeLocale)}
+                            </h2>
+                        </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                             {[
-                                { name: "furnished", label: "Eşyalı" },
-                                { name: "balcony", label: "Balkon" },
-                                { name: "garden", label: "Bahçe" },
-                                { name: "pool", label: "Havuz" },
-                                { name: "parking", label: "Otopark" },
-                                { name: "elevator", label: "Asansör" },
-                                { name: "security", label: "Güvenlik" },
-                                { name: "seaView", label: "Deniz Manzarası" },
+                                { name: "furnished", labels: FEATURE_LABELS.furnished },
+                                { name: "balcony", labels: FEATURE_LABELS.balcony },
+                                { name: "garden", labels: FEATURE_LABELS.garden },
+                                { name: "pool", labels: FEATURE_LABELS.pool },
+                                { name: "parking", labels: FEATURE_LABELS.parking },
+                                { name: "elevator", labels: FEATURE_LABELS.elevator },
+                                { name: "security", labels: FEATURE_LABELS.security },
+                                { name: "seaView", labels: FEATURE_LABELS.seaView },
                             ].map((feature) => (
                                 <label
                                     key={feature.name}
                                     className={cn(
-                                        "flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors",
+                                        "flex items-center gap-3 p-4 rounded-lg border transition-colors",
                                         formData[feature.name as keyof ListingData]
                                             ? "border-orange-500 bg-orange-50"
-                                            : "border-gray-200 hover:border-gray-300"
+                                            : "border-gray-200 hover:border-gray-300",
+                                        activeLocale === "tr"
+                                            ? "cursor-pointer"
+                                            : "cursor-not-allowed opacity-80"
                                     )}
                                 >
                                     <input
@@ -1056,99 +2627,76 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                                             formData[feature.name as keyof ListingData] as boolean
                                         }
                                         onChange={handleInputChange}
+                                        disabled={activeLocale !== "tr"}
                                         className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
                                     />
                                     <span className="text-sm font-medium text-gray-700">
-                                        {feature.label}
+                                        {getLocalizedLabel(feature.labels, activeLocale)}
                                     </span>
                                 </label>
                             ))}
                         </div>
-                    )}
+                    </section>
 
-                    {/* Tags Tab */}
-                    {activeTab === "tags" && (
+                    <section id="section-tags" className="scroll-mt-28 mt-10 space-y-6">
+                        <div className="border-t border-gray-100 pt-8">
+                            <h2 className="text-lg font-semibold text-gray-900">
+                                {getLocalizedLabel(FIELD_LABELS.tags, activeLocale)}
+                            </h2>
+                        </div>
                         <div className="space-y-6">
                             <div>
-                                <h3 className="text-sm font-semibold text-gray-900 mb-2">
-                                    İlan Etiketleri
-                                </h3>
-                                <p className="text-sm text-gray-500 mb-4">
-                                    Bu ilana etiketler ekleyerek kategorize edebilir ve filtrelenebilir hale getirebilirsiniz.
-                                </p>
-                                <TagInput
-                                    selectedTags={selectedTags}
-                                    onTagsChange={setSelectedTags}
-                                />
+                                {activeLocale === "tr" ? (
+                                    <>
+                                        <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                                            İlan Etiketleri
+                                        </h3>
+                                        <p className="text-sm text-gray-500 mb-4">
+                                            Bu ilana etiketler ekleyerek kategorize edebilir ve filtrelenebilir hale getirebilirsiniz.
+                                        </p>
+                                        <TagInput
+                                            selectedTags={selectedTags}
+                                            onTagsChange={setSelectedTags}
+                                        />
+                                    </>
+                                ) : (
+                                    <>
+                                        <h3 className="text-sm font-semibold text-gray-900 mb-2">
+                                            {getLocalizedLabel(FIELD_LABELS.tags, activeLocale)}
+                                        </h3>
+                                        <div className="flex flex-wrap gap-2">
+                                            {selectedTags.length === 0 && (
+                                                <span className="text-sm text-gray-400">
+                                                    -
+                                                </span>
+                                            )}
+                                            {selectedTags.map((tag) => {
+                                                const translatedName = tagTranslationMap[tag.id];
+                                                const label = formatTranslatedValue(
+                                                    translatedName || "",
+                                                    tag.name
+                                                );
+                                                return (
+                                                    <span
+                                                        key={tag.id}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white"
+                                                        style={{ backgroundColor: tag.color }}
+                                                    >
+                                                        {label}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
-                    )}
+                    </section>
 
-                    {activeTab === "translations" && (
-                        <div>
-                            {/* Locale Tabs */}
-                            <div className="flex gap-2 mb-6">
-                                {LOCALES.map((locale) => (
-                                    <button
-                                        key={locale.code}
-                                        onClick={() => setActiveLocale(locale.code)}
-                                        className={cn(
-                                            "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                                            activeLocale === locale.code
-                                                ? "bg-orange-500 text-white"
-                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                        )}
-                                    >
-                                        <span>{locale.flag}</span>
-                                        {locale.label}
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Translation Form */}
-                            <div className="space-y-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Başlık ({LOCALES.find((l) => l.code === activeLocale)?.label})
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={currentTranslation?.title || ""}
-                                        onChange={(e) =>
-                                            handleTranslationChange(
-                                                activeLocale,
-                                                "title",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="input"
-                                        placeholder="İlan başlığı"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Açıklama ({LOCALES.find((l) => l.code === activeLocale)?.label})
-                                    </label>
-                                    <textarea
-                                        value={currentTranslation?.description || ""}
-                                        onChange={(e) =>
-                                            handleTranslationChange(
-                                                activeLocale,
-                                                "description",
-                                                e.target.value
-                                            )
-                                        }
-                                        className="input min-h-[200px]"
-                                        placeholder="İlan açıklaması"
-                                    />
-                                </div>
-                            </div>
+                    <section id="section-media" className="scroll-mt-28 mt-10 space-y-6">
+                        <div className="border-t border-gray-100 pt-8">
+                            <h2 className="text-lg font-semibold text-gray-900">Medya</h2>
                         </div>
-                    )}
-
-                    {/* Media Tab */}
-                    {activeTab === "media" && (
                         <div className="space-y-6">
                             <div
                                 onDragOver={handleDragOver}
@@ -1213,51 +2761,99 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                                 </p>
                             )}
 
-                            {formData.media && formData.media.length > 0 && (
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    {formData.media.map((item) => (
-                                        <div
-                                            key={item.id}
-                                            className={cn(
-                                                "relative aspect-square rounded-lg overflow-hidden border-2",
-                                                item.isCover
-                                                    ? "border-orange-500"
-                                                    : "border-transparent"
-                                            )}
+                            {isMounted && (
+                                <DndContext
+                                    id="existing-media-dnd"
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handleDragEnd}
+                                >
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <SortableContext
+                                            items={(formData.media || []).map((m) => m.id)}
+                                            strategy={rectSortingStrategy}
                                         >
-                                            <img
-                                                src={resolveMediaUrl(item.url)}
-                                                alt=""
-                                                className="w-full h-full object-cover"
-                                            />
-                                            {item.isCover && (
-                                                <span className="absolute top-2 left-2 px-2 py-1 bg-orange-500 text-white text-xs rounded">
-                                                    Kapak
-                                                </span>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
+                                            {(formData.media || []).map((item, index) => (
+                                                <SortableMediaItem
+                                                    key={item.id}
+                                                    item={item}
+                                                    index={index}
+                                                    resolveMediaUrl={resolveMediaUrl}
+                                                    onRemove={handleRemoveMedia}
+                                                />
+                                            ))}
+                                        </SortableContext>
+                                    </div>
+
+                                    <DragOverlay adjustScale={true}>
+                                        {activeId ? (
+                                            <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-orange-500 shadow-2xl scale-105 ring-4 ring-orange-500/20 bg-white">
+                                                {(() => {
+                                                    const item = formData.media?.find((m) => m.id === activeId);
+                                                    if (!item) return null;
+                                                    return (
+                                                        <img
+                                                            src={resolveMediaUrl(item.url)}
+                                                            alt=""
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    );
+                                                })()}
+                                            </div>
+                                        ) : null}
+                                    </DragOverlay>
+                                </DndContext>
                             )}
 
-                            {pendingMedia.length > 0 && (
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    {pendingMedia.map((item) => (
-                                        <div
-                                            key={item.id}
-                                            className="relative aspect-square rounded-lg overflow-hidden border-2 border-dashed border-orange-200 bg-orange-50"
+                            {isMounted && pendingMedia.length > 0 && (
+                                <DndContext
+                                    id="pending-media-dnd"
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handlePendingDragEnd}
+                                >
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <SortableContext
+                                            items={pendingMedia.map((m) => m.id)}
+                                            strategy={rectSortingStrategy}
                                         >
-                                            <img
-                                                src={item.previewUrl}
-                                                alt=""
-                                                className="w-full h-full object-cover opacity-80"
-                                            />
-                                            <span className="absolute bottom-2 left-2 px-2 py-1 bg-white/80 text-gray-700 text-xs rounded">
-                                                Yüklenmeyi bekliyor
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
+                                            {pendingMedia.map((item, index) => (
+                                                <SortablePendingMediaItem
+                                                    key={item.id}
+                                                    item={item}
+                                                    index={index}
+                                                    onRemove={(id: string) => {
+                                                        const revoked = pendingMedia.filter((m) => m.id === id);
+                                                        revokePendingMedia(revoked);
+                                                        setPendingMedia((prev) =>
+                                                            prev.filter((m) => m.id !== id)
+                                                        );
+                                                    }}
+                                                />
+                                            ))}
+                                        </SortableContext>
+                                    </div>
+
+                                    <DragOverlay adjustScale={true}>
+                                        {activeId ? (
+                                            <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-orange-500 shadow-2xl scale-105 ring-4 ring-orange-500/20 bg-white">
+                                                {(() => {
+                                                    const item = pendingMedia.find((m) => m.id === activeId);
+                                                    if (!item) return null;
+                                                    return (
+                                                        <img
+                                                            src={item.previewUrl}
+                                                            alt=""
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    );
+                                                })()}
+                                            </div>
+                                        ) : null}
+                                    </DragOverlay>
+                                </DndContext>
                             )}
 
                             {!formData.media?.length && pendingMedia.length === 0 && (
@@ -1270,27 +2866,45 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                                 </div>
                             )}
                         </div>
-                    )}
+                    </section>
                 </div>
             </div>
 
             {/* Actions */}
             <div className="flex items-center justify-between bg-white rounded-xl shadow-sm border border-gray-100 p-4">
                 <div className="flex items-center gap-2">
-                    {!isNew && formData.status !== "ARCHIVED" && (
+                    {!isNew && formData.status !== "ARCHIVED" && formData.status !== "REMOVED" && (
                         <button
-                            onClick={() => handleStatusChange("ARCHIVED")}
+                            onClick={() => setConfirmAction("archive")}
                             className="btn btn-ghost btn-md text-gray-500"
                         >
                             <Archive className="w-4 h-4" />
                             Arşivle
                         </button>
                     )}
+                    {!isNew && formData.status === "PUBLISHED" && (
+                        <button
+                            onClick={() => setConfirmAction("remove")}
+                            className="btn btn-ghost btn-md text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                            <CircleOff className="w-4 h-4" />
+                            Yayından Kaldır
+                        </button>
+                    )}
+                    {!isNew && (
+                        <button
+                            onClick={() => setConfirmAction("delete")}
+                            className="btn btn-ghost btn-md text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                            İlanı Sil
+                        </button>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => handleSubmit(false)}
+                        onClick={() => handleSubmit({ statusOverride: "DRAFT" })}
                         disabled={isSaving || isUploading}
                         className="btn btn-outline btn-md"
                     >
@@ -1298,7 +2912,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                         {isSaving ? "Kaydediliyor..." : "Taslak Kaydet"}
                     </button>
                     <button
-                        onClick={() => handleSubmit(true)}
+                        onClick={() => handleSubmit({ statusOverride: "PUBLISHED" })}
                         disabled={isSaving || isUploading}
                         className="btn btn-primary btn-md"
                     >
@@ -1307,6 +2921,29 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                     </button>
                 </div>
             </div>
+
+            <UnsavedChangesModal
+                isOpen={isLeavePromptOpen}
+                isLoading={isSaving || isUploading}
+                loadingAction={leaveAction}
+                onCancel={closeLeavePrompt}
+                onDiscard={handleLeaveDiscard}
+                onSaveDraft={() => handleLeaveSave("DRAFT")}
+                onPublish={() => handleLeaveSave("PUBLISHED")}
+            />
+
+            <ConfirmModal
+                isOpen={Boolean(confirmAction)}
+                title={activeConfirm?.title || ""}
+                description={activeConfirm?.description}
+                confirmLabel={activeConfirm?.confirmLabel}
+                tone={activeConfirm?.tone}
+                isLoading={isActionLoading}
+                onCancel={() => {
+                    if (!isActionLoading) setConfirmAction(null);
+                }}
+                onConfirm={handleConfirmAction}
+            />
 
             {/* AI Fill Modal */}
             <AiFillModal

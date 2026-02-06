@@ -15,6 +15,7 @@ export interface Listing {
     currency: string;
     bedrooms?: number;
     bathrooms?: number;
+    rooms?: string;
     area: number;
     district: string;
     city: string;
@@ -116,7 +117,7 @@ export function ListingCard({ listing, locale }: ListingCardProps) {
                     <div className="flex flex-col items-center gap-1">
                         <BedDouble className="w-4 h-4 text-gray-400" />
                         <span className="text-xs text-gray-600 font-medium">
-                            {listing.bedrooms || "-"} Oda
+                            {listing.rooms || listing.bedrooms || "-"} Oda
                         </span>
                     </div>
                     <div className="flex flex-col items-center gap-1">
