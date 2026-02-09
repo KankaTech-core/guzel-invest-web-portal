@@ -11,11 +11,6 @@ export default function LoginPage() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const fillAdminCredentials = () => {
-        setEmail("admin@guzelinvest.com");
-        setPassword("admin123");
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
@@ -115,20 +110,6 @@ export default function LoginPage() {
                             )}
                         </button>
                     </form>
-
-                    {/* Demo credentials */}
-                    <div className="mt-6 p-4 bg-slate-50 rounded-lg">
-                        <p className="text-xs text-gray-500 text-center mb-2">
-                            Demo: admin@guzelinvest.com / admin123
-                        </p>
-                        <button
-                            type="button"
-                            onClick={fillAdminCredentials}
-                            className="w-full text-xs bg-slate-200 text-slate-700 py-2 rounded hover:bg-slate-300 transition-colors font-medium border border-slate-300"
-                        >
-                            Admin Bilgilerini Doldur
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
