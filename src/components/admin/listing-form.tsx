@@ -51,6 +51,7 @@ import { TagInput } from "./tag-input";
 import { AiFillModal, ParsedData } from "./ai-fill-modal";
 import { ConfirmModal } from "./confirm-modal";
 import { UnsavedChangesModal } from "./unsaved-changes-modal";
+import { MediaOptimizationModal } from "./media-optimization-modal";
 import {
     CompanyOptionSelect,
     RoomOptionSelect // New component
@@ -85,6 +86,7 @@ interface TagData {
 }
 
 type ListingStatusValue = "DRAFT" | "PUBLISHED" | "ARCHIVED" | "REMOVED";
+type MediaOptimizationState = "hidden" | "optimizing" | "completed";
 
 interface ListingData {
     id?: string;
@@ -403,6 +405,12 @@ const RESIDENTIAL_TYPES = ["APARTMENT", "VILLA", "PENTHOUSE"];
 const LAND_TYPES = ["LAND"];
 const COMMERCIAL_TYPES = ["COMMERCIAL", "SHOP", "OFFICE"];
 const FARM_TYPES = ["FARM"];
+const MEDIA_OPTIMIZATION_SUCCESS_DURATION_MS = 1100;
+
+const wait = (ms: number) =>
+    new Promise<void>((resolve) => {
+        setTimeout(resolve, ms);
+    });
 
 const defaultTranslations: ListingTranslation[] = buildTranslations();
 
@@ -802,6 +810,8 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         hasNonTurkishTranslations(listing?.translations)
     );
     const [isMounted, setIsMounted] = useState(false);
+    const [mediaOptimizationState, setMediaOptimizationState] =
+        useState<MediaOptimizationState>("hidden");
     const [leaveIntent, setLeaveIntent] = useState<{
         type: "href" | "back";
         href?: string;
@@ -1607,6 +1617,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         } = {}
     ): Promise<boolean> => {
         setIsSaving(true);
+        setMediaOptimizationState("hidden");
         setError(null);
 
         try {
@@ -1648,17 +1659,22 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             }
 
             if (listingId && pendingMedia.length > 0) {
+                setMediaOptimizationState("optimizing");
                 const uploaded = await uploadMediaFiles(
                     listingId,
                     pendingMedia.map((item) => item.file)
                 );
 
                 if (uploaded.length === 0) {
+                    setMediaOptimizationState("hidden");
                     return false;
                 }
 
                 revokePendingMedia(pendingMedia);
                 setPendingMedia([]);
+                setMediaOptimizationState("completed");
+                await wait(MEDIA_OPTIMIZATION_SUCCESS_DURATION_MS);
+                setMediaOptimizationState("hidden");
             }
 
             if (!options.skipRedirect) {
@@ -1668,6 +1684,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             }
             return true;
         } catch (err) {
+            setMediaOptimizationState("hidden");
             setError(err instanceof Error ? err.message : "Bir hata oluştu");
             return false;
         } finally {
@@ -3282,6 +3299,15 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                 onDiscard={handleLeaveDiscard}
                 onSaveDraft={() => handleLeaveSave("DRAFT")}
                 onPublish={() => handleLeaveSave("PUBLISHED")}
+            />
+
+            <MediaOptimizationModal
+                isOpen={mediaOptimizationState !== "hidden"}
+                stage={
+                    mediaOptimizationState === "completed"
+                        ? "completed"
+                        : "optimizing"
+                }
             />
 
             <ConfirmModal

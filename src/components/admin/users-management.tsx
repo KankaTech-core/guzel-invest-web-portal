@@ -4,14 +4,17 @@ import { FormEvent, useState } from "react";
 import {
     Check,
     Copy,
+    Edit,
     Eye,
     EyeOff,
     Plus,
     Shield,
+    Trash2,
     User,
     UserPlus,
 } from "lucide-react";
 import { Button, Input } from "@/components/ui";
+import { ConfirmModal } from "@/components/admin/confirm-modal";
 
 const ROLE_OPTIONS = [
     { value: "ADMIN", label: "Admin" },
@@ -47,6 +50,13 @@ interface LastCreatedCredentials {
     role: UserRole;
 }
 
+interface EditFormState {
+    name: string;
+    email: string;
+    role: UserRole;
+    password: string;
+}
+
 const INITIAL_FORM_STATE: UserFormState = {
     name: "",
     email: "",
@@ -79,10 +89,16 @@ export function UsersManagement({ initialUsers }: UsersManagementProps) {
     const [users, setUsers] = useState(initialUsers);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [formState, setFormState] = useState<UserFormState>(INITIAL_FORM_STATE);
+    const [editFormState, setEditFormState] = useState<EditFormState | null>(null);
+    const [editingUserId, setEditingUserId] = useState<string | null>(null);
+    const [deletingUser, setDeletingUser] = useState<UserListItem | null>(null);
     const [lastCreatedCredentials, setLastCreatedCredentials] =
         useState<LastCreatedCredentials | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [isEditPasswordVisible, setIsEditPasswordVisible] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [isCopied, setIsCopied] = useState(false);
@@ -151,6 +167,115 @@ export function UsersManagement({ initialUsers }: UsersManagementProps) {
         }
     };
 
+    const startEdit = (user: UserListItem) => {
+        setEditingUserId(user.id);
+        setEditFormState({
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            password: "",
+        });
+        setIsEditPasswordVisible(false);
+        setErrorMessage("");
+        setSuccessMessage("");
+    };
+
+    const handleEditChange = <K extends keyof EditFormState>(
+        key: K,
+        value: EditFormState[K]
+    ) => {
+        setEditFormState((prev) => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                [key]: value,
+            };
+        });
+    };
+
+    const handleUpdate = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (!editingUserId || !editFormState) return;
+
+        setIsUpdating(true);
+        setErrorMessage("");
+        setSuccessMessage("");
+
+        const payload = {
+            name: editFormState.name.trim(),
+            email: editFormState.email.trim().toLowerCase(),
+            role: editFormState.role,
+            password: editFormState.password.trim(),
+        };
+
+        try {
+            const response = await fetch(`/api/admin/users/${editingUserId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            const data = (await response.json()) as {
+                error?: string;
+                user?: UserListItem;
+            };
+
+            const updatedUser = data.user;
+            if (!response.ok || !updatedUser) {
+                throw new Error(data.error || "Kullanıcı güncellenemedi");
+            }
+
+            setUsers((prev) =>
+                prev.map((item) => (item.id === updatedUser.id ? updatedUser : item))
+            );
+            setSuccessMessage("Kullanıcı bilgileri güncellendi.");
+            setEditingUserId(null);
+            setEditFormState(null);
+            setIsEditPasswordVisible(false);
+        } catch (error) {
+            setErrorMessage(
+                error instanceof Error ? error.message : "Bir hata oluştu"
+            );
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!deletingUser) return;
+
+        setIsDeleting(true);
+        setErrorMessage("");
+        setSuccessMessage("");
+
+        try {
+            const response = await fetch(`/api/admin/users/${deletingUser.id}`, {
+                method: "DELETE",
+            });
+
+            const data = (await response.json()) as { error?: string };
+            if (!response.ok) {
+                throw new Error(data.error || "Kullanıcı silinemedi");
+            }
+
+            setUsers((prev) => prev.filter((user) => user.id !== deletingUser.id));
+            setSuccessMessage("Kullanıcı silindi.");
+            setDeletingUser(null);
+
+            if (editingUserId === deletingUser.id) {
+                setEditingUserId(null);
+                setEditFormState(null);
+            }
+        } catch (error) {
+            setErrorMessage(
+                error instanceof Error ? error.message : "Bir hata oluştu"
+            );
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     const copyCredentials = async () => {
         if (!lastCreatedCredentials) return;
 
@@ -199,6 +324,18 @@ export function UsersManagement({ initialUsers }: UsersManagementProps) {
                     </button>
                 </div>
             </div>
+
+            {errorMessage && (
+                <div className="mb-4 p-3 rounded-lg border border-red-200 bg-red-50 text-sm text-red-700">
+                    {errorMessage}
+                </div>
+            )}
+
+            {successMessage && (
+                <div className="mb-4 p-3 rounded-lg border border-emerald-200 bg-emerald-50 text-sm text-emerald-700">
+                    {successMessage}
+                </div>
+            )}
 
             {isCreateOpen && (
             <div className="max-w-4xl mx-auto grid lg:grid-cols-[minmax(0,430px),minmax(0,1fr)] gap-6 mb-8">
@@ -300,18 +437,6 @@ export function UsersManagement({ initialUsers }: UsersManagementProps) {
                             </p>
                         </div>
 
-                        {errorMessage && (
-                            <div className="p-3 rounded-lg border border-red-200 bg-red-50 text-sm text-red-700">
-                                {errorMessage}
-                            </div>
-                        )}
-
-                        {successMessage && (
-                            <div className="p-3 rounded-lg border border-emerald-200 bg-emerald-50 text-sm text-emerald-700">
-                                {successMessage}
-                            </div>
-                        )}
-
                         <Button
                             type="submit"
                             loading={isSubmitting}
@@ -382,6 +507,123 @@ export function UsersManagement({ initialUsers }: UsersManagementProps) {
             </div>
             )}
 
+            {editFormState && editingUserId && (
+                <div className="max-w-3xl mx-auto mb-8 bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 className="font-semibold text-gray-900">Kullanıcı Düzenle</h2>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Şifreyi değiştirmek istemiyorsanız boş bırakın
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setEditingUserId(null);
+                                setEditFormState(null);
+                                setIsEditPasswordVisible(false);
+                            }}
+                            className="btn btn-ghost btn-sm"
+                        >
+                            Kapat
+                        </button>
+                    </div>
+
+                    <form onSubmit={handleUpdate} className="grid md:grid-cols-2 gap-4">
+                        <Input
+                            name="edit-name"
+                            label="Ad Soyad"
+                            value={editFormState.name}
+                            onChange={(event) =>
+                                handleEditChange("name", event.target.value)
+                            }
+                            required
+                        />
+
+                        <Input
+                            name="edit-email"
+                            type="email"
+                            label="E-posta"
+                            value={editFormState.email}
+                            onChange={(event) =>
+                                handleEditChange("email", event.target.value)
+                            }
+                            required
+                        />
+
+                        <div>
+                            <label
+                                htmlFor="edit-role"
+                                className="block text-sm font-medium text-gray-700 mb-2"
+                            >
+                                Rol
+                            </label>
+                            <select
+                                id="edit-role"
+                                value={editFormState.role}
+                                onChange={(event) =>
+                                    handleEditChange("role", event.target.value as UserRole)
+                                }
+                                className="input"
+                            >
+                                {ROLE_OPTIONS.map((roleOption) => (
+                                    <option key={roleOption.value} value={roleOption.value}>
+                                        {roleOption.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Yeni Şifre (Opsiyonel)
+                            </label>
+                            <div className="relative">
+                                <input
+                                    name="edit-password"
+                                    type={isEditPasswordVisible ? "text" : "password"}
+                                    value={editFormState.password}
+                                    onChange={(event) =>
+                                        handleEditChange("password", event.target.value)
+                                    }
+                                    placeholder="Değiştirmek için girin"
+                                    className="input pr-11"
+                                    minLength={8}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setIsEditPasswordVisible((prev) => !prev)
+                                    }
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                                    aria-label={
+                                        isEditPasswordVisible
+                                            ? "Şifreyi gizle"
+                                            : "Şifreyi göster"
+                                    }
+                                >
+                                    {isEditPasswordVisible ? (
+                                        <EyeOff className="w-4 h-4" />
+                                    ) : (
+                                        <Eye className="w-4 h-4" />
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="md:col-span-2 flex justify-end">
+                            <Button
+                                type="submit"
+                                loading={isUpdating}
+                                icon={<Edit className="w-4 h-4" />}
+                            >
+                                Kaydet
+                            </Button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
             <section>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
                     Kayıtlı Kullanıcılar ({users.length})
@@ -418,6 +660,24 @@ export function UsersManagement({ initialUsers }: UsersManagementProps) {
                                             dateStyle: "medium",
                                         }).format(new Date(user.createdAt))}
                                     </span>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => startEdit(user)}
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                            aria-label="Kullanıcıyı düzenle"
+                                        >
+                                            <Edit className="w-4 h-4 text-gray-500" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setDeletingUser(user)}
+                                            className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                                            aria-label="Kullanıcıyı sil"
+                                        >
+                                            <Trash2 className="w-4 h-4 text-red-500" />
+                                        </button>
+                                    </div>
                                 </div>
                             </article>
                         ))}
@@ -425,6 +685,25 @@ export function UsersManagement({ initialUsers }: UsersManagementProps) {
                 )}
             </section>
             </div>
+
+            <ConfirmModal
+                isOpen={Boolean(deletingUser)}
+                title="Kullanıcı silinsin mi?"
+                description={
+                    deletingUser
+                        ? `${deletingUser.name} (${deletingUser.email}) hesabı kalıcı olarak silinecek.`
+                        : undefined
+                }
+                confirmLabel="Sil"
+                cancelLabel="Vazgeç"
+                tone="danger"
+                isLoading={isDeleting}
+                onConfirm={handleDelete}
+                onCancel={() => {
+                    if (isDeleting) return;
+                    setDeletingUser(null);
+                }}
+            />
         </div>
     );
 }
