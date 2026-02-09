@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { generateListingSlug } from "@/lib/utils";
+import { buildListingSku, generateListingSlug } from "@/lib/utils";
 import { PropertyType, ListingStatus } from "@/generated/prisma";
+
+const normalizeOptionalText = (value: unknown): string | null => {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+};
+
+const toNullableNumber = (value: unknown): number | null => {
+    if (value === undefined || value === null || value === "") return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+const toBoolean = (value: unknown): boolean => value === true;
+
 export async function POST(request: NextRequest) {
     try {
         const session = await getSession();
@@ -21,7 +36,7 @@ export async function POST(request: NextRequest) {
         // Validate required fields
         const requiredFields = ["type", "saleType", "city", "district", "price", "area"];
         for (const field of requiredFields) {
-            if (!body[field]) {
+            if (body[field] === undefined || body[field] === null || body[field] === "") {
                 return NextResponse.json(
                     { error: `Missing required field: ${field}` },
                     { status: 400 }
@@ -37,87 +52,105 @@ export async function POST(request: NextRequest) {
 
         // Generate unique slug
         const slug = generateListingSlug(title, body.city, body.type);
+        const company = normalizeOptionalText(body.company) || "Güzel Invest";
 
         console.log("Creating listing with body:", JSON.stringify(body, null, 2));
 
         // Create listing with translations
-        const listing = await prisma.listing.create({
-            data: {
-                slug,
-                status: body.status || "DRAFT",
-                type: body.type,
-                saleType: body.saleType,
-                city: body.city,
-                district: body.district,
-                neighborhood: body.neighborhood || null,
-                address: body.address || null,
-                googleMapsLink: body.googleMapsLink || null,
-                latitude: body.latitude !== null && body.latitude !== undefined ? Number(body.latitude) : null,
-                longitude: body.longitude !== null && body.longitude !== undefined ? Number(body.longitude) : null,
-                price: body.price.toString(), // Convert to string for Decimal field
-                currency: body.currency || "EUR",
-                area: Number(body.area),
-                rooms: body.rooms !== null && body.rooms !== undefined ? body.rooms.toString() : null,
-                bedrooms: body.bedrooms !== null && body.bedrooms !== undefined ? Number(body.bedrooms) : null,
-                bathrooms: body.bathrooms !== null && body.bathrooms !== undefined ? Number(body.bathrooms) : null,
-                floor: body.floor !== null && body.floor !== undefined ? Number(body.floor) : null,
-                totalFloors: body.totalFloors !== null && body.totalFloors !== undefined ? Number(body.totalFloors) : null,
-                buildYear: body.buildYear !== null && body.buildYear !== undefined ? Number(body.buildYear) : null,
-                heating: body.heating || null,
-                furnished: body.furnished || false,
-                balcony: body.balcony || false,
-                garden: body.garden || false,
-                pool: body.pool || false,
-                parking: body.parking || false,
-                elevator: body.elevator || false,
-                security: body.security || false,
-                seaView: body.seaView || false,
-                // Land-specific
-                parcelNo: body.parcelNo || null,
-                emsal: body.emsal !== null && body.emsal !== undefined ? body.emsal.toString() : null,
-                zoningStatus: body.zoningStatus || null,
-                // Commercial-specific
-                groundFloorArea: body.groundFloorArea !== null && body.groundFloorArea !== undefined ? Number(body.groundFloorArea) : null,
-                basementArea: body.basementArea !== null && body.basementArea !== undefined ? Number(body.basementArea) : null,
-                // Farm-specific
-                hasWaterSource: body.hasWaterSource || false,
-                hasFruitTrees: body.hasFruitTrees || false,
-                existingStructure: body.existingStructure || null,
-                // Eligibility
-                citizenshipEligible: body.citizenshipEligible || false,
-                residenceEligible: body.residenceEligible || false,
-                createdById: session.userId,
-                translations: {
-                    create: (body.translations || [])
-                        .filter((t: { title: string }) => t.title)
-                        .map((t: { locale: string; title: string; description: string; features?: string[] }) => ({
-                            locale: t.locale,
-                            title: t.title,
-                            description: t.description || "",
-                            features: t.features || [],
-                        })),
+        const listing = await prisma.$transaction(async (tx) => {
+            const serial = await tx.listingSerial.create({ data: {} });
+            const sku = buildListingSku(body.city, serial.id);
+
+            await tx.listingCompanyOption.upsert({
+                where: { name: company },
+                update: {},
+                create: { name: company },
+            });
+
+            return tx.listing.create({
+                data: {
+                    slug,
+                    sku,
+                    status: body.status || "DRAFT",
+                    type: body.type,
+                    saleType: body.saleType,
+                    company,
+                    city: body.city,
+                    district: body.district,
+                    neighborhood: body.neighborhood || null,
+                    address: body.address || null,
+                    googleMapsLink: body.googleMapsLink || null,
+                    latitude: toNullableNumber(body.latitude),
+                    longitude: toNullableNumber(body.longitude),
+                    price: body.price.toString(), // Convert to string for Decimal field
+                    currency: body.currency || "EUR",
+                    area: Number(body.area),
+                    rooms: body.rooms !== null && body.rooms !== undefined ? body.rooms.toString() : null,
+                    bedrooms: toNullableNumber(body.bedrooms),
+                    bathrooms: toNullableNumber(body.bathrooms),
+                    wcCount: toNullableNumber(body.wcCount),
+                    floor: toNullableNumber(body.floor),
+                    totalFloors: toNullableNumber(body.totalFloors),
+                    buildYear: toNullableNumber(body.buildYear),
+                    heating: body.heating || null,
+                    furnished: toBoolean(body.furnished),
+                    balcony: toBoolean(body.balcony),
+                    garden: toBoolean(body.garden),
+                    pool: toBoolean(body.pool),
+                    parking: toBoolean(body.parking),
+                    elevator: toBoolean(body.elevator),
+                    security: toBoolean(body.security),
+                    seaView: toBoolean(body.seaView),
+                    // Land-specific
+                    parcelNo: body.parcelNo || null,
+                    emsal: body.emsal !== null && body.emsal !== undefined ? Number(body.emsal) : null,
+                    zoningStatus: body.zoningStatus || null,
+                    // Commercial-specific
+                    groundFloorArea: toNullableNumber(body.groundFloorArea),
+                    basementArea: toNullableNumber(body.basementArea),
+                    // Farm-specific
+                    hasWaterSource: toBoolean(body.hasWaterSource),
+                    hasFruitTrees: toBoolean(body.hasFruitTrees),
+                    existingStructure: body.existingStructure || null,
+                    // Eligibility
+                    citizenshipEligible: toBoolean(body.citizenshipEligible),
+                    residenceEligible: toBoolean(body.residenceEligible),
+                    publishToHepsiemlak: toBoolean(body.publishToHepsiemlak),
+                    publishToSahibinden: toBoolean(body.publishToSahibinden),
+                    createdById: session.userId,
+                    translations: {
+                        create: (body.translations || [])
+                            .filter((t: { title: string }) => t.title)
+                            .map((t: { locale: string; title: string; description: string; features?: string[] }) => ({
+                                locale: t.locale,
+                                title: t.title,
+                                description: t.description || "",
+                                features: t.features || [],
+                            })),
+                    },
+                    tags: body.tags && body.tags.length > 0 ? {
+                        create: body.tags.map((tag: { id: string }) => ({
+                            tagId: tag.id
+                        }))
+                    } : undefined,
                 },
-                tags: body.tags && body.tags.length > 0 ? {
-                    create: body.tags.map((tag: { id: string }) => ({
-                        tagId: tag.id
-                    }))
-                } : undefined,
-            },
-            include: {
-                translations: true,
-                tags: {
-                    include: {
-                        tag: true
+                include: {
+                    translations: true,
+                    tags: {
+                        include: {
+                            tag: true
+                        }
                     }
-                }
-            },
+                },
+            });
         });
 
         return NextResponse.json(listing, { status: 201 });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error creating listing:", error);
+        const details = error instanceof Error ? error.message : "Unknown error";
         return NextResponse.json(
-            { error: "Failed to create listing", details: error.message },
+            { error: "Failed to create listing", details },
             { status: 500 }
         );
     }

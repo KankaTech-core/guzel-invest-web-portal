@@ -19,12 +19,14 @@ const PROPERTY_TYPES = [
 ] as const;
 
 const SALE_TYPES = ["SALE", "RENT"] as const;
+const PLATFORM_FILTERS = ["HEPSIEMLAK", "SAHIBINDEN"] as const;
 
-const SORT_KEYS = ["type", "price", "status", "createdAt"] as const;
+const SORT_KEYS = ["sku", "type", "price", "status", "createdAt"] as const;
 type SortKey = (typeof SORT_KEYS)[number];
 type SortDir = "asc" | "desc";
 
 const SORT_DEFAULTS: Record<SortKey, SortDir> = {
+    sku: "asc",
     type: "asc",
     price: "asc",
     status: "asc",
@@ -38,6 +40,8 @@ interface AdminListingsPageProps {
         dir?: string;
         type?: string;
         saleType?: string;
+        company?: string;
+        platform?: string;
         view?: string;
     }>;
 }
@@ -49,6 +53,8 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
     const dirParam = resolvedSearchParams?.dir;
     const typeParam = resolvedSearchParams?.type;
     const saleTypeParam = resolvedSearchParams?.saleType;
+    const companyParam = resolvedSearchParams?.company;
+    const platformParam = resolvedSearchParams?.platform;
     const viewParam = resolvedSearchParams?.view;
     const isMapOpen = viewParam === "map";
     const validStatuses: ListingStatus[] = ["DRAFT", "PUBLISHED", "ARCHIVED", "REMOVED"];
@@ -62,6 +68,12 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
     const saleTypeFilter = SALE_TYPES.includes(saleTypeParam as (typeof SALE_TYPES)[number])
         ? (saleTypeParam as (typeof SALE_TYPES)[number])
         : undefined;
+    const companyFilter = companyParam?.trim() ? companyParam.trim() : undefined;
+    const platformFilter = PLATFORM_FILTERS.includes(
+        platformParam as (typeof PLATFORM_FILTERS)[number]
+    )
+        ? (platformParam as (typeof PLATFORM_FILTERS)[number])
+        : undefined;
 
     const sortKey: SortKey = SORT_KEYS.includes(sortParam as SortKey)
         ? (sortParam as SortKey)
@@ -73,6 +85,8 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
     if (statusFilter) baseParams.set("status", statusFilter);
     if (typeFilter) baseParams.set("type", typeFilter);
     if (saleTypeFilter) baseParams.set("saleType", saleTypeFilter);
+    if (companyFilter) baseParams.set("company", companyFilter);
+    if (platformFilter) baseParams.set("platform", platformFilter);
     if (SORT_KEYS.includes(sortParam as SortKey)) {
         baseParams.set("sort", sortKey);
         baseParams.set("dir", sortDir);
@@ -123,7 +137,9 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
     };
 
     const orderBy =
-        sortKey === "type"
+        sortKey === "sku"
+            ? { sku: sortDir }
+            : sortKey === "type"
             ? { type: sortDir }
             : sortKey === "price"
                 ? { price: sortDir }
@@ -139,21 +155,47 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
             : { status: { not: "ARCHIVED" as ListingStatus } }),
         ...(typeFilter ? { type: typeFilter } : {}),
         ...(saleTypeFilter ? { saleType: saleTypeFilter } : {}),
+        ...(companyFilter ? { company: companyFilter } : {}),
+        ...(platformFilter === "HEPSIEMLAK" ? { publishToHepsiemlak: true } : {}),
+        ...(platformFilter === "SAHIBINDEN" ? { publishToSahibinden: true } : {}),
     };
 
-    const listings = await prisma.listing.findMany({
-        where,
-        include: {
-            translations: {
-                where: { locale: "tr" },
+    const [listings, companyOptionsFromListings, companyOptionsFromConfig] = await Promise.all([
+        prisma.listing.findMany({
+            where,
+            include: {
+                translations: {
+                    where: { locale: "tr" },
+                },
+                media: {
+                    take: 1,
+                    orderBy: { order: "asc" },
+                },
             },
-            media: {
-                take: 1,
-                orderBy: { order: "asc" },
+            orderBy,
+        }),
+        prisma.listing.findMany({
+            select: { company: true },
+            distinct: ["company"],
+            where: {
+                company: {
+                    not: "",
+                },
             },
-        },
-        orderBy,
-    });
+            orderBy: { company: "asc" },
+        }),
+        prisma.listingCompanyOption.findMany({
+            select: { name: true },
+            orderBy: { name: "asc" },
+        }),
+    ]);
+
+    const companyOptions = Array.from(
+        new Set([
+            ...companyOptionsFromConfig.map((option) => option.name),
+            ...companyOptionsFromListings.map((listing) => listing.company),
+        ])
+    ).sort((a, b) => a.localeCompare(b, "tr-TR", { sensitivity: "base" }));
 
     return (
         <div>
@@ -206,7 +248,7 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
             </div>
 
             <div className="mb-6">
-                <ListingsFilters />
+                <ListingsFilters companyOptions={companyOptions} />
             </div>
 
             {/* Table */}
@@ -214,6 +256,9 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                 <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-100">
                         <tr>
+                            <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
+                                {renderSortHeader("sku", "SKU")}
+                            </th>
                             <th className="text-left px-6 py-4 text-sm font-semibold text-gray-600">
                                 İlan
                             </th>
@@ -237,6 +282,11 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                     <tbody className="divide-y divide-gray-100">
                         {listings.map((listing) => (
                             <tr key={listing.id} className="hover:bg-gray-50 transition-colors cursor-pointer group">
+                                <td className="p-0">
+                                    <Link href={`/admin/ilanlar/${listing.id}`} className="block px-6 py-4 text-sm text-gray-600 font-mono">
+                                        {listing.sku || "-"}
+                                    </Link>
+                                </td>
                                 <td className="p-0">
                                     <Link href={`/admin/ilanlar/${listing.id}`} className="block px-6 py-4">
                                         <div className="flex items-center gap-3">

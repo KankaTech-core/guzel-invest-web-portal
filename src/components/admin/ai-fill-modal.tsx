@@ -14,6 +14,7 @@ export interface ParsedData {
     rooms?: string | number;
     bedrooms?: number;
     bathrooms?: number;
+    wcCount?: number;
     floor?: number;
     totalFloors?: number;
     buildYear?: number;
@@ -61,8 +62,8 @@ const FIELD_LABELS: Record<string, string> = {
     currency: "Para Birimi",
     area: "Alan (m²)",
     rooms: "Oda Sayısı",
-    bedrooms: "Yatak Odası",
     bathrooms: "Banyo",
+    wcCount: "WC Sayısı",
     floor: "Kat",
     totalFloors: "Toplam Kat",
     buildYear: "Yapım Yılı",
@@ -161,6 +162,8 @@ export function AiFillModal({ isOpen, onClose, onApply, currentType }: AiFillMod
         return String(value);
     };
 
+    const hiddenPreviewFields = new Set(["bedrooms"]);
+
     if (!isOpen) return null;
 
     return (
@@ -237,6 +240,9 @@ PASS FİYAT: 205.000€"
                             {parsedData && (
                                 <div className="grid grid-cols-2 gap-3">
                                     {Object.entries(parsedData).map(([key, value]) => {
+                                        if (hiddenPreviewFields.has(key)) {
+                                            return null;
+                                        }
                                         if (value === null || value === undefined || value === "") {
                                             return null;
                                         }

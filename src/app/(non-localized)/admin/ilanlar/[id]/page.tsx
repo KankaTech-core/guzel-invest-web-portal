@@ -38,9 +38,11 @@ export default async function EditListingPage({ params }: EditListingPageProps) 
     const formData = {
         id: listing.id,
         slug: listing.slug,
+        sku: listing.sku,
         status: listing.status,
         type: listing.type,
         saleType: listing.saleType,
+        company: listing.company,
         city: listing.city,
         district: listing.district,
         neighborhood: listing.neighborhood,
@@ -54,6 +56,7 @@ export default async function EditListingPage({ params }: EditListingPageProps) 
         rooms: listing.rooms,
         bedrooms: listing.bedrooms,
         bathrooms: listing.bathrooms,
+        wcCount: listing.wcCount,
         floor: listing.floor,
         totalFloors: listing.totalFloors,
         buildYear: listing.buildYear,
@@ -80,6 +83,8 @@ export default async function EditListingPage({ params }: EditListingPageProps) 
         // Eligibility fields
         citizenshipEligible: listing.citizenshipEligible,
         residenceEligible: listing.residenceEligible,
+        publishToHepsiemlak: listing.publishToHepsiemlak,
+        publishToSahibinden: listing.publishToSahibinden,
         translations: listing.translations.map((t) => ({
             id: t.id,
             locale: t.locale,

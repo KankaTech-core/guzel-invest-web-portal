@@ -146,6 +146,27 @@ export function generateListingSlug(
     const uniqueSuffix = Date.now().toString(36);
     return `${base}-${uniqueSuffix}`;
 }
+
+export function getSkuCityCode(city: string): string {
+    const normalized = slugify(city || "")
+        .replace(/-/g, "")
+        .toUpperCase();
+
+    if (!normalized) return "GEN";
+    if (normalized.length >= 3) return normalized.slice(0, 3);
+    return normalized.padEnd(3, "X");
+}
+
+export function buildListingSku(
+    city: string,
+    serial: number,
+    year = new Date().getFullYear()
+): string {
+    const cityCode = getSkuCityCode(city);
+    const serialPart = String(serial).padStart(6, "0");
+    return `GI-${year}-${cityCode}-${serialPart}`;
+}
+
 export function getMediaUrl(path: string | null | undefined): string {
     if (!path) return "";
     if (path.startsWith("http")) return path;

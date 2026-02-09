@@ -16,12 +16,12 @@ import {
     Languages,
     Image as ImageIcon,
     Sparkles,
-    Tag,
     Upload,
     CloudUpload,
     X,
-    GripVertical,
+    Copy,
     ExternalLink,
+    Plus,
 } from "lucide-react";
 import {
     DndContext,
@@ -33,13 +33,11 @@ import {
     DragEndEvent,
     DragStartEvent,
     DragOverlay,
-    defaultDropAnimationSideEffects,
 } from "@dnd-kit/core";
 import {
     arrayMove,
     SortableContext,
     sortableKeyboardCoordinates,
-    verticalListSortingStrategy,
     rectSortingStrategy,
     useSortable,
 } from "@dnd-kit/sortable";
@@ -53,6 +51,10 @@ import { TagInput } from "./tag-input";
 import { AiFillModal, ParsedData } from "./ai-fill-modal";
 import { ConfirmModal } from "./confirm-modal";
 import { UnsavedChangesModal } from "./unsaved-changes-modal";
+import {
+    CompanyOptionSelect,
+    RoomOptionSelect // New component
+} from "./";
 
 interface ListingTranslation {
     id?: string;
@@ -87,9 +89,11 @@ type ListingStatusValue = "DRAFT" | "PUBLISHED" | "ARCHIVED" | "REMOVED";
 interface ListingData {
     id?: string;
     slug?: string;
+    sku?: string | null;
     status: ListingStatusValue;
     type: string;
     saleType: string;
+    company: string;
     city: string;
     district: string;
     neighborhood: string | null;
@@ -103,6 +107,7 @@ interface ListingData {
     rooms: string | null;
     bedrooms: number | null;
     bathrooms: number | null;
+    wcCount: number | null;
     floor: number | null;
     totalFloors: number | null;
     buildYear: number | null;
@@ -129,6 +134,8 @@ interface ListingData {
     // Eligibility
     citizenshipEligible: boolean;
     residenceEligible: boolean;
+    publishToHepsiemlak: boolean;
+    publishToSahibinden: boolean;
     // Relations
     translations: ListingTranslation[];
     media?: Media[];
@@ -319,48 +326,16 @@ const TABS = [
     { id: "details", label: "Detaylar", icon: Building2 },
     { id: "location", label: "Konum", icon: MapPin },
     { id: "features", label: "Özellikler", icon: Home },
-    { id: "tags", label: "Etiketler", icon: Tag },
     { id: "media", label: "Medya", icon: ImageIcon },
 ];
 
-const ROOM_OPTIONS = ["1+0", "1+1", "2+1", "3+1", "4+1", "5+1"];
-
-const formatRoomLabel = (value: string | number | null): string => {
-    if (!value) return "Seçiniz";
-    return String(value);
-};
-
-const DISTRICT_OPTIONS = ["Alanya"];
-
-const NEIGHBORHOOD_CORE_OPTIONS = [
-    "Çarşı",
-    "Güllerpınarı",
-    "Şekerhane",
-    "Hacet",
-    "Kadıpaşa",
-    "Saray",
-    "Tophane",
-    "Kızlar Pınarı",
-    "Cumhuriyet",
-    "Büyükhasbahçe",
-    "Küçükhasbahçe",
-    "Merkez",
-    "Mahmutlar",
-    "Kestel",
-    "Oba",
-    "Çıkcilli",
-    "Tosmur",
-    "Kargıcak",
-    "Konaklı",
-    "Avsallar",
-    "Payallar",
-    "Türkler",
-    "İncekum",
-    "Okurcalar",
-    "Demirtaş",
-];
-
-const NEIGHBORHOOD_OPTIONS = Array.from(new Set(NEIGHBORHOOD_CORE_OPTIONS));
+interface LocationsPayload {
+    cities?: string[];
+    districts?: string[];
+    neighborhoods?: string[];
+    defaultCity?: string;
+    defaultDistrict?: string;
+}
 
 const PROPERTY_TYPE_ALIASES: Record<string, string> = {
     APARTMENT: "APARTMENT",
@@ -435,6 +410,7 @@ const defaultListing: ListingData = {
     status: "DRAFT",
     type: "APARTMENT",
     saleType: "SALE",
+    company: "Güzel Invest",
     city: "Antalya",
     district: "Alanya",
     neighborhood: null,
@@ -448,6 +424,7 @@ const defaultListing: ListingData = {
     rooms: null,
     bedrooms: null,
     bathrooms: null,
+    wcCount: null,
     floor: null,
     totalFloors: null,
     buildYear: null,
@@ -471,6 +448,8 @@ const defaultListing: ListingData = {
     existingStructure: null,
     citizenshipEligible: false,
     residenceEligible: false,
+    publishToHepsiemlak: false,
+    publishToSahibinden: false,
     translations: defaultTranslations,
     media: [],
     tags: [],
@@ -485,10 +464,6 @@ const normalizeLookupKey = (value: unknown): string =>
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^a-z0-9]/g, "")
         .toUpperCase();
-
-const NEIGHBORHOOD_LOOKUP = new Set(
-    NEIGHBORHOOD_OPTIONS.map((option) => normalizeLookupKey(option))
-);
 
 const normalizeTextValue = (value: unknown): string | null => {
     if (value === undefined || value === null) return null;
@@ -803,7 +778,9 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     const [formData, setFormData] = useState<ListingData>(() => {
         if (!listing) return defaultListing;
         return {
+            ...defaultListing,
             ...listing,
+            company: listing.company || defaultListing.company,
             rooms: listing.rooms ? String(listing.rooms) : null,
             translations: buildTranslations(listing.translations),
         };
@@ -830,12 +807,27 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         href?: string;
         external?: boolean;
     } | null>(null);
+    const [availableCities, setAvailableCities] = useState<string[]>([]);
+    const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+    const [availableNeighborhoods, setAvailableNeighborhoods] = useState<string[]>([]);
+    const [copiedField, setCopiedField] = useState<null | "id" | "sku">(null);
     const [isLeavePromptOpen, setIsLeavePromptOpen] = useState(false);
     const [leaveAction, setLeaveAction] = useState<null | "draft" | "publish">(null);
     const bypassUnsavedCheckRef = useRef(false);
     const initialSnapshotRef = useRef<string>("");
     const currentUrlRef = useRef<string>("");
     const autoMapsLinkRef = useRef<string>("");
+
+    // Room Options State
+    const [roomOptions, setRoomOptions] = useState<string[]>([
+        "1+0", "1+1", "2+1", "3+1", "4+1", "5+1"
+    ]);
+    const [customRoomInput, setCustomRoomInput] = useState("");
+    const [isAddingRoom, setIsAddingRoom] = useState(false);
+
+    // Feature State
+    const [featureInput, setFeatureInput] = useState("");
+    const [isAddingFeature, setIsAddingFeature] = useState(false);
     useEffect(() => {
         setIsMounted(true);
     }, []);
@@ -1054,14 +1046,18 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     const isLand = LAND_TYPES.includes(formData.type);
     const isCommercial = COMMERCIAL_TYPES.includes(formData.type);
     const isFarm = FARM_TYPES.includes(formData.type);
+    const cityOptions =
+        formData.city && !availableCities.includes(formData.city)
+            ? [formData.city, ...availableCities]
+            : availableCities;
     const districtOptions =
-        formData.district && !DISTRICT_OPTIONS.includes(formData.district)
-            ? [formData.district, ...DISTRICT_OPTIONS]
-            : DISTRICT_OPTIONS;
+        formData.district && !availableDistricts.includes(formData.district)
+            ? [formData.district, ...availableDistricts]
+            : availableDistricts;
     const neighborhoodOptions =
-        formData.neighborhood && !NEIGHBORHOOD_OPTIONS.includes(formData.neighborhood)
-            ? [formData.neighborhood, ...NEIGHBORHOOD_OPTIONS]
-            : NEIGHBORHOOD_OPTIONS;
+        formData.neighborhood && !availableNeighborhoods.includes(formData.neighborhood)
+            ? [formData.neighborhood, ...availableNeighborhoods]
+            : availableNeighborhoods;
     const locationLabel = [
         formData.address,
         formData.neighborhood,
@@ -1078,10 +1074,6 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         typeof formData.longitude === "number" && !Number.isNaN(formData.longitude)
             ? formData.longitude
             : null;
-    const hasCoordinates =
-        latitudeValue !== null &&
-        longitudeValue !== null &&
-        !(latitudeValue === 0 && longitudeValue === 0);
     const autoMapsLink = buildGoogleMapsLink(
         latitudeValue,
         longitudeValue,
@@ -1090,6 +1082,132 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     const manualEmbedLink = toGoogleMapsEmbedLink(formData.googleMapsLink);
     const autoEmbedLink = toGoogleMapsEmbedLink(autoMapsLink);
     const mapSrc = manualEmbedLink || autoEmbedLink;
+
+    useEffect(() => {
+        let active = true;
+
+        const loadCities = async () => {
+            try {
+                const response = await fetch("/api/admin/locations");
+                if (!response.ok) return;
+                const payload = (await response.json()) as LocationsPayload;
+                if (!active) return;
+
+                const cities = payload.cities || [];
+                setAvailableCities(cities);
+
+                if (!payload.defaultCity) return;
+
+                setFormData((prev) => {
+                    if (prev.city) return prev;
+                    return {
+                        ...prev,
+                        city: payload.defaultCity || prev.city,
+                        district:
+                            payload.defaultDistrict ||
+                            prev.district ||
+                            "",
+                        neighborhood: null,
+                    };
+                });
+            } catch {
+                // no-op
+            }
+        };
+
+        void loadCities();
+
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!formData.city) {
+            setAvailableDistricts([]);
+            return;
+        }
+
+        let active = true;
+        const loadDistricts = async () => {
+            try {
+                const response = await fetch(
+                    `/api/admin/locations?city=${encodeURIComponent(formData.city)}`
+                );
+                if (!response.ok) return;
+                const payload = (await response.json()) as LocationsPayload;
+                if (!active) return;
+
+                const districts = payload.districts || [];
+                setAvailableDistricts(districts);
+
+                setFormData((prev) => {
+                    if (prev.city !== formData.city) return prev;
+                    if (!prev.district || districts.includes(prev.district)) return prev;
+
+                    return {
+                        ...prev,
+                        district: districts[0] || "",
+                        neighborhood: null,
+                    };
+                });
+            } catch {
+                // no-op
+            }
+        };
+
+        void loadDistricts();
+
+        return () => {
+            active = false;
+        };
+    }, [formData.city]);
+
+    useEffect(() => {
+        if (!formData.city || !formData.district) {
+            setAvailableNeighborhoods([]);
+            return;
+        }
+
+        let active = true;
+        const loadNeighborhoods = async () => {
+            try {
+                const response = await fetch(
+                    `/api/admin/locations?city=${encodeURIComponent(formData.city)}&district=${encodeURIComponent(formData.district)}`
+                );
+                if (!response.ok) return;
+                const payload = (await response.json()) as LocationsPayload;
+                if (!active) return;
+
+                const neighborhoods = payload.neighborhoods || [];
+                setAvailableNeighborhoods(neighborhoods);
+
+                setFormData((prev) => {
+                    if (
+                        prev.city !== formData.city ||
+                        prev.district !== formData.district
+                    ) {
+                        return prev;
+                    }
+                    if (!prev.neighborhood || neighborhoods.includes(prev.neighborhood)) {
+                        return prev;
+                    }
+                    return {
+                        ...prev,
+                        neighborhood: null,
+                    };
+                });
+            } catch {
+                // no-op
+            }
+        };
+
+        void loadNeighborhoods();
+
+        return () => {
+            active = false;
+        };
+    }, [formData.city, formData.district]);
 
     useEffect(() => {
         if (!autoMapsLink) return;
@@ -1134,6 +1252,9 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             const parsedBathrooms = parseIntegerValue(data.bathrooms);
             if (parsedBathrooms !== null) updated.bathrooms = parsedBathrooms;
 
+            const parsedWcCount = parseIntegerValue(data.wcCount);
+            if (parsedWcCount !== null) updated.wcCount = parsedWcCount;
+
             const parsedFloor = parseIntegerValue(data.floor);
             if (parsedFloor !== null) updated.floor = parsedFloor;
 
@@ -1149,32 +1270,9 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             const normalizedCity = normalizeTextValue(data.city);
             const normalizedDistrict = normalizeTextValue(data.district);
             const normalizedNeighborhood = normalizeTextValue(data.neighborhood);
-            const locationCandidates = [
-                normalizedNeighborhood,
-                normalizedDistrict,
-                normalizedCity,
-            ].filter(Boolean) as string[];
-            let neighborhoodFromAi: string | null = null;
-
-            for (const candidate of locationCandidates) {
-                const key = normalizeLookupKey(candidate);
-                if (key === "ANTALYA" || key === "ALANYA") {
-                    continue;
-                }
-                if (NEIGHBORHOOD_LOOKUP.has(key)) {
-                    neighborhoodFromAi = candidate;
-                    break;
-                }
-                if (!neighborhoodFromAi) {
-                    neighborhoodFromAi = candidate;
-                }
-            }
-
-            updated.city = "Antalya";
-            updated.district = "Alanya";
-            if (neighborhoodFromAi) {
-                updated.neighborhood = neighborhoodFromAi;
-            }
+            if (normalizedCity) updated.city = normalizedCity;
+            if (normalizedDistrict) updated.district = normalizedDistrict;
+            if (normalizedNeighborhood) updated.neighborhood = normalizedNeighborhood;
 
             const parsedLatitude = parseNumberValue(data.latitude);
             if (parsedLatitude !== null) updated.latitude = parsedLatitude;
@@ -1282,6 +1380,19 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         const { name, value, type } = e.target;
         const checked =
             type === "checkbox" ? (e.target as HTMLInputElement).checked : undefined;
+        const nullableNumberFields = new Set([
+            "bedrooms",
+            "bathrooms",
+            "wcCount",
+            "floor",
+            "totalFloors",
+            "buildYear",
+            "latitude",
+            "longitude",
+            "groundFloorArea",
+            "basementArea",
+            "emsal",
+        ]);
 
         setFormData((prev) => ({
             ...prev,
@@ -1289,7 +1400,11 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                 type === "checkbox"
                     ? checked
                     : type === "number"
-                        ? parseFloat(value) || 0
+                        ? value === ""
+                            ? nullableNumberFields.has(name)
+                                ? null
+                                : 0
+                            : Number(value)
                         : value,
         }));
     };
@@ -1399,16 +1514,6 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
 
     const revokePendingMedia = (items: PendingMedia[]) => {
         items.forEach((item) => URL.revokeObjectURL(item.previewUrl));
-    };
-
-    const removePendingMedia = (id: string) => {
-        setPendingMedia((prev) => {
-            const target = prev.find((item) => item.id === id);
-            if (target) {
-                URL.revokeObjectURL(target.previewUrl);
-            }
-            return prev.filter((item) => item.id !== id);
-        });
     };
 
     const uploadMediaFiles = async (listingId: string, files: File[]) => {
@@ -1531,11 +1636,13 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             const savedListing = await response.json();
             const listingId = savedListing?.id || formData.id;
 
-            if (!formData.id && listingId) {
+            if (listingId) {
                 setFormData((prev) => ({
                     ...prev,
                     id: listingId,
-                    slug: savedListing.slug,
+                    slug: savedListing.slug || prev.slug,
+                    sku: savedListing.sku ?? prev.sku,
+                    company: savedListing.company || prev.company,
                     status: savedListing.status || prev.status,
                 }));
             }
@@ -1717,6 +1824,17 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     };
     const activeConfirm = confirmAction ? confirmConfig[confirmAction] : null;
 
+    const handleCopyValue = async (field: "id" | "sku", value: string | null | undefined) => {
+        if (!value || typeof navigator === "undefined") return;
+        try {
+            await navigator.clipboard.writeText(value);
+            setCopiedField(field);
+            setTimeout(() => setCopiedField(null), 1400);
+        } catch {
+            // no-op
+        }
+    };
+
     const handleSectionNavigation = (sectionId: string) => {
         setActiveTab(sectionId);
         const targetSection = document.getElementById(`section-${sectionId}`);
@@ -1825,6 +1943,38 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                             </span>
                         )}
                     </div>
+                    {(formData.id || formData.sku) && (
+                        <div className="flex flex-wrap justify-end gap-2">
+                            {formData.id && (
+                                <button
+                                    type="button"
+                                    onClick={() => handleCopyValue("id", formData.id)}
+                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                >
+                                    <span className="font-semibold text-gray-500">ID</span>
+                                    <span className="font-mono max-w-[220px] truncate">{formData.id}</span>
+                                    <Copy className="w-3.5 h-3.5 text-gray-400" />
+                                    {copiedField === "id" && (
+                                        <span className="text-green-600 font-semibold">Kopyalandı</span>
+                                    )}
+                                </button>
+                            )}
+                            {formData.sku && (
+                                <button
+                                    type="button"
+                                    onClick={() => handleCopyValue("sku", formData.sku)}
+                                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                                >
+                                    <span className="font-semibold text-gray-500">SKU</span>
+                                    <span className="font-mono">{formData.sku}</span>
+                                    <Copy className="w-3.5 h-3.5 text-gray-400" />
+                                    {copiedField === "sku" && (
+                                        <span className="text-green-600 font-semibold">Kopyalandı</span>
+                                    )}
+                                </button>
+                            )}
+                        </div>
+                    )}
                     {!isNew && formData.status === "PUBLISHED" && formData.slug && (
                         <Link
                             href={`/tr/ilan/${formData.slug}`}
@@ -1910,6 +2060,64 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                         <div className="border-b border-gray-100 pb-4">
                             <h2 className="text-lg font-semibold text-gray-900">Detaylar</h2>
                         </div>
+                        <div className="flex flex-col gap-4 md:flex-row md:items-end">
+                            <CompanyOptionSelect
+                                value={formData.company}
+                                onChange={(value) =>
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        company: value,
+                                    }))
+                                }
+                                className="w-full md:max-w-sm"
+                            />
+                            <div className="flex items-center gap-2 md:ml-auto">
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            publishToHepsiemlak: !prev.publishToHepsiemlak,
+                                        }))
+                                    }
+                                    className={cn(
+                                        "relative overflow-hidden px-4 py-2 rounded-lg border text-sm font-semibold transition-colors cursor-pointer",
+                                        formData.publishToHepsiemlak
+                                            ? "bg-[#E1241C] text-white border-[#E1241C] hover:bg-[#C41E17]"
+                                            : "bg-gray-100 text-gray-500 border-gray-300 hover:bg-gray-200"
+                                    )}
+                                >
+                                    {!formData.publishToHepsiemlak && (
+                                        <span className="pointer-events-none absolute inset-0">
+                                            <span className="absolute left-[-18%] top-[70%] h-px w-[140%] -rotate-[32deg] bg-gray-500" />
+                                        </span>
+                                    )}
+                                    Hepsiemlak
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            publishToSahibinden: !prev.publishToSahibinden,
+                                        }))
+                                    }
+                                    className={cn(
+                                        "relative overflow-hidden px-4 py-2 rounded-lg border text-sm font-semibold transition-colors cursor-pointer",
+                                        formData.publishToSahibinden
+                                            ? "bg-[#FFE802] text-black border-[#FFE802] hover:bg-[#E6D002]"
+                                            : "bg-gray-100 text-gray-500 border-gray-300 hover:bg-gray-200"
+                                    )}
+                                >
+                                    {!formData.publishToSahibinden && (
+                                        <span className="pointer-events-none absolute inset-0">
+                                            <span className="absolute left-[-18%] top-[70%] h-px w-[140%] -rotate-[32deg] bg-gray-500" />
+                                        </span>
+                                    )}
+                                    Sahibinden
+                                </button>
+                            </div>
+                        </div>
                         <div className="space-y-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1963,7 +2171,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                             </div>
                         </div>
                         {/* Core Fields - Always Visible */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                             <div>
                                 {activeLocale === "tr" ? (
                                     <Select
@@ -2072,191 +2280,180 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
 
                         {/* Residential Fields - Apartments, Villas, Penthouses */}
                         {isResidential && (
-                            <>
-                                <div className="border-t border-gray-100 pt-6">
-                                    <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                                        Konut Detayları
-                                    </h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="col-span-full">
-                                            <label className="block text-sm font-medium text-gray-700 mb-3">
-                                                Oda Sayısı
-                                            </label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {ROOM_OPTIONS.map((option) => (
-                                                    <button
-                                                        key={option}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                rooms: option,
-                                                            }));
-                                                        }}
-                                                        className={cn(
-                                                            "px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-200",
-                                                            formData.rooms === option
-                                                                ? "bg-orange-500 text-white border-orange-500 shadow-sm"
-                                                                : "bg-white text-gray-600 border-gray-200 hover:border-orange-200 hover:bg-orange-50/30"
-                                                        )}
-                                                    >
-                                                        {option}
-                                                    </button>
-                                                ))}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (!ROOM_OPTIONS.includes(formData.rooms || "")) {
-                                                            // If already custom, do nothing or focus input
-                                                        } else {
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                rooms: "",
-                                                            }));
-                                                        }
-                                                    }}
-                                                    className={cn(
-                                                        "px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-200",
-                                                        formData.rooms && !ROOM_OPTIONS.includes(formData.rooms)
-                                                            ? "bg-orange-500 text-white border-orange-500 shadow-sm"
-                                                            : formData.rooms === "" || (formData.rooms === null && !ROOM_OPTIONS.includes(""))
-                                                                ? "bg-orange-50 text-orange-600 border-orange-200"
-                                                                : "bg-white text-gray-600 border-gray-200 hover:border-orange-200 hover:bg-orange-50/30"
-                                                    )}
-                                                >
-                                                    Özel
-                                                </button>
-                                            </div>
+                            <div className="border-t border-gray-100 pt-6">
+                                <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                                    Konut Detayları
+                                </h3>
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                    {/* 1. Room Count */}
+                                    <div className="col-span-2 md:col-span-1 lg:col-span-1">
+                                        <RoomOptionSelect
+                                            value={formData.rooms}
+                                            onChange={(val) => setFormData(prev => ({ ...prev, rooms: val }))}
+                                            options={roomOptions}
+                                            onOptionsChange={setRoomOptions}
+                                        />
+                                    </div>
 
-                                            {/* Custom Input */}
-                                            {(formData.rooms === "" || (formData.rooms && !ROOM_OPTIONS.includes(formData.rooms))) && (
-                                                <div className="mt-3 max-w-xs animate-in fade-in slide-in-from-top-2 duration-200">
-                                                    <input
-                                                        type="text"
-                                                        value={formData.rooms || ""}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value;
-                                                            setFormData((prev) => ({
-                                                                ...prev,
-                                                                rooms: val,
-                                                            }));
-                                                        }}
-                                                        placeholder="Örn: 6+2"
-                                                        className="input"
-                                                        autoFocus
-                                                    />
-                                                    <p className="text-xs text-gray-400 mt-1">
-                                                        Lütfen "6+2" formatında giriniz.
-                                                    </p>
+                                    {/* 2. Bathroom */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Banyo
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="bathrooms"
+                                            value={formData.bathrooms || ""}
+                                            onChange={handleInputChange}
+                                            className="input"
+                                            placeholder="2"
+                                        />
+                                    </div>
+
+                                    {/* 3. WC */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            WC
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="wcCount"
+                                            value={formData.wcCount || ""}
+                                            onChange={handleInputChange}
+                                            className="input"
+                                            placeholder="1"
+                                        />
+                                    </div>
+
+                                    {/* 4. Total Floors */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Kat Sayısı
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="totalFloors"
+                                            value={formData.totalFloors || ""}
+                                            onChange={handleInputChange}
+                                            className="input"
+                                            placeholder="5"
+                                        />
+                                    </div>
+
+                                    {/* 5. Floor Location */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Bulunduğu Kat
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="floor"
+                                            value={formData.floor || ""}
+                                            onChange={handleInputChange}
+                                            className="input"
+                                            placeholder="3"
+                                        />
+                                    </div>
+
+                                    {/* 6. Build Year */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Yapım Yılı
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="buildYear"
+                                            value={formData.buildYear || ""}
+                                            onChange={handleInputChange}
+                                            className="input"
+                                            placeholder="2024"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                                    {/* Heating */}
+                                    <div>
+                                        {activeLocale === "tr" ? (
+                                            <Select
+                                                label={getLocalizedLabel(FIELD_LABELS.heating, activeLocale)}
+                                                value={formData.heating || ""}
+                                                onChange={(value) =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        heating: value || null,
+                                                    }))
+                                                }
+                                                options={[
+                                                    { value: "", label: "Seçiniz" },
+                                                    { value: "central", label: "Merkezi" },
+                                                    { value: "individual", label: "Bireysel" },
+                                                    { value: "floor", label: "Yerden Isıtma" },
+                                                    { value: "ac", label: "Klima" },
+                                                    { value: "none", label: "Yok" },
+                                                ]}
+                                            />
+                                        ) : (
+                                            <>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    {getLocalizedLabel(FIELD_LABELS.heating, activeLocale)}
+                                                </label>
+                                                <div className="input bg-gray-50 text-gray-600">
+                                                    {getLocalizedValue(
+                                                        formData.heating
+                                                            ? HEATING_LABELS[formData.heating]
+                                                            : undefined,
+                                                        activeLocale
+                                                    ) || "-"}
                                                 </div>
-                                            )}
-                                        </div>
+                                            </>
+                                        )}
+                                    </div>
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Yatak Odası
-                                            </label>
-                                            <input
-                                                type="number"
-                                                name="bedrooms"
-                                                value={formData.bedrooms || ""}
-                                                onChange={handleInputChange}
-                                                className="input"
-                                                placeholder="3"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Banyo
-                                            </label>
-                                            <input
-                                                type="number"
-                                                name="bathrooms"
-                                                value={formData.bathrooms || ""}
-                                                onChange={handleInputChange}
-                                                className="input"
-                                                placeholder="2"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Kat
-                                            </label>
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="number"
-                                                    name="floor"
-                                                    value={formData.floor || ""}
-                                                    onChange={handleInputChange}
-                                                    className="input flex-1"
-                                                    placeholder="Bulunduğu Kat"
-                                                />
-                                                <input
-                                                    type="number"
-                                                    name="totalFloors"
-                                                    value={formData.totalFloors || ""}
-                                                    onChange={handleInputChange}
-                                                    className="input flex-1"
-                                                    placeholder="Toplam Kat"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Yapım Yılı
-                                            </label>
-                                            <input
-                                                type="number"
-                                                name="buildYear"
-                                                value={formData.buildYear || ""}
-                                                onChange={handleInputChange}
-                                                className="input"
-                                                placeholder="2024"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            {activeLocale === "tr" ? (
-                                                <Select
-                                                    label={getLocalizedLabel(FIELD_LABELS.heating, activeLocale)}
-                                                    value={formData.heating || ""}
-                                                    onChange={(value) =>
-                                                        setFormData((prev) => ({
-                                                            ...prev,
-                                                            heating: value || null,
-                                                        }))
-                                                    }
-                                                    options={[
-                                                        { value: "", label: "Seçiniz" },
-                                                        { value: "central", label: "Merkezi" },
-                                                        { value: "individual", label: "Bireysel" },
-                                                        { value: "floor", label: "Yerden Isıtma" },
-                                                        { value: "ac", label: "Klima" },
-                                                        { value: "none", label: "Yok" },
-                                                    ]}
-                                                />
-                                            ) : (
-                                                <>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                        {getLocalizedLabel(FIELD_LABELS.heating, activeLocale)}
-                                                    </label>
-                                                    <div className="input bg-gray-50 text-gray-600">
-                                                        {getLocalizedValue(
-                                                            formData.heating
-                                                                ? HEATING_LABELS[formData.heating]
-                                                                : undefined,
-                                                            activeLocale
-                                                        ) || "-"}
-                                                    </div>
-                                                </>
-                                            )}
+                                    {/* Suitability */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Uygunluk Durumu
+                                        </label>
+                                        <div className="flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        citizenshipEligible: !prev.citizenshipEligible,
+                                                    }))
+                                                }
+                                                className={cn(
+                                                    "px-3 py-2 rounded-lg border text-sm font-medium transition-colors",
+                                                    formData.citizenshipEligible
+                                                        ? "border-orange-500 bg-orange-50 text-orange-700"
+                                                        : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                                                )}
+                                            >
+                                                Vatandaşlığa Uygun
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        residenceEligible: !prev.residenceEligible,
+                                                    }))
+                                                }
+                                                className={cn(
+                                                    "px-3 py-2 rounded-lg border text-sm font-medium transition-colors",
+                                                    formData.residenceEligible
+                                                        ? "border-orange-500 bg-orange-50 text-orange-700"
+                                                        : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                                                )}
+                                            >
+                                                İkametgaha Uygun
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
-                            </>
+                            </div>
                         )}
 
                         {/* Land Fields */}
@@ -2400,275 +2597,430 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                             </div>
                         )}
 
-                        {/* Eligibility Section - Always Visible */}
-                        <div className="border-t border-gray-100 pt-6">
-                            <h3 className="text-sm font-semibold text-gray-900 mb-4">
-                                Uygunluk Durumu
-                            </h3>
-                            <div className="flex flex-wrap gap-6">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        name="citizenshipEligible"
-                                        checked={formData.citizenshipEligible}
-                                        onChange={handleInputChange}
-                                        className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Vatandaşlığa Uygun</span>
-                                </label>
+                        {!isResidential && (
+                            <div className="border-t border-gray-100 pt-6">
+                                <h3 className="text-sm font-semibold text-gray-900 mb-4">
+                                    Uygunluk Durumu
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                citizenshipEligible: !prev.citizenshipEligible,
+                                            }))
+                                        }
+                                        className={cn(
+                                            "px-3 py-2 rounded-lg border text-sm font-medium transition-colors",
+                                            formData.citizenshipEligible
+                                                ? "border-orange-500 bg-orange-50 text-orange-700"
+                                                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                                        )}
+                                    >
+                                        Vatandaşlığa Uygun
+                                    </button>
 
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        name="residenceEligible"
-                                        checked={formData.residenceEligible}
-                                        onChange={handleInputChange}
-                                        className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-                                    />
-                                    <span className="text-sm text-gray-700">İkametgaha Uygun</span>
-                                </label>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                residenceEligible: !prev.residenceEligible,
+                                            }))
+                                        }
+                                        className={cn(
+                                            "px-3 py-2 rounded-lg border text-sm font-medium transition-colors",
+                                            formData.residenceEligible
+                                                ? "border-orange-500 bg-orange-50 text-orange-700"
+                                                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                                        )}
+                                    >
+                                        İkametgaha Uygun
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </section>
 
                     <section id="section-location" className="scroll-mt-28 mt-10 space-y-6">
                         <div className="border-t border-gray-100 pt-8">
                             <h2 className="text-lg font-semibold text-gray-900">Konum</h2>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Şehir
-                                </label>
-                                <input
-                                    type="text"
-                                    name="city"
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <Select
+                                    label="Şehir"
                                     value={formData.city}
-                                    onChange={handleInputChange}
-                                    className="input"
-                                    placeholder="Alanya"
+                                    onChange={(value) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            city: value,
+                                            district: "",
+                                            neighborhood: null,
+                                        }))
+                                    }
+                                    options={[
+                                        { value: "", label: "Seçiniz" },
+                                        ...cityOptions.map((option) => ({
+                                            value: option,
+                                            label: option,
+                                        })),
+                                    ]}
                                 />
-                            </div>
-
-                            <div>
                                 <Select
                                     label="İlçe"
                                     value={formData.district}
-                                    onChange={(value) => setFormData(prev => ({ ...prev, district: value }))}
+                                    onChange={(value) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            district: value,
+                                            neighborhood: null,
+                                        }))
+                                    }
                                     options={[
                                         { value: "", label: "Seçiniz" },
-                                        ...districtOptions.map(option => ({ value: option, label: option }))
+                                        ...districtOptions.map((option) => ({
+                                            value: option,
+                                            label: option,
+                                        })),
                                     ]}
                                 />
-                            </div>
-
-                            <div>
                                 <Select
                                     label="Mahalle"
                                     value={formData.neighborhood || ""}
-                                    onChange={(value) => setFormData((prev) => ({
-                                        ...prev,
-                                        neighborhood: value || null,
-                                    }))}
+                                    onChange={(value) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            neighborhood: value || null,
+                                        }))
+                                    }
                                     options={[
                                         { value: "", label: "Seçiniz" },
-                                        ...neighborhoodOptions.map(option => ({ value: option, label: option }))
+                                        ...neighborhoodOptions.map((option) => ({
+                                            value: option,
+                                            label: option,
+                                        })),
                                     ]}
                                 />
                             </div>
 
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Adres
-                                </label>
-                                <input
-                                    type="text"
-                                    name="address"
-                                    value={formData.address || ""}
-                                    onChange={handleInputChange}
-                                    className="input"
-                                    placeholder="Açık adres"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Enlem
-                                </label>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    name="latitude"
-                                    value={formData.latitude || ""}
-                                    onChange={handleInputChange}
-                                    className="input"
-                                    placeholder="36.5489"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Boylam
-                                </label>
-                                <input
-                                    type="number"
-                                    step="any"
-                                    name="longitude"
-                                    value={formData.longitude || ""}
-                                    onChange={handleInputChange}
-                                    className="input"
-                                    placeholder="32.0489"
-                                />
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Google Maps Linki
-                                </label>
-                                <div className="flex flex-col gap-2">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Adres
+                                    </label>
                                     <input
                                         type="text"
-                                        name="googleMapsLink"
-                                        value={formData.googleMapsLink || ""}
+                                        name="address"
+                                        value={formData.address || ""}
                                         onChange={handleInputChange}
                                         className="input"
-                                        placeholder="https://www.google.com/maps?q=36.5489,32.0489"
+                                        placeholder="Açık adres"
                                     />
-                                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500">
-                                        <span>
-                                            Koordinat veya adres girince otomatik dolar,
-                                            istersen düzenleyebilirsin.
-                                        </span>
-                                        <button
-                                            type="button"
-                                            className="text-orange-600 hover:text-orange-700 font-medium"
-                                            onClick={() =>
-                                                autoMapsLink &&
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    googleMapsLink: autoMapsLink,
-                                                }))
-                                            }
-                                            disabled={!autoMapsLink}
-                                        >
-                                            Otomatik Doldur
-                                        </button>
-                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="md:col-span-2">
-                                {mapSrc ? (
-                                    <div className="rounded-2xl border border-gray-200 overflow-hidden bg-gray-50">
-                                        <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100">
-                                            <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-                                                <MapPin className="w-4 h-4 text-orange-500" />
-                                                Harita Önizleme
+                                <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-6">
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Enlem
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="any"
+                                                    name="latitude"
+                                                    value={formData.latitude || ""}
+                                                    onChange={handleInputChange}
+                                                    className="input"
+                                                    placeholder="36.5489"
+                                                />
                                             </div>
-                                            <span className="text-xs text-gray-400">Google Maps</span>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Boylam
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="any"
+                                                    name="longitude"
+                                                    value={formData.longitude || ""}
+                                                    onChange={handleInputChange}
+                                                    className="input"
+                                                    placeholder="32.0489"
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="h-44 md:h-52 w-full">
-                                            <iframe
-                                                title="İlan konumu"
-                                                src={mapSrc}
-                                                className="w-full h-full"
-                                                loading="lazy"
-                                                referrerPolicy="no-referrer-when-downgrade"
-                                            />
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Google Maps Linki
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="googleMapsLink"
+                                                    value={formData.googleMapsLink || ""}
+                                                    onChange={handleInputChange}
+                                                    className="input"
+                                                    placeholder="https://www.google.com/maps?q=36.5489,32.0489"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col justify-end">
+                                                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-500 border border-dashed border-gray-200 rounded-lg px-3 py-2">
+                                                    <span>
+                                                        Koordinat veya adres girince Google Maps linki otomatik dolabilir.
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        className="text-orange-600 hover:text-orange-700 font-medium"
+                                                        onClick={() =>
+                                                            autoMapsLink &&
+                                                            setFormData((prev) => ({
+                                                                ...prev,
+                                                                googleMapsLink: autoMapsLink,
+                                                            }))
+                                                        }
+                                                        disabled={!autoMapsLink}
+                                                    >
+                                                        Otomatik Doldur
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                        {locationLabel && (
-                                            <div className="px-4 py-3 bg-white border-t border-gray-100 text-xs text-gray-500">
-                                                {locationLabel}
+                                    </div>
+
+                                    <div className="min-h-[200px] h-full">
+                                        {mapSrc ? (
+                                            <div className="rounded-xl border border-gray-200 overflow-hidden bg-gray-50 h-full flex flex-col">
+                                                <div className="flex items-center justify-between px-4 py-2.5 bg-white border-b border-gray-100 shrink-0">
+                                                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                                                        <MapPin className="w-4 h-4 text-orange-500" />
+                                                        Harita Önizleme
+                                                    </div>
+                                                    <span className="text-xs text-gray-400">Google Maps</span>
+                                                </div>
+                                                <div className="flex-1 w-full relative min-h-[150px]">
+                                                    <iframe
+                                                        title="İlan konumu"
+                                                        src={mapSrc}
+                                                        className="absolute inset-0 w-full h-full"
+                                                        loading="lazy"
+                                                        referrerPolicy="no-referrer-when-downgrade"
+                                                    />
+                                                </div>
+                                                {locationLabel && (
+                                                    <div className="px-4 py-2.5 bg-white border-t border-gray-100 text-xs text-gray-500 shrink-0">
+                                                        {locationLabel}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500 h-full flex items-center justify-center text-center">
+                                                Harita önizlemesi için adres veya koordinat bilgisi girin.
                                             </div>
                                         )}
                                     </div>
-                                ) : (
-                                    <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500">
-                                        Harita önizlemesi için adres veya koordinat bilgisi girin.
-                                    </div>
-                                )}
+                                </div>
                             </div>
                         </div>
                     </section>
 
-                    <section id="section-features" className="scroll-mt-28 mt-10 space-y-6">
-                        <div className="border-t border-gray-100 pt-8">
-                            <h2 className="text-lg font-semibold text-gray-900">
-                                {getLocalizedLabel(FIELD_LABELS.features, activeLocale)}
-                            </h2>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {[
-                                { name: "furnished", labels: FEATURE_LABELS.furnished },
-                                { name: "balcony", labels: FEATURE_LABELS.balcony },
-                                { name: "garden", labels: FEATURE_LABELS.garden },
-                                { name: "pool", labels: FEATURE_LABELS.pool },
-                                { name: "parking", labels: FEATURE_LABELS.parking },
-                                { name: "elevator", labels: FEATURE_LABELS.elevator },
-                                { name: "security", labels: FEATURE_LABELS.security },
-                                { name: "seaView", labels: FEATURE_LABELS.seaView },
-                            ].map((feature) => (
-                                <label
-                                    key={feature.name}
-                                    className={cn(
-                                        "flex items-center gap-3 p-4 rounded-lg border transition-colors",
-                                        formData[feature.name as keyof ListingData]
-                                            ? "border-orange-500 bg-orange-50"
-                                            : "border-gray-200 hover:border-gray-300",
-                                        activeLocale === "tr"
-                                            ? "cursor-pointer"
-                                            : "cursor-not-allowed opacity-80"
-                                    )}
-                                >
-                                    <input
-                                        type="checkbox"
-                                        name={feature.name}
-                                        checked={
-                                            formData[feature.name as keyof ListingData] as boolean
-                                        }
-                                        onChange={handleInputChange}
-                                        disabled={activeLocale !== "tr"}
-                                        className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-                                    />
-                                    <span className="text-sm font-medium text-gray-700">
-                                        {getLocalizedLabel(feature.labels, activeLocale)}
-                                    </span>
-                                </label>
-                            ))}
-                        </div>
-                    </section>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-10">
+                        <section id="section-features" className="scroll-mt-28 space-y-6">
+                            <div className="border-t border-gray-100 pt-8">
+                                <h2 className="text-lg font-semibold text-gray-900">
+                                    {getLocalizedLabel(FIELD_LABELS.features, activeLocale)}
+                                </h2>
+                            </div>
 
-                    <section id="section-tags" className="scroll-mt-28 mt-10 space-y-6">
-                        <div className="border-t border-gray-100 pt-8">
-                            <h2 className="text-lg font-semibold text-gray-900">
-                                {getLocalizedLabel(FIELD_LABELS.tags, activeLocale)}
-                            </h2>
-                        </div>
-                        <div className="space-y-6">
-                            <div>
-                                {activeLocale === "tr" ? (
-                                    <>
-                                        <h3 className="text-sm font-semibold text-gray-900 mb-2">
-                                            İlan Etiketleri
-                                        </h3>
-                                        <p className="text-sm text-gray-500 mb-4">
-                                            Bu ilana etiketler ekleyerek kategorize edebilir ve filtrelenebilir hale getirebilirsiniz.
-                                        </p>
-                                        <TagInput
-                                            selectedTags={selectedTags}
-                                            onTagsChange={setSelectedTags}
-                                        />
-                                    </>
-                                ) : (
-                                    <>
-                                        <h3 className="text-sm font-semibold text-gray-900 mb-2">
-                                            {getLocalizedLabel(FIELD_LABELS.tags, activeLocale)}
-                                        </h3>
+                            <div className="flex flex-wrap gap-2">
+                                {/* Active Features (Booleans + Custom) */}
+                                {(() => {
+                                    const booleanFeatures = [
+                                        { key: "furnished", labels: FEATURE_LABELS.furnished },
+                                        { key: "balcony", labels: FEATURE_LABELS.balcony },
+                                        { key: "garden", labels: FEATURE_LABELS.garden },
+                                        { key: "pool", labels: FEATURE_LABELS.pool },
+                                        { key: "parking", labels: FEATURE_LABELS.parking },
+                                        { key: "elevator", labels: FEATURE_LABELS.elevator },
+                                        { key: "security", labels: FEATURE_LABELS.security },
+                                        { key: "seaView", labels: FEATURE_LABELS.seaView },
+                                    ];
+
+                                    const currentTranslation = formData.translations.find(t => t.locale === activeLocale);
+                                    const customFeatures = currentTranslation?.features || [];
+
+                                    // Combined list for display
+                                    const activeBooleanFeatures = booleanFeatures.filter(f => formData[f.key as keyof ListingData]);
+
+                                    return (
+                                        <>
+                                            {/* Boolean Features */}
+                                            {activeBooleanFeatures.map(f => (
+                                                <div key={f.key} className="relative group">
+                                                    <div className="px-3 py-2 rounded-lg border border-orange-500 bg-orange-50 text-orange-700 text-sm font-medium">
+                                                        {getLocalizedLabel(f.labels, activeLocale)}
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            setFormData(prev => ({ ...prev, [f.key]: false }));
+                                                        }}
+                                                        className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600"
+                                                    >
+                                                        <X className="w-2.5 h-2.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+
+                                            {/* Custom Features */}
+                                            {customFeatures.map((feature, idx) => (
+                                                <div key={`custom-${idx}`} className="relative group">
+                                                    <div className="px-3 py-2 rounded-lg border border-orange-500 bg-orange-50 text-orange-700 text-sm font-medium">
+                                                        {feature}
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            setFormData(prev => {
+                                                                const newTranslations = prev.translations.map(t => {
+                                                                    if (t.locale === activeLocale) {
+                                                                        return {
+                                                                            ...t,
+                                                                            features: t.features.filter((_, i) => i !== idx)
+                                                                        };
+                                                                    }
+                                                                    return t;
+                                                                });
+                                                                return { ...prev, translations: newTranslations };
+                                                            });
+                                                        }}
+                                                        className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600"
+                                                    >
+                                                        <X className="w-2.5 h-2.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+
+                                            {/* Suggestions (Inactive Booleans) */}
+                                            {booleanFeatures.filter(f => !formData[f.key as keyof ListingData]).map(f => (
+                                                <button
+                                                    key={`suggestion-${f.key}`}
+                                                    type="button"
+                                                    onClick={() => setFormData(prev => ({ ...prev, [f.key]: true }))}
+                                                    className="px-3 py-2 rounded-lg border border-dashed border-gray-300 text-gray-500 hover:border-orange-500 hover:text-orange-600 hover:bg-orange-50/50 text-sm font-medium transition-colors"
+                                                >
+                                                    + {getLocalizedLabel(f.labels, activeLocale)}
+                                                </button>
+                                            ))}
+
+                                            {/* Add Input */}
+                                            {isAddingFeature ? (
+                                                <div className="flex items-center gap-1">
+                                                    <input
+                                                        type="text"
+                                                        value={featureInput}
+                                                        onChange={(e) => setFeatureInput(e.target.value)}
+                                                        className="w-32 px-2 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none"
+                                                        placeholder="Özellik ekle..."
+                                                        autoFocus
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                const text = featureInput.trim();
+                                                                if (text) {
+                                                                    const matchedBool = booleanFeatures.find(b =>
+                                                                        getLocalizedLabel(b.labels, activeLocale).toLowerCase() === text.toLowerCase()
+                                                                    );
+
+                                                                    if (matchedBool) {
+                                                                        setFormData(prev => ({ ...prev, [matchedBool.key]: true }));
+                                                                    } else {
+                                                                        setFormData(prev => {
+                                                                            const newTranslations = prev.translations.map(t => {
+                                                                                if (t.locale === activeLocale) {
+                                                                                    return { ...t, features: [...(t.features || []), text] };
+                                                                                }
+                                                                                return t;
+                                                                            });
+                                                                            return { ...prev, translations: newTranslations };
+                                                                        });
+                                                                    }
+                                                                    setFeatureInput("");
+                                                                    setIsAddingFeature(false);
+                                                                }
+                                                            } else if (e.key === 'Escape') {
+                                                                setIsAddingFeature(false);
+                                                                setFeatureInput("");
+                                                            }
+                                                        }}
+                                                        onBlur={() => {
+                                                            const text = featureInput.trim();
+                                                            if (text) {
+                                                                const matchedBool = booleanFeatures.find(b =>
+                                                                    getLocalizedLabel(b.labels, activeLocale).toLowerCase() === text.toLowerCase()
+                                                                );
+
+                                                                if (matchedBool) {
+                                                                    setFormData(prev => ({ ...prev, [matchedBool.key]: true }));
+                                                                } else {
+                                                                    setFormData(prev => {
+                                                                        const newTranslations = prev.translations.map(t => {
+                                                                            if (t.locale === activeLocale) {
+                                                                                return { ...t, features: [...(t.features || []), text] };
+                                                                            }
+                                                                            return t;
+                                                                        });
+                                                                        return { ...prev, translations: newTranslations };
+                                                                    });
+                                                                }
+                                                            }
+                                                            setFeatureInput("");
+                                                            setIsAddingFeature(false);
+                                                        }}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsAddingFeature(true)}
+                                                    className="px-3 py-2 rounded-lg border border-dashed border-gray-300 text-gray-500 hover:border-orange-500 hover:text-orange-600 transition-colors flex items-center gap-1 text-sm"
+                                                >
+                                                    <Plus className="w-3.5 h-3.5" />
+                                                    Özel Ekle
+                                                </button>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                            </div>
+
+                        </section>
+
+                        <section id="section-labels" className="scroll-mt-28 space-y-6">
+                            <div className="border-t border-gray-100 pt-8">
+                                <h2 className="text-lg font-semibold text-gray-900">
+                                    Etiketler
+                                </h2>
+                                <div className="mt-6">
+                                    {activeLocale === "tr" ? (
+                                        <>
+                                            <p className="text-sm text-gray-500 mb-4">
+                                                Bu ilana etiketler ekleyerek kategorize edebilir ve filtrelenebilir hale getirebilirsiniz.
+                                            </p>
+                                            <TagInput
+                                                selectedTags={selectedTags}
+                                                onTagsChange={setSelectedTags}
+                                            />
+                                        </>
+                                    ) : (
                                         <div className="flex flex-wrap gap-2">
                                             {selectedTags.length === 0 && (
-                                                <span className="text-sm text-gray-400">
-                                                    -
-                                                </span>
+                                                <span className="text-sm text-gray-400">-</span>
                                             )}
                                             {selectedTags.map((tag) => {
                                                 const translatedName = tagTranslationMap[tag.id];
@@ -2687,11 +3039,11 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                                                 );
                                             })}
                                         </div>
-                                    </>
-                                )}
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    </section>
+                        </section>
+                    </div>
 
                     <section id="section-media" className="scroll-mt-28 mt-10 space-y-6">
                         <div className="border-t border-gray-100 pt-8">

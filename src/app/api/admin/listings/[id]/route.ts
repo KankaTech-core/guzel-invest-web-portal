@@ -6,6 +6,18 @@ interface RouteParams {
     params: Promise<{ id: string }>;
 }
 
+const normalizeOptionalText = (value: unknown): string | null => {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+};
+
+const toNullableNumber = (value: unknown): number | null => {
+    if (value === undefined || value === null || value === "") return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
 // PATCH /api/admin/listings/[id] - Update listing
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
     try {
@@ -33,57 +45,73 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Listing not found" }, { status: 404 });
         }
 
+        const requestedCompany = normalizeOptionalText(body.company);
+        const company = requestedCompany || existing.company || "Güzel Invest";
+
         // Update listing
-        const listing = await prisma.listing.update({
-            where: { id },
-            data: {
-                status: body.status ?? existing.status,
-                type: body.type ?? existing.type,
-                saleType: body.saleType ?? existing.saleType,
-                city: body.city ?? existing.city,
-                district: body.district ?? existing.district,
-                neighborhood: body.neighborhood !== undefined ? body.neighborhood : existing.neighborhood,
-                address: body.address !== undefined ? body.address : existing.address,
-                googleMapsLink: body.googleMapsLink !== undefined ? body.googleMapsLink : existing.googleMapsLink,
-                latitude: body.latitude !== undefined ? body.latitude : existing.latitude,
-                longitude: body.longitude !== undefined ? body.longitude : existing.longitude,
-                price: body.price !== undefined ? body.price.toString() : existing.price,
-                currency: body.currency ?? existing.currency,
-                area: body.area !== undefined ? Number(body.area) : existing.area,
-                rooms: body.rooms !== undefined ? (body.rooms !== null ? body.rooms.toString() : null) : existing.rooms,
-                bedrooms: body.bedrooms !== undefined ? (body.bedrooms !== null ? Number(body.bedrooms) : null) : existing.bedrooms,
-                bathrooms: body.bathrooms !== undefined ? (body.bathrooms !== null ? Number(body.bathrooms) : null) : existing.bathrooms,
-                floor: body.floor !== undefined ? (body.floor !== null ? Number(body.floor) : null) : existing.floor,
-                totalFloors: body.totalFloors !== undefined ? (body.totalFloors !== null ? Number(body.totalFloors) : null) : existing.totalFloors,
-                buildYear: body.buildYear !== undefined ? (body.buildYear !== null ? Number(body.buildYear) : null) : existing.buildYear,
-                heating: body.heating !== undefined ? body.heating : existing.heating,
-                furnished: body.furnished ?? existing.furnished,
-                balcony: body.balcony ?? existing.balcony,
-                garden: body.garden ?? existing.garden,
-                pool: body.pool ?? existing.pool,
-                parking: body.parking ?? existing.parking,
-                elevator: body.elevator ?? existing.elevator,
-                security: body.security ?? existing.security,
-                seaView: body.seaView ?? existing.seaView,
-                // Land-specific
-                parcelNo: body.parcelNo !== undefined ? body.parcelNo : existing.parcelNo,
-                emsal: body.emsal !== undefined ? (body.emsal !== null ? Number(body.emsal) : null) : existing.emsal,
-                zoningStatus: body.zoningStatus !== undefined ? body.zoningStatus : existing.zoningStatus,
-                // Commercial-specific
-                groundFloorArea: body.groundFloorArea !== undefined ? (body.groundFloorArea !== null ? Number(body.groundFloorArea) : null) : existing.groundFloorArea,
-                basementArea: body.basementArea !== undefined ? (body.basementArea !== null ? Number(body.basementArea) : null) : existing.basementArea,
-                // Farm-specific
-                hasWaterSource: body.hasWaterSource ?? existing.hasWaterSource,
-                hasFruitTrees: body.hasFruitTrees ?? existing.hasFruitTrees,
-                existingStructure: body.existingStructure !== undefined ? body.existingStructure : existing.existingStructure,
-                // Eligibility
-                citizenshipEligible: body.citizenshipEligible ?? existing.citizenshipEligible,
-                residenceEligible: body.residenceEligible ?? existing.residenceEligible,
-                publishedAt:
-                    body.status === "PUBLISHED" && existing.status !== "PUBLISHED"
-                        ? new Date()
-                        : existing.publishedAt,
-            },
+        await prisma.$transaction(async (tx) => {
+            await tx.listingCompanyOption.upsert({
+                where: { name: company },
+                update: {},
+                create: { name: company },
+            });
+
+            return tx.listing.update({
+                where: { id },
+                data: {
+                    sku: existing.sku, // immutable guard
+                    status: body.status ?? existing.status,
+                    type: body.type ?? existing.type,
+                    saleType: body.saleType ?? existing.saleType,
+                    company,
+                    city: body.city ?? existing.city,
+                    district: body.district ?? existing.district,
+                    neighborhood: body.neighborhood !== undefined ? body.neighborhood : existing.neighborhood,
+                    address: body.address !== undefined ? body.address : existing.address,
+                    googleMapsLink: body.googleMapsLink !== undefined ? body.googleMapsLink : existing.googleMapsLink,
+                    latitude: body.latitude !== undefined ? toNullableNumber(body.latitude) : existing.latitude,
+                    longitude: body.longitude !== undefined ? toNullableNumber(body.longitude) : existing.longitude,
+                    price: body.price !== undefined ? body.price.toString() : existing.price,
+                    currency: body.currency ?? existing.currency,
+                    area: body.area !== undefined ? Number(body.area) : existing.area,
+                    rooms: body.rooms !== undefined ? (body.rooms !== null ? body.rooms.toString() : null) : existing.rooms,
+                    bedrooms: body.bedrooms !== undefined ? toNullableNumber(body.bedrooms) : existing.bedrooms,
+                    bathrooms: body.bathrooms !== undefined ? toNullableNumber(body.bathrooms) : existing.bathrooms,
+                    wcCount: body.wcCount !== undefined ? toNullableNumber(body.wcCount) : existing.wcCount,
+                    floor: body.floor !== undefined ? toNullableNumber(body.floor) : existing.floor,
+                    totalFloors: body.totalFloors !== undefined ? toNullableNumber(body.totalFloors) : existing.totalFloors,
+                    buildYear: body.buildYear !== undefined ? toNullableNumber(body.buildYear) : existing.buildYear,
+                    heating: body.heating !== undefined ? body.heating : existing.heating,
+                    furnished: body.furnished ?? existing.furnished,
+                    balcony: body.balcony ?? existing.balcony,
+                    garden: body.garden ?? existing.garden,
+                    pool: body.pool ?? existing.pool,
+                    parking: body.parking ?? existing.parking,
+                    elevator: body.elevator ?? existing.elevator,
+                    security: body.security ?? existing.security,
+                    seaView: body.seaView ?? existing.seaView,
+                    // Land-specific
+                    parcelNo: body.parcelNo !== undefined ? body.parcelNo : existing.parcelNo,
+                    emsal: body.emsal !== undefined ? (body.emsal !== null ? Number(body.emsal) : null) : existing.emsal,
+                    zoningStatus: body.zoningStatus !== undefined ? body.zoningStatus : existing.zoningStatus,
+                    // Commercial-specific
+                    groundFloorArea: body.groundFloorArea !== undefined ? toNullableNumber(body.groundFloorArea) : existing.groundFloorArea,
+                    basementArea: body.basementArea !== undefined ? toNullableNumber(body.basementArea) : existing.basementArea,
+                    // Farm-specific
+                    hasWaterSource: body.hasWaterSource ?? existing.hasWaterSource,
+                    hasFruitTrees: body.hasFruitTrees ?? existing.hasFruitTrees,
+                    existingStructure: body.existingStructure !== undefined ? body.existingStructure : existing.existingStructure,
+                    // Eligibility
+                    citizenshipEligible: body.citizenshipEligible ?? existing.citizenshipEligible,
+                    residenceEligible: body.residenceEligible ?? existing.residenceEligible,
+                    publishToHepsiemlak: body.publishToHepsiemlak ?? existing.publishToHepsiemlak,
+                    publishToSahibinden: body.publishToSahibinden ?? existing.publishToSahibinden,
+                    publishedAt:
+                        body.status === "PUBLISHED" && existing.status !== "PUBLISHED"
+                            ? new Date()
+                            : existing.publishedAt,
+                },
+            });
         });
 
         // Update tags if provided

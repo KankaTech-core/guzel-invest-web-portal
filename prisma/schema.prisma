@@ -37,9 +37,11 @@ model Session {
 model Listing {
   id                  String               @id @default(cuid())
   slug                String               @unique
+  sku                 String?              @unique
   status              ListingStatus        @default(DRAFT)
   type                PropertyType
   saleType            SaleType
+  company             String               @default("Güzel Invest")
   city                String
   district            String
   neighborhood        String?
@@ -53,6 +55,7 @@ model Listing {
   rooms               String?
   bedrooms            Int?
   bathrooms           Int?
+  wcCount             Int?
   floor               Int?
   totalFloors         Int?
   buildYear           Int?
@@ -75,6 +78,8 @@ model Listing {
   existingStructure   String?
   citizenshipEligible Boolean              @default(false)
   residenceEligible   Boolean              @default(false)
+  publishToHepsiemlak Boolean              @default(false)
+  publishToSahibinden Boolean              @default(false)
   aiTags              String[]
   aiProcessedAt       DateTime?
   createdAt           DateTime             @default(now())
@@ -90,9 +95,26 @@ model Listing {
   @@index([status])
   @@index([type])
   @@index([saleType])
+  @@index([sku])
   @@index([city, district])
   @@index([price])
   @@map("listings")
+}
+
+model ListingCompanyOption {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("listing_company_options")
+}
+
+model ListingSerial {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  @@map("listing_serials")
 }
 
 model Tag {
