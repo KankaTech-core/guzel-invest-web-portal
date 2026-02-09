@@ -13,7 +13,7 @@ import {
     User,
     UserPlus,
 } from "lucide-react";
-import { Button, Input } from "@/components/ui";
+import { Button, Input, Select } from "@/components/ui";
 import { ConfirmModal } from "@/components/admin/confirm-modal";
 
 const ROLE_OPTIONS = [
@@ -84,6 +84,10 @@ const roleMeta: Record<
         description: "Sadece görüntüleme yetkisi",
     },
 };
+const roleSelectOptions = ROLE_OPTIONS.map((roleOption) => ({
+    value: roleOption.value,
+    label: roleOption.label,
+}));
 
 export function UsersManagement({ initialUsers }: UsersManagementProps) {
     const [users, setUsers] = useState(initialUsers);
@@ -412,26 +416,12 @@ export function UsersManagement({ initialUsers }: UsersManagementProps) {
                         </div>
 
                         <div>
-                            <label
-                                htmlFor="role"
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                            >
-                                Rol
-                            </label>
-                            <select
-                                id="role"
+                            <Select
+                                label="Rol"
                                 value={formState.role}
-                                onChange={(event) =>
-                                    handleChange("role", event.target.value as UserRole)
-                                }
-                                className="input"
-                            >
-                                {ROLE_OPTIONS.map((roleOption) => (
-                                    <option key={roleOption.value} value={roleOption.value}>
-                                        {roleOption.label}
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={(value) => handleChange("role", value as UserRole)}
+                                options={roleSelectOptions}
+                            />
                             <p className="text-xs text-gray-500 mt-2">
                                 {roleMeta[formState.role].description}
                             </p>
@@ -551,28 +541,14 @@ export function UsersManagement({ initialUsers }: UsersManagementProps) {
                             required
                         />
 
-                        <div>
-                            <label
-                                htmlFor="edit-role"
-                                className="block text-sm font-medium text-gray-700 mb-2"
-                            >
-                                Rol
-                            </label>
-                            <select
-                                id="edit-role"
-                                value={editFormState.role}
-                                onChange={(event) =>
-                                    handleEditChange("role", event.target.value as UserRole)
-                                }
-                                className="input"
-                            >
-                                {ROLE_OPTIONS.map((roleOption) => (
-                                    <option key={roleOption.value} value={roleOption.value}>
-                                        {roleOption.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        <Select
+                            label="Rol"
+                            value={editFormState.role}
+                            onChange={(value) =>
+                                handleEditChange("role", value as UserRole)
+                            }
+                            options={roleSelectOptions}
+                        />
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
