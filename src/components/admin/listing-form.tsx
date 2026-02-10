@@ -1562,20 +1562,15 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         }
     };
 
-    const handleFiles = async (files: File[]) => {
+    const handleFiles = (files: File[]) => {
         if (files.length === 0) return;
 
-        if (!formData.id) {
-            const pendingItems = files.map((file) => ({
-                id: createPendingId(),
-                file,
-                previewUrl: URL.createObjectURL(file),
-            }));
-            setPendingMedia((prev) => [...prev, ...pendingItems]);
-            return;
-        }
-
-        await uploadMediaFiles(formData.id, files);
+        const pendingItems = files.map((file) => ({
+            id: createPendingId(),
+            file,
+            previewUrl: URL.createObjectURL(file),
+        }));
+        setPendingMedia((prev) => [...prev, ...pendingItems]);
     };
 
     const handleMediaSelect = async (
@@ -3123,9 +3118,9 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                                 </div>
                             </div>
 
-                            {pendingMedia.length > 0 && !formData.id && (
+                            {pendingMedia.length > 0 && (
                                 <p className="text-xs text-gray-500">
-                                    Seçtiğiniz görseller, ilanı kaydettikten sonra
+                                    Seçtiğiniz görseller, taslak kaydetme veya yayınlama sırasında
                                     yüklenir ve WebP&apos;ye dönüştürülür.
                                 </p>
                             )}

@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { removeAuthCookie } from "@/lib/auth";
 
-export async function POST() {
-    await removeAuthCookie();
-    return NextResponse.redirect(new URL("/admin/login", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"));
+function buildLoginRedirectUrl(request: Request) {
+    return new URL("/admin/login", request.url);
 }
 
-export async function GET() {
+export async function POST(request: Request) {
     await removeAuthCookie();
-    return NextResponse.redirect(new URL("/admin/login", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"));
+    return NextResponse.redirect(buildLoginRedirectUrl(request));
+}
+
+export async function GET(request: Request) {
+    await removeAuthCookie();
+    return NextResponse.redirect(buildLoginRedirectUrl(request));
 }

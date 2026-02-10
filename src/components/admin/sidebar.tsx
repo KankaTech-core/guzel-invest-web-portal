@@ -27,7 +27,7 @@ export function Sidebar() {
     const { isCollapsed, toggleSidebar } = useSidebar();
 
     // Don't show sidebar on login page
-    if (pathname === "/admin/login") {
+    if (pathname === "/admin/login" || pathname.startsWith("/admin/login/")) {
         return null;
     }
 
