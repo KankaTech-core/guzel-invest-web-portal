@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ListingStatus } from "@/generated/prisma";
+import {
+    ListingStatus,
+    Prisma,
+    PropertyType,
+    SaleType,
+} from "@/generated/prisma";
 
 export async function GET(req: NextRequest) {
     try {
@@ -8,19 +13,46 @@ export async function GET(req: NextRequest) {
         const locale = searchParams.get("locale") || "tr";
         const type = searchParams.get("type");
         const saleType = searchParams.get("saleType");
+        const city = searchParams.get("city");
+        const district = searchParams.get("district");
         const minPrice = searchParams.get("minPrice");
         const maxPrice = searchParams.get("maxPrice");
+        const minArea = searchParams.get("minArea");
+        const maxArea = searchParams.get("maxArea");
 
-        const where: any = {
+        const where: Prisma.ListingWhereInput = {
             status: ListingStatus.PUBLISHED,
         };
 
-        if (type) where.type = type;
-        if (saleType) where.saleType = saleType;
+        if (type && Object.values(PropertyType).includes(type as PropertyType)) {
+            where.type = type as PropertyType;
+        }
+        if (saleType && Object.values(SaleType).includes(saleType as SaleType)) {
+            where.saleType = saleType as SaleType;
+        }
+        if (city) {
+            where.city = {
+                equals: city,
+                mode: "insensitive",
+            };
+        }
+        if (district) {
+            where.district = {
+                equals: district,
+                mode: "insensitive",
+            };
+        }
         if (minPrice || maxPrice) {
-            where.price = {};
-            if (minPrice) where.price.gte = parseFloat(minPrice);
-            if (maxPrice) where.price.lte = parseFloat(maxPrice);
+            const priceFilter: Prisma.DecimalFilter = {};
+            if (minPrice) priceFilter.gte = new Prisma.Decimal(minPrice);
+            if (maxPrice) priceFilter.lte = new Prisma.Decimal(maxPrice);
+            where.price = priceFilter;
+        }
+        if (minArea || maxArea) {
+            const areaFilter: Prisma.IntFilter = {};
+            if (minArea) areaFilter.gte = parseInt(minArea, 10);
+            if (maxArea) areaFilter.lte = parseInt(maxArea, 10);
+            where.area = areaFilter;
         }
 
         const listings = await prisma.listing.findMany({

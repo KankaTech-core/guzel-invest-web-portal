@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { Badge, Button, Card, CardContent, CardFooter, CardHeader } from "@/components/ui";
-import { ListingCard } from "@/components/public/listing-card";
 import { LandingAccordion } from "@/components/ui/interactive-image-accordion";
 import UxGuideInteractive from "./ux-guide-interactive";
 import {
@@ -12,88 +11,76 @@ import {
 
 export const metadata: Metadata = {
     title: "UX Guide | Güzel Invest",
-    description: "Design system overview for Güzel Invest.",
+    description: "Fintech-Trust Clarity odaklı gayrimenkul UX rehberi.",
     robots: { index: false, follow: false },
 };
 
-// Sample listing data for the ListingCard demo
-const sampleListing = {
-    id: "demo-1",
-    slug: "demo-luxury-villa",
-    type: "VILLA" as const,
-    saleType: "SALE" as const,
-    price: 495000,
-    currency: "EUR",
-    bedrooms: 4,
-    bathrooms: 3,
-    area: 280,
-    city: "Alanya",
-    district: "Mahmutlar",
-    translations: [
-        {
-            locale: "tr",
-            title: "Lüks Deniz Manzaralı Villa",
-        },
-    ],
-    media: [], // Empty to show placeholder state
-};
-
-const sampleListingWithImage = {
-    ...sampleListing,
-    id: "demo-2",
-    slug: "demo-apartment",
-    type: "APARTMENT" as const,
-    saleType: "RENT" as const,
-    price: 1500,
-    bedrooms: 2,
-    bathrooms: 1,
-    area: 95,
-    district: "Kestel",
-    translations: [
-        {
-            locale: "tr",
-            title: "Modern Kiralık Daire",
-        },
-    ],
-};
+const p3ListingVariants = [
+    {
+        id: "sale",
+        label: "SATILIK VARYANT (GÖRSEL YOK SENARYOSU)",
+        badge: "VILLA",
+        badgeClass: "bg-blue-500 text-white",
+        title: "Tapu Hazır 4+1 Deniz Manzaralı Villa",
+        location: "Mahmutlar, Alanya",
+        price: "€495.000",
+        priceSuffix: "",
+        mode: "SATILIK",
+        details: ["4 Oda", "3 Banyo", "280 m²"],
+    },
+    {
+        id: "rent",
+        label: "KİRALIK VARYANT",
+        badge: "DAİRE",
+        badgeClass: "bg-purple-500 text-white",
+        title: "Kiralık 2+1 Site İçi Daire",
+        location: "Kestel, Alanya",
+        price: "€1.500",
+        priceSuffix: "/ay",
+        mode: "KİRALIK",
+        details: ["2 Oda", "1 Banyo", "95 m²"],
+    },
+];
 
 export default function UxGuidePage() {
     const t = useTranslations();
 
     const colorGroups = [
         {
-            title: t("uxGuide.colors.primary"),
+            title: "Marka ve Güven",
             items: [
-                { name: "orange-50", className: "bg-orange-50", hex: "#FFF7ED" },
-                { name: "orange-100", className: "bg-orange-100", hex: "#FFEDD5" },
-                { name: "orange-200", className: "bg-orange-200", hex: "#FED7AA" },
-                { name: "orange-500", className: "bg-orange-500", hex: "#EC6803" },
-                { name: "orange-700", className: "bg-orange-700", hex: "#C2410C" },
+                { name: "trust-50", className: "bg-orange-50", hex: "#FFF7ED" },
+                { name: "trust-100", className: "bg-orange-100", hex: "#FFEDD5" },
+                { name: "trust-500", className: "bg-orange-500", hex: "#F97316" },
+                { name: "trust-700", className: "bg-orange-700", hex: "#C2410C" },
+                { name: "clarity-900", className: "bg-gray-900", hex: "#111827" },
             ],
         },
         {
-            title: t("uxGuide.colors.neutral"),
+            title: "Nötr Altyapı",
             items: [
-                { name: "gray-50", className: "bg-gray-50", hex: "#F9FAFB" },
-                { name: "gray-100", className: "bg-gray-100", hex: "#F3F4F6" },
-                { name: "gray-200", className: "bg-gray-200", hex: "#E5E7EB" },
-                { name: "gray-500", className: "bg-gray-500", hex: "#6B7280" },
-                { name: "gray-900", className: "bg-gray-900", hex: "#111827" },
+                { name: "canvas", className: "bg-gray-50", hex: "#F9FAFB" },
+                { name: "surface", className: "bg-white", hex: "#FFFFFF" },
+                { name: "line", className: "bg-gray-200", hex: "#E5E7EB" },
+                { name: "muted", className: "bg-gray-500", hex: "#6B7280" },
+                { name: "heading", className: "bg-gray-800", hex: "#1F2937" },
             ],
         },
         {
-            title: t("uxGuide.colors.status"),
+            title: "Operasyon Durumları",
             items: [
-                { name: "green-500", className: "bg-green-500", hex: "#22C55E" },
-                { name: "blue-500", className: "bg-blue-500", hex: "#3B82F6" },
-                { name: "amber-500", className: "bg-amber-500", hex: "#F59E0B" },
-                { name: "red-500", className: "bg-red-500", hex: "#EF4444" },
-                { name: "teal-500", className: "bg-teal-500", hex: "#14B8A6" },
+                { name: "tapu-ready", className: "bg-green-500", hex: "#22C55E" },
+                { name: "construction", className: "bg-blue-500", hex: "#3B82F6" },
+                { name: "tax-action", className: "bg-amber-500", hex: "#F59E0B" },
+                { name: "legal-alert", className: "bg-red-500", hex: "#EF4444" },
+                { name: "citizenship", className: "bg-teal-500", hex: "#14B8A6" },
             ],
         },
     ];
 
     const sectionLinks = [
+        { id: "designDNA", label: "Fintech-Trust Clarity DNA" },
+        { id: "serviceBlueprint", label: "Hizmet Mimarisi" },
         { id: "fontFamily", label: t("uxGuide.sections.fontFamily") },
         { id: "typographyScale", label: t("uxGuide.sections.typographyScale") },
         { id: "colors", label: t("uxGuide.sections.colors") },
@@ -102,22 +89,23 @@ export default function UxGuidePage() {
         { id: "listingCard", label: t("uxGuide.sections.listingCard") },
         { id: "atomicDesign", label: t("uxGuide.sections.atomicDesign") },
         { id: "layout", label: t("uxGuide.sections.layout") },
+        { id: "trustSignals", label: "Güven Sinyalleri" },
         { id: "icons", label: t("uxGuide.sections.icons") },
         { id: "animations", label: t("uxGuide.sections.animations") },
         { id: "forms", label: t("uxGuide.sections.forms") },
-        { id: "accordion", label: "Image Accordion" },
+        { id: "accordion", label: "Portföy Hikâye Akordeonu" },
     ];
 
     const typographyScaleSizes = [
-        { class: "text-xs", size: "13px", example: "Captions & metadata" },
-        { class: "text-sm", size: "15px", example: "Helper text & labels" },
-        { class: "text-base", size: "17px", example: "Body text default" },
-        { class: "text-lg", size: "18px", example: "Large body text" },
-        { class: "text-xl", size: "20px", example: "Section titles" },
-        { class: "text-2xl", size: "24px", example: "Card headings" },
-        { class: "text-3xl", size: "30px", example: "Page headings" },
-        { class: "text-4xl", size: "36px", example: "Hero titles" },
-        { class: "text-5xl", size: "48px", example: "Display text" },
+        { class: "text-xs", size: "13px", example: "Tapu no, yayın tarihi, portföy kodu" },
+        { class: "text-sm", size: "15px", example: "Form etiketleri ve yardımcı notlar" },
+        { class: "text-base", size: "17px", example: "İlan özeti ve danışmanlık açıklaması" },
+        { class: "text-lg", size: "18px", example: "Liste kartı alt metinleri" },
+        { class: "text-xl", size: "20px", example: "Bölüm başlıkları" },
+        { class: "text-2xl", size: "24px", example: "Fırsat kartı başlıkları" },
+        { class: "text-3xl", size: "30px", example: "Sayfa giriş başlıkları" },
+        { class: "text-4xl", size: "36px", example: "Ana mesaj ve değer önerisi" },
+        { class: "text-5xl", size: "48px", example: "Kampanya veya rapor vurgusu" },
     ];
 
     const fontWeights = [
@@ -155,29 +143,77 @@ export default function UxGuidePage() {
             title: t("uxGuide.atomicDesign.atoms.title"),
             description: t("uxGuide.atomicDesign.atoms.description"),
             icon: Box,
-            components: ["Button", "Badge", "Input", "Checkbox"],
+            components: ["Button", "StatusBadge", "Input", "TrustTag"],
         },
         {
             level: "02",
             title: t("uxGuide.atomicDesign.molecules.title"),
             description: t("uxGuide.atomicDesign.molecules.description"),
             icon: Component,
-            components: ["Card", "RangeSlider", "FilterSection"],
+            components: ["MetricCard", "RangeSlider", "FilterRow"],
         },
         {
             level: "03",
             title: t("uxGuide.atomicDesign.organisms.title"),
             description: t("uxGuide.atomicDesign.organisms.description"),
             icon: Layers,
-            components: ["ListingCard", "FilterPanel", "Navbar", "Footer"],
+            components: ["ListingCard", "ServiceRail", "TrustPanel", "Navbar"],
         },
         {
             level: "04",
             title: t("uxGuide.atomicDesign.templates.title"),
             description: t("uxGuide.atomicDesign.templates.description"),
             icon: Layout,
-            components: ["PortfolioPage", "ListingDetail", "ContactPage"],
+            components: ["HomePage", "PortfolioPage", "ListingDetail", "ServicePage"],
         },
+    ];
+
+    const designPillars = [
+        {
+            title: "Platform netliği, emlak mantığı",
+            description: "Fintech tarzı net grid ve veri kartları korunur; ancak odak borsa değil mülk karar sürecidir.",
+            icon: Layers,
+        },
+        {
+            title: "Güven kanıtı hep görünür",
+            description: "Tapu hazırlık, ruhsat durumu, vatandaşlık uygunluğu ve resmi süreç adımları her sayfada izlenebilir olmalıdır.",
+            icon: Check,
+        },
+        {
+            title: "Sadece satın alma değil yaşam döngüsü",
+            description: "Satış, inşaat, vergi ve satış sonrası destek aynı deneyimde birbirine bağlanır.",
+            icon: Home,
+        },
+        {
+            title: "Yüksek okunabilirlik + hızlı aksiyon",
+            description: "Her blok kullanıcıyı bir sonraki karar adımına götürür: randevu, teklif, karşılaştırma veya danışmanlık.",
+            icon: ArrowRight,
+        },
+    ];
+
+    const serviceBlueprint = [
+        {
+            title: "Al-Sat ve Portföy Danışmanlığı",
+            points: ["Mülk seçim matrisi", "Getiri/risk dengesi", "Saha uzmanıyla hızlı eşleştirme"],
+            icon: Building2,
+        },
+        {
+            title: "İnşaat ve Proje Yönetimi",
+            points: ["Proje aşama takibi", "Teslim tarih görünürlüğü", "Kalite ve ilerleme raporları"],
+            icon: Layers,
+        },
+        {
+            title: "Vergi ve Resmi Süreçler",
+            points: ["Vergi avantaj rehberi", "Tapu-işlem checklist", "Vatandaşlık süreç koordinasyonu"],
+            icon: MapPin,
+        },
+    ];
+
+    const trustSignals = [
+        { label: "Tapu Hazırlık Skoru", value: "92/100", hint: "Evrak ve uygunluk tamamlama seviyesi" },
+        { label: "Ortalama Proje Teslim Disiplini", value: "%96", hint: "Planlanan takvime uyum oranı" },
+        { label: "Vergi Planlama Kapsamı", value: "4 Ülke", hint: "TR, DE, RU, Orta Doğu yatırımcı senaryoları" },
+        { label: "Satış Sonrası Memnuniyet", value: "4.8/5", hint: "Mülk yönetimi ve destek kalitesi" },
     ];
 
     return (
@@ -193,11 +229,13 @@ export default function UxGuidePage() {
                         {t("uxGuide.title")}
                     </h1>
                     <p className="text-lg text-gray-500 max-w-2xl leading-relaxed">
-                        {t("uxGuide.description")}
+                        /3, /8 ve /p3 varyantlarında beğenilen Fintech-Trust Clarity dilini; bankacılık estetiklerinden ayrıştırıp
+                        Güzel Invest&apos;in gayrimenkul, inşaat ve vergi danışmanlığı operasyonuna uyarlayan tasarım rehberi.
                     </p>
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 max-w-2xl">
                         <p className="text-sm text-amber-800">
-                            <strong>Living Documentation:</strong> Components shown here are the actual components used across the site. Updating a component updates it everywhere.
+                            <strong>Canlı doküman:</strong> Buradaki bileşenler sitede kullanılan gerçek bileşenlerdir.
+                            Bileşende yapılan değişiklik tüm sayfalara yansır.
                         </p>
                     </div>
                     <nav className="flex flex-wrap gap-2 pt-4">
@@ -213,26 +251,85 @@ export default function UxGuidePage() {
                     </nav>
                 </header>
 
+                {/* Design DNA Section */}
+                <section id="designDNA" className="space-y-8">
+                    <div className="flex items-baseline gap-4">
+                        <span className="text-sm font-mono text-gray-300">01</span>
+                        <div>
+                            <h2 className="text-3xl font-bold text-gray-900">Fintech-Trust Clarity DNA</h2>
+                            <p className="text-gray-500 mt-1">
+                                Estetik dili koru; ancak karar modelini gayrimenkul yolculuğuna ve saha gerçeğine bağla.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {designPillars.map((pillar) => (
+                            <Card key={pillar.title} padding="md" className="border border-gray-200">
+                                <div className="flex items-start gap-4">
+                                    <span className="w-10 h-10 rounded-lg bg-orange-50 border border-orange-200 flex items-center justify-center text-orange-600">
+                                        <pillar.icon className="w-5 h-5" />
+                                    </span>
+                                    <div>
+                                        <h3 className="text-base font-semibold text-gray-900">{pillar.title}</h3>
+                                        <p className="text-sm text-gray-500 mt-2 leading-relaxed">{pillar.description}</p>
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                </section>
+
+                {/* Service Blueprint Section */}
+                <section id="serviceBlueprint" className="space-y-8">
+                    <div className="flex items-baseline gap-4">
+                        <span className="text-sm font-mono text-gray-300">02</span>
+                        <div>
+                            <h2 className="text-3xl font-bold text-gray-900">Hizmet Mimarisi</h2>
+                            <p className="text-gray-500 mt-1">
+                                Ana yapıda 3 çekirdek servis aynı tasarım diliyle ama farklı operasyon mantıklarıyla sunulur.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="grid gap-6 lg:grid-cols-3">
+                        {serviceBlueprint.map((service) => (
+                            <Card key={service.title} padding="md" className="border border-gray-200">
+                                <div className="w-10 h-10 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-700 mb-4">
+                                    <service.icon className="w-5 h-5" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900 mb-3">{service.title}</h3>
+                                <div className="space-y-2">
+                                    {service.points.map((point) => (
+                                        <div key={point} className="flex items-start gap-2 text-sm text-gray-600">
+                                            <Check className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+                                            <span>{point}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                </section>
+
                 {/* Font Family Section */}
                 <section id="fontFamily" className="space-y-8">
                     <div className="flex items-baseline gap-4">
-                        <span className="text-sm font-mono text-gray-300">01</span>
+                        <span className="text-sm font-mono text-gray-300">03</span>
                         <div>
                             <h2 className="text-3xl font-bold text-gray-900">
                                 {t("uxGuide.sections.fontFamily")}
                             </h2>
                             <p className="text-gray-500 mt-1">
-                                {t("uxGuide.fontFamily.description")}
+                                Fintech netliği için modern sans serif kullanılır; fakat mikro metinler yatırımcıya teknik değil operasyonel güven verir.
                             </p>
                         </div>
                     </div>
                     <div className="border border-gray-100 rounded-lg overflow-hidden">
                         <div className="border-b border-gray-100 p-8 bg-gray-50/50">
                             <h3 className="text-6xl font-bold text-gray-900 tracking-tight">
-                                {t("uxGuide.fontFamily.title")}
+                                Sora / IBM Plex Sans
                             </h3>
                             <p className="text-sm text-gray-400 mt-3 font-mono">
-                                {t("uxGuide.fontFamily.source")}
+                                Referans: /3, /8 ve /p3 varyantlarındaki okunabilirlik testleri
                             </p>
                         </div>
                         <div className="p-8 border-b border-gray-100">
@@ -259,13 +356,13 @@ export default function UxGuidePage() {
                 {/* Typography Scale Section */}
                 <section id="typographyScale" className="space-y-8">
                     <div className="flex items-baseline gap-4">
-                        <span className="text-sm font-mono text-gray-300">02</span>
+                        <span className="text-sm font-mono text-gray-300">04</span>
                         <div>
                             <h2 className="text-3xl font-bold text-gray-900">
                                 {t("uxGuide.sections.typographyScale")}
                             </h2>
                             <p className="text-gray-500 mt-1">
-                                {t("uxGuide.typographyScale.description")}
+                                Başlıklar hızlı tarama için net, gövde metinleri ise karar destekleyici ve hukuki/operasyonel açıklığa odaklı olmalı.
                             </p>
                         </div>
                     </div>
@@ -289,10 +386,10 @@ export default function UxGuidePage() {
                 {/* Colors Section */}
                 <section id="colors" className="space-y-8">
                     <div className="flex items-baseline gap-4">
-                        <span className="text-sm font-mono text-gray-300">03</span>
+                        <span className="text-sm font-mono text-gray-300">05</span>
                         <div>
                             <h2 className="text-3xl font-bold text-gray-900">{t("uxGuide.sections.colors")}</h2>
-                            <p className="text-gray-500 mt-1">{t("uxGuide.colorsHint")}</p>
+                            <p className="text-gray-500 mt-1">Turuncu karar tetikler, nötrler bilgi yoğunluğunu dengeler, durum renkleri süreç şeffaflığını gösteren güven sinyalleridir.</p>
                         </div>
                     </div>
                     <div className="grid gap-8 lg:grid-cols-3">
@@ -318,8 +415,11 @@ export default function UxGuidePage() {
                 {/* Design Tokens Section */}
                 <section id="tokens" className="space-y-8">
                     <div className="flex items-baseline gap-4">
-                        <span className="text-sm font-mono text-gray-300">04</span>
-                        <h2 className="text-3xl font-bold text-gray-900">{t("uxGuide.sections.tokens")}</h2>
+                        <span className="text-sm font-mono text-gray-300">06</span>
+                        <div>
+                            <h2 className="text-3xl font-bold text-gray-900">{t("uxGuide.sections.tokens")}</h2>
+                            <p className="text-gray-500 mt-1">Token seti, hem vitrindeki premium algıyı hem de paneldeki operasyon netliğini birlikte taşımalıdır.</p>
+                        </div>
                     </div>
                     <div className="grid gap-6 lg:grid-cols-3">
                         <div className="border border-gray-100 rounded-lg p-6">
@@ -376,18 +476,21 @@ export default function UxGuidePage() {
                 {/* Components Section - Using ACTUAL Components */}
                 <section id="components" className="space-y-8">
                     <div className="flex items-baseline gap-4">
-                        <span className="text-sm font-mono text-gray-300">05</span>
-                        <h2 className="text-3xl font-bold text-gray-900">{t("uxGuide.sections.components")}</h2>
+                        <span className="text-sm font-mono text-gray-300">07</span>
+                        <div>
+                            <h2 className="text-3xl font-bold text-gray-900">{t("uxGuide.sections.components")}</h2>
+                            <p className="text-gray-500 mt-1">Bileşenler sadece estetik değil; her biri bir sonraki operasyon adımını tetikleyen aksiyon noktası olmalıdır.</p>
+                        </div>
                     </div>
                     <div className="grid gap-6 lg:grid-cols-3">
                         {/* Buttons - Actual Button Component */}
                         <Card padding="md" className="border border-gray-100">
                             <h3 className="text-sm font-medium text-gray-900 uppercase tracking-wider mb-4">{t("uxGuide.components.buttons")}</h3>
                             <div className="flex flex-wrap gap-2">
-                                <Button>{t("uxGuide.labels.primary")}</Button>
-                                <Button variant="secondary">{t("uxGuide.labels.secondary")}</Button>
-                                <Button variant="outline">{t("uxGuide.labels.outline")}</Button>
-                                <Button variant="ghost">{t("uxGuide.labels.ghost")}</Button>
+                                <Button>Portföyü İncele</Button>
+                                <Button variant="secondary">Uzmanla Görüş</Button>
+                                <Button variant="outline">Tapu Sürecini Öğren</Button>
+                                <Button variant="ghost">Vergi Sorusu Sor</Button>
                             </div>
                             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
                                 <Button size="sm">Sm</Button>
@@ -403,9 +506,9 @@ export default function UxGuidePage() {
                             <div className="flex flex-wrap gap-2">
                                 <Badge variant="primary">{t("uxGuide.examples.badgeFeatured")}</Badge>
                                 <Badge variant="secondary">{t("uxGuide.examples.badgeNew")}</Badge>
-                                <Badge variant="success">Success</Badge>
-                                <Badge variant="warning">Warning</Badge>
-                                <Badge variant="info">Info</Badge>
+                                <Badge variant="success">Tapu Hazır</Badge>
+                                <Badge variant="warning">İnşaatta</Badge>
+                                <Badge variant="info">Vatandaşlığa Uygun</Badge>
                             </div>
                             <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
                                 <Badge variant="villa">Villa</Badge>
@@ -421,73 +524,123 @@ export default function UxGuidePage() {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-xs uppercase tracking-wider text-gray-400">{t("uxGuide.components.cards")}</p>
-                                        <h3 className="text-lg font-semibold text-gray-900">{t("uxGuide.examples.cardTitle")}</h3>
+                                        <h3 className="text-lg font-semibold text-gray-900">Vergi Planlama Paketi</h3>
                                     </div>
-                                    <Badge variant="primary">{t("uxGuide.examples.badgeFeatured")}</Badge>
+                                    <Badge variant="primary">Premium</Badge>
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-gray-600">{t("uxGuide.examples.cardText")}</p>
+                                <p className="text-gray-600">Mülk alımında ülke bazlı vergi etkilerini tek ekranda gösteren danışmanlık kartı.</p>
                             </CardContent>
                             <CardFooter className="flex items-center justify-between">
-                                <span className="text-sm font-mono text-gray-400">€245,000</span>
-                                <Button variant="outline" size="sm">{t("uxGuide.examples.cardCta")}</Button>
+                                <span className="text-sm font-mono text-gray-400">SLA: 48 saat</span>
+                                <Button variant="outline" size="sm">Brif Oluştur</Button>
                             </CardFooter>
                         </Card>
                     </div>
                 </section>
 
-                {/* Listing Card Section - ACTUAL ListingCard Component */}
+                {/* Listing Card Section - P3 Style Variants */}
                 <section id="listingCard" className="space-y-8">
                     <div className="flex items-baseline gap-4">
-                        <span className="text-sm font-mono text-gray-300">06</span>
+                        <span className="text-sm font-mono text-gray-300">08</span>
                         <div>
                             <h2 className="text-3xl font-bold text-gray-900">{t("uxGuide.sections.listingCard")}</h2>
-                            <p className="text-gray-500 mt-1">{t("uxGuide.listingCard.description")}</p>
+                            <p className="text-gray-500 mt-1">Varyant önizlemeleri artık /p3&apos;teki yatay kart kurgusuna göre gösterilir.</p>
                         </div>
                     </div>
 
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                         <p className="text-sm text-green-800">
-                            <strong>✓ Real Component:</strong> This is the actual <code className="bg-green-100 px-1 rounded">ListingCard</code> component from <code className="bg-green-100 px-1 rounded">@/components/public/listing-card.tsx</code>. Changes to that file will be reflected here.
+                            <strong>✓ P3 stil önizleme:</strong> Bu iki varyant, /p3&apos;teki liste kartı düzenini birebir referans alır.
                         </p>
                     </div>
 
-                    <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                        {/* Actual ListingCard - Sale Variant */}
-                        <div className="space-y-3">
-                            <p className="text-xs uppercase tracking-wider text-gray-400 font-medium">Sale Variant (No Image)</p>
-                            <ListingCard listing={sampleListing} locale="tr" />
-                        </div>
+                    <div className="space-y-4">
+                        {p3ListingVariants.map((variant) => (
+                            <div key={variant.id} className="space-y-2">
+                                <p className="text-xs uppercase tracking-wider text-gray-400 font-medium">{variant.label}</p>
+                                <article className="group bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-orange-200 hover:shadow-lg transition-all">
+                                    <div className="grid grid-cols-1 md:grid-cols-[280px_1fr_190px] gap-0">
+                                        <div className="relative bg-gray-100 min-h-[190px]">
+                                            <span className={`absolute top-3 left-3 px-3 py-1 rounded-lg text-sm font-semibold ${variant.badgeClass}`}>
+                                                {variant.badge}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                className="absolute top-3 right-3 w-10 h-10 rounded-xl bg-white text-gray-500 border border-gray-200 flex items-center justify-center shadow-sm"
+                                                aria-label="Kaydet"
+                                            >
+                                                <Bookmark className="w-4 h-4" />
+                                            </button>
+                                            <div className="absolute inset-0 flex items-center justify-center text-gray-300">
+                                                <Square className="w-12 h-12" />
+                                            </div>
+                                            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-gray-900/40 to-transparent" />
+                                        </div>
 
-                        {/* Actual ListingCard - Rent Variant */}
-                        <div className="space-y-3">
-                            <p className="text-xs uppercase tracking-wider text-gray-400 font-medium">Rent Variant</p>
-                            <ListingCard listing={sampleListingWithImage} locale="tr" />
-                        </div>
+                                        <div className="p-5 border-r border-gray-100 flex flex-col justify-between">
+                                            <div>
+                                                <h3 className="text-2xl font-semibold text-gray-900">{variant.title}</h3>
+                                                <p className="text-sm text-gray-500 mt-2 flex items-center gap-1.5">
+                                                    <MapPin className="w-4 h-4" />
+                                                    {variant.location}
+                                                </p>
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-gray-100">
+                                                <div className="text-center">
+                                                    <BedDouble className="w-4 h-4 mx-auto text-gray-500 mb-1" />
+                                                    <span className="text-sm text-gray-700">{variant.details[0]}</span>
+                                                </div>
+                                                <div className="text-center">
+                                                    <Bath className="w-4 h-4 mx-auto text-gray-500 mb-1" />
+                                                    <span className="text-sm text-gray-700">{variant.details[1]}</span>
+                                                </div>
+                                                <div className="text-center">
+                                                    <Square className="w-4 h-4 mx-auto text-gray-500 mb-1" />
+                                                    <span className="text-sm text-gray-700">{variant.details[2]}</span>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                        {/* Structure Breakdown */}
-                        <div className="space-y-3">
-                            <p className="text-xs uppercase tracking-wider text-gray-400 font-medium">Component Structure</p>
-                            <div className="space-y-2">
-                                {Object.entries({
-                                    "Image": t("uxGuide.listingCard.structure.image"),
-                                    "Badge": t("uxGuide.listingCard.structure.badge"),
-                                    "Bookmark": t("uxGuide.listingCard.structure.bookmark"),
-                                    "Title": t("uxGuide.listingCard.structure.title"),
-                                    "Price": t("uxGuide.listingCard.structure.price"),
-                                    "Rating": t("uxGuide.listingCard.structure.rating"),
-                                    "Details": t("uxGuide.listingCard.structure.details"),
-                                }).map(([key, value], index) => (
-                                    <div key={key} className="flex items-start gap-3 p-3 border border-gray-100 rounded-lg hover:border-gray-200 transition-colors">
-                                        <span className="text-xs font-mono text-gray-300">0{index + 1}</span>
-                                        <div className="flex-1">
-                                            <p className="text-sm font-medium text-gray-900">{key}</p>
-                                            <p className="text-xs text-gray-500">{value}</p>
+                                        <div className="p-5 bg-gray-50 flex flex-col items-end justify-between">
+                                            <div className="text-right">
+                                                <p className="text-3xl font-bold text-orange-500">
+                                                    {variant.price}
+                                                    {variant.priceSuffix && <span className="text-gray-400 text-xl ml-1">{variant.priceSuffix}</span>}
+                                                </p>
+                                                <p className="text-xs text-gray-400 mt-2">{variant.mode}</p>
+                                            </div>
+                                            <Button size="sm" className="w-full md:w-auto gap-2">
+                                                <Eye className="w-4 h-4" />
+                                                İncele
+                                            </Button>
                                         </div>
                                     </div>
-                                ))}
+                                </article>
                             </div>
+                        ))}
+                    </div>
+
+                    <div className="space-y-3">
+                        <p className="text-xs uppercase tracking-wider text-gray-400 font-medium">KART MANTIĞI</p>
+                        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                            {Object.entries({
+                                "Yerleşim": "/p3 ile uyumlu yatay kart: medya + içerik + fiyat/aksiyon kolonu",
+                                "Başlık ve Konum": "İlk bakışta mülk vaadi ve lokasyon netliği",
+                                "Detay Satırı": "m², oda ve banyo bilgisi kompakt veri satırıyla verilir",
+                                "Fiyat Bloğu": "Fiyatın yanında satış modu ve kira eki açıkça gösterilir",
+                                "Aksiyon": "Tek CTA: İncele. Karar akışı sade tutulur",
+                                "Güven Katmanı": "Rozet, kaydet ve süreç işaretleri kartın üst katmanında konumlanır",
+                            }).map(([key, value], index) => (
+                                <div key={key} className="flex items-start gap-3 p-3 border border-gray-100 rounded-lg hover:border-gray-200 transition-colors">
+                                    <span className="text-xs font-mono text-gray-300">0{index + 1}</span>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-medium text-gray-900">{key}</p>
+                                        <p className="text-xs text-gray-500">{value}</p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </section>
@@ -495,10 +648,12 @@ export default function UxGuidePage() {
                 {/* Atomic Design Section */}
                 <section id="atomicDesign" className="space-y-8">
                     <div className="flex items-baseline gap-4">
-                        <span className="text-sm font-mono text-gray-300">07</span>
+                        <span className="text-sm font-mono text-gray-300">09</span>
                         <div>
                             <h2 className="text-3xl font-bold text-gray-900">{t("uxGuide.sections.atomicDesign")}</h2>
-                            <p className="text-gray-500 mt-1">{t("uxGuide.atomicDesign.description")}</p>
+                            <p className="text-gray-500 mt-1">
+                                Hiyerarşi sade ama sektöre özel: atomdan template&apos;e her katmanda emlak operasyonunu hızlandıran karar noktası bulunur.
+                            </p>
                         </div>
                     </div>
                     <div className="grid gap-px bg-gray-100 rounded-lg overflow-hidden md:grid-cols-2 lg:grid-cols-4">
@@ -523,16 +678,18 @@ export default function UxGuidePage() {
                 {/* Layout Section */}
                 <section id="layout" className="space-y-8">
                     <div className="flex items-baseline gap-4">
-                        <span className="text-sm font-mono text-gray-300">08</span>
+                        <span className="text-sm font-mono text-gray-300">10</span>
                         <div>
                             <h2 className="text-3xl font-bold text-gray-900">{t("uxGuide.sections.layout")}</h2>
-                            <p className="text-gray-500 mt-1">{t("uxGuide.layout.container")}</p>
+                            <p className="text-gray-500 mt-1">Ana taslak /3 ve /8&apos;deki dashboard netliğini, /p3&apos;teki filtre + liste derinliğini birlikte kullanır.</p>
                         </div>
                     </div>
                     <div className="space-y-6">
                         <div className="border border-gray-100 rounded-lg p-6">
                             <p className="text-xs uppercase tracking-wider text-gray-400 font-medium mb-4">Responsive Grid</p>
-                            <p className="text-sm text-gray-500 mb-6">{t("uxGuide.layout.grid")}</p>
+                            <p className="text-sm text-gray-500 mb-6">
+                                Landing ve portföyde farklı yoğunluklar kullanılır: hero ve trust kartları geniş, filtre ve tablo kartları modüler.
+                            </p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                 {[1, 2, 3, 4].map((i) => (
                                     <div key={i} className="bg-gray-900 rounded-lg p-8 text-center">
@@ -540,6 +697,18 @@ export default function UxGuidePage() {
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                        <div className="grid gap-4 lg:grid-cols-3">
+                            {[
+                                { title: "Home", desc: "Güven metrikleri + kategori geçişi + hizmet girişleri" },
+                                { title: "Portföy", desc: "Sidebar filtre + yatay kartlar + hızlı karşılaştırma aksiyonları" },
+                                { title: "İlan Detay", desc: "Karar için teknik detay, harita, süreç ve danışmanlık CTA'sı" },
+                            ].map((item) => (
+                                <Card key={item.title} padding="md" className="border border-gray-200">
+                                    <h3 className="text-base font-semibold text-gray-900">{item.title}</h3>
+                                    <p className="text-sm text-gray-500 mt-2">{item.desc}</p>
+                                </Card>
+                            ))}
                         </div>
                         <div className="border border-gray-100 rounded-lg overflow-hidden">
                             <div className="grid grid-cols-4 divide-x divide-gray-100">
@@ -554,13 +723,35 @@ export default function UxGuidePage() {
                     </div>
                 </section>
 
+                {/* Trust Signals Section */}
+                <section id="trustSignals" className="space-y-8">
+                    <div className="flex items-baseline gap-4">
+                        <span className="text-sm font-mono text-gray-300">11</span>
+                        <div>
+                            <h2 className="text-3xl font-bold text-gray-900">Güven Sinyalleri</h2>
+                            <p className="text-gray-500 mt-1">
+                                Fintech dili burada rakam gösterisi değil karar güvencesi için kullanılır.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        {trustSignals.map((signal) => (
+                            <div key={signal.label} className="border border-gray-200 rounded-xl p-5 bg-white">
+                                <p className="text-xs uppercase tracking-wider text-gray-400 mb-2">{signal.label}</p>
+                                <p className="text-2xl font-bold text-gray-900">{signal.value}</p>
+                                <p className="text-xs text-gray-500 mt-2 leading-relaxed">{signal.hint}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
                 {/* Icons Section */}
                 <section id="icons" className="space-y-8">
                     <div className="flex items-baseline gap-4">
-                        <span className="text-sm font-mono text-gray-300">09</span>
+                        <span className="text-sm font-mono text-gray-300">12</span>
                         <div>
                             <h2 className="text-3xl font-bold text-gray-900">{t("uxGuide.sections.icons")}</h2>
-                            <p className="text-gray-500 mt-1">{t("uxGuide.icons.description")}</p>
+                            <p className="text-gray-500 mt-1">İkonlar mimariyi sade tutar: mülk türü, lokasyon, süreç ve iletişim aksiyonları tek bakışta ayrışır.</p>
                         </div>
                     </div>
                     <div className="border border-gray-100 rounded-lg p-6">
@@ -582,18 +773,18 @@ export default function UxGuidePage() {
                 {/* Animations Section */}
                 <section id="animations" className="space-y-8">
                     <div className="flex items-baseline gap-4">
-                        <span className="text-sm font-mono text-gray-300">10</span>
+                        <span className="text-sm font-mono text-gray-300">13</span>
                         <div>
                             <h2 className="text-3xl font-bold text-gray-900">{t("uxGuide.sections.animations")}</h2>
-                            <p className="text-gray-500 mt-1">{t("uxGuide.animations.description")}</p>
+                            <p className="text-gray-500 mt-1">Animasyonlar dekor değil yönlendirme aracıdır; dikkat, yeni ilanlar ve kritik süreç adımlarına çekilir.</p>
                         </div>
                     </div>
                     <div className="grid gap-px bg-gray-100 rounded-lg overflow-hidden md:grid-cols-2 lg:grid-cols-4">
                         {[
-                            { name: "Fade In", class: "animate-fade-in" },
-                            { name: "Slide Up", class: "animate-slide-up" },
-                            { name: "Pulse", class: "animate-pulse" },
-                            { name: "Hover", class: "transition-all duration-300 hover:scale-110 hover:shadow-lg cursor-pointer" },
+                            { name: "Portföy Giriş", class: "animate-fade-in" },
+                            { name: "Filtre Açılış", class: "animate-slide-up" },
+                            { name: "Canlı Durum Noktası", class: "animate-pulse" },
+                            { name: "Kart İncele", class: "transition-all duration-300 hover:scale-110 hover:shadow-lg cursor-pointer" },
                         ].map((anim) => (
                             <div key={anim.name} className="bg-white p-6">
                                 <p className="text-xs uppercase tracking-wider text-gray-400 font-medium mb-4">{anim.name}</p>
@@ -609,8 +800,11 @@ export default function UxGuidePage() {
                 {/* Forms Section - Using Actual Components */}
                 <section id="forms" className="space-y-8">
                     <div className="flex items-baseline gap-4">
-                        <span className="text-sm font-mono text-gray-300">11</span>
-                        <h2 className="text-3xl font-bold text-gray-900">{t("uxGuide.sections.forms")}</h2>
+                        <span className="text-sm font-mono text-gray-300">14</span>
+                        <div>
+                            <h2 className="text-3xl font-bold text-gray-900">{t("uxGuide.sections.forms")}</h2>
+                            <p className="text-gray-500 mt-1">Formlar tek mesaj kutusu değil; satın alma, inşaat ve vergi ihtiyacını aynı brifte toplar.</p>
+                        </div>
                     </div>
                     <UxGuideInteractive />
                 </section>
@@ -618,16 +812,16 @@ export default function UxGuidePage() {
                 {/* Interactive Image Accordion Section */}
                 <section id="accordion" className="space-y-8">
                     <div className="flex items-baseline gap-4">
-                        <span className="text-sm font-mono text-gray-300">12</span>
+                        <span className="text-sm font-mono text-gray-300">15</span>
                         <div>
-                            <h2 className="text-3xl font-bold text-gray-900">Interactive Image Accordion</h2>
-                            <p className="text-gray-500 mt-1">A dynamic, responsive image accordion for showcasing portfolio highlights or local attractions.</p>
+                            <h2 className="text-3xl font-bold text-gray-900">Portföy Hikâye Akordeonu</h2>
+                            <p className="text-gray-500 mt-1">Bölgesel hikâye, proje sahnesi ve yaşam kalitesi verisini aynı blokta anlatan görsel akış yapısı.</p>
                         </div>
                     </div>
 
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                         <p className="text-sm text-green-800">
-                            <strong>✓ Real Component:</strong> This is the actual <code className="bg-green-100 px-1 rounded">LandingAccordion</code> component.
+                            <strong>✓ Gerçek bileşen:</strong> Bu bölüm doğrudan <code className="bg-green-100 px-1 rounded">LandingAccordion</code> bileşenini kullanır.
                         </p>
                     </div>
 

@@ -1,39 +1,111 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ListingGrid } from "@/components/public/listing-grid";
 import { FilterPanel, FilterSection } from "@/components/ui/filter";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RangeSlider } from "@/components/ui/range-slider";
-import { MapPin, DollarSign, Home, Maximize } from "lucide-react";
+import { Building2, DollarSign, Home, MapPin, Maximize } from "lucide-react";
 
 interface PortfolioClientProps {
     locale: string;
 }
 
+const PRICE_MIN = 0;
+const PRICE_MAX = 2000000;
+const AREA_MIN = 0;
+const AREA_MAX = 500;
+
+const propertyTypes = [
+    { value: "APARTMENT", label: "Daire" },
+    { value: "VILLA", label: "Villa" },
+    { value: "PENTHOUSE", label: "Penthouse" },
+    { value: "LAND", label: "Arsa" },
+    { value: "COMMERCIAL", label: "Ticari" },
+    { value: "OFFICE", label: "Ofis" },
+    { value: "SHOP", label: "Dükkan" },
+    { value: "FARM", label: "Çiftlik" },
+] as const;
+
+const saleTypes = [
+    { value: "SALE", label: "Satılık" },
+    { value: "RENT", label: "Kiralık" },
+] as const;
+
+const cityOptions = ["Alanya", "Antalya", "Gazipasa", "Mersin"] as const;
+
+const districtsByCity: Record<(typeof cityOptions)[number], string[]> = {
+    Alanya: ["Mahmutlar", "Kestel", "Oba", "Cikcilli", "Kargicak", "Avsallar", "Konakli", "Demirtas", "Merkez"],
+    Antalya: ["Muratpasa", "Konyaalti", "Kepez", "Dosemealti", "Aksu"],
+    Gazipasa: ["Pazarcı", "Cumhuriyet", "Yeni Mahalle", "Beyrebucak"],
+    Mersin: ["Yenisehir", "Mezitli", "Erdemli", "Silifke"],
+};
+
+function parseNumber(value: string | null) {
+    if (!value) {
+        return undefined;
+    }
+
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function findCaseInsensitiveMatch<T extends string>(
+    target: string | null,
+    values: readonly T[]
+) {
+    if (!target) {
+        return undefined;
+    }
+
+    return values.find((value) => value.toLowerCase() === target.toLowerCase());
+}
+
 export function PortfolioClient({ locale }: PortfolioClientProps) {
-    // Filter State
-    const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-    const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
-    const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000000]);
-    const [areaRange, setAreaRange] = useState<[number, number]>([0, 500]);
+    const searchParams = useSearchParams();
 
-    const propertyTypes = [
-        { value: "VILLA", label: "Villa" },
-        { value: "APARTMENT", label: "Daire" },
-        { value: "HOME", label: "Müstakil Ev" },
-        { value: "LAND", label: "Arsa" },
-        { value: "COMMERCIAL", label: "Ticari" },
-    ];
+    const initialType = findCaseInsensitiveMatch(
+        searchParams.get("type"),
+        propertyTypes.map((item) => item.value)
+    );
+    const initialSaleType = findCaseInsensitiveMatch(
+        searchParams.get("saleType"),
+        saleTypes.map((item) => item.value)
+    );
+    const initialCity = findCaseInsensitiveMatch(searchParams.get("city"), cityOptions);
+    const initialDistrict = initialCity
+        ? findCaseInsensitiveMatch(searchParams.get("district"), districtsByCity[initialCity])
+        : undefined;
+    const initialMinPrice = parseNumber(searchParams.get("minPrice"));
+    const initialMaxPrice = parseNumber(searchParams.get("maxPrice"));
+    const initialMinArea = parseNumber(searchParams.get("minArea"));
+    const initialMaxArea = parseNumber(searchParams.get("maxArea"));
 
-    const locations = [
-        { value: "kestel", label: "Kestel" },
-        { value: "mahmutlar", label: "Mahmutlar" },
-        { value: "merkez", label: "Merkez" },
-        { value: "oba", label: "Oba" },
-        { value: "cikcilli", label: "Cikcilli" },
-        { value: "kargicak", label: "Kargıcak" },
-    ];
+    const [selectedTypes, setSelectedTypes] = useState<string[]>(
+        initialType ? [initialType] : []
+    );
+    const [selectedSaleType, setSelectedSaleType] = useState<string | undefined>(
+        initialSaleType
+    );
+    const [selectedCity, setSelectedCity] = useState<string>(initialCity ?? "");
+    const [selectedDistrict, setSelectedDistrict] = useState<string>(initialDistrict ?? "");
+    const [priceRange, setPriceRange] = useState<[number, number]>([
+        initialMinPrice ?? PRICE_MIN,
+        initialMaxPrice ?? PRICE_MAX,
+    ]);
+    const [areaRange, setAreaRange] = useState<[number, number]>([
+        initialMinArea ?? AREA_MIN,
+        initialMaxArea ?? AREA_MAX,
+    ]);
+
+    const districtOptions = useMemo(
+        () =>
+            selectedCity && selectedCity in districtsByCity
+                ? districtsByCity[selectedCity as keyof typeof districtsByCity]
+                : [],
+        [selectedCity]
+    );
 
     const toggleType = (type: string) => {
         setSelectedTypes((prev) =>
@@ -41,19 +113,13 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         );
     };
 
-    const toggleLocation = (location: string) => {
-        setSelectedLocations((prev) =>
-            prev.includes(location)
-                ? prev.filter((l) => l !== location)
-                : [...prev, location]
-        );
-    };
-
     const clearFilters = () => {
         setSelectedTypes([]);
-        setSelectedLocations([]);
-        setPriceRange([0, 2000000]);
-        setAreaRange([0, 500]);
+        setSelectedSaleType(undefined);
+        setSelectedCity("");
+        setSelectedDistrict("");
+        setPriceRange([PRICE_MIN, PRICE_MAX]);
+        setAreaRange([AREA_MIN, AREA_MAX]);
     };
 
     const formatPriceLabel = (value: number) => {
@@ -69,30 +135,98 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     // Build filter object for API
     const filters = {
         type: selectedTypes.length === 1 ? selectedTypes[0] : undefined,
-        minPrice: priceRange[0] > 0 ? priceRange[0] : undefined,
-        maxPrice: priceRange[1] < 2000000 ? priceRange[1] : undefined,
+        saleType: selectedSaleType,
+        city: selectedCity || undefined,
+        district: selectedDistrict || undefined,
+        minPrice: priceRange[0] > PRICE_MIN ? priceRange[0] : undefined,
+        maxPrice: priceRange[1] < PRICE_MAX ? priceRange[1] : undefined,
+        minArea: areaRange[0] > AREA_MIN ? areaRange[0] : undefined,
+        maxArea: areaRange[1] < AREA_MAX ? areaRange[1] : undefined,
     };
 
     return (
         <div className="flex flex-col lg:flex-row gap-8">
             {/* Sidebar Filters */}
             <FilterPanel title="Filtreler" onClearAll={clearFilters}>
+                {/* Sale Type Filter */}
+                <FilterSection
+                    title="İşlem Türü"
+                    icon={<Building2 className="w-4 h-4 text-gray-400" />}
+                    showClear={Boolean(selectedSaleType)}
+                    onClear={() => setSelectedSaleType(undefined)}
+                >
+                    <div className="space-y-3">
+                        {saleTypes.map((saleType) => (
+                            <Checkbox
+                                key={saleType.value}
+                                checked={selectedSaleType === saleType.value}
+                                onChange={() =>
+                                    setSelectedSaleType((prev) =>
+                                        prev === saleType.value ? undefined : saleType.value
+                                    )
+                                }
+                                label={saleType.label}
+                            />
+                        ))}
+                    </div>
+                </FilterSection>
+
                 {/* Location Filter */}
                 <FilterSection
                     title="Konum"
                     icon={<MapPin className="w-4 h-4 text-gray-400" />}
-                    showClear={selectedLocations.length > 0}
-                    onClear={() => setSelectedLocations([])}
+                    showClear={Boolean(selectedCity) || Boolean(selectedDistrict)}
+                    onClear={() => {
+                        setSelectedCity("");
+                        setSelectedDistrict("");
+                    }}
                 >
                     <div className="space-y-3">
-                        {locations.map((loc) => (
-                            <Checkbox
-                                key={loc.value}
-                                checked={selectedLocations.includes(loc.value)}
-                                onChange={() => toggleLocation(loc.value)}
-                                label={loc.label}
-                            />
-                        ))}
+                        <div>
+                            <label className="mb-1.5 block text-xs font-medium text-gray-500">
+                                İl
+                            </label>
+                            <select
+                                value={selectedCity}
+                                onChange={(event) => {
+                                    const nextCity = event.target.value;
+                                    setSelectedCity(nextCity);
+                                    if (
+                                        !districtsByCity[
+                                            nextCity as keyof typeof districtsByCity
+                                        ]?.includes(selectedDistrict)
+                                    ) {
+                                        setSelectedDistrict("");
+                                    }
+                                }}
+                                className="input"
+                            >
+                                <option value="">Tüm İller</option>
+                                {cityOptions.map((city) => (
+                                    <option key={city} value={city}>
+                                        {city}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="mb-1.5 block text-xs font-medium text-gray-500">
+                                İlçe
+                            </label>
+                            <select
+                                value={selectedDistrict}
+                                onChange={(event) => setSelectedDistrict(event.target.value)}
+                                className="input"
+                                disabled={!selectedCity}
+                            >
+                                <option value="">Tüm İlçeler</option>
+                                {districtOptions.map((district) => (
+                                    <option key={district} value={district}>
+                                        {district}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                 </FilterSection>
 
@@ -102,8 +236,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                     icon={<DollarSign className="w-4 h-4 text-gray-400" />}
                 >
                     <RangeSlider
-                        min={0}
-                        max={2000000}
+                        min={PRICE_MIN}
+                        max={PRICE_MAX}
                         step={50000}
                         value={priceRange}
                         onChange={setPriceRange}
@@ -132,8 +266,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                     icon={<Maximize className="w-4 h-4 text-gray-400" />}
                 >
                     <RangeSlider
-                        min={0}
-                        max={500}
+                        min={AREA_MIN}
+                        max={AREA_MAX}
                         step={10}
                         value={areaRange}
                         onChange={setAreaRange}

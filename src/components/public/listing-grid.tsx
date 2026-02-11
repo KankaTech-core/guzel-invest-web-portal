@@ -9,6 +9,8 @@ interface ListingGridProps {
     filters?: {
         type?: string;
         saleType?: string;
+        city?: string;
+        district?: string;
         minPrice?: number;
         maxPrice?: number;
         minArea?: number;
@@ -30,14 +32,18 @@ export function ListingGrid({ locale, filters = {} }: ListingGridProps) {
 
                 if (filters.type) params.append("type", filters.type);
                 if (filters.saleType) params.append("saleType", filters.saleType);
+                if (filters.city) params.append("city", filters.city);
+                if (filters.district) params.append("district", filters.district);
                 if (filters.minPrice) params.append("minPrice", filters.minPrice.toString());
                 if (filters.maxPrice) params.append("maxPrice", filters.maxPrice.toString());
+                if (filters.minArea) params.append("minArea", filters.minArea.toString());
+                if (filters.maxArea) params.append("maxArea", filters.maxArea.toString());
 
                 const res = await fetch(`/api/public/listings?${params.toString()}`);
                 if (!res.ok) throw new Error("Failed to fetch");
                 const data = await res.json();
                 setListings(data.listings);
-            } catch (err) {
+            } catch {
                 setError("İlanlar yüklenirken bir hata oluştu.");
             } finally {
                 setLoading(false);
