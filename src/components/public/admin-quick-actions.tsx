@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Building2, FileText, PencilLine, Plus, X } from "lucide-react";
+import { Building2, EyeOff, FileText, PencilLine, Plus, X } from "lucide-react";
 
 interface QuickAction {
     id: string;
@@ -20,6 +20,10 @@ interface PublicListingDetailResponse {
     };
 }
 
+interface AdminQuickActionsProps {
+    onHideAll?: () => void;
+}
+
 const decodePathSegment = (segment: string): string => {
     try {
         return decodeURIComponent(segment);
@@ -28,7 +32,7 @@ const decodePathSegment = (segment: string): string => {
     }
 };
 
-export function AdminQuickActions() {
+export function AdminQuickActions({ onHideAll }: AdminQuickActionsProps) {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
     const [listingId, setListingId] = useState<string | null>(null);
@@ -185,6 +189,19 @@ export function AdminQuickActions() {
                         </Link>
                     );
                 })}
+                {onHideAll ? (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setIsOpen(false);
+                            onHideAll();
+                        }}
+                        className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white/95 px-4 py-2 text-sm font-semibold text-red-600 shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:border-red-300 hover:bg-red-50"
+                    >
+                        <EyeOff className="h-4 w-4" />
+                        <span>Paneli Gizle</span>
+                    </button>
+                ) : null}
             </div>
 
             <button

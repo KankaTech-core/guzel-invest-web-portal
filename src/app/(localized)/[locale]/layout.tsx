@@ -7,7 +7,7 @@ import { locales, isRtl, type Locale } from "@/i18n/request";
 import "@/app/globals.css";
 import { Footer } from "@/components/public/footer";
 import { Navbar } from "@/components/public/navbar";
-import { AdminQuickActions } from "@/components/public/admin-quick-actions";
+import { AdminOverlayControls } from "@/components/public/admin-overlay-controls";
 import { VersionProvider } from "@/contexts/VersionContext";
 import { getSession } from "@/lib/auth";
 import { Role } from "@/generated/prisma";
@@ -51,7 +51,7 @@ export default async function LocaleLayout({ children, params }: Props) {
                                 {children}
                             </main>
                             <Footer locale={locale} />
-                            {isAdminUser ? <AdminQuickActions /> : null}
+                            {isAdminUser ? <AdminOverlayControls /> : null}
                         </div>
                     </VersionProvider>
                 </NextIntlClientProvider>

@@ -17,6 +17,8 @@ model User {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   exportJobs   ExportJob[]
+  feedbackMessages SiteFeedbackMessage[] @relation("SiteFeedbackMessageAuthor")
+  feedbackThreads  SiteFeedbackThread[]  @relation("SiteFeedbackThreadCreatedBy")
   listings     Listing[]
   sessions     Session[]
 
@@ -223,6 +225,38 @@ model ContactSubmission {
   @@index([createdAt])
   @@index([read])
   @@map("contact_submissions")
+}
+
+model SiteFeedbackThread {
+  id          String                @id @default(cuid())
+  pagePath    String
+  anchorX     Float
+  anchorY     Float
+  hidden      Boolean               @default(false)
+  hiddenAt    DateTime?
+  createdById String
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  createdBy   User                  @relation("SiteFeedbackThreadCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
+  messages    SiteFeedbackMessage[]
+
+  @@index([pagePath, hidden])
+  @@index([updatedAt])
+  @@map("site_feedback_threads")
+}
+
+model SiteFeedbackMessage {
+  id        String             @id @default(cuid())
+  threadId  String
+  authorId  String
+  content   String
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  author    User               @relation("SiteFeedbackMessageAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  thread    SiteFeedbackThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+  @@map("site_feedback_messages")
 }
 
 enum Role {

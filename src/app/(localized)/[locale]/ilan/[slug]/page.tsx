@@ -1,9 +1,40 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import Image from "next/image";
-import { prisma } from "@/lib/prisma";
 import { ListingStatus } from "@/generated/prisma";
-import { formatPrice, formatArea, getMediaUrl } from "@/lib/utils";
-import { BedDouble, Bath, Square, MapPin, Share2, Printer, Map as MapIcon, ChevronRight } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import {
+    formatArea,
+    formatPrice,
+    getMediaUrl,
+    getPropertyTypeLabel,
+    getSaleTypeLabel,
+} from "@/lib/utils";
+import {
+    BedDouble,
+    Building2,
+    ChevronRight,
+    CircleDollarSign,
+    Mail,
+    MapPin,
+    MessageCircleMore,
+    PhoneCall,
+    Send,
+    User,
+} from "lucide-react";
+import {
+    ListingDetailGallery,
+    type ListingGalleryItem,
+} from "@/components/public/listing-detail-gallery";
+
+const WHATSAPP_NUMBER = "902421234567";
+
+function formatBoolean(value: boolean) {
+    return value ? "Var" : "Yok";
+}
+
+function toNumber(value: unknown) {
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
 
 export default async function ListingDetailPage({
     params,
@@ -19,10 +50,14 @@ export default async function ListingDetailPage({
         },
         include: {
             translations: {
-                where: { locale },
+                where: {
+                    locale: {
+                        in: Array.from(new Set(["tr", locale])),
+                    },
+                },
             },
             media: {
-                orderBy: { order: "asc" },
+                orderBy: [{ isCover: "desc" }, { order: "asc" }],
             },
         },
     });
@@ -31,13 +66,31 @@ export default async function ListingDetailPage({
         notFound();
     }
 
-    const translation = listing.translations[0] || {};
+    const translation =
+        listing.translations.find((item) => item.locale === "tr") ||
+        listing.translations[0];
+
+    const title = translation?.title?.trim() || "İlan Başlığı";
+    const description =
+        translation?.description?.trim() ||
+        "Bu ilan için detaylı açıklama henüz eklenmemiştir.";
+    const listedFeatures = (translation?.features || [])
+        .map((feature) => feature.trim())
+        .filter(Boolean);
 
     const priceValue =
-        typeof listing.price === "object" && listing.price !== null && "toString" in listing.price
+        typeof listing.price === "object" &&
+            listing.price !== null &&
+            "toString" in listing.price
             ? listing.price.toString()
             : listing.price;
-    const locationLabel = [
+    const roomValue =
+        listing.rooms ||
+        (typeof listing.bedrooms === "number" ? `${listing.bedrooms}+0` : "-");
+    const locationLabel = [listing.neighborhood, listing.district, listing.city]
+        .filter(Boolean)
+        .join(", ");
+    const addressLabel = [
         listing.address,
         listing.neighborhood,
         listing.district,
@@ -45,174 +98,281 @@ export default async function ListingDetailPage({
     ]
         .filter(Boolean)
         .join(", ");
-    const latitudeValue =
-        typeof listing.latitude === "number" && !Number.isNaN(listing.latitude)
-            ? listing.latitude
-            : null;
-    const longitudeValue =
-        typeof listing.longitude === "number" && !Number.isNaN(listing.longitude)
-            ? listing.longitude
-            : null;
+
+    const lat = toNumber(listing.latitude);
+    const lng = toNumber(listing.longitude);
     const hasCoordinates =
-        latitudeValue !== null &&
-        longitudeValue !== null &&
-        !(latitudeValue === 0 && longitudeValue === 0);
-    const mapSrc = hasCoordinates
-        ? `https://www.google.com/maps?q=${latitudeValue},${longitudeValue}&z=15&output=embed`
-        : locationLabel
+        lat !== null && lng !== null && !(lat === 0 && lng === 0);
+
+    const mapEmbedSrc = hasCoordinates
+        ? `https://www.google.com/maps?q=${lat},${lng}&z=15&output=embed`
+        : addressLabel
             ? `https://www.google.com/maps?q=${encodeURIComponent(
-                locationLabel
+                addressLabel
             )}&z=15&output=embed`
             : null;
 
+    const mapsLink = listing.googleMapsLink
+        ? listing.googleMapsLink
+        : hasCoordinates
+            ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
+            : addressLabel
+                ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    addressLabel
+                )}`
+                : null;
+
+    const imageItems: ListingGalleryItem[] = listing.media
+        .filter((item) => item.type === "IMAGE")
+        .map((item, index) => ({
+            id: item.id,
+            src: getMediaUrl(item.url),
+            alt: `${title} - Görsel ${index + 1}`,
+        }));
+
+    const detailItems = [
+        { label: "İlan Kodu", value: listing.sku || "-" },
+        { label: "İlan Tipi", value: getSaleTypeLabel(listing.saleType, "tr") },
+        { label: "Kategori", value: getPropertyTypeLabel(listing.type, "tr") },
+        { label: "Brüt Alan", value: formatArea(listing.area) },
+        { label: "Oda Düzeni", value: roomValue },
+        {
+            label: "Banyo",
+            value:
+                typeof listing.bathrooms === "number"
+                    ? `${listing.bathrooms}`
+                    : "-",
+        },
+        {
+            label: "WC",
+            value: typeof listing.wcCount === "number" ? `${listing.wcCount}` : "-",
+        },
+        {
+            label: "Bulunduğu Kat",
+            value: typeof listing.floor === "number" ? `${listing.floor}` : "-",
+        },
+        {
+            label: "Toplam Kat",
+            value:
+                typeof listing.totalFloors === "number"
+                    ? `${listing.totalFloors}`
+                    : "-",
+        },
+        {
+            label: "Bina Yaşı",
+            value:
+                typeof listing.buildYear === "number"
+                    ? `${new Date().getFullYear() - listing.buildYear}`
+                    : "-",
+        },
+        { label: "Isıtma", value: listing.heating || "-" },
+        { label: "Eşya Durumu", value: listing.furnished ? "Eşyalı" : "Eşyasız" },
+        { label: "Asansör", value: formatBoolean(listing.elevator) },
+        { label: "Otopark", value: formatBoolean(listing.parking) },
+        { label: "Havuz", value: formatBoolean(listing.pool) },
+        { label: "Bahçe", value: formatBoolean(listing.garden) },
+        { label: "Güvenlik", value: formatBoolean(listing.security) },
+        { label: "Deniz Manzarası", value: formatBoolean(listing.seaView) },
+        {
+            label: "Vatandaşlığa Uygunluk",
+            value: listing.citizenshipEligible ? "Uygun" : "Uygun değil",
+        },
+        {
+            label: "İkamete Uygunluk",
+            value: listing.residenceEligible ? "Uygun" : "Uygun değil",
+        },
+    ];
+
     return (
-        <main className="pt-24 pb-20">
-            <div className="container-custom">
-                {/* Breadcrumbs */}
-                <nav className="flex items-center gap-2 text-sm text-slate-500 mb-8 overflow-x-auto whitespace-nowrap">
-                    <a href={`/${locale}`} className="hover:text-amber-600 transition-colors">Ana Sayfa</a>
-                    <ChevronRight className="w-4 h-4" />
-                    <a href={`/${locale}/portfoy`} className="hover:text-amber-600 transition-colors">Portföy</a>
-                    <ChevronRight className="w-4 h-4" />
-                    <span className="text-slate-900 font-medium truncate">{translation.title}</span>
+        <main className="bg-white pt-24 pb-20">
+            <div className="container-custom space-y-9">
+                <nav className="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-sm text-gray-500">
+                    <Link
+                        href={`/${locale}`}
+                        className="transition-colors hover:text-orange-600"
+                    >
+                        Ana Sayfa
+                    </Link>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    <Link
+                        href={`/${locale}/portfoy`}
+                        className="transition-colors hover:text-orange-600"
+                    >
+                        Portföy
+                    </Link>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    <span className="truncate font-medium text-gray-900">{title}</span>
                 </nav>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                    {/* Main Content */}
-                    <div className="lg:col-span-2 space-y-8">
-                        {/* Gallery Placeholder/Basic */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {listing.media.map((item: any, index: number) => (
-                                <div key={item.id} className={index === 0 ? "md:col-span-2 aspect-video relative rounded-2xl overflow-hidden" : "aspect-video relative rounded-xl overflow-hidden"}>
-                                    <Image
-                                        src={getMediaUrl(item.url)}
-                                        alt={`${translation.title} - ${index + 1}`}
-                                        fill
-                                        className="object-cover"
-                                        priority={index === 0}
-                                    />
-                                </div>
-                            ))}
-                            {listing.media.length === 0 && (
-                                <div className="md:col-span-2 aspect-video bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 font-medium">
-                                    Görsel bulunamadı
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Title & Info */}
-                        <div>
-                            <div className="flex flex-wrap items-center gap-2 mb-4">
-                                <span className="bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1 rounded-full uppercase">
-                                    {listing.saleType === "SALE" ? "Satılık" : "Kiralık"}
-                                </span>
-                                <span className="bg-slate-100 text-slate-700 text-xs font-bold px-3 py-1 rounded-full uppercase">
-                                    {listing.type}
-                                </span>
-                            </div>
-                            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4 tracking-tight">
-                                {translation.title}
-                            </h1>
-                            <div className="flex items-center gap-2 text-slate-500 mb-6">
-                                <MapPin className="w-5 h-5 text-amber-600" />
-                                <span className="text-lg">
-                                    {[listing.neighborhood, listing.district, listing.city]
-                                        .filter(Boolean)
-                                        .join(", ")}
-                                </span>
+                <section className="grid items-start gap-8 xl:grid-cols-[minmax(0,1.95fr)_360px]">
+                    <div className="space-y-8">
+                        <ListingDetailGallery items={imageItems} title={title} />
+                        <section className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-4">
+                            <div className="rounded-[2rem] border border-[#d6dde8] bg-[#f5f7fb] px-5 py-4">
+                                <p className="text-xs font-medium text-[#6b7382]">Konum</p>
+                                <p className="mt-1 flex items-center gap-2 text-[1.8rem] font-semibold leading-tight text-[#111828]">
+                                    <MapPin className="h-5 w-5 shrink-0 text-[#111828]" />
+                                    <span className="text-xl">{locationLabel || "Belirtilmedi"}</span>
+                                </p>
                             </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-slate-400 text-xs uppercase font-bold tracking-wider">Fiyat</span>
-                                    <span className="text-xl font-bold text-amber-600">{formatPrice(priceValue, listing.currency)}</span>
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-slate-400 text-xs uppercase font-bold tracking-wider">Alan</span>
-                                    <span className="text-xl font-bold text-slate-900">{formatArea(listing.area)}</span>
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-slate-400 text-xs uppercase font-bold tracking-wider">Odalar</span>
-                                    <span className="text-xl font-bold text-slate-900">{listing.rooms || listing.bedrooms || "-"}</span>
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-slate-400 text-xs uppercase font-bold tracking-wider">Banyolar</span>
-                                    <span className="text-xl font-bold text-slate-900">{listing.bathrooms || "-"}</span>
-                                </div>
+                            <div className="rounded-[2rem] border border-[#d6dde8] bg-[#f5f7fb] px-5 py-4">
+                                <p className="text-xs font-medium text-[#6b7382]">Mülk Tipi</p>
+                                <p className="mt-1 flex items-center gap-2 text-[1.8rem] font-semibold leading-tight text-[#111828]">
+                                    <Building2 className="h-5 w-5 shrink-0 text-[#111828]" />
+                                    <span className="text-xl">{getPropertyTypeLabel(listing.type, "tr")}</span>
+                                </p>
                             </div>
-                        </div>
 
-                        {/* Description */}
-                        <div className="prose prose-slate max-w-none">
-                            <h2 className="text-2xl font-bold text-slate-900 mb-4 border-b pb-2">Açıklama</h2>
-                            <div className="text-slate-600 whitespace-pre-line leading-relaxed">
-                                {translation.description}
+                            <div className="rounded-[2rem] border border-[#d6dde8] bg-[#f5f7fb] px-5 py-4">
+                                <p className="text-xs font-medium text-[#6b7382]">Fiyat</p>
+                                <p className="mt-1 flex items-center gap-2 text-[1.8rem] font-semibold leading-tight text-[#111828]">
+                                    <CircleDollarSign className="h-5 w-5 shrink-0 text-[#111828]" />
+                                    <span className="text-xl">{formatPrice(priceValue, listing.currency)}</span>
+                                </p>
                             </div>
-                        </div>
 
-                        {mapSrc && (
-                            <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-                                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
-                                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                        <MapIcon className="w-4 h-4 text-amber-600" />
-                                        Konum
+                            <div className="rounded-[2rem] border border-[#d6dde8] bg-[#f5f7fb] px-5 py-4">
+                                <p className="text-xs font-medium text-[#6b7382]">Oda</p>
+                                <p className="mt-1 flex items-center gap-2 text-[1.8rem] font-semibold leading-tight text-[#111828]">
+                                    <BedDouble className="h-5 w-5 shrink-0 text-[#111828]" />
+                                    <span className="text-xl">{roomValue}</span>
+                                </p>
+                            </div>
+                        </section>
+
+                        <section>
+                            <article className="rounded-[2rem] border border-gray-300 bg-white/95 p-6 shadow-sm">
+                                <h2 className="text-2xl font-bold text-gray-900">Açıklama</h2>
+                                <p className="mt-4 whitespace-pre-line leading-relaxed text-gray-600">
+                                    {description}
+                                </p>
+                            </article>
+                        </section>
+
+                        <section className="rounded-[2rem] border border-gray-300 bg-white/95 p-6 shadow-sm">
+                            <h2 className="text-2xl font-bold text-gray-900">İlan Detayları</h2>
+                            <div className="mt-5 grid gap-3 md:grid-cols-2">
+                                {detailItems.map((item) => (
+                                    <div
+                                        key={item.label}
+                                        className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3"
+                                    >
+                                        <span className="text-sm font-medium text-gray-500">{item.label}</span>
+                                        <span className="text-sm font-semibold text-gray-900">{item.value}</span>
                                     </div>
-                                    <span className="text-xs text-slate-400">Google Maps</span>
+                                ))}
+                            </div>
+
+                            {listedFeatures.length > 0 ? (
+                                <div className="mt-6 border-t border-gray-100 pt-6">
+                                    <h3 className="text-lg font-bold text-gray-900">Öne Çıkan Özellikler</h3>
+                                    <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                                        {listedFeatures.map((feature) => (
+                                            <li
+                                                key={feature}
+                                                className="rounded-lg border border-orange-100 bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700"
+                                            >
+                                                {feature}
+                                            </li>
+                                        ))}
+                                    </ul>
                                 </div>
-                                <div className="aspect-[16/9] w-full">
+                            ) : null}
+                        </section>
+
+                        {mapEmbedSrc ? (
+                            <section className="overflow-hidden rounded-[2rem] border border-gray-300 bg-white/95 shadow-sm">
+                                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-6 py-4">
+                                    <h2 className="text-2xl font-bold text-gray-900">Harita</h2>
+                                    {mapsLink ? (
+                                        <a
+                                            href={mapsLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-orange-300 hover:text-orange-600"
+                                        >
+                                            <MapPin className="h-4 w-4" />
+                                            Google Maps&apos;te Aç
+                                        </a>
+                                    ) : null}
+                                </div>
+                                <div className="aspect-[16/8] w-full bg-gray-100">
                                     <iframe
-                                        title="İlan konumu haritası"
-                                        src={mapSrc}
-                                        className="w-full h-full"
+                                        title="İlan haritası"
+                                        src={mapEmbedSrc}
+                                        className="h-full w-full"
                                         loading="lazy"
                                         referrerPolicy="no-referrer-when-downgrade"
                                     />
                                 </div>
-                                {locationLabel && (
-                                    <div className="px-6 py-4 text-sm text-slate-500 bg-white border-t border-slate-100">
-                                        {locationLabel}
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                            </section>
+                        ) : null}
                     </div>
 
-                    {/* Sidebar */}
-                    <div className="space-y-8">
-                        {/* Contact Form Placeholder */}
-                        <div className="bg-white p-8 rounded-2xl shadow-xl border border-slate-100 sticky top-28">
-                            <h3 className="text-xl font-bold mb-6">İletişime Geçin</h3>
-                            <form className="space-y-4">
-                                <div>
-                                    <input type="text" placeholder="Adınız Soyadınız" className="input" />
+                    <aside className="sticky top-28 self-start space-y-4">
+                        <div className="max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] border border-gray-300 bg-white/95 p-6 shadow-[0_18px_44px_-32px_rgba(15,23,42,0.4)] backdrop-blur-sm">
+                            <h2 className="text-2xl font-bold text-gray-900">İletişime Geçin</h2>
+                            <p className="mt-2 text-sm text-gray-500">
+                                Uzman danışmanlarımız bu ilan için aynı gün içinde geri dönüş sağlar.
+                            </p>
+
+                            <form className="mt-5 space-y-3">
+                                <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100">
+                                    <User className="h-4 w-4 shrink-0 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="Adınız Soyadınız *"
+                                        className="w-full border-0 bg-transparent p-0 text-base text-gray-800 placeholder:text-gray-400 focus:outline-none"
+                                    />
                                 </div>
-                                <div>
-                                    <input type="email" placeholder="E-posta Adresiniz" className="input" />
+                                <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100">
+                                    <Mail className="h-4 w-4 shrink-0 text-gray-400" />
+                                    <input
+                                        type="email"
+                                        required
+                                        placeholder="E-posta Adresiniz *"
+                                        className="w-full border-0 bg-transparent p-0 text-base text-gray-800 placeholder:text-gray-400 focus:outline-none"
+                                    />
                                 </div>
-                                <div>
-                                    <input type="tel" placeholder="Telefon Numaranız" className="input" />
+                                <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100">
+                                    <PhoneCall className="h-4 w-4 shrink-0 text-gray-400" />
+                                    <input
+                                        type="tel"
+                                        required
+                                        placeholder="Telefon Numaranız *"
+                                        className="w-full border-0 bg-transparent p-0 text-base text-gray-800 placeholder:text-gray-400 focus:outline-none"
+                                    />
                                 </div>
-                                <div>
-                                    <textarea placeholder="Mesajınız" rows={4} className="input resize-none"></textarea>
+                                <div className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100">
+                                    <MessageCircleMore className="mt-1 h-4 w-4 shrink-0 text-gray-400" />
+                                    <textarea
+                                        rows={5}
+                                        placeholder="Mesajınız"
+                                        className="w-full resize-none border-0 bg-transparent p-0 text-base leading-relaxed text-gray-800 placeholder:text-gray-400 focus:outline-none"
+                                        defaultValue={`Merhaba, ${title} ilanı hakkında bilgi almak istiyorum.`}
+                                    />
                                 </div>
-                                <button type="submit" className="w-full btn btn-primary py-4 text-lg">
+                                <button
+                                    type="submit"
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-black"
+                                >
+                                    <Send className="h-4 w-4" />
                                     Gönder
                                 </button>
                             </form>
 
-                            <div className="mt-8 pt-8 border-t border-slate-100 flex flex-col gap-4">
-                                <button className="flex items-center gap-3 text-slate-600 hover:text-amber-600 transition-colors">
-                                    <Share2 className="w-5 h-5" />
-                                    <span className="font-medium">Paylaş</span>
-                                </button>
-                                <button className="flex items-center gap-3 text-slate-600 hover:text-amber-600 transition-colors">
-                                    <Printer className="w-5 h-5" />
-                                    <span className="font-medium">Yazdır (PDF)</span>
-                                </button>
-                            </div>
+                            <a
+                                href={`tel:+${WHATSAPP_NUMBER}`}
+                                className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 transition hover:border-orange-300 hover:text-orange-600"
+                            >
+                                <PhoneCall className="h-4 w-4" />
+                                +90 242 123 45 67
+                            </a>
                         </div>
-                    </div>
-                </div>
+                    </aside>
+                </section>
             </div>
         </main>
     );
