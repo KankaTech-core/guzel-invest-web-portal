@@ -3,39 +3,46 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Building2, Menu, X, Globe, Search, ToggleLeft, ToggleRight } from "lucide-react";
-import { useState, useEffect } from "react";
+import {
+    Building2,
+    Menu,
+    X,
+    Globe,
+    ToggleLeft,
+    ToggleRight,
+    Instagram,
+    Youtube,
+    Facebook,
+} from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useVersion } from "@/contexts/VersionContext";
+
+type NavigationItem = {
+    href: string;
+    name?: string;
+    label?: string;
+};
+
+const socialLinks = [
+    { label: "Instagram", href: "https://www.instagram.com", icon: Instagram },
+    { label: "YouTube", href: "https://www.youtube.com", icon: Youtube },
+    { label: "Facebook", href: "https://www.facebook.com", icon: Facebook },
+] as const;
 
 const navigation = [
     { name: "nav.home", href: "/" },
     { name: "nav.portfolio", href: "/portfoy" },
-    { name: "nav.map", href: "/harita" },
+    { label: "Makaleler", href: "/blog" },
     { name: "nav.about", href: "/hakkimizda" },
     { name: "nav.contact", href: "/iletisim" },
-];
+] satisfies NavigationItem[];
 
 export function Navbar({ locale }: { locale: string }) {
     const t = useTranslations();
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
-    const [scrolled, setScrolled] = useState(false);
     const { version, toggleVersion } = useVersion();
-
-    const isHomepage = pathname === `/${locale}` || pathname === `/${locale}/`;
-
-    useEffect(() => {
-        const handleScroll = () => {
-            setScrolled(window.scrollY > 20);
-        };
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
-
-    useEffect(() => {
-        if (isOpen) setIsOpen(false);
-    }, [pathname, isOpen]);
 
     return (
         <nav className="fixed top-0 w-full z-50 transition-all duration-300 bg-white shadow-sm border-b border-gray-100 py-3">
@@ -67,41 +74,37 @@ export function Navbar({ locale }: { locale: string }) {
                                         : "text-gray-600 hover:text-gray-900"
                                 )}
                             >
-                                {t(item.name)}
+                                {item.label ?? t(item.name!)}
                             </Link>
                         );
                     })}
                 </div>
 
-                {/* Right Side: Search + Language */}
+                {/* Right Side: Social + Language */}
                 <div className="hidden lg:flex items-center gap-3">
-                    {/* Search */}
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Ara..."
-                            className="w-44 pl-9 pr-4 py-2 rounded-full text-sm border bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-orange-500 focus:outline-none transition-colors"
-                        />
+                    {/* Social Icons */}
+                    <div className="flex items-center gap-1 rounded-full bg-gray-100 p-1">
+                        {socialLinks.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                                <a
+                                    key={item.label}
+                                    href={item.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label={item.label}
+                                    className="w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-500 flex items-center justify-center shadow-sm transition-all hover:bg-orange-500 hover:border-orange-500 hover:text-white"
+                                >
+                                    <Icon className="w-4 h-4" strokeWidth={2.3} />
+                                </a>
+                            );
+                        })}
                     </div>
 
-                    {/* Language Selector */}
-                    <div className="flex items-center gap-1">
+                    {/* Language: TR only */}
+                    <div className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5">
                         <Globe className="w-4 h-4 text-gray-400" />
-                        <select
-                            className="bg-transparent text-sm font-medium text-gray-600 focus:outline-none cursor-pointer border-none appearance-none pr-4"
-                            defaultValue={locale}
-                            onChange={(e) => {
-                                const newLocale = e.target.value;
-                                const newPath = pathname.replace(`/${locale}`, `/${newLocale}`);
-                                window.location.href = newPath;
-                            }}
-                        >
-                            <option value="tr">TR</option>
-                            <option value="en">EN</option>
-                            <option value="de">DE</option>
-                            <option value="ru">RU</option>
-                        </select>
+                        <span className="text-sm font-medium text-gray-600">TR</span>
                     </div>
 
                     {/* Version Toggle (Global) */}
@@ -148,6 +151,7 @@ export function Navbar({ locale }: { locale: string }) {
                             <Link
                                 key={item.href}
                                 href={href}
+                                onClick={() => setIsOpen(false)}
                                 className={cn(
                                     "px-4 py-3 rounded-xl text-lg font-medium transition-colors",
                                     isActive
@@ -155,15 +159,37 @@ export function Navbar({ locale }: { locale: string }) {
                                         : "text-gray-700 hover:bg-gray-50"
                                 )}
                             >
-                                {t(item.name)}
+                                {item.label ?? t(item.name!)}
                             </Link>
                         );
                     })}
 
                     <div className="mt-6 pt-6 border-t border-gray-100">
+                        <p className="text-sm text-gray-400 mb-3">Sosyal Medya</p>
+                        <div className="flex items-center gap-3">
+                            {socialLinks.map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <a
+                                        key={item.label}
+                                        href={item.href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        aria-label={item.label}
+                                        className="w-10 h-10 rounded-xl border border-gray-200 bg-gray-50 text-gray-600 flex items-center justify-center transition-all hover:bg-orange-500 hover:border-orange-500 hover:text-white"
+                                        onClick={() => setIsOpen(false)}
+                                    >
+                                        <Icon className="w-5 h-5" strokeWidth={2.3} />
+                                    </a>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="mt-6 pt-6 border-t border-gray-100">
                         <p className="text-sm text-gray-400 mb-3">Dil Seçimi</p>
                         <div className="flex gap-2">
-                            {["tr", "en", "de", "ru"].map((lang) => (
+                            {["tr"].map((lang) => (
                                 <button
                                     key={lang}
                                     className={cn(
@@ -173,6 +199,7 @@ export function Navbar({ locale }: { locale: string }) {
                                             : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                     )}
                                     onClick={() => {
+                                        setIsOpen(false);
                                         const newPath = pathname.replace(`/${locale}`, `/${lang}`);
                                         window.location.href = newPath;
                                     }}

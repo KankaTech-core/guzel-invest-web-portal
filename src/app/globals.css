@@ -70,6 +70,25 @@ body {
   line-height: 1.6;
 }
 
+/* Clickable controls should always show pointer cursor */
+a[href],
+button:not(:disabled),
+input[type="button"]:not(:disabled),
+input[type="submit"]:not(:disabled),
+input[type="reset"]:not(:disabled),
+input[type="range"]:not(:disabled),
+select:not(:disabled),
+summary,
+[role="button"] {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+}
+
 /* RTL Support */
 [dir="rtl"] {
   text-align: right;
@@ -448,7 +467,8 @@ select.input {
 }
 
 .slider-track-range {
-  @apply absolute top-1/2 -translate-y-1/2 h-1.5 bg-orange-500 rounded-full;
+  @apply absolute top-1/2 -translate-y-1/2 h-1.5 rounded-full;
+  background-color: #3B82F6 !important;
 }
 
 .slider-input {
@@ -456,11 +476,12 @@ select.input {
 }
 
 .slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
   appearance: none;
   width: 1.25rem;
   height: 1.25rem;
   background-color: white !important;
-  border: 3px solid #EC6803 !important;
+  border: 3px solid #3B82F6 !important;
   border-radius: 9999px;
   cursor: grab;
   pointer-events: auto;
@@ -475,7 +496,7 @@ select.input {
   width: 1.25rem;
   height: 1.25rem;
   background-color: white !important;
-  border: 3px solid #EC6803 !important;
+  border: 3px solid #3B82F6 !important;
   border-radius: 9999px;
   cursor: grab;
   pointer-events: auto;

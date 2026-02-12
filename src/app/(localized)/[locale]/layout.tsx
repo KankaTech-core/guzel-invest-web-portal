@@ -5,7 +5,12 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { locales, isRtl, type Locale } from "@/i18n/request";
 import "@/app/globals.css";
+import { Footer } from "@/components/public/footer";
+import { Navbar } from "@/components/public/navbar";
+import { AdminQuickActions } from "@/components/public/admin-quick-actions";
 import { VersionProvider } from "@/contexts/VersionContext";
+import { getSession } from "@/lib/auth";
+import { Role } from "@/generated/prisma";
 
 const outfit = Outfit({
     subsets: ["latin"],
@@ -23,9 +28,6 @@ type Props = {
     params: Promise<{ locale: string }>;
 };
 
-import { Navbar } from "@/components/public/navbar";
-import { Footer } from "@/components/public/footer";
-
 export default async function LocaleLayout({ children, params }: Props) {
     const { locale } = await params;
 
@@ -35,6 +37,8 @@ export default async function LocaleLayout({ children, params }: Props) {
 
     const messages = await getMessages();
     const dir = isRtl(locale as Locale) ? "rtl" : "ltr";
+    const session = await getSession();
+    const isAdminUser = session?.role === Role.ADMIN;
 
     return (
         <html lang={locale} dir={dir}>
@@ -47,6 +51,7 @@ export default async function LocaleLayout({ children, params }: Props) {
                                 {children}
                             </main>
                             <Footer locale={locale} />
+                            {isAdminUser ? <AdminQuickActions /> : null}
                         </div>
                     </VersionProvider>
                 </NextIntlClientProvider>
