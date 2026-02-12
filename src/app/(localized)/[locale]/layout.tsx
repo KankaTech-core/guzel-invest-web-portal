@@ -5,6 +5,7 @@ import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { locales, isRtl, type Locale } from "@/i18n/request";
 import "@/app/globals.css";
+import { VersionProvider } from "@/contexts/VersionContext";
 
 const outfit = Outfit({
     subsets: ["latin"],
@@ -39,13 +40,15 @@ export default async function LocaleLayout({ children, params }: Props) {
         <html lang={locale} dir={dir}>
             <body className={`${outfit.variable} font-sans antialiased bg-white`}>
                 <NextIntlClientProvider messages={messages}>
-                    <div className="flex flex-col min-h-screen">
-                        <Navbar locale={locale} />
-                        <main className="flex-1">
-                            {children}
-                        </main>
-                        <Footer locale={locale} />
-                    </div>
+                    <VersionProvider>
+                        <div className="flex flex-col min-h-screen">
+                            <Navbar locale={locale} />
+                            <main className="flex-1">
+                                {children}
+                            </main>
+                            <Footer locale={locale} />
+                        </div>
+                    </VersionProvider>
                 </NextIntlClientProvider>
             </body>
         </html>

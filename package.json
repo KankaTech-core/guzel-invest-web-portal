@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "dev:all": "sh scripts/start-dev.sh",
+    "dev:all": "node scripts/start-dev.js",
     "build": "prisma generate && npm run db:setup && next build",
     "start": "next start",
     "lint": "eslint",

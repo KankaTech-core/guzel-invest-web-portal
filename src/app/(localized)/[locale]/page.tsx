@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
+import { useVersion } from "@/contexts/VersionContext";
 import {
     Building2,
     Handshake,
@@ -21,6 +22,8 @@ import {
     ArrowRight,
     Plus,
     Minus,
+    ToggleLeft,
+    ToggleRight,
 } from "lucide-react";
 
 /* ─── data ─── */
@@ -201,6 +204,7 @@ export default function HomePage() {
     const [neighborhood, setNeighborhood] = useState("");
     const [openDropdown, setOpenDropdown] = useState<"propertyType" | "neighborhood" | null>(null);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
+    const { version: searchVersion } = useVersion();
     const bannerRef = useRef<HTMLFormElement>(null);
     const testimonialRef = useRef<HTMLDivElement>(null);
     const city = fixedCity;
@@ -239,8 +243,10 @@ export default function HomePage() {
                 HERO SECTION
             ════════════════════════════════════════════ */}
             <section className="pt-28 pb-16 px-4 sm:px-6 bg-white">
-                <div className="max-w-7xl mx-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+                <div className="max-w-7xl mx-auto relative">
+                    {/* Version Toggle Switch removed - moved to Navbar */}
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 relative z-30">
                         {/* Left Column */}
                         <div className="lg:col-span-5 space-y-6">
                             {/* Badge */}
@@ -257,10 +263,12 @@ export default function HomePage() {
                                 {th("titleEnd")}
                             </h1>
 
-                            {/* Subtext */}
-                            <p className="text-base text-gray-500 max-w-md leading-relaxed">
-                                {th("subtitle")}
-                            </p>
+                            {/* Subtext – only shown in V1 */}
+                            {searchVersion === "v1" && (
+                                <p className="text-base text-gray-500 max-w-md leading-relaxed">
+                                    {th("subtitle")}
+                                </p>
+                            )}
 
                             {/* CTA Buttons */}
                             <div className="grid grid-cols-2 gap-3 pt-1">
@@ -279,6 +287,113 @@ export default function HomePage() {
                                     {th("ctaMap")}
                                 </Link>
                             </div>
+
+                            {/* SearchBanner V2 – compact inline search */}
+                            {searchVersion === "v2" && (
+                                <form
+                                    onSubmit={(event) => {
+                                        event.preventDefault();
+                                        handleSearch();
+                                    }}
+                                    className="relative z-50 rounded-2xl border border-gray-200 bg-white shadow-sm"
+                                >
+                                    {/* Sale Type Toggle */}
+                                    <div className="grid grid-cols-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSaleType("SALE");
+                                                setOpenDropdown(null);
+                                            }}
+                                            className={`py-3 text-center text-xs font-semibold tracking-wide transition-colors first:rounded-tl-2xl ${saleType === "SALE"
+                                                ? "bg-orange-500 text-white"
+                                                : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                                                }`}
+                                        >
+                                            {th("filterSale")}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSaleType("RENT");
+                                                setOpenDropdown(null);
+                                            }}
+                                            className={`py-3 text-center text-xs font-semibold tracking-wide transition-colors last:rounded-tr-2xl ${saleType === "RENT"
+                                                ? "bg-orange-500 text-white"
+                                                : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                                                }`}
+                                        >
+                                            {th("filterRent")}
+                                        </button>
+                                    </div>
+
+                                    {/* Property Type + Search */}
+                                    <div className="grid grid-cols-[7fr_3fr] gap-2 p-2 border-t border-gray-100">
+                                        <div className="relative">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setOpenDropdown(openDropdown === "propertyType" ? null : "propertyType")
+                                                }
+                                                className="flex h-12 w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 text-left text-sm font-medium text-gray-900 transition-colors hover:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <Building2 className="h-4 w-4 text-orange-500" />
+                                                    {selectedPropertyType ? selectedPropertyType.label : th("filterAllTypes")}
+                                                </span>
+                                                <ChevronDown
+                                                    className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${openDropdown === "propertyType" ? "rotate-180" : ""}`}
+                                                />
+                                            </button>
+
+                                            {openDropdown === "propertyType" && searchVersion === "v2" && (
+                                                <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[100] max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl shadow-gray-200/50 animate-in fade-in zoom-in-95 duration-100 origin-top">
+                                                    <div className="grid grid-cols-2 gap-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setPropertyType("");
+                                                                setOpenDropdown(null);
+                                                            }}
+                                                            className={`col-span-2 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${propertyType === ""
+                                                                ? "bg-orange-50 text-orange-600"
+                                                                : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                                                                }`}
+                                                        >
+                                                            <span>{th("filterAllTypes")}</span>
+                                                            {propertyType === "" ? <Check className="h-4 w-4" /> : null}
+                                                        </button>
+                                                        {propertyTypes.map((opt) => (
+                                                            <button
+                                                                key={opt.value}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setPropertyType(opt.value);
+                                                                    setOpenDropdown(null);
+                                                                }}
+                                                                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${propertyType === opt.value
+                                                                    ? "bg-orange-50 text-orange-600"
+                                                                    : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                                                                    }`}
+                                                            >
+                                                                <span>{opt.label}</span>
+                                                                {propertyType === opt.value ? <Check className="h-4 w-4" /> : null}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 text-sm font-semibold text-white shadow-lg shadow-gray-900/10 transition-all hover:bg-black hover:shadow-xl hover:-translate-y-0.5"
+                                        >
+                                            <Search className="h-4 w-4" />
+                                            {th("filterSearch")}
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
                         </div>
 
                         {/* Right Column – Dashboard Cards */}
@@ -348,7 +463,19 @@ export default function HomePage() {
                         </div>
                     </div>
 
-                    <form
+                    {/* V2 mode: subtitle replaces the V1 search banner position */}
+                    {searchVersion === "v2" && (
+                        <div className="mt-10 max-w-4xl mx-auto px-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            <h2 className="text-xl md:text-2xl text-gray-900 font-medium leading-tight">
+                                <span className="text-orange-500 font-bold">2001'den bu yana</span> Alanya'da güvenilir gayrimenkul platformu.
+                            </h2>
+                            <p className="mt-2 text-sm md:text-base text-gray-500 font-normal leading-relaxed max-w-xl mx-auto">
+                                <span className="text-orange-500 font-semibold">Satılık, kiralık mülkler</span> ve profesyonel danışmanlık hizmetleriyle yanınızdayız.
+                            </p>
+                        </div>
+                    )}
+
+                    {searchVersion === "v1" && (<form
                         ref={bannerRef}
                         onSubmit={(event) => {
                             event.preventDefault();
@@ -526,7 +653,7 @@ export default function HomePage() {
                                 {th("filterSearch")}
                             </button>
                         </div>
-                    </form>
+                    </form>)}
                 </div>
             </section>
 
@@ -642,8 +769,8 @@ export default function HomePage() {
                                         </span>
 
                                         {/* Icon */}
-                                        <div className="w-14 h-14 rounded-xl bg-orange-500 border border-orange-500 flex items-center justify-center mt-4 mb-6 group-hover:bg-orange-100 group-hover:border-orange-100 transition-all duration-300">
-                                            <FeaturedIcon className="w-6 h-6 text-white group-hover:text-orange-500 transition-colors duration-300" />
+                                        <div className="w-14 h-14 rounded-xl bg-orange-500 border border-orange-500 flex items-center justify-center mt-4 mb-6 group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-orange-500/25 transition-all duration-300">
+                                            <FeaturedIcon className="w-6 h-6 text-white transition-colors duration-300" />
                                         </div>
 
                                         {/* Title */}
@@ -699,13 +826,15 @@ export default function HomePage() {
                                     return (
                                         <div
                                             key={idx}
-                                            className={`group relative bg-white p-6 cursor-pointer hover:bg-orange-50/30 transition-colors duration-200 ${isLast ? "sm:col-span-2" : ""
+                                            className={`group relative bg-white p-6 cursor-pointer hover:bg-orange-50/50 hover:-translate-y-0.5 transition-all duration-300 ${isLast ? "sm:col-span-2" : ""
                                                 }`}
                                         >
+                                            {/* Left accent bar on hover */}
+                                            <div className="absolute left-0 top-4 bottom-4 w-[3px] bg-orange-500 rounded-full scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-center" />
                                             {/* Top row: number + icon */}
                                             <div className="flex items-start justify-between mb-4">
-                                                <div className="w-10 h-10 rounded-lg bg-orange-500 border border-orange-500 flex items-center justify-center group-hover:bg-orange-100 group-hover:border-orange-100 transition-all duration-300">
-                                                    <Icon className="w-4.5 h-4.5 text-white group-hover:text-orange-500 transition-colors duration-300" />
+                                                <div className="w-10 h-10 rounded-lg bg-orange-500 border border-orange-500 flex items-center justify-center group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-orange-500/25 transition-all duration-300">
+                                                    <Icon className="w-4.5 h-4.5 text-white transition-colors duration-300" />
                                                 </div>
                                                 <span className="text-[10px] font-bold text-gray-200 group-hover:text-orange-300 transition-colors">
                                                     {num}

@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Building2, Menu, X, Globe, Search } from "lucide-react";
+import { Building2, Menu, X, Globe, Search, ToggleLeft, ToggleRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useVersion } from "@/contexts/VersionContext";
 
 const navigation = [
     { name: "nav.home", href: "/" },
@@ -20,6 +21,7 @@ export function Navbar({ locale }: { locale: string }) {
     const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const { version, toggleVersion } = useVersion();
 
     const isHomepage = pathname === `/${locale}` || pathname === `/${locale}/`;
 
@@ -101,6 +103,20 @@ export function Navbar({ locale }: { locale: string }) {
                             <option value="ru">RU</option>
                         </select>
                     </div>
+
+                    {/* Version Toggle (Global) */}
+                    <button
+                        onClick={toggleVersion}
+                        className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-100 hover:text-orange-600 ml-2"
+                        title="Toggle Setup Version"
+                    >
+                        <span>{version === "v1" ? "V1" : "V2"}</span>
+                        {version === "v1" ? (
+                            <ToggleLeft className="w-4 h-4 text-gray-400" />
+                        ) : (
+                            <ToggleRight className="w-4 h-4 text-orange-500" />
+                        )}
+                    </button>
                 </div>
 
                 {/* Mobile Menu Toggle */}
