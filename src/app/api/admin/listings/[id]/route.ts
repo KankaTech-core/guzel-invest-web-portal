@@ -79,6 +79,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
         const requestedCompany = normalizeOptionalText(body.company);
         const company = requestedCompany || existing.company || "Güzel Invest";
+        const showOnHomepageHero =
+            body.showOnHomepageHero !== undefined
+                ? body.showOnHomepageHero === true
+                : existing.showOnHomepageHero;
 
         // Update listing
         await prisma.$transaction(async (tx) => {
@@ -87,6 +91,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 update: {},
                 create: { name: company },
             });
+
+            if (showOnHomepageHero) {
+                await tx.listing.updateMany({
+                    where: {
+                        showOnHomepageHero: true,
+                        id: { not: id },
+                    },
+                    data: { showOnHomepageHero: false },
+                });
+            }
 
             return tx.listing.update({
                 where: { id },
@@ -138,6 +152,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                     residenceEligible: body.residenceEligible ?? existing.residenceEligible,
                     publishToHepsiemlak: body.publishToHepsiemlak ?? existing.publishToHepsiemlak,
                     publishToSahibinden: body.publishToSahibinden ?? existing.publishToSahibinden,
+                    showOnHomepageHero,
                     publishedAt:
                         body.status === "PUBLISHED" && existing.status !== "PUBLISHED"
                             ? new Date()

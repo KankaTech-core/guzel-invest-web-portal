@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { getMediaUrl, cn, getPropertyTypeLabel, formatPrice } from "@/lib/utils";
-import { Plus } from "lucide-react";
+import { Plus, Star } from "lucide-react";
 import { ListingRowActions } from "@/components/admin/listing-row-actions";
 import { ListingStatus } from "@/generated/prisma";
 import ListingsFilters from "@/components/admin/listings-filters";
@@ -38,6 +38,7 @@ interface AdminListingsPageProps {
         status?: string;
         sort?: string;
         dir?: string;
+        q?: string;
         type?: string;
         saleType?: string;
         company?: string;
@@ -51,6 +52,7 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
     const statusParam = resolvedSearchParams?.status;
     const sortParam = resolvedSearchParams?.sort;
     const dirParam = resolvedSearchParams?.dir;
+    const qParam = resolvedSearchParams?.q;
     const typeParam = resolvedSearchParams?.type;
     const saleTypeParam = resolvedSearchParams?.saleType;
     const companyParam = resolvedSearchParams?.company;
@@ -68,6 +70,7 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
     const saleTypeFilter = SALE_TYPES.includes(saleTypeParam as (typeof SALE_TYPES)[number])
         ? (saleTypeParam as (typeof SALE_TYPES)[number])
         : undefined;
+    const queryFilter = qParam?.trim() ? qParam.trim() : undefined;
     const companyFilter = companyParam?.trim() ? companyParam.trim() : undefined;
     const platformFilter = PLATFORM_FILTERS.includes(
         platformParam as (typeof PLATFORM_FILTERS)[number]
@@ -83,6 +86,7 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
 
     const baseParams = new URLSearchParams();
     if (statusFilter) baseParams.set("status", statusFilter);
+    if (queryFilter) baseParams.set("q", queryFilter);
     if (typeFilter) baseParams.set("type", typeFilter);
     if (saleTypeFilter) baseParams.set("saleType", saleTypeFilter);
     if (companyFilter) baseParams.set("company", companyFilter);
@@ -153,6 +157,47 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
         ...(statusFilterForQuery
             ? { status: statusFilterForQuery }
             : { status: { not: "ARCHIVED" as ListingStatus } }),
+        ...(queryFilter
+            ? {
+                OR: [
+                    {
+                        sku: {
+                            contains: queryFilter,
+                            mode: "insensitive" as const,
+                        },
+                    },
+                    {
+                        translations: {
+                            some: {
+                                locale: "tr",
+                                title: {
+                                    contains: queryFilter,
+                                    mode: "insensitive" as const,
+                                },
+                            },
+                        },
+                    },
+                    {
+                        city: {
+                            contains: queryFilter,
+                            mode: "insensitive" as const,
+                        },
+                    },
+                    {
+                        district: {
+                            contains: queryFilter,
+                            mode: "insensitive" as const,
+                        },
+                    },
+                    {
+                        neighborhood: {
+                            contains: queryFilter,
+                            mode: "insensitive" as const,
+                        },
+                    },
+                ],
+            }
+            : {}),
         ...(typeFilter ? { type: typeFilter } : {}),
         ...(saleTypeFilter ? { saleType: saleTypeFilter } : {}),
         ...(companyFilter ? { company: companyFilter } : {}),
@@ -160,35 +205,53 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
         ...(platformFilter === "SAHIBINDEN" ? { publishToSahibinden: true } : {}),
     };
 
-    const [listings, companyOptionsFromListings, companyOptionsFromConfig] = await Promise.all([
-        prisma.listing.findMany({
-            where,
-            include: {
-                translations: {
-                    where: { locale: "tr" },
+    const [listings, companyOptionsFromListings, companyOptionsFromConfig, homepageHeroListing] =
+        await Promise.all([
+            prisma.listing.findMany({
+                where,
+                include: {
+                    translations: {
+                        where: { locale: "tr" },
+                    },
+                    media: {
+                        take: 1,
+                        orderBy: { order: "asc" },
+                    },
                 },
-                media: {
-                    take: 1,
-                    orderBy: { order: "asc" },
+                orderBy,
+            }),
+            prisma.listing.findMany({
+                select: { company: true },
+                distinct: ["company"],
+                where: {
+                    company: {
+                        not: "",
+                    },
                 },
-            },
-            orderBy,
-        }),
-        prisma.listing.findMany({
-            select: { company: true },
-            distinct: ["company"],
-            where: {
-                company: {
-                    not: "",
+                orderBy: { company: "asc" },
+            }),
+            prisma.listingCompanyOption.findMany({
+                select: { name: true },
+                orderBy: { name: "asc" },
+            }),
+            prisma.listing.findFirst({
+                where: {
+                    status: "PUBLISHED",
+                    showOnHomepageHero: true,
                 },
-            },
-            orderBy: { company: "asc" },
-        }),
-        prisma.listingCompanyOption.findMany({
-            select: { name: true },
-            orderBy: { name: "asc" },
-        }),
-    ]);
+                select: {
+                    id: true,
+                    sku: true,
+                    translations: {
+                        where: { locale: "tr" },
+                        take: 1,
+                        select: {
+                            title: true,
+                        },
+                    },
+                },
+            }),
+        ]);
 
     const companyOptions = Array.from(
         new Set([
@@ -196,6 +259,8 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
             ...companyOptionsFromListings.map((listing) => listing.company),
         ])
     ).sort((a, b) => a.localeCompare(b, "tr-TR", { sensitivity: "base" }));
+    const homepageHeroTitle =
+        homepageHeroListing?.translations[0]?.title || "İsimsiz İlan";
 
     return (
         <div>
@@ -205,7 +270,33 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                     <h1 className="text-2xl font-bold text-gray-900">İlanlar</h1>
                     <p className="text-gray-500 mt-1">Tüm ilanları yönetin</p>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                    <Link
+                        href={
+                            homepageHeroListing
+                                ? `/admin/ilanlar/${homepageHeroListing.id}`
+                                : "#"
+                        }
+                        aria-disabled={!homepageHeroListing}
+                        className={cn(
+                            "btn btn-outline btn-md max-w-[320px]",
+                            homepageHeroListing
+                                ? "border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100"
+                                : "opacity-60 cursor-not-allowed pointer-events-none"
+                        )}
+                        title={
+                            homepageHeroListing
+                                ? "Ana sayfada gösterilen ilanı aç"
+                                : "Henüz ana sayfa hero için ilan seçilmedi"
+                        }
+                    >
+                        <Star className="w-4 h-4" />
+                        <span className="truncate">
+                            {homepageHeroListing
+                                ? `Ana Sayfada: ${homepageHeroListing.sku || homepageHeroTitle}`
+                                : "Ana Sayfada: Seçili İlan Yok"}
+                        </span>
+                    </Link>
                     <Link
                         href="/admin/ilanlar/yeni"
                         className="btn btn-primary btn-md"
@@ -215,7 +306,7 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                     </Link>
                     <Link
                         href={buildUrl({ view: "map" })}
-                        className="btn btn-outline btn-sm w-full"
+                        className="btn btn-outline btn-md"
                     >
                         Harita
                     </Link>

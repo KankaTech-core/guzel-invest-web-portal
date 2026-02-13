@@ -6,6 +6,12 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useVersion } from "@/contexts/VersionContext";
 import {
+    formatPrice,
+    getMediaUrl,
+    getPropertyTypeLabel,
+    getSaleTypeLabel,
+} from "@/lib/utils";
+import {
     Building2,
     Handshake,
     TrendingUp,
@@ -190,6 +196,36 @@ const testimonials = [
     },
 ];
 
+interface HomepageHeroListing {
+    id: string;
+    slug: string;
+    saleType: string;
+    type: string;
+    district: string;
+    rooms: string | null;
+    area: number;
+    seaView: boolean;
+    price: string;
+    currency: string;
+    imageUrl: string | null;
+    title: string;
+}
+
+const HERO_FALLBACK: HomepageHeroListing = {
+    id: "fallback",
+    slug: "",
+    saleType: "SALE",
+    type: "VILLA",
+    district: "Kargıcak",
+    rooms: "4+1",
+    area: 320,
+    seaView: true,
+    price: "485000",
+    currency: "EUR",
+    imageUrl: null,
+    title: "Kargıcak Premium Villa",
+};
+
 /* ─── page ─── */
 export default function HomePage() {
     const t = useTranslations();
@@ -204,6 +240,7 @@ export default function HomePage() {
     const [neighborhood, setNeighborhood] = useState("");
     const [openDropdown, setOpenDropdown] = useState<"propertyType" | "neighborhood" | null>(null);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
+    const [heroListing, setHeroListing] = useState<HomepageHeroListing | null>(null);
     const { version: searchVersion } = useVersion();
     const bannerRef = useRef<HTMLFormElement>(null);
     const testimonialRef = useRef<HTMLDivElement>(null);
@@ -226,6 +263,40 @@ export default function HomePage() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    useEffect(() => {
+        let isMounted = true;
+        const controller = new AbortController();
+
+        const loadHomepageHeroListing = async () => {
+            try {
+                const response = await fetch(
+                    `/api/public/listings/homepage-hero?locale=${locale}`,
+                    {
+                        signal: controller.signal,
+                        cache: "no-store",
+                    }
+                );
+                if (!response.ok) return;
+
+                const data = await response.json();
+                if (!isMounted) return;
+
+                setHeroListing(data?.listing || null);
+            } catch {
+                if (isMounted) {
+                    setHeroListing(null);
+                }
+            }
+        };
+
+        loadHomepageHeroListing();
+
+        return () => {
+            isMounted = false;
+            controller.abort();
+        };
+    }, [locale]);
+
     const handleSearch = () => {
         const params = new URLSearchParams();
         params.set("saleType", saleType);
@@ -236,6 +307,25 @@ export default function HomePage() {
         setOpenDropdown(null);
         router.push(`/${locale}/portfoy?${params.toString()}`);
     };
+
+    const activeHeroListing = heroListing || HERO_FALLBACK;
+    const heroImageUrl = activeHeroListing.imageUrl
+        ? getMediaUrl(activeHeroListing.imageUrl)
+        : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=700&h=500&fit=crop";
+    const heroSaleTypeLabel = getSaleTypeLabel(activeHeroListing.saleType, locale);
+    const heroTypeLabel = getPropertyTypeLabel(activeHeroListing.type, locale);
+    const heroFeatureParts = [
+        activeHeroListing.rooms,
+        activeHeroListing.area > 0 ? `${activeHeroListing.area}m²` : null,
+        activeHeroListing.seaView
+            ? locale === "tr"
+                ? "Deniz Manzaralı"
+                : "Sea View"
+            : activeHeroListing.district,
+    ].filter((item): item is string => Boolean(item));
+    const heroListingHref = activeHeroListing.slug
+        ? `/${locale}/ilan/${activeHeroListing.slug}`
+        : null;
 
     const renderCompactSearchBanner = (className = "") => (
         <form
@@ -402,31 +492,77 @@ export default function HomePage() {
                         {/* Right Column – Dashboard Cards */}
                         <div className="lg:col-span-7 grid grid-cols-12 gap-4">
                             {/* Featured Property Image */}
-                            <div className="col-span-12 sm:col-span-8 bg-gray-50 rounded-2xl overflow-hidden relative group min-h-[320px]">
-                                <img
-                                    src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=700&h=500&fit=crop"
-                                    alt="Featured Property"
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
-                                <div className="absolute bottom-0 left-0 right-0 p-5">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="px-2 py-1 bg-orange-500 text-white text-[10px] font-semibold rounded uppercase">
-                                            {th("filterSale")}
-                                        </span>
-                                        <span className="px-2 py-1 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded">
-                                            Villa
-                                        </span>
+                            {heroListingHref ? (
+                                <Link
+                                    href={heroListingHref}
+                                    className="col-span-12 sm:col-span-8 bg-gray-50 rounded-2xl overflow-hidden relative group min-h-[320px] block"
+                                    title="İlanı görüntüle"
+                                >
+                                    <img
+                                        src={heroImageUrl}
+                                        alt={activeHeroListing.title || "Featured Property"}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
+                                    <div className="absolute bottom-0 left-0 right-0 p-5">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="px-2 py-1 bg-orange-500 text-white text-[10px] font-semibold rounded uppercase">
+                                                {heroSaleTypeLabel}
+                                            </span>
+                                            <span className="px-2 py-1 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded">
+                                                {heroTypeLabel}
+                                            </span>
+                                        </div>
+                                        <h3 className="text-white text-lg font-semibold">
+                                            {activeHeroListing.title || "İlan"}
+                                        </h3>
+                                        <div className="flex items-center justify-between mt-2">
+                                            <span className="text-white/80 text-sm">
+                                                {heroFeatureParts.join(" · ")}
+                                            </span>
+                                            <span className="text-white text-lg font-bold">
+                                                {formatPrice(
+                                                    activeHeroListing.price,
+                                                    activeHeroListing.currency
+                                                )}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <h3 className="text-white text-lg font-semibold">
-                                        Kargıcak Premium Villa
-                                    </h3>
-                                    <div className="flex items-center justify-between mt-2">
-                                        <span className="text-white/80 text-sm">4+1 · 320m² · Deniz Manzaralı</span>
-                                        <span className="text-white text-lg font-bold">485.000 €</span>
+                                </Link>
+                            ) : (
+                                <div className="col-span-12 sm:col-span-8 bg-gray-50 rounded-2xl overflow-hidden relative group min-h-[320px]">
+                                    <img
+                                        src={heroImageUrl}
+                                        alt={activeHeroListing.title || "Featured Property"}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
+                                    <div className="absolute bottom-0 left-0 right-0 p-5">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="px-2 py-1 bg-orange-500 text-white text-[10px] font-semibold rounded uppercase">
+                                                {heroSaleTypeLabel}
+                                            </span>
+                                            <span className="px-2 py-1 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded">
+                                                {heroTypeLabel}
+                                            </span>
+                                        </div>
+                                        <h3 className="text-white text-lg font-semibold">
+                                            {activeHeroListing.title || "İlan"}
+                                        </h3>
+                                        <div className="flex items-center justify-between mt-2">
+                                            <span className="text-white/80 text-sm">
+                                                {heroFeatureParts.join(" · ")}
+                                            </span>
+                                            <span className="text-white text-lg font-bold">
+                                                {formatPrice(
+                                                    activeHeroListing.price,
+                                                    activeHeroListing.currency
+                                                )}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Mobile single version: V2 search banner right after image */}
                             <div className="col-span-12 lg:hidden">

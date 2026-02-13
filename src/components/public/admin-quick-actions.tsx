@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Building2, EyeOff, FileText, PencilLine, Plus, X } from "lucide-react";
+import { BookOpenText, Building2, EyeOff, FileText, PencilLine, Plus, X } from "lucide-react";
 
 interface QuickAction {
     id: string;
@@ -16,6 +16,12 @@ interface QuickAction {
 
 interface PublicListingDetailResponse {
     listing?: {
+        id?: string;
+    };
+}
+
+interface PublicArticleDetailResponse {
+    article?: {
         id?: string;
     };
 }
@@ -37,6 +43,8 @@ export function AdminQuickActions({ onHideAll }: AdminQuickActionsProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [listingId, setListingId] = useState<string | null>(null);
     const [isListingLoading, setIsListingLoading] = useState(false);
+    const [articleId, setArticleId] = useState<string | null>(null);
+    const [isArticleLoading, setIsArticleLoading] = useState(false);
 
     const pathSegments = useMemo(
         () => pathname.split("/").filter(Boolean),
@@ -47,7 +55,12 @@ export function AdminQuickActions({ onHideAll }: AdminQuickActionsProps) {
         pathSegments[1] === "ilan" && pathSegments[2]
             ? decodePathSegment(pathSegments[2])
             : null;
+    const articleSlug =
+        pathSegments[1] === "blog" && pathSegments[2]
+            ? decodePathSegment(pathSegments[2])
+            : null;
     const isListingPage = Boolean(listingSlug);
+    const isArticlePage = Boolean(articleSlug);
 
     const actions = useMemo<QuickAction[]>(() => {
         const nextActions: QuickAction[] = [
@@ -56,6 +69,12 @@ export function AdminQuickActions({ onHideAll }: AdminQuickActionsProps) {
                 label: "İlanlara git",
                 href: "/admin/ilanlar",
                 icon: FileText,
+            },
+            {
+                id: "articles",
+                label: "Makalelere git",
+                href: "/admin/makaleler",
+                icon: BookOpenText,
             },
             {
                 id: "portal",
@@ -75,8 +94,18 @@ export function AdminQuickActions({ onHideAll }: AdminQuickActionsProps) {
             });
         }
 
+        if (isArticlePage) {
+            nextActions.unshift({
+                id: "article",
+                label: "Makaleye git",
+                href: articleId ? `/admin/makaleler/${articleId}` : "#",
+                icon: PencilLine,
+                disabled: !articleId || isArticleLoading,
+            });
+        }
+
         return nextActions;
-    }, [isListingPage, isListingLoading, listingId]);
+    }, [articleId, isArticleLoading, isArticlePage, isListingPage, isListingLoading, listingId]);
 
     useEffect(() => {
         setIsOpen(false);
@@ -147,6 +176,57 @@ export function AdminQuickActions({ onHideAll }: AdminQuickActionsProps) {
             controller.abort();
         };
     }, [listingSlug, locale]);
+
+    useEffect(() => {
+        if (!articleSlug) {
+            setArticleId(null);
+            setIsArticleLoading(false);
+            return;
+        }
+
+        const controller = new AbortController();
+        let isActive = true;
+
+        const loadArticleId = async () => {
+            setIsArticleLoading(true);
+            try {
+                const response = await fetch(
+                    `/api/public/articles/${encodeURIComponent(articleSlug)}?locale=${encodeURIComponent(locale)}`,
+                    {
+                        cache: "no-store",
+                        signal: controller.signal,
+                    }
+                );
+
+                if (!response.ok) {
+                    if (isActive) {
+                        setArticleId(null);
+                    }
+                    return;
+                }
+
+                const data = (await response.json()) as PublicArticleDetailResponse;
+                if (isActive) {
+                    setArticleId(typeof data.article?.id === "string" ? data.article.id : null);
+                }
+            } catch {
+                if (isActive && !controller.signal.aborted) {
+                    setArticleId(null);
+                }
+            } finally {
+                if (isActive) {
+                    setIsArticleLoading(false);
+                }
+            }
+        };
+
+        void loadArticleId();
+
+        return () => {
+            isActive = false;
+            controller.abort();
+        };
+    }, [articleSlug, locale]);
 
     return (
         <div className="fixed bottom-6 left-6 z-[70] hidden md:flex flex-col items-start gap-3">

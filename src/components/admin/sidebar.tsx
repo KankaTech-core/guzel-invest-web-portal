@@ -8,6 +8,7 @@ import {
     LayoutDashboard,
     FileText,
     Download,
+    Newspaper,
     Users,
     LogOut,
     ChevronLeft,
@@ -33,6 +34,7 @@ const navigation = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "İlanlar", href: "/admin/ilanlar", icon: FileText },
     { name: "Export", href: "/admin/export", icon: Download },
+    { name: "Makaleler", href: "/admin/makaleler", icon: Newspaper },
     { name: "Kullanıcılar", href: "/admin/kullanicilar", icon: Users },
     { name: "Ana Site", href: "/", icon: ExternalLink, external: true },
 ];

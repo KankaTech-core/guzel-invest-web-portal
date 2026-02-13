@@ -326,7 +326,16 @@ export default async function ListingDetailPage({
             }
             return right.createdAt.getTime() - left.createdAt.getTime();
         })
-        .slice(0, 6);
+        .slice(0, 4);
+    const moreListingsParams = new URLSearchParams();
+    moreListingsParams.set("type", listing.type);
+
+    const listingRooms = listing.rooms?.trim();
+    if (listingRooms) {
+        moreListingsParams.set("rooms", listingRooms);
+    }
+
+    const moreListingsHref = `/${locale}/portfoy?${moreListingsParams.toString()}`;
 
     return (
         <main className="bg-white pb-28 pt-20 md:pt-24 md:pb-20">
@@ -498,9 +507,17 @@ export default async function ListingDetailPage({
 
                         {similarListings.length > 0 ? (
                             <section className="space-y-4">
-                                <h2 className="text-2xl font-semibold text-[#111828]">
-                                    Benzer İlanlar
-                                </h2>
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    <h2 className="text-2xl font-semibold text-[#111828]">
+                                        Benzer İlanlar
+                                    </h2>
+                                    <Link
+                                        href={moreListingsHref}
+                                        className="inline-flex items-center rounded-xl bg-[#111f3a] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0c1830]"
+                                    >
+                                        Daha fazla göster
+                                    </Link>
+                                </div>
 
                                 <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
                                     {similarListings.map((similar) => (
@@ -619,6 +636,7 @@ export default async function ListingDetailPage({
 
                     <ListingContactPanel
                         title={title}
+                        listingCode={listing.sku}
                         phoneNumber={WHATSAPP_NUMBER}
                         phoneLabel="+90 242 123 45 67"
                     />

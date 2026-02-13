@@ -31,6 +31,10 @@ export interface UploadResult {
     size: number;
 }
 
+interface UploadImageOptions {
+    collection?: "listings" | "articles";
+}
+
 export async function ensureBucketExists(): Promise<void> {
     const exists = await minioClient.bucketExists(BUCKET_NAME);
     if (!exists) {
@@ -53,11 +57,13 @@ export async function ensureBucketExists(): Promise<void> {
 
 export async function uploadImage(
     file: Buffer,
-    listingId: string,
-    _originalFilename: string
+    entityId: string,
+    _originalFilename: string,
+    options: UploadImageOptions = {}
 ): Promise<UploadResult> {
     await ensureBucketExists();
     void _originalFilename;
+    const collection = options.collection || "listings";
 
     const uuid = randomUUID();
 
@@ -77,8 +83,8 @@ export async function uploadImage(
         .toBuffer();
 
     // Upload paths
-    const originalPath = `public/listings/${listingId}/original/${uuid}.webp`;
-    const thumbnailPath = `public/listings/${listingId}/thumb/${uuid}.webp`;
+    const originalPath = `public/${collection}/${entityId}/original/${uuid}.webp`;
+    const thumbnailPath = `public/${collection}/${entityId}/thumb/${uuid}.webp`;
 
     // Upload files
     await minioClient.putObject(

@@ -23,7 +23,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                 )}
                 <div className="relative">
                     {icon && (
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
                             {icon}
                         </div>
                     )}
@@ -32,7 +32,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                         id={inputId}
                         className={cn(
                             "input",
-                            icon && "pl-10",
+                            icon && "!pl-10",
                             error && "border-red-500 focus:border-red-500 focus:ring-red-500/10",
                             className
                         )}

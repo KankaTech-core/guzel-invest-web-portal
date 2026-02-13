@@ -115,6 +115,7 @@ const AREA_MAX = 500;
 const AREA_STEP = 5;
 const IMAGE_SWIPE_THRESHOLD_PX = 48;
 const MOBILE_DRAWER_ANIMATION_MS = 280;
+const DESCRIPTION_PREVIEW_WORD_COUNT = 35;
 
 const propertyTypes = [
     { value: "APARTMENT", label: "Daire" },
@@ -413,6 +414,29 @@ function getListingDescription(listing: Listing, locale: string) {
     return requested?.description || fallback?.description || "Açıklama bulunamadı.";
 }
 
+function getWordCount(text: string) {
+    const normalizedText = text.trim();
+    if (!normalizedText) {
+        return 0;
+    }
+
+    return normalizedText.split(/\s+/).length;
+}
+
+function truncateWords(text: string, maxWords: number) {
+    const normalizedText = text.trim();
+    if (!normalizedText) {
+        return text;
+    }
+
+    const words = normalizedText.split(/\s+/);
+    if (words.length <= maxWords) {
+        return text;
+    }
+
+    return `${words.slice(0, maxWords).join(" ")}...`;
+}
+
 export function PortfolioClient({ locale }: PortfolioClientProps) {
     const searchParams = useSearchParams();
     const searchParamsKey = searchParams.toString();
@@ -430,6 +454,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
     const [listings, setListings] = useState<Listing[]>([]);
     const [activeImageIndexes, setActiveImageIndexes] = useState<Record<string, number>>({});
+    const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
     const [activeMobilePanel, setActiveMobilePanel] = useState<MobilePanel | null>(null);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -1442,6 +1467,9 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         listings.map((listing) => {
                             const title = getListingTitle(listing, locale);
                             const description = getListingDescription(listing, locale);
+                            const isDescriptionLong =
+                                getWordCount(description) > DESCRIPTION_PREVIEW_WORD_COUNT;
+                            const isDescriptionExpanded = Boolean(expandedDescriptions[listing.id]);
                             const locationLabel = buildLocationLabel(listing);
                             const galleryMedia = listing.media.slice(0, 4);
                             const maxImageIndex = Math.max(0, galleryMedia.length - 1);
@@ -1609,8 +1637,47 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                     </p>
 
                                                     <p className="text-sm text-gray-500">
-                                                        {description}
+                                                        {isDescriptionExpanded
+                                                            ? description
+                                                            : truncateWords(
+                                                                  description,
+                                                                  DESCRIPTION_PREVIEW_WORD_COUNT
+                                                              )}
                                                     </p>
+                                                    {isDescriptionLong && (
+                                                        <span
+                                                            role="button"
+                                                            tabIndex={0}
+                                                            onClick={(event) => {
+                                                                event.preventDefault();
+                                                                event.stopPropagation();
+                                                                setExpandedDescriptions((previous) => ({
+                                                                    ...previous,
+                                                                    [listing.id]: !previous[listing.id],
+                                                                }));
+                                                            }}
+                                                            onKeyDown={(event) => {
+                                                                if (
+                                                                    event.key !== "Enter" &&
+                                                                    event.key !== " "
+                                                                ) {
+                                                                    return;
+                                                                }
+                                                                event.preventDefault();
+                                                                event.stopPropagation();
+                                                                setExpandedDescriptions((previous) => ({
+                                                                    ...previous,
+                                                                    [listing.id]: !previous[listing.id],
+                                                                }));
+                                                            }}
+                                                            className="mt-1 inline-flex cursor-pointer text-xs font-semibold text-orange-600 transition hover:text-orange-700"
+                                                            aria-expanded={isDescriptionExpanded}
+                                                        >
+                                                            {isDescriptionExpanded
+                                                                ? "Daha az göster"
+                                                                : "Devamını oku"}
+                                                        </span>
+                                                    )}
                                                 </div>
 
                                                 <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-gray-100 pt-4">

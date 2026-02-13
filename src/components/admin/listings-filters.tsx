@@ -1,8 +1,10 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Search } from "lucide-react";
 import { cn, getPropertyTypeLabel } from "@/lib/utils";
-import { Select } from "@/components/ui";
+import { Input, Select } from "@/components/ui";
 
 const PROPERTY_TYPES = [
     "APARTMENT",
@@ -53,23 +55,37 @@ export default function ListingsFilters({ companyOptions }: ListingsFiltersProps
     const activePlatform = searchParams.get("platform") || "";
     const activeType = searchParams.get("type") || "";
     const activeCompany = searchParams.get("company") || "";
+    const activeQuery = searchParams.get("q") || "";
 
-    const updateParams = (updates: Record<string, string | undefined>) => {
-        const params = new URLSearchParams(searchParams.toString());
-        Object.entries(updates).forEach(([key, value]) => {
-            if (!value) {
-                params.delete(key);
-            } else {
-                params.set(key, value);
+    const [queryInput, setQueryInput] = useState(activeQuery);
+
+    const updateParams = useCallback(
+        (updates: Record<string, string | undefined>, options?: { replace?: boolean }) => {
+            const params = new URLSearchParams(searchParams.toString());
+            Object.entries(updates).forEach(([key, value]) => {
+                if (!value) {
+                    params.delete(key);
+                } else {
+                    params.set(key, value);
+                }
+            });
+            const query = params.toString();
+            const nextUrl = query ? `${pathname}?${query}` : pathname;
+            if (options?.replace) {
+                router.replace(nextUrl);
+                return;
             }
-        });
-        const query = params.toString();
-        router.push(query ? `${pathname}?${query}` : pathname);
-    };
+            router.push(nextUrl);
+        },
+        [pathname, router, searchParams]
+    );
 
-    const updateParam = (key: string, value?: string) => {
-        updateParams({ [key]: value });
-    };
+    const updateParam = useCallback(
+        (key: string, value?: string, options?: { replace?: boolean }) => {
+            updateParams({ [key]: value }, options);
+        },
+        [updateParams]
+    );
 
     const toggleSaleType = (value: SaleType) => {
         updateParam("saleType", activeSaleType === value ? "" : value);
@@ -78,6 +94,23 @@ export default function ListingsFilters({ companyOptions }: ListingsFiltersProps
     const togglePlatform = (value: PlatformFilter) => {
         updateParam("platform", activePlatform === value ? "" : value);
     };
+
+    useEffect(() => {
+        setQueryInput(activeQuery);
+    }, [activeQuery]);
+
+    useEffect(() => {
+        const normalizedQuery = queryInput.trim();
+        if (normalizedQuery === activeQuery) {
+            return;
+        }
+
+        const timeoutId = window.setTimeout(() => {
+            updateParam("q", normalizedQuery || undefined, { replace: true });
+        }, 300);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [activeQuery, queryInput, updateParam]);
 
     const propertyTypeOptions = [
         { value: "", label: "Tüm Mülk Tipleri" },
@@ -97,7 +130,17 @@ export default function ListingsFilters({ companyOptions }: ListingsFiltersProps
 
     return (
         <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2 min-w-[200px]">
+            <div className="flex flex-wrap items-center gap-2 min-w-[220px] flex-1">
+                <div className="w-full md:w-72">
+                    <Input
+                        value={queryInput}
+                        onChange={(event) => setQueryInput(event.target.value)}
+                        placeholder="SKU, ilan adı, il/ilçe/mahalle ara"
+                        aria-label="SKU, ilan adı, il/ilçe/mahalle ara"
+                        icon={<Search className="w-4 h-4" />}
+                        className="py-2.5"
+                    />
+                </div>
                 <Select
                     value={activeType}
                     onChange={(value) => updateParam("type", value === "" ? undefined : value)}

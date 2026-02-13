@@ -8,6 +8,7 @@ export function AdminContentWrapper({ children }: { children: React.ReactNode })
     const pathname = usePathname();
     const { isCollapsed } = useSidebar();
     const isLoginPage = pathname === "/admin/login" || pathname.startsWith("/admin/login/");
+    const isArticleEditorPage = /^\/admin\/makaleler\/(yeni|[^/]+)$/.test(pathname);
 
     if (isLoginPage) {
         return <main className="flex-1">{children}</main>;
@@ -17,10 +18,13 @@ export function AdminContentWrapper({ children }: { children: React.ReactNode })
         <main
             className={cn(
                 "flex-1 transition-all duration-300",
-                isCollapsed ? "lg:pl-20" : "lg:pl-64"
+                isCollapsed ? "lg:pl-20" : "lg:pl-64",
+                isArticleEditorPage ? "bg-white" : ""
             )}
         >
-            <div className="p-6">{children}</div>
+            <div className={cn("p-6", isArticleEditorPage ? "min-h-screen bg-white" : "")}>
+                {children}
+            </div>
         </main>
     );
 }

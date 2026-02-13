@@ -22,6 +22,7 @@ import {
     Copy,
     ExternalLink,
     Plus,
+    Star,
 } from "lucide-react";
 import {
     DndContext,
@@ -138,6 +139,7 @@ interface ListingData {
     residenceEligible: boolean;
     publishToHepsiemlak: boolean;
     publishToSahibinden: boolean;
+    showOnHomepageHero: boolean;
     // Relations
     translations: ListingTranslation[];
     media?: Media[];
@@ -458,6 +460,7 @@ const defaultListing: ListingData = {
     residenceEligible: false,
     publishToHepsiemlak: false,
     publishToSahibinden: false,
+    showOnHomepageHero: false,
     translations: defaultTranslations,
     media: [],
     tags: [],
@@ -803,7 +806,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     const [selectedTags, setSelectedTags] = useState<TagData[]>(listing?.tags || []);
     const [activeId, setActiveId] = useState<string | null>(null);
     const [confirmAction, setConfirmAction] = useState<
-        null | "archive" | "remove" | "delete"
+        null | "archive" | "remove" | "delete" | "homepageHero"
     >(null);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [translationsLocked, setTranslationsLocked] = useState(
@@ -1650,6 +1653,8 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                     sku: savedListing.sku ?? prev.sku,
                     company: savedListing.company || prev.company,
                     status: savedListing.status || prev.status,
+                    showOnHomepageHero:
+                        savedListing.showOnHomepageHero ?? prev.showOnHomepageHero,
                 }));
             }
 
@@ -1715,6 +1720,26 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         }
     };
 
+    const handleHomepageHeroUpdate = async () => {
+        if (!formData.id) return;
+
+        const response = await fetch(`/api/admin/listings/${formData.id}/homepage-hero`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ show: true }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || "Ana sayfa hero ayarı güncellenemedi");
+        }
+
+        setFormData((prev) => ({
+            ...prev,
+            showOnHomepageHero: true,
+        }));
+    };
+
     const handleConfirmAction = async () => {
         if (!confirmAction) return;
 
@@ -1722,6 +1747,11 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         setError(null);
 
         try {
+            if (confirmAction === "homepageHero") {
+                await handleHomepageHeroUpdate();
+                router.refresh();
+                return;
+            }
             if (confirmAction === "archive") {
                 await handleStatusOnlyUpdate("ARCHIVED");
                 safePush("/admin/ilanlar");
@@ -1833,6 +1863,13 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             tone: "danger",
             confirmLabel: "İlanı Sil",
         },
+        homepageHero: {
+            title: "Ana sayfa hero alanında gösterilsin mi?",
+            description:
+                "Bu işlemden sonra bu ilan ana sayfanın hero bölümünde görünür. Önceki seçim otomatik olarak kaldırılır.",
+            tone: "warning",
+            confirmLabel: "Evet, Göster",
+        },
     };
     const activeConfirm = confirmAction ? confirmConfig[confirmAction] : null;
 
@@ -1845,6 +1882,44 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         } catch {
             // no-op
         }
+    };
+
+    const getHomepageHeroValidationError = (): string | null => {
+        if (!formData.saleType?.trim()) {
+            return "Satılık / Kiralık seçimi yapılmadı.";
+        }
+
+        if (!formData.type?.trim()) {
+            return "Gayrimenkul tipi seçilmedi.";
+        }
+
+        if (!Number.isFinite(formData.price) || formData.price <= 0) {
+            return "Fiyat girilmedi.";
+        }
+
+        if (!turkishTranslation?.title?.trim()) {
+            return "Başlık eklenmedi.";
+        }
+
+        const hasCoverPhoto = (formData.media || []).some(
+            (item, index) => item.isCover || index === 0
+        );
+
+        if (!hasCoverPhoto) {
+            return "Kapak fotoğrafı eklenmedi.";
+        }
+
+        return null;
+    };
+
+    const handleHomepageHeroRequest = () => {
+        const validationError = getHomepageHeroValidationError();
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
+
+        setConfirmAction("homepageHero");
     };
 
     const handleSectionNavigation = (sectionId: string) => {
@@ -1987,16 +2062,52 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                             )}
                         </div>
                     )}
-                    {!isNew && formData.status === "PUBLISHED" && formData.slug && (
-                        <Link
-                            href={`/tr/ilan/${formData.slug}`}
-                            target="_blank"
-                            className="flex items-center gap-2 px-4 py-1.5 bg-green-50 text-green-700 border border-green-200 text-sm font-semibold rounded-lg hover:bg-green-100 hover:border-green-300 hover:text-green-800 transition-all shadow-sm group"
-                            title="İlanı Gör"
-                        >
-                            <span>İlanı Gör</span>
-                            <ExternalLink className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                        </Link>
+                    {!isNew && formData.id && (
+                        <div className="flex flex-wrap justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={handleHomepageHeroRequest}
+                                disabled={
+                                    isActionLoading ||
+                                    formData.status !== "PUBLISHED" ||
+                                    formData.showOnHomepageHero
+                                }
+                                className={cn(
+                                    "inline-flex items-center gap-2 px-4 py-1.5 border text-sm font-semibold rounded-lg transition-all shadow-sm",
+                                    formData.showOnHomepageHero
+                                        ? "bg-orange-50 text-orange-700 border-orange-200"
+                                        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50",
+                                    formData.status !== "PUBLISHED" &&
+                                        "opacity-60 cursor-not-allowed hover:bg-white",
+                                    isActionLoading && "opacity-75 cursor-wait"
+                                )}
+                                title={
+                                    formData.status !== "PUBLISHED"
+                                        ? "Ana sayfada göstermek için ilanın yayınlanmış olması gerekir."
+                                        : formData.showOnHomepageHero
+                                            ? "Bu ilan zaten ana sayfada gösteriliyor."
+                                            : "Ana Sayfada Göster"
+                                }
+                            >
+                                <Star className="w-3.5 h-3.5" />
+                                <span>
+                                    {formData.showOnHomepageHero
+                                        ? "Ana Sayfada Gösteriliyor"
+                                        : "Ana Sayfada Göster"}
+                                </span>
+                            </button>
+                            {formData.status === "PUBLISHED" && formData.slug && (
+                                <Link
+                                    href={`/tr/ilan/${formData.slug}`}
+                                    target="_blank"
+                                    className="flex items-center gap-2 px-4 py-1.5 bg-green-50 text-green-700 border border-green-200 text-sm font-semibold rounded-lg hover:bg-green-100 hover:border-green-300 hover:text-green-800 transition-all shadow-sm group"
+                                    title="İlanı Gör"
+                                >
+                                    <span>İlanı Gör</span>
+                                    <ExternalLink className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                                </Link>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>
@@ -2714,6 +2825,9 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                                             label: option,
                                         })),
                                     ]}
+                                    searchable
+                                    searchPlaceholder="Mahalle yazın"
+                                    searchMatchMode="startsWith"
                                 />
                             </div>
 

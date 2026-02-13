@@ -1,3 +1,5 @@
+@import "@blocknote/mantine/blocknoteStyles.css";
+@import "@mantine/core/styles.css";
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 @source "../**/*.{ts,tsx,js,jsx}";
@@ -579,4 +581,229 @@ select.input {
 
 .animate-pulse {
   animation: pulse 2s infinite;
+}
+
+/* ============================================
+   BLOCKNOTE EDITOR
+   ============================================ */
+
+.blocknote-shell {
+  background: #fff;
+}
+
+.blocknote-shell .bn-mantine {
+  border-radius: 0;
+}
+
+.blocknote-shell .bn-container {
+  background: #fff;
+  --bn-colors-editor-text: #111111;
+  --bn-colors-menu-text: #111111;
+  --bn-colors-hovered-text: #111111;
+  --bn-colors-hovered-background: transparent;
+}
+
+.blocknote-shell .bn-container[data-color-scheme="dark"],
+.blocknote-shell .bn-container[data-mantine-color-scheme="dark"] {
+  --bn-colors-editor-text: #111111;
+  --bn-colors-menu-text: #111111;
+  --bn-colors-menu-background: #ffffff;
+  --bn-colors-tooltip-text: #111111;
+  --bn-colors-tooltip-background: #f3f4f6;
+  --bn-colors-hovered-text: #111111;
+  --bn-colors-hovered-background: #f3f4f6;
+  --bn-colors-selected-text: #111111;
+  --bn-colors-selected-background: #f3f4f6;
+  --bn-colors-border: #e5e7eb;
+  --bn-colors-shadow: rgba(15, 23, 42, 0.08);
+  --bn-colors-side-menu: #9ca3af;
+}
+
+.blocknote-shell .bn-container,
+.blocknote-shell .bn-container:focus-within,
+.blocknote-shell .bn-editor,
+.blocknote-shell .bn-editor:focus,
+.blocknote-shell .bn-editor:focus-visible,
+.blocknote-shell .bn-editor:focus-within {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.blocknote-shell .bn-editor {
+  min-height: 560px;
+  background: #fff;
+  padding: 1.25rem 1.35rem;
+}
+
+.blocknote-shell .bn-container[data-mantine-color-scheme="light"] {
+  background: #fff;
+}
+
+.blocknote-shell .bn-editor .bn-block-content:has(.bn-inline-content) {
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  transition: border-color 0.16s ease;
+}
+
+.blocknote-shell .bn-editor .bn-block-content:has(.bn-inline-content):hover {
+  background: transparent;
+  border-bottom-color: #111111;
+}
+
+.blocknote-shell .bn-block-content.ProseMirror-selectednode>*,
+.blocknote-shell .ProseMirror-selectednode>.bn-block-content>* {
+  outline: none !important;
+}
+
+/* Keep BlockNote slash / menu popovers white even when mounted in a portal. */
+.bn-suggestion-menu,
+.bn-grid-suggestion-menu,
+.bn-menu-dropdown,
+.bn-mantine .bn-suggestion-menu,
+.bn-mantine .bn-grid-suggestion-menu,
+.bn-mantine .bn-menu-dropdown,
+.bn-mantine .mantine-Menu-dropdown {
+  background: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12) !important;
+}
+
+.bn-suggestion-menu .bn-suggestion-menu-item,
+.bn-mantine .bn-suggestion-menu-item,
+.bn-mantine .mantine-Menu-item,
+.bn-menu-dropdown .bn-menu-item {
+  color: #111111 !important;
+}
+
+.bn-suggestion-menu .bn-suggestion-menu-item[aria-selected="true"],
+.bn-suggestion-menu .bn-suggestion-menu-item:hover,
+.bn-mantine .bn-suggestion-menu-item[aria-selected="true"],
+.bn-mantine .bn-suggestion-menu-item:hover,
+.bn-mantine .mantine-Menu-item[aria-selected="true"],
+.bn-mantine .mantine-Menu-item:hover,
+.bn-menu-dropdown .bn-menu-item[aria-selected="true"],
+.bn-menu-dropdown .bn-menu-item:hover {
+  background: #f3f4f6 !important;
+  color: #111111 !important;
+}
+
+.bn-mt-suggestion-menu-item-title,
+.bn-mt-suggestion-menu-item-subtitle,
+.bn-suggestion-menu-label {
+  color: #111111 !important;
+}
+
+.bn-mt-suggestion-menu-item-section[data-position="left"] {
+  background: #f3f4f6 !important;
+  color: #111111 !important;
+}
+
+.bn-suggestion-menu .mantine-Kbd-root,
+.bn-menu-dropdown .mantine-Kbd-root {
+  background: #f3f4f6 !important;
+  border-color: #e5e7eb !important;
+  color: #111111 !important;
+}
+
+/* ============================================
+   ARTICLE CONTENT
+   ============================================ */
+
+.article-content p {
+  margin-top: 1.2rem;
+  margin-bottom: 1.2rem;
+  color: #374151;
+}
+
+.article-content h2,
+.article-content h3,
+.article-content h4 {
+  color: #111827;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-top: 2.2rem;
+  margin-bottom: 0.85rem;
+}
+
+.article-content h2 {
+  border-top: 1px solid #F3F4F6;
+  font-size: 1.9rem;
+  padding-top: 1rem;
+}
+
+.article-content > *:first-child {
+  margin-top: 0;
+}
+
+.article-content p:first-of-type {
+  color: #1F2937;
+  font-size: 1.08rem;
+}
+
+.article-content h3 {
+  font-size: 1.45rem;
+}
+
+.article-content h4 {
+  font-size: 1.2rem;
+}
+
+.article-content ul,
+.article-content ol {
+  margin-top: 1.1rem;
+  margin-bottom: 1.1rem;
+  padding-left: 1.5rem;
+}
+
+.article-content ul {
+  list-style: disc;
+}
+
+.article-content ol {
+  list-style: decimal;
+}
+
+.article-content li {
+  margin-bottom: 0.55rem;
+}
+
+.article-content li::marker {
+  color: #EA580C;
+  font-weight: 600;
+}
+
+.article-content blockquote {
+  border-left: 4px solid #FED7AA;
+  background: linear-gradient(120deg, #FFF7ED 0%, #FFFBEB 100%);
+  color: #7C2D12;
+  margin: 1.4rem 0;
+  padding: 1.1rem 1.25rem;
+  border-radius: 0 0.75rem 0.75rem 0;
+}
+
+.article-content a {
+  color: #C2410C;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.article-content img {
+  width: 100%;
+  border-radius: 1rem;
+  margin: 1.5rem 0;
+  border: 1px solid #E5E7EB;
+  object-fit: cover;
+}
+
+@media (max-width: 640px) {
+  .article-content h2 {
+    font-size: 1.65rem;
+  }
+
+  .article-content h3 {
+    font-size: 1.3rem;
+  }
 }

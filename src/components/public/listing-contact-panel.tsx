@@ -13,13 +13,25 @@ import {
 
 interface ListingContactPanelProps {
     title: string;
+    listingCode?: string | null;
     phoneNumber: string;
     phoneLabel: string;
 }
 
 const subscribeNoop = () => () => { };
 
-function ContactFormFields({ title }: { title: string }) {
+function ContactFormFields({
+    title,
+    listingCode,
+}: {
+    title: string;
+    listingCode?: string | null;
+}) {
+    const codeLabel = listingCode?.trim();
+    const message = codeLabel
+        ? `Merhaba, "${title} (${codeLabel}) ilanı hakkında bilgi almak istiyorum."`
+        : `Merhaba, "${title} ilanı hakkında bilgi almak istiyorum."`;
+
     return (
         <form className="space-y-3">
             <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition focus-within:border-[#5099ff] focus-within:ring-2 focus-within:ring-[#dcebff]">
@@ -55,7 +67,7 @@ function ContactFormFields({ title }: { title: string }) {
                     rows={5}
                     placeholder="Mesajınız"
                     className="w-full resize-none border-0 bg-transparent p-0 text-base leading-relaxed text-[#111828] placeholder:text-gray-400 focus:outline-none"
-                    defaultValue={`Merhaba, ${title} ilanı hakkında bilgi almak istiyorum.`}
+                    defaultValue={message}
                 />
             </div>
             <button
@@ -71,6 +83,7 @@ function ContactFormFields({ title }: { title: string }) {
 
 export function ListingContactPanel({
     title,
+    listingCode,
     phoneNumber,
     phoneLabel,
 }: ListingContactPanelProps) {
@@ -112,7 +125,7 @@ export function ListingContactPanel({
                         sağlar.
                     </p>
                     <div className="mt-5">
-                        <ContactFormFields title={title} />
+                        <ContactFormFields title={title} listingCode={listingCode} />
                     </div>
                     <a
                         href={`tel:+${phoneNumber}`}
@@ -177,7 +190,7 @@ export function ListingContactPanel({
                                     </div>
 
                                     <div className="overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+1.1rem)] pt-4">
-                                        <ContactFormFields title={title} />
+                                        <ContactFormFields title={title} listingCode={listingCode} />
                                         <a
                                             href={`tel:+${phoneNumber}`}
                                             className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-[#ff6900] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#e85f00]"

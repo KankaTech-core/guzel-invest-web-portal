@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
         // Generate unique slug
         const slug = generateListingSlug(title, body.city, body.type);
         const company = normalizeOptionalText(body.company) || "Güzel Invest";
+        const showOnHomepageHero = toBoolean(body.showOnHomepageHero);
 
         console.log("Creating listing with body:", JSON.stringify(body, null, 2));
 
@@ -66,6 +67,13 @@ export async function POST(request: NextRequest) {
                 update: {},
                 create: { name: company },
             });
+
+            if (showOnHomepageHero) {
+                await tx.listing.updateMany({
+                    where: { showOnHomepageHero: true },
+                    data: { showOnHomepageHero: false },
+                });
+            }
 
             return tx.listing.create({
                 data: {
@@ -117,6 +125,7 @@ export async function POST(request: NextRequest) {
                     residenceEligible: toBoolean(body.residenceEligible),
                     publishToHepsiemlak: toBoolean(body.publishToHepsiemlak),
                     publishToSahibinden: toBoolean(body.publishToSahibinden),
+                    showOnHomepageHero,
                     createdById: session.userId,
                     translations: {
                         create: (body.translations || [])

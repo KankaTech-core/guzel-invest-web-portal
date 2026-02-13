@@ -17,6 +17,7 @@ model User {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   exportJobs   ExportJob[]
+  articles     Article[]
   feedbackMessages SiteFeedbackMessage[] @relation("SiteFeedbackMessageAuthor")
   feedbackThreads  SiteFeedbackThread[]  @relation("SiteFeedbackThreadCreatedBy")
   listings     Listing[]
@@ -82,6 +83,7 @@ model Listing {
   residenceEligible   Boolean              @default(false)
   publishToHepsiemlak Boolean              @default(false)
   publishToSahibinden Boolean              @default(false)
+  showOnHomepageHero  Boolean              @default(false)
   aiTags              String[]
   aiProcessedAt       DateTime?
   createdAt           DateTime             @default(now())
@@ -100,7 +102,31 @@ model Listing {
   @@index([sku])
   @@index([city, district])
   @@index([price])
+  @@index([showOnHomepageHero, status])
   @@map("listings")
+}
+
+model Article {
+  id                 String        @id @default(cuid())
+  slug               String        @unique
+  status             ArticleStatus @default(DRAFT)
+  title              String
+  excerpt            String?
+  content            String
+  category           String?
+  tags               String[]      @default([])
+  coverImageUrl      String?
+  coverThumbnailUrl  String?
+  publishedAt        DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  createdById        String
+  createdBy          User          @relation(fields: [createdById], references: [id])
+
+  @@index([status])
+  @@index([publishedAt])
+  @@index([createdAt])
+  @@map("articles")
 }
 
 model ListingCompanyOption {
@@ -266,6 +292,13 @@ enum Role {
 }
 
 enum ListingStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  REMOVED
+}
+
+enum ArticleStatus {
   DRAFT
   PUBLISHED
   ARCHIVED

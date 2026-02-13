@@ -1,5 +1,13 @@
-import { PrismaClient, Role, ListingStatus, PropertyType, SaleType } from "../src/generated/prisma";
+import {
+    PrismaClient,
+    Role,
+    ListingStatus,
+    PropertyType,
+    SaleType,
+    ArticleStatus,
+} from "../src/generated/prisma";
 import bcrypt from "bcryptjs";
+import { SAMPLE_ARTICLE } from "../src/data/sample-article";
 
 const prisma = new PrismaClient();
 
@@ -292,6 +300,25 @@ async function main() {
         });
         console.log("✅ Created listing:", created.slug);
     }
+
+    const seededArticle = await prisma.article.upsert({
+        where: { slug: SAMPLE_ARTICLE.slug },
+        update: {},
+        create: {
+            slug: SAMPLE_ARTICLE.slug,
+            status: ArticleStatus.PUBLISHED,
+            title: SAMPLE_ARTICLE.title,
+            excerpt: SAMPLE_ARTICLE.excerpt,
+            content: SAMPLE_ARTICLE.content,
+            category: SAMPLE_ARTICLE.category,
+            tags: [...SAMPLE_ARTICLE.tags],
+            coverImageUrl: SAMPLE_ARTICLE.coverImageUrl,
+            coverThumbnailUrl: SAMPLE_ARTICLE.coverThumbnailUrl,
+            publishedAt: SAMPLE_ARTICLE.publishedAt,
+            createdById: admin.id,
+        },
+    });
+    console.log("✅ Created sample article:", seededArticle.slug);
 
     console.log("🌱 Seed completed!");
 }
