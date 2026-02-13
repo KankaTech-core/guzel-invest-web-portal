@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ListingStatus } from "@/generated/prisma";
@@ -10,21 +11,17 @@ import {
     getSaleTypeLabel,
 } from "@/lib/utils";
 import {
+    Bath,
     BedDouble,
-    Building2,
     ChevronRight,
-    CircleDollarSign,
-    Mail,
     MapPin,
-    MessageCircleMore,
-    PhoneCall,
-    Send,
-    User,
+    Square,
 } from "lucide-react";
 import {
     ListingDetailGallery,
     type ListingGalleryItem,
 } from "@/components/public/listing-detail-gallery";
+import { ListingContactPanel } from "@/components/public/listing-contact-panel";
 
 const WHATSAPP_NUMBER = "902421234567";
 
@@ -34,6 +31,20 @@ function formatBoolean(value: boolean) {
 
 function toNumber(value: unknown) {
     return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function parseRoomCount(value: string | null | undefined) {
+    if (!value) {
+        return null;
+    }
+
+    const match = value.match(/\d+/);
+    if (!match) {
+        return null;
+    }
+
+    const parsed = Number.parseInt(match[0], 10);
+    return Number.isFinite(parsed) ? parsed : null;
 }
 
 export default async function ListingDetailPage({
@@ -87,6 +98,11 @@ export default async function ListingDetailPage({
     const roomValue =
         listing.rooms ||
         (typeof listing.bedrooms === "number" ? `${listing.bedrooms}+0` : "-");
+    const bathroomValue =
+        typeof listing.bathrooms === "number" ? `${listing.bathrooms}` : "-";
+    const formattedPrice = formatPrice(priceValue, listing.currency);
+    const saleTypeLabel = getSaleTypeLabel(listing.saleType, "tr");
+    const propertyTypeLabel = getPropertyTypeLabel(listing.type, "tr");
     const locationLabel = [listing.neighborhood, listing.district, listing.city]
         .filter(Boolean)
         .join(", ");
@@ -132,8 +148,8 @@ export default async function ListingDetailPage({
 
     const detailItems = [
         { label: "İlan Kodu", value: listing.sku || "-" },
-        { label: "İlan Tipi", value: getSaleTypeLabel(listing.saleType, "tr") },
-        { label: "Kategori", value: getPropertyTypeLabel(listing.type, "tr") },
+        { label: "İlan Tipi", value: saleTypeLabel },
+        { label: "Kategori", value: propertyTypeLabel },
         { label: "Brüt Alan", value: formatArea(listing.area) },
         { label: "Oda Düzeni", value: roomValue },
         {
@@ -182,98 +198,254 @@ export default async function ListingDetailPage({
             value: listing.residenceEligible ? "Uygun" : "Uygun değil",
         },
     ];
+    const visibleDetailItems = detailItems.filter(
+        (item) => item.value && item.value !== "-"
+    );
+    const referenceRoomCount = parseRoomCount(listing.rooms);
+
+    const similarCandidates = await prisma.listing.findMany({
+        where: {
+            status: ListingStatus.PUBLISHED,
+            id: {
+                not: listing.id,
+            },
+            type: listing.type,
+        },
+        include: {
+            translations: {
+                where: {
+                    locale: {
+                        in: Array.from(new Set(["tr", locale])),
+                    },
+                },
+            },
+            media: {
+                orderBy: [{ isCover: "desc" }, { order: "asc" }],
+            },
+        },
+        orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+        take: 36,
+    });
+
+    const similarListings = similarCandidates
+        .map((candidate) => {
+            const candidateRoomCount = parseRoomCount(candidate.rooms);
+            const areaDelta = Math.abs(candidate.area - listing.area);
+            const areaRatio = listing.area > 0 ? areaDelta / listing.area : 1;
+
+            let score = 1000;
+
+            if (candidate.rooms && listing.rooms && candidate.rooms === listing.rooms) {
+                score += 280;
+            } else if (
+                referenceRoomCount !== null &&
+                candidateRoomCount !== null &&
+                candidateRoomCount === referenceRoomCount
+            ) {
+                score += 220;
+            } else if (
+                typeof listing.bedrooms === "number" &&
+                typeof candidate.bedrooms === "number" &&
+                listing.bedrooms === candidate.bedrooms
+            ) {
+                score += 180;
+            }
+
+            if (candidate.saleType === listing.saleType) {
+                score += 140;
+            }
+
+            if (areaRatio <= 0.08) {
+                score += 120;
+            } else if (areaRatio <= 0.15) {
+                score += 90;
+            } else if (areaRatio <= 0.25) {
+                score += 70;
+            } else if (areaRatio <= 0.4) {
+                score += 40;
+            } else if (areaRatio <= 0.55) {
+                score += 20;
+            }
+
+            if (candidate.district === listing.district) {
+                score += 22;
+            }
+            if (candidate.city === listing.city) {
+                score += 12;
+            }
+
+            const candidateTranslation =
+                candidate.translations.find((item) => item.locale === "tr") ||
+                candidate.translations[0];
+            const candidateTitle =
+                candidateTranslation?.title?.trim() || "Benzer İlan";
+            const candidateLocationLabel = [
+                candidate.neighborhood,
+                candidate.district,
+                candidate.city,
+            ]
+                .filter(Boolean)
+                .join(", ");
+            const candidateImage = candidate.media.find(
+                (item) => item.type === "IMAGE"
+            );
+            const candidatePriceValue =
+                typeof candidate.price === "object" &&
+                    candidate.price !== null &&
+                    "toString" in candidate.price
+                    ? candidate.price.toString()
+                    : candidate.price;
+            const candidateRoomValue =
+                candidate.rooms ||
+                (typeof candidate.bedrooms === "number"
+                    ? `${candidate.bedrooms}+0`
+                    : "-");
+
+            return {
+                id: candidate.id,
+                slug: candidate.slug,
+                title: candidateTitle,
+                locationLabel: candidateLocationLabel,
+                imageUrl: candidateImage ? getMediaUrl(candidateImage.url) : null,
+                priceLabel: formatPrice(candidatePriceValue, candidate.currency),
+                areaLabel: formatArea(candidate.area),
+                roomLabel: candidateRoomValue,
+                typeLabel: getPropertyTypeLabel(candidate.type, "tr"),
+                saleTypeLabel: getSaleTypeLabel(candidate.saleType, "tr"),
+                areaDelta,
+                score,
+                createdAt: candidate.createdAt,
+            };
+        })
+        .sort((left, right) => {
+            if (right.score !== left.score) {
+                return right.score - left.score;
+            }
+            if (left.areaDelta !== right.areaDelta) {
+                return left.areaDelta - right.areaDelta;
+            }
+            return right.createdAt.getTime() - left.createdAt.getTime();
+        })
+        .slice(0, 6);
 
     return (
-        <main className="bg-white pt-24 pb-20">
-            <div className="container-custom space-y-9">
-                <nav className="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-sm text-gray-500">
+        <main className="bg-white pb-28 pt-20 md:pt-24 md:pb-20">
+            <div className="container-custom space-y-8">
+                <nav className="hidden items-center gap-2 overflow-x-auto whitespace-nowrap text-sm text-[#6a7387] md:flex">
                     <Link
                         href={`/${locale}`}
-                        className="transition-colors hover:text-orange-600"
+                        className="transition-colors hover:text-[#ff6900]"
                     >
                         Ana Sayfa
                     </Link>
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                    <ChevronRight className="h-4 w-4 text-[#94a1bb]" />
                     <Link
                         href={`/${locale}/portfoy`}
-                        className="transition-colors hover:text-orange-600"
+                        className="transition-colors hover:text-[#ff6900]"
                     >
                         Portföy
                     </Link>
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
-                    <span className="truncate font-medium text-gray-900">{title}</span>
+                    <ChevronRight className="h-4 w-4 text-[#94a1bb]" />
+                    <span className="truncate font-medium text-[#111828]">{title}</span>
                 </nav>
 
-                <section className="grid items-start gap-8 xl:grid-cols-[minmax(0,1.95fr)_360px]">
-                    <div className="space-y-8">
-                        <ListingDetailGallery items={imageItems} title={title} />
-                        <section className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-4">
-                            <div className="rounded-[2rem] border border-[#d6dde8] bg-[#f5f7fb] px-5 py-4">
-                                <p className="text-xs font-medium text-[#6b7382]">Konum</p>
-                                <p className="mt-1 flex items-center gap-2 text-[1.8rem] font-semibold leading-tight text-[#111828]">
-                                    <MapPin className="h-5 w-5 shrink-0 text-[#111828]" />
-                                    <span className="text-xl">{locationLabel || "Belirtilmedi"}</span>
-                                </p>
+                <section className="-mx-4 sm:-mx-6 md:mx-0">
+                    <ListingDetailGallery items={imageItems} title={title} />
+                    <div className="px-4 pt-3 sm:px-6 md:hidden">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                            <span className="rounded-full bg-[#ff6900] px-4 py-2 text-white">
+                                {saleTypeLabel}
+                            </span>
+                            <span className="rounded-full bg-[#5099ff] px-4 py-2 text-white">
+                                {propertyTypeLabel}
+                            </span>
+                        </div>
+                    </div>
+                </section>
+
+                <section className="grid items-start gap-10 xl:grid-cols-[minmax(0,1fr)_360px]">
+                    <div className="space-y-10">
+                        <header className="space-y-4">
+                            <div className="md:flex md:items-start md:justify-between md:gap-6">
+                                <div className="space-y-2.5">
+                                    <h1 className="text-[clamp(1.65rem,6vw,2.15rem)] font-semibold leading-tight text-[#111828] md:text-[clamp(1.8rem,2.7vw,2.25rem)]">
+                                        {title}
+                                    </h1>
+
+                                    <p className="flex items-start gap-2 text-sm text-[#5b667f] sm:text-base">
+                                        <MapPin className="h-4 w-4 shrink-0 text-[#5099ff]" />
+                                        <span>{locationLabel || "Konum belirtilmedi"}</span>
+                                    </p>
+                                </div>
+
+                                <div className="hidden min-w-[210px] rounded-[1.25rem] border border-gray-200 bg-white px-5 py-4 text-right md:block">
+                                    <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Fiyat</p>
+                                    <p className="mt-1 text-3xl font-semibold leading-none text-[#111828]">
+                                        {formattedPrice}
+                                    </p>
+                                </div>
                             </div>
 
-                            <div className="rounded-[2rem] border border-[#d6dde8] bg-[#f5f7fb] px-5 py-4">
-                                <p className="text-xs font-medium text-[#6b7382]">Mülk Tipi</p>
-                                <p className="mt-1 flex items-center gap-2 text-[1.8rem] font-semibold leading-tight text-[#111828]">
-                                    <Building2 className="h-5 w-5 shrink-0 text-[#111828]" />
-                                    <span className="text-xl">{getPropertyTypeLabel(listing.type, "tr")}</span>
-                                </p>
+                            <p className="text-[clamp(2rem,8vw,3rem)] font-semibold leading-none text-[#111828] md:hidden">
+                                {formattedPrice}
+                            </p>
+
+                            <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-sm font-medium md:hidden">
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
+                                    <BedDouble className="h-4 w-4 text-gray-400" />
+                                    {roomValue} Oda
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
+                                    <Bath className="h-4 w-4 text-gray-400" />
+                                    {bathroomValue} Banyo
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
+                                    <Square className="h-4 w-4 text-gray-400" />
+                                    {formatArea(listing.area)}
+                                </span>
                             </div>
 
-                            <div className="rounded-[2rem] border border-[#d6dde8] bg-[#f5f7fb] px-5 py-4">
-                                <p className="text-xs font-medium text-[#6b7382]">Fiyat</p>
-                                <p className="mt-1 flex items-center gap-2 text-[1.8rem] font-semibold leading-tight text-[#111828]">
-                                    <CircleDollarSign className="h-5 w-5 shrink-0 text-[#111828]" />
-                                    <span className="text-xl">{formatPrice(priceValue, listing.currency)}</span>
-                                </p>
+                            <div className="hidden flex-wrap gap-2.5 text-sm font-medium md:flex">
+                                <span className="rounded-full bg-[#ff6900] px-4 py-2 text-white">
+                                    {saleTypeLabel}
+                                </span>
+                                <span className="rounded-full bg-[#5099ff] px-4 py-2 text-white">
+                                    {propertyTypeLabel}
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
+                                    <BedDouble className="h-4 w-4 text-gray-400" />
+                                    {roomValue} Oda
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
+                                    <Bath className="h-4 w-4 text-gray-400" />
+                                    {bathroomValue} Banyo
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
+                                    <Square className="h-4 w-4 text-gray-400" />
+                                    {formatArea(listing.area)}
+                                </span>
                             </div>
+                        </header>
 
-                            <div className="rounded-[2rem] border border-[#d6dde8] bg-[#f5f7fb] px-5 py-4">
-                                <p className="text-xs font-medium text-[#6b7382]">Oda</p>
-                                <p className="mt-1 flex items-center gap-2 text-[1.8rem] font-semibold leading-tight text-[#111828]">
-                                    <BedDouble className="h-5 w-5 shrink-0 text-[#111828]" />
-                                    <span className="text-xl">{roomValue}</span>
-                                </p>
-                            </div>
-                        </section>
-
-                        <section>
-                            <article className="rounded-[2rem] border border-gray-300 bg-white/95 p-6 shadow-sm">
-                                <h2 className="text-2xl font-bold text-gray-900">Açıklama</h2>
-                                <p className="mt-4 whitespace-pre-line leading-relaxed text-gray-600">
-                                    {description}
-                                </p>
-                            </article>
-                        </section>
-
-                        <section className="rounded-[2rem] border border-gray-300 bg-white/95 p-6 shadow-sm">
-                            <h2 className="text-2xl font-bold text-gray-900">İlan Detayları</h2>
-                            <div className="mt-5 grid gap-3 md:grid-cols-2">
-                                {detailItems.map((item) => (
-                                    <div
-                                        key={item.label}
-                                        className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 px-4 py-3"
-                                    >
-                                        <span className="text-sm font-medium text-gray-500">{item.label}</span>
-                                        <span className="text-sm font-semibold text-gray-900">{item.value}</span>
-                                    </div>
-                                ))}
-                            </div>
+                        <section className="rounded-[1.9rem] border border-gray-200 bg-white p-6">
+                            <h2 className="text-2xl font-semibold text-[#111828]">Açıklama</h2>
+                            <p className="mt-4 whitespace-pre-line text-[1.02rem] leading-relaxed text-[#3d4962]">
+                                {description}
+                            </p>
 
                             {listedFeatures.length > 0 ? (
-                                <div className="mt-6 border-t border-gray-100 pt-6">
-                                    <h3 className="text-lg font-bold text-gray-900">Öne Çıkan Özellikler</h3>
-                                    <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                                <div className="mt-7 border-t border-gray-100 pt-6">
+                                    <h3 className="text-xl font-semibold text-[#111828]">
+                                        Öne Çıkan Özellikler
+                                    </h3>
+                                    <ul className="mt-4 grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
                                         {listedFeatures.map((feature) => (
                                             <li
                                                 key={feature}
-                                                className="rounded-lg border border-orange-100 bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700"
+                                                className="flex items-start gap-3 text-[0.97rem] text-[#111828]"
                                             >
-                                                {feature}
+                                                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#ff6900]" />
+                                                <span>{feature}</span>
                                             </li>
                                         ))}
                                     </ul>
@@ -281,16 +453,31 @@ export default async function ListingDetailPage({
                             ) : null}
                         </section>
 
+                        <section className="rounded-[1.9rem] border border-gray-200 bg-white p-6">
+                            <h2 className="text-2xl font-semibold text-[#111828]">İlan Detayları</h2>
+                            <dl className="mt-5 grid gap-x-8 gap-y-3 md:grid-cols-2">
+                                {visibleDetailItems.map((item) => (
+                                    <div
+                                        key={item.label}
+                                        className="flex items-baseline justify-between gap-4 border-b border-gray-100 pb-2"
+                                    >
+                                        <dt className="text-sm font-medium text-[#62708c]">{item.label}</dt>
+                                        <dd className="text-sm font-semibold text-[#111828]">{item.value}</dd>
+                                    </div>
+                                ))}
+                            </dl>
+                        </section>
+
                         {mapEmbedSrc ? (
-                            <section className="overflow-hidden rounded-[2rem] border border-gray-300 bg-white/95 shadow-sm">
-                                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-6 py-4">
-                                    <h2 className="text-2xl font-bold text-gray-900">Harita</h2>
+                            <section className="overflow-hidden rounded-[1.9rem] border border-gray-200 bg-white">
+                                <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5">
+                                    <h2 className="text-2xl font-semibold text-[#111828]">Harita</h2>
                                     {mapsLink ? (
                                         <a
                                             href={mapsLink}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 transition hover:border-orange-300 hover:text-orange-600"
+                                            className="inline-flex items-center gap-2 rounded-full bg-[#ff6900] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#e85f00]"
                                         >
                                             <MapPin className="h-4 w-4" />
                                             Google Maps&apos;te Aç
@@ -301,77 +488,140 @@ export default async function ListingDetailPage({
                                     <iframe
                                         title="İlan haritası"
                                         src={mapEmbedSrc}
-                                        className="h-full w-full"
+                                        className="h-full w-full pointer-events-none md:pointer-events-auto"
                                         loading="lazy"
                                         referrerPolicy="no-referrer-when-downgrade"
                                     />
                                 </div>
                             </section>
                         ) : null}
+
+                        {similarListings.length > 0 ? (
+                            <section className="space-y-4">
+                                <h2 className="text-2xl font-semibold text-[#111828]">
+                                    Benzer İlanlar
+                                </h2>
+
+                                <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
+                                    {similarListings.map((similar) => (
+                                        <article
+                                            key={similar.id}
+                                            className="group h-full overflow-hidden rounded-2xl border border-gray-200 bg-white transition-shadow hover:shadow-[0_12px_30px_rgba(17,24,40,0.10)]"
+                                        >
+                                            <div className="grid h-full grid-cols-1">
+                                                <Link
+                                                    href={`/${locale}/ilan/${similar.slug}`}
+                                                    className="relative block overflow-hidden bg-gray-100"
+                                                >
+                                                    {similar.imageUrl ? (
+                                                        <Image
+                                                            src={similar.imageUrl}
+                                                            alt={similar.title}
+                                                            fill
+                                                            className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                                                            sizes="(max-width: 1024px) 100vw, 50vw"
+                                                        />
+                                                    ) : (
+                                                        <div className="absolute inset-0 flex items-center justify-center text-sm font-medium text-gray-400">
+                                                            Görsel yok
+                                                        </div>
+                                                    )}
+
+                                                    <div className="relative aspect-[16/10] md:aspect-[16/9]" />
+
+                                                    <div className="absolute left-3 top-3 z-10 flex flex-wrap items-center gap-1.5">
+                                                        <span className="rounded bg-[#5099ff] px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+                                                            {similar.typeLabel}
+                                                        </span>
+                                                        <span className="rounded bg-[#ff6900] px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-white">
+                                                            {similar.saleTypeLabel}
+                                                        </span>
+                                                    </div>
+                                                </Link>
+
+                                                <div className="relative flex min-w-0 flex-col justify-between p-4 lg:p-5">
+                                                    <div>
+                                                        <Link
+                                                            href={`/${locale}/ilan/${similar.slug}`}
+                                                            className="block"
+                                                        >
+                                                            <h3 className="line-clamp-2 break-words text-base font-semibold text-gray-900 transition-colors group-hover:text-orange-600">
+                                                                {similar.title}
+                                                            </h3>
+                                                        </Link>
+
+                                                        <p className="mt-1 flex items-center gap-1 text-sm text-gray-500">
+                                                            <MapPin className="h-3.5 w-3.5" />
+                                                            <span className="line-clamp-1 min-w-0">
+                                                                {similar.locationLabel || "Konum belirtilmedi"}
+                                                            </span>
+                                                        </p>
+
+                                                        <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 md:hidden">
+                                                            <p className="text-[1.45rem] font-semibold leading-none text-[#111828]">
+                                                                {similar.priceLabel}
+                                                            </p>
+                                                            <Link
+                                                                href={`/${locale}/ilan/${similar.slug}`}
+                                                                className="inline-flex items-center rounded-[1.35rem] bg-[#111f3a] px-5 py-3 text-base font-semibold text-white"
+                                                            >
+                                                                incele -&gt;
+                                                            </Link>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-4 hidden grid-cols-3 gap-2 border-t border-gray-100 pt-3 text-xs md:grid">
+                                                        <div>
+                                                            <p className="text-[10px] uppercase tracking-[0.14em] text-gray-400">
+                                                                Oda
+                                                            </p>
+                                                            <p className="mt-1 font-semibold text-gray-700">
+                                                                {similar.roomLabel}
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[10px] uppercase tracking-[0.14em] text-gray-400">
+                                                                Alan
+                                                            </p>
+                                                            <p className="mt-1 font-semibold text-gray-700">
+                                                                {similar.areaLabel}
+                                                            </p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-[10px] uppercase tracking-[0.14em] text-gray-400">
+                                                                İşlem
+                                                            </p>
+                                                            <p className="mt-1 font-semibold text-gray-700">
+                                                                {similar.saleTypeLabel}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-4 hidden items-end justify-between gap-3 border-t border-gray-100 pt-3 md:flex">
+                                                        <p className="text-[clamp(1.45rem,1.9vw,1.8rem)] font-semibold leading-none text-[#111828]">
+                                                            {similar.priceLabel}
+                                                        </p>
+                                                        <Link
+                                                            href={`/${locale}/ilan/${similar.slug}`}
+                                                            className="inline-flex shrink-0 items-center rounded-xl bg-[#111f3a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0c1830]"
+                                                        >
+                                                            incele -&gt;
+                                                        </Link>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </article>
+                                    ))}
+                                </div>
+                            </section>
+                        ) : null}
                     </div>
 
-                    <aside className="sticky top-28 self-start space-y-4">
-                        <div className="max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] border border-gray-300 bg-white/95 p-6 shadow-[0_18px_44px_-32px_rgba(15,23,42,0.4)] backdrop-blur-sm">
-                            <h2 className="text-2xl font-bold text-gray-900">İletişime Geçin</h2>
-                            <p className="mt-2 text-sm text-gray-500">
-                                Uzman danışmanlarımız bu ilan için aynı gün içinde geri dönüş sağlar.
-                            </p>
-
-                            <form className="mt-5 space-y-3">
-                                <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100">
-                                    <User className="h-4 w-4 shrink-0 text-gray-400" />
-                                    <input
-                                        type="text"
-                                        required
-                                        placeholder="Adınız Soyadınız *"
-                                        className="w-full border-0 bg-transparent p-0 text-base text-gray-800 placeholder:text-gray-400 focus:outline-none"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100">
-                                    <Mail className="h-4 w-4 shrink-0 text-gray-400" />
-                                    <input
-                                        type="email"
-                                        required
-                                        placeholder="E-posta Adresiniz *"
-                                        className="w-full border-0 bg-transparent p-0 text-base text-gray-800 placeholder:text-gray-400 focus:outline-none"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100">
-                                    <PhoneCall className="h-4 w-4 shrink-0 text-gray-400" />
-                                    <input
-                                        type="tel"
-                                        required
-                                        placeholder="Telefon Numaranız *"
-                                        className="w-full border-0 bg-transparent p-0 text-base text-gray-800 placeholder:text-gray-400 focus:outline-none"
-                                    />
-                                </div>
-                                <div className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition focus-within:border-orange-400 focus-within:ring-2 focus-within:ring-orange-100">
-                                    <MessageCircleMore className="mt-1 h-4 w-4 shrink-0 text-gray-400" />
-                                    <textarea
-                                        rows={5}
-                                        placeholder="Mesajınız"
-                                        className="w-full resize-none border-0 bg-transparent p-0 text-base leading-relaxed text-gray-800 placeholder:text-gray-400 focus:outline-none"
-                                        defaultValue={`Merhaba, ${title} ilanı hakkında bilgi almak istiyorum.`}
-                                    />
-                                </div>
-                                <button
-                                    type="submit"
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-black"
-                                >
-                                    <Send className="h-4 w-4" />
-                                    Gönder
-                                </button>
-                            </form>
-
-                            <a
-                                href={`tel:+${WHATSAPP_NUMBER}`}
-                                className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 transition hover:border-orange-300 hover:text-orange-600"
-                            >
-                                <PhoneCall className="h-4 w-4" />
-                                +90 242 123 45 67
-                            </a>
-                        </div>
-                    </aside>
+                    <ListingContactPanel
+                        title={title}
+                        phoneNumber={WHATSAPP_NUMBER}
+                        phoneLabel="+90 242 123 45 67"
+                    />
                 </section>
             </div>
         </main>

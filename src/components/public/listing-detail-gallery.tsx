@@ -2,13 +2,22 @@
 
 import Image from "next/image";
 import {
+    ChevronDown,
     ChevronLeft,
     ChevronRight,
+    ChevronUp,
     ImageOff,
     Images,
     X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    useSyncExternalStore,
+} from "react";
 import { createPortal } from "react-dom";
 
 export interface ListingGalleryItem {
@@ -22,63 +31,289 @@ interface ListingDetailGalleryProps {
     title: string;
 }
 
+const subscribeNoop = () => () => { };
+const IMAGE_SWIPE_THRESHOLD_PX = 48;
+const OVERLAY_STATE_KEY = "__listingOverlay";
+const isMobileViewport = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 767px)").matches;
+
 export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps) {
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-    const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+    const [isReelOpen, setIsReelOpen] = useState(false);
+    const [desktopCarouselIndex, setDesktopCarouselIndex] = useState<number | null>(
+        null
+    );
+    const [mobileCarouselIndex, setMobileCarouselIndex] = useState(0);
+    const [activeReelIndex, setActiveReelIndex] = useState(0);
+
+    const reelScrollerRef = useRef<HTMLDivElement | null>(null);
+    const initialReelIndexRef = useRef(0);
+    const touchStartXRef = useRef<number | null>(null);
+    const didSwipeRef = useRef(false);
+
     const total = items.length;
     const hasItems = total > 0;
     const canNavigate = total > 1;
 
     const coverImage = items[0];
     const secondImage = items[1] ?? items[0];
-    const activeLightboxItem =
-        lightboxIndex !== null ? items[lightboxIndex] : null;
+    const thirdImage = items[2] ?? items[1] ?? items[0];
 
-    const lightboxCounterLabel = useMemo(() => {
-        if (lightboxIndex === null) {
+    const activeReelCounter = useMemo(() => {
+        if (!hasItems) {
+            return "0 / 0";
+        }
+        return `${activeReelIndex + 1} / ${total}`;
+    }, [activeReelIndex, hasItems, total]);
+    const activeDesktopItem =
+        desktopCarouselIndex !== null ? items[desktopCarouselIndex] : null;
+    const desktopCarouselCounter = useMemo(() => {
+        if (desktopCarouselIndex === null) {
             return "";
         }
-        return `${lightboxIndex + 1} / ${total}`;
-    }, [lightboxIndex, total]);
+        return `${desktopCarouselIndex + 1} / ${total}`;
+    }, [desktopCarouselIndex, total]);
+    const isHydrated = useSyncExternalStore(
+        subscribeNoop,
+        () => true,
+        () => false
+    );
 
-    const openLightbox = (index: number) => {
+    const pushOverlayState = useCallback((overlay: "gallery" | "reel") => {
+        if (typeof window === "undefined") {
+            return;
+        }
+
+        window.history.pushState(
+            {
+                ...(window.history.state ?? {}),
+                [OVERLAY_STATE_KEY]: overlay,
+            },
+            ""
+        );
+    }, []);
+
+    const consumeMobileOverlayBack = useCallback((expectedOverlay: "gallery" | "reel") => {
+        if (typeof window === "undefined" || !isMobileViewport()) {
+            return false;
+        }
+
+        const currentOverlay = window.history.state?.[OVERLAY_STATE_KEY];
+        if (currentOverlay !== expectedOverlay) {
+            return false;
+        }
+
+        window.history.back();
+        return true;
+    }, []);
+
+    const openGallery = () => {
+        setIsGalleryOpen(true);
+
+        if (!isMobileViewport()) {
+            return;
+        }
+
+        const currentOverlay = window.history.state?.[OVERLAY_STATE_KEY];
+        if (currentOverlay === "gallery" || currentOverlay === "reel") {
+            return;
+        }
+
+        pushOverlayState("gallery");
+    };
+
+    const openReels = (index: number) => {
         if (!hasItems) {
             return;
         }
-        setLightboxIndex(index);
+        initialReelIndexRef.current = index;
+        setActiveReelIndex(index);
+
+        if (isMobileViewport()) {
+            const currentOverlay = window.history.state?.[OVERLAY_STATE_KEY];
+            if (currentOverlay !== "gallery" && currentOverlay !== "reel") {
+                pushOverlayState("gallery");
+            }
+            if (window.history.state?.[OVERLAY_STATE_KEY] !== "reel") {
+                pushOverlayState("reel");
+            }
+            setIsGalleryOpen(true);
+        }
+
+        setIsReelOpen(true);
     };
 
-    const closeLightbox = () => setLightboxIndex(null);
-
-    const goToPrevious = () => {
-        if (!canNavigate || lightboxIndex === null) {
+    const closeReels = useCallback(() => {
+        if (consumeMobileOverlayBack("reel")) {
             return;
         }
-        setLightboxIndex((previous) => {
+        setIsReelOpen(false);
+    }, [consumeMobileOverlayBack]);
+
+    const closeGallery = useCallback(() => {
+        if (consumeMobileOverlayBack("gallery")) {
+            return;
+        }
+        setIsGalleryOpen(false);
+    }, [consumeMobileOverlayBack]);
+
+    const closeDesktopCarousel = () => setDesktopCarouselIndex(null);
+
+    const openFromHero = () => openGallery();
+
+    const openDesktopCarousel = (index: number) => {
+        if (!hasItems) {
+            return;
+        }
+        setDesktopCarouselIndex(Math.max(0, Math.min(total - 1, index)));
+    };
+
+    const goToDesktopPrevious = useCallback(() => {
+        if (!canNavigate) {
+            return;
+        }
+        setDesktopCarouselIndex((previous) => {
             if (previous === null) {
                 return previous;
             }
             return (previous - 1 + total) % total;
         });
-    };
+    }, [canNavigate, total]);
 
-    const goToNext = () => {
-        if (!canNavigate || lightboxIndex === null) {
+    const goToDesktopNext = useCallback(() => {
+        if (!canNavigate) {
             return;
         }
-        setLightboxIndex((previous) => {
+        setDesktopCarouselIndex((previous) => {
             if (previous === null) {
                 return previous;
             }
             return (previous + 1) % total;
         });
+    }, [canNavigate, total]);
+
+    const goToReel = useCallback((index: number) => {
+        const container = reelScrollerRef.current;
+        if (!container) {
+            return;
+        }
+
+        const nextIndex = Math.max(0, Math.min(total - 1, index));
+        const nextSlide = container.querySelector<HTMLElement>(
+            `[data-reel-index="${nextIndex}"]`
+        );
+
+        setActiveReelIndex(nextIndex);
+
+        if (nextSlide) {
+            nextSlide.scrollIntoView({ behavior: "smooth", block: "start" });
+            return;
+        }
+
+        container.scrollTo({
+            top: nextIndex * container.clientHeight,
+            behavior: "smooth",
+        });
+    }, [total]);
+
+    const scrollReels = useCallback((direction: -1 | 1) => {
+        goToReel(activeReelIndex + direction);
+    }, [activeReelIndex, goToReel]);
+
+    const updateMobileImageIndex = (direction: "prev" | "next") => {
+        if (!canNavigate) {
+            return;
+        }
+
+        setMobileCarouselIndex((previous) => {
+            const maxIndex = Math.max(0, total - 1);
+            if (direction === "next") {
+                return previous >= maxIndex ? 0 : previous + 1;
+            }
+            return previous <= 0 ? maxIndex : previous - 1;
+        });
     };
 
-    const portalTarget =
-        typeof window !== "undefined" ? document.body : null;
+    const handleMobileTouchStart = (
+        event: React.TouchEvent<HTMLDivElement>
+    ) => {
+        didSwipeRef.current = false;
+        const point = event.touches[0];
+        if (!point) {
+            return;
+        }
+        touchStartXRef.current = point.clientX;
+    };
+
+    const handleMobileTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+        if (!canNavigate) {
+            touchStartXRef.current = null;
+            return;
+        }
+
+        const startX = touchStartXRef.current;
+        const point = event.changedTouches[0];
+        touchStartXRef.current = null;
+
+        if (startX === null || !point) {
+            return;
+        }
+
+        const deltaX = point.clientX - startX;
+        if (Math.abs(deltaX) < IMAGE_SWIPE_THRESHOLD_PX) {
+            return;
+        }
+
+        didSwipeRef.current = true;
+        updateMobileImageIndex(deltaX < 0 ? "next" : "prev");
+    };
+
+    const handleMobileTouchCancel = () => {
+        touchStartXRef.current = null;
+        didSwipeRef.current = false;
+    };
 
     useEffect(() => {
-        const hasOverlay = isGalleryOpen || lightboxIndex !== null;
+        if (!isReelOpen) {
+            return;
+        }
+
+        const rafId = window.requestAnimationFrame(() => {
+            const container = reelScrollerRef.current;
+            if (!container) {
+                return;
+            }
+
+            const initialIndex = Math.max(
+                0,
+                Math.min(total - 1, initialReelIndexRef.current)
+            );
+            setActiveReelIndex(initialIndex);
+
+            const initialSlide = container.querySelector<HTMLElement>(
+                `[data-reel-index="${initialIndex}"]`
+            );
+
+            if (initialSlide) {
+                initialSlide.scrollIntoView({ block: "start" });
+                return;
+            }
+
+            container.scrollTo({
+                top: initialIndex * container.clientHeight,
+                behavior: "auto",
+            });
+        });
+
+        return () => {
+            window.cancelAnimationFrame(rafId);
+        };
+    }, [isReelOpen, total]);
+
+    useEffect(() => {
+        const hasOverlay =
+            isGalleryOpen || isReelOpen || desktopCarouselIndex !== null;
         if (!hasOverlay) {
             return;
         }
@@ -89,41 +324,87 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
         return () => {
             document.body.style.overflow = previousOverflow;
         };
-    }, [isGalleryOpen, lightboxIndex]);
+    }, [desktopCarouselIndex, isGalleryOpen, isReelOpen]);
 
     useEffect(() => {
-        if (!isGalleryOpen && lightboxIndex === null) {
+        if (!isHydrated) {
+            return;
+        }
+
+        const syncOverlayByHistoryState = (state: unknown) => {
+            if (!isMobileViewport()) {
+                return;
+            }
+
+            const overlayState =
+                typeof state === "object" && state !== null
+                    ? (state as Record<string, unknown>)[OVERLAY_STATE_KEY]
+                    : null;
+
+            if (overlayState === "reel") {
+                setIsGalleryOpen(true);
+                setIsReelOpen(true);
+                return;
+            }
+
+            if (overlayState === "gallery") {
+                setIsGalleryOpen(true);
+                setIsReelOpen(false);
+                return;
+            }
+
+            setIsReelOpen(false);
+            setIsGalleryOpen(false);
+        };
+
+        const handlePopState = (event: PopStateEvent) => {
+            syncOverlayByHistoryState(event.state);
+        };
+
+        window.addEventListener("popstate", handlePopState);
+        return () => {
+            window.removeEventListener("popstate", handlePopState);
+        };
+    }, [isHydrated]);
+
+    useEffect(() => {
+        if (!isGalleryOpen && !isReelOpen && desktopCarouselIndex === null) {
             return;
         }
 
         const handleKeydown = (event: KeyboardEvent) => {
             if (event.key === "Escape") {
-                if (lightboxIndex !== null) {
-                    setLightboxIndex(null);
+                if (isReelOpen) {
+                    closeReels();
                     return;
                 }
-                setIsGalleryOpen(false);
+                if (desktopCarouselIndex !== null) {
+                    closeDesktopCarousel();
+                    return;
+                }
+                closeGallery();
                 return;
             }
 
-            if (lightboxIndex === null || !canNavigate) {
-                return;
+            if (desktopCarouselIndex !== null && canNavigate) {
+                if (event.key === "ArrowLeft") {
+                    event.preventDefault();
+                    goToDesktopPrevious();
+                } else if (event.key === "ArrowRight") {
+                    event.preventDefault();
+                    goToDesktopNext();
+                }
             }
 
-            if (event.key === "ArrowLeft") {
-                setLightboxIndex((previous) => {
-                    if (previous === null) {
-                        return previous;
-                    }
-                    return (previous - 1 + total) % total;
-                });
-            } else if (event.key === "ArrowRight") {
-                setLightboxIndex((previous) => {
-                    if (previous === null) {
-                        return previous;
-                    }
-                    return (previous + 1) % total;
-                });
+            if (!isReelOpen || !canNavigate) {
+                return;
+            }
+            if (event.key === "ArrowUp" || event.key === "PageUp") {
+                event.preventDefault();
+                scrollReels(-1);
+            } else if (event.key === "ArrowDown" || event.key === "PageDown") {
+                event.preventDefault();
+                scrollReels(1);
             }
         };
 
@@ -131,7 +412,17 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
         return () => {
             window.removeEventListener("keydown", handleKeydown);
         };
-    }, [canNavigate, isGalleryOpen, lightboxIndex, total]);
+    }, [
+        canNavigate,
+        closeGallery,
+        closeReels,
+        desktopCarouselIndex,
+        goToDesktopNext,
+        goToDesktopPrevious,
+        isGalleryOpen,
+        isReelOpen,
+        scrollReels,
+    ]);
 
     if (!hasItems) {
         return (
@@ -146,12 +437,83 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
 
     return (
         <>
-            <div className="grid gap-3 md:h-[clamp(330px,45vw,520px)] md:grid-cols-4">
+            <div className="md:hidden">
+                <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
+                    <div
+                        className="absolute inset-0 overflow-hidden"
+                        style={{ touchAction: "pan-y" }}
+                        onTouchStart={handleMobileTouchStart}
+                        onTouchEnd={handleMobileTouchEnd}
+                        onTouchCancel={handleMobileTouchCancel}
+                        onClick={() => {
+                            if (didSwipeRef.current) {
+                                didSwipeRef.current = false;
+                                return;
+                            }
+                            openGallery();
+                        }}
+                    >
+                        <div
+                            className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                            style={{
+                                transform: `translateX(-${mobileCarouselIndex * 100}%)`,
+                            }}
+                        >
+                            {items.map((item, index) => (
+                                <div
+                                    key={item.id}
+                                    className="relative h-full w-full shrink-0"
+                                >
+                                    <Image
+                                        src={item.src}
+                                        alt={item.alt || `${title} ${index + 1}`}
+                                        fill
+                                        priority={index === 0}
+                                        className="object-cover"
+                                        sizes="100vw"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {canNavigate ? (
+                        <div className="absolute bottom-3 right-3 z-20 flex items-center overflow-hidden rounded-lg border border-slate-200/90 bg-white/95 shadow-[0_4px_14px_rgba(15,23,42,0.18)] backdrop-blur-[2px]">
+                            <button
+                                type="button"
+                                onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    updateMobileImageIndex("prev");
+                                }}
+                                className="inline-flex h-8 w-8 items-center justify-center text-slate-700 transition hover:bg-slate-100"
+                                aria-label="Önceki görsel"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    updateMobileImageIndex("next");
+                                }}
+                                className="inline-flex h-8 w-8 items-center justify-center text-slate-700 transition hover:bg-slate-100"
+                                aria-label="Sonraki görsel"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </button>
+                        </div>
+                    ) : null}
+                </div>
+            </div>
+
+            <div className="hidden gap-3 md:grid md:h-[clamp(330px,45vw,520px)] md:grid-cols-4">
                 <button
                     type="button"
-                    onClick={() => openLightbox(0)}
+                    onClick={openFromHero}
                     className="group relative overflow-hidden rounded-[1.8rem] border border-gray-200 bg-gray-100 text-left md:col-span-3 md:h-full"
-                    aria-label="Kapak görselini tam ekran aç"
+                    aria-label="Fotoğraf galerisini aç"
                 >
                     <div className="relative aspect-[16/10] md:h-full md:aspect-auto">
                         <Image
@@ -168,9 +530,9 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
                 <div className="grid gap-3 md:h-full md:grid-rows-2">
                     <button
                         type="button"
-                        onClick={() => openLightbox(Math.min(1, total - 1))}
+                        onClick={openGallery}
                         className="relative overflow-hidden rounded-[1.4rem] border border-gray-200 bg-gray-100 md:h-full"
-                        aria-label="İkinci görseli tam ekran aç"
+                        aria-label="Fotoğraf galerisini aç"
                     >
                         <div className="relative aspect-[16/9] md:h-full md:aspect-auto">
                             <Image
@@ -183,27 +545,46 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
                         </div>
                     </button>
 
-                    <button
-                        type="button"
-                        onClick={() => setIsGalleryOpen(true)}
-                        className="flex items-center justify-center gap-2 rounded-[1.4rem] border border-gray-900 bg-gray-900 px-4 py-4 text-base font-semibold text-white transition hover:bg-black md:h-full"
-                    >
-                        <Images className="h-4 w-4" />
-                        Galeri
-                    </button>
+                    <div className="relative overflow-hidden rounded-[1.4rem] border border-gray-200 bg-gray-100 md:h-full">
+                        <button
+                            type="button"
+                            onClick={openGallery}
+                            className="relative h-full w-full text-left"
+                            aria-label="Fotoğraf galerisini aç"
+                        >
+                            <div className="relative aspect-[16/9] md:h-full md:aspect-auto">
+                                <Image
+                                    src={thirdImage.src}
+                                    alt={thirdImage.alt || `${title} üçüncü görsel`}
+                                    fill
+                                    className="object-cover"
+                                    sizes="(min-width: 768px) 25vw, 100vw"
+                                />
+                            </div>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={openGallery}
+                            className="absolute bottom-3 right-3 flex items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3.5 py-2 text-xs font-semibold text-[#111828] transition hover:bg-white"
+                        >
+                            <Images className="h-3.5 w-3.5" />
+                            Galeri
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {portalTarget
+            {isHydrated
                 ? createPortal(
                     <>
                         {isGalleryOpen ? (
                             <div
-                                className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/70 px-3 py-4 backdrop-blur-sm"
-                                onClick={() => setIsGalleryOpen(false)}
+                                className="fixed inset-0 z-[9998] bg-black/70 backdrop-blur-[2px]"
+                                onClick={closeGallery}
                             >
                                 <div
-                                    className="flex h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl"
+                                    className="absolute inset-x-0 bottom-0 top-[6vh] flex flex-col overflow-hidden rounded-t-[2rem] border border-gray-200 bg-[#f8fafc] md:inset-y-14 md:inset-x-[10vw] md:rounded-3xl lg:inset-x-[14vw]"
                                     onClick={(event) => event.stopPropagation()}
                                 >
                                     <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 text-gray-900">
@@ -213,7 +594,7 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
                                         </div>
                                         <button
                                             type="button"
-                                            onClick={() => setIsGalleryOpen(false)}
+                                            onClick={closeGallery}
                                             className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:border-gray-400 hover:text-gray-800"
                                             aria-label="Galeriyi kapat"
                                         >
@@ -221,13 +602,24 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
                                         </button>
                                     </div>
 
-                                    <div className="overflow-y-auto p-4 sm:p-5">
+                                    <div className="overflow-y-auto px-4 pb-5 pt-4 sm:px-5">
                                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                                             {items.map((item, index) => (
                                                 <button
                                                     key={item.id}
                                                     type="button"
-                                                    onClick={() => openLightbox(index)}
+                                                    onClick={() => {
+                                                        const isMobileViewport =
+                                                            typeof window !== "undefined" &&
+                                                            window.matchMedia("(max-width: 767px)")
+                                                                .matches;
+                                                        if (isMobileViewport) {
+                                                            openReels(index);
+                                                            return;
+                                                        }
+                                                        setIsGalleryOpen(false);
+                                                        openDesktopCarousel(index);
+                                                    }}
                                                     className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-gray-200 bg-gray-100"
                                                     aria-label={`Fotoğraf ${index + 1} tam ekran aç`}
                                                 >
@@ -246,18 +638,18 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
                             </div>
                         ) : null}
 
-                        {lightboxIndex !== null && activeLightboxItem ? (
+                        {desktopCarouselIndex !== null && activeDesktopItem ? (
                             <div
-                                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 p-3"
-                                onClick={closeLightbox}
+                                className="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/95 p-4 md:flex"
+                                onClick={closeDesktopCarousel}
                             >
                                 <button
                                     type="button"
                                     onClick={(event) => {
                                         event.stopPropagation();
-                                        closeLightbox();
+                                        closeDesktopCarousel();
                                     }}
-                                    className="absolute right-4 top-4 z-[10000] flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white transition hover:border-white/40"
+                                    className="absolute right-5 top-5 z-[10001] flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition hover:border-white/55"
                                     aria-label="Tam ekran görseli kapat"
                                 >
                                     <X className="h-5 w-5" />
@@ -269,10 +661,10 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
                                             type="button"
                                             onClick={(event) => {
                                                 event.stopPropagation();
-                                                goToPrevious();
+                                                goToDesktopPrevious();
                                             }}
-                                            aria-label="Önceki fotoğraf"
-                                            className="absolute left-3 top-1/2 z-[10000] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/50 text-white transition hover:border-white/60"
+                                            className="absolute left-4 top-1/2 z-[10001] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition hover:border-white/55"
+                                            aria-label="Önceki görsel"
                                         >
                                             <ChevronLeft className="h-5 w-5" />
                                         </button>
@@ -280,10 +672,10 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
                                             type="button"
                                             onClick={(event) => {
                                                 event.stopPropagation();
-                                                goToNext();
+                                                goToDesktopNext();
                                             }}
-                                            aria-label="Sonraki fotoğraf"
-                                            className="absolute right-3 top-1/2 z-[10000] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/50 text-white transition hover:border-white/60"
+                                            className="absolute right-4 top-1/2 z-[10001] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition hover:border-white/55"
+                                            aria-label="Sonraki görsel"
                                         >
                                             <ChevronRight className="h-5 w-5" />
                                         </button>
@@ -291,12 +683,12 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
                                 ) : null}
 
                                 <div
-                                    className="relative h-[88vh] w-[95vw] max-w-[1800px]"
+                                    className="relative h-[84vh] w-[82vw] max-w-[1320px]"
                                     onClick={(event) => event.stopPropagation()}
                                 >
                                     <Image
-                                        src={activeLightboxItem.src}
-                                        alt={activeLightboxItem.alt || title}
+                                        src={activeDesktopItem.src}
+                                        alt={activeDesktopItem.alt || title}
                                         fill
                                         className="object-contain"
                                         sizes="100vw"
@@ -304,13 +696,98 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
                                     />
                                 </div>
 
-                                <p className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-white/20 bg-black/40 px-4 py-1.5 text-sm font-medium text-white">
-                                    {lightboxCounterLabel}
+                                <p className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full border border-white/25 bg-black/45 px-4 py-1.5 text-sm font-medium text-white">
+                                    {desktopCarouselCounter}
                                 </p>
                             </div>
                         ) : null}
+
+                        {isReelOpen ? (
+                            <div className="fixed inset-0 z-[9999] bg-black">
+                                <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-24 bg-gradient-to-b from-black/70 to-transparent" />
+
+                                <div className="absolute inset-x-0 top-4 z-30 flex items-center justify-between px-4">
+                                    <p className="rounded-full border border-white/25 bg-black/45 px-3 py-1 text-xs font-semibold text-white">
+                                        {activeReelCounter}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={closeReels}
+                                        className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition hover:border-white/50"
+                                        aria-label="Tam ekran görseli kapat"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                </div>
+
+                                {canNavigate ? (
+                                    <div className="absolute right-4 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => scrollReels(-1)}
+                                            disabled={activeReelIndex === 0}
+                                            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition enabled:hover:border-white/50 disabled:cursor-not-allowed disabled:opacity-35"
+                                            aria-label="Önceki görsel"
+                                        >
+                                            <ChevronUp className="h-5 w-5" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => scrollReels(1)}
+                                            disabled={activeReelIndex === total - 1}
+                                            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition enabled:hover:border-white/50 disabled:cursor-not-allowed disabled:opacity-35"
+                                            aria-label="Sonraki görsel"
+                                        >
+                                            <ChevronDown className="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                ) : null}
+
+                                <div
+                                    ref={reelScrollerRef}
+                                    onScroll={() => {
+                                        const container = reelScrollerRef.current;
+                                        if (!container) {
+                                            return;
+                                        }
+
+                                        const rawIndex = Math.round(
+                                            container.scrollTop /
+                                            Math.max(1, container.clientHeight)
+                                        );
+                                        const nextIndex = Math.max(
+                                            0,
+                                            Math.min(total - 1, rawIndex)
+                                        );
+                                        if (nextIndex !== activeReelIndex) {
+                                            setActiveReelIndex(nextIndex);
+                                        }
+                                    }}
+                                    className="h-full overflow-y-auto snap-y snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                                >
+                                    {items.map((item, index) => (
+                                        <section
+                                            key={`${item.id}-reel`}
+                                            data-reel-index={index}
+                                            className="relative h-[100svh] snap-start snap-always"
+                                        >
+                                            <div className="relative h-full w-full px-2 pb-14 pt-16 md:px-6">
+                                                <Image
+                                                    src={item.src}
+                                                    alt={item.alt || `${title} ${index + 1}`}
+                                                    fill
+                                                    className="object-contain"
+                                                    sizes="100vw"
+                                                    priority={index === activeReelIndex}
+                                                />
+                                            </div>
+                                        </section>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
                     </>,
-                    portalTarget
+                    document.body
                 )
                 : null}
         </>

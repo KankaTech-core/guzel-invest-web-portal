@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { deleteImage } from "@/lib/minio";
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -16,6 +17,37 @@ const toNullableNumber = (value: unknown): number | null => {
     if (value === undefined || value === null || value === "") return null;
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
+};
+
+interface MediaUpdateInput {
+    id: string;
+    order: number;
+    isCover: boolean;
+}
+
+const normalizeMediaPayload = (value: unknown): MediaUpdateInput[] | null => {
+    if (!Array.isArray(value)) return null;
+
+    const normalized: MediaUpdateInput[] = [];
+
+    value.forEach((entry, index) => {
+        if (!entry || typeof entry !== "object") return;
+        const item = entry as Record<string, unknown>;
+        if (typeof item.id !== "string") return;
+
+        const parsedOrder = Number(item.order);
+        normalized.push({
+            id: item.id,
+            order: Number.isFinite(parsedOrder) ? parsedOrder : index,
+            isCover: item.isCover === true,
+        });
+    });
+
+    if (normalized.length > 0 && !normalized.some((item) => item.isCover)) {
+        normalized[0].isCover = true;
+    }
+
+    return normalized;
 };
 
 // PATCH /api/admin/listings/[id] - Update listing
@@ -160,17 +192,44 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             }
         }
 
-        // Update media order and cover status
-        if (body.media) {
-            for (const item of body.media) {
-                await prisma.media.update({
-                    where: { id: item.id },
-                    data: {
-                        order: item.order,
-                        isCover: item.isCover,
+        const mediaToCleanup: string[] = [];
+
+        // Update media order/cover and remove media that user deleted in the form.
+        const normalizedMedia = normalizeMediaPayload(body.media);
+        if (normalizedMedia) {
+            const existingMedia = await prisma.media.findMany({
+                where: { listingId: id },
+                select: { id: true, url: true },
+            });
+
+            const incomingMediaIds = new Set(normalizedMedia.map((item) => item.id));
+            const removedMedia = existingMedia.filter((item) => !incomingMediaIds.has(item.id));
+
+            if (removedMedia.length > 0) {
+                await prisma.media.deleteMany({
+                    where: {
+                        listingId: id,
+                        id: { in: removedMedia.map((item) => item.id) },
                     },
                 });
+                mediaToCleanup.push(...removedMedia.map((item) => item.url));
             }
+
+            await Promise.all(
+                normalizedMedia.map((item) =>
+                    prisma.media.updateMany({
+                        where: { id: item.id, listingId: id },
+                        data: {
+                            order: item.order,
+                            isCover: item.isCover,
+                        },
+                    })
+                )
+            );
+        }
+
+        if (mediaToCleanup.length > 0) {
+            await Promise.all(mediaToCleanup.map((url) => deleteImage(url)));
         }
 
         // Fetch updated listing with relations
