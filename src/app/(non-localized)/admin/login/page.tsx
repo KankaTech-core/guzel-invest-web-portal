@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, LogIn, Loader2 } from "lucide-react";
+import { LogIn, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -44,9 +45,14 @@ export default function LoginPage() {
                 <div className="bg-white rounded-2xl shadow-xl p-8">
                     {/* Logo */}
                     <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-2xl mb-4">
-                            <Building2 className="w-8 h-8 text-amber-600" />
-                        </div>
+                        <Image
+                            src="/images/testimonials/logo-square.svg"
+                            alt="Güzel Invest logosu"
+                            width={64}
+                            height={64}
+                            className="mx-auto mb-4 h-16 w-16 object-contain"
+                            priority
+                        />
                         <h1 className="text-2xl font-bold text-slate-900">Güzel Invest</h1>
                         <p className="text-gray-500 mt-1">Admin Panel</p>
                     </div>

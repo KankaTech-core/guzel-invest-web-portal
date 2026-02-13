@@ -1,7 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
-    Building2,
     Mail,
     Phone,
     MapPin,
@@ -22,9 +22,14 @@ export function Footer({ locale }: { locale: string }) {
                     {/* Brand */}
                     <div>
                         <Link href={`/${locale}`} className="flex items-center gap-2.5 mb-6">
-                            <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-                                <Building2 className="w-5 h-5 text-white" />
-                            </div>
+                            <Image
+                                src="/images/testimonials/logo-square.svg"
+                                alt="Güzel Invest logosu"
+                                width={40}
+                                height={40}
+                                className="h-10 w-10 object-contain"
+                                priority
+                            />
                             <span className="text-xl font-bold tracking-tight text-gray-900">
                                 Güzel Invest
                             </span>

@@ -1,9 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
-    Building2,
     LayoutDashboard,
     FileText,
     Download,
@@ -11,20 +12,74 @@ import {
     LogOut,
     ChevronLeft,
     ChevronRight,
+    ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/lib/context/sidebar-context";
+
+type CurrentUser = {
+    name: string | null;
+    email: string;
+    role: string;
+};
+
+const roleLabels: Record<string, string> = {
+    ADMIN: "Yönetici",
+    EDITOR: "Editör",
+    VIEWER: "Görüntüleyici",
+};
 
 const navigation = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "İlanlar", href: "/admin/ilanlar", icon: FileText },
     { name: "Export", href: "/admin/export", icon: Download },
     { name: "Kullanıcılar", href: "/admin/kullanicilar", icon: Users },
+    { name: "Ana Site", href: "/", icon: ExternalLink, external: true },
 ];
 
 export function Sidebar() {
     const pathname = usePathname();
     const { isCollapsed, toggleSidebar } = useSidebar();
+    const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+    const [isUserLoading, setIsUserLoading] = useState(true);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchCurrentUser = async () => {
+            try {
+                const response = await fetch("/api/auth/me", { cache: "no-store" });
+                if (!response.ok) {
+                    return;
+                }
+
+                const data = (await response.json()) as { user?: CurrentUser };
+                if (isMounted) {
+                    setCurrentUser(data.user ?? null);
+                }
+            } catch {
+                // Swallow errors and keep sidebar stable even if auth endpoint fails.
+            } finally {
+                if (isMounted) {
+                    setIsUserLoading(false);
+                }
+            }
+        };
+
+        void fetchCurrentUser();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    const userDisplayName =
+        currentUser?.name?.trim() ||
+        currentUser?.email ||
+        (isUserLoading ? "Kullanıcı yükleniyor" : "Kullanıcı bulunamadı");
+    const userEmail = currentUser?.email || (isUserLoading ? "..." : "Oturum bilgisi yok");
+    const userRole = currentUser?.role ? roleLabels[currentUser.role] ?? currentUser.role : null;
+    const userInitial = userDisplayName.charAt(0).toLocaleUpperCase("tr-TR");
 
     // Don't show sidebar on login page
     if (pathname === "/admin/login" || pathname.startsWith("/admin/login/")) {
@@ -57,9 +112,14 @@ export function Sidebar() {
                     isCollapsed ? "justify-center px-0" : "px-6"
                 )}>
                     <Link href="/admin" className="flex items-center gap-3 overflow-hidden">
-                        <div className="flex-shrink-0 p-2 bg-amber-500 rounded-lg">
-                            <Building2 className="w-6 h-6 text-black" />
-                        </div>
+                        <Image
+                            src="/images/testimonials/logo-square.svg"
+                            alt="Güzel Invest logosu"
+                            width={44}
+                            height={44}
+                            className="h-11 w-11 flex-shrink-0 object-contain"
+                            priority
+                        />
                         {!isCollapsed && (
                             <div className="whitespace-nowrap transition-opacity duration-300">
                                 <h1 className="font-bold text-lg">Güzel Invest</h1>
@@ -73,13 +133,16 @@ export function Sidebar() {
                 <nav className="flex-1 p-4 space-y-1 overflow-y-auto overflow-x-hidden scrollbar-hide">
                     {navigation.map((item) => {
                         const isActive =
-                            pathname === item.href ||
-                            (item.href !== "/admin" && pathname.startsWith(item.href));
+                            !item.external &&
+                            (pathname === item.href ||
+                                (item.href !== "/admin" && pathname.startsWith(item.href)));
 
                         return (
                             <Link
                                 key={item.name}
                                 href={item.href}
+                                target={item.external ? "_blank" : undefined}
+                                rel={item.external ? "noopener noreferrer" : undefined}
                                 title={isCollapsed ? item.name : undefined}
                                 className={cn(
                                     "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group relative",
@@ -104,7 +167,38 @@ export function Sidebar() {
                 </nav>
 
                 {/* Logout */}
-                <div className="p-4 border-t border-slate-800">
+                <div className="p-4 border-t border-slate-800 space-y-3">
+                    <div
+                        className={cn(
+                            "rounded-lg border border-slate-700 bg-slate-800/70",
+                            isCollapsed ? "flex justify-center p-2" : "p-3"
+                        )}
+                        title={
+                            isCollapsed
+                                ? `${userDisplayName}${userRole ? ` - ${userRole}` : ""}`
+                                : undefined
+                        }
+                    >
+                        {isCollapsed ? (
+                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/20 text-xs font-semibold text-amber-300">
+                                {userInitial}
+                            </span>
+                        ) : (
+                            <div className="flex items-start gap-3">
+                                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/20 text-sm font-semibold text-amber-300">
+                                    {userInitial}
+                                </span>
+                                <div className="min-w-0">
+                                    <p className="truncate text-sm font-semibold text-slate-100">
+                                        {userDisplayName}
+                                    </p>
+                                    <p className="truncate text-xs text-slate-400">{userEmail}</p>
+                                    {userRole && <p className="mt-1 text-[11px] text-amber-300">{userRole}</p>}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     <form action="/api/auth/logout" method="POST">
                         <button
                             type="submit"

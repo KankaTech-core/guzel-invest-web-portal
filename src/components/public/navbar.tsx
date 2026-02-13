@@ -1,20 +1,21 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
-    Building2,
     Menu,
     X,
     Globe,
+    ChevronDown,
     ToggleLeft,
     ToggleRight,
     Instagram,
     Youtube,
     Facebook,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useVersion } from "@/contexts/VersionContext";
 
@@ -38,20 +39,89 @@ const navigation = [
     { name: "nav.contact", href: "/iletisim" },
 ] satisfies NavigationItem[];
 
+const aboutSectionLinks = [
+    { id: "hikayemiz", label: "Hikayemiz" },
+    { id: "neler-yapiyoruz", label: "Neler Yapıyoruz?" },
+    { id: "ekibimiz", label: "Ekibimiz" },
+    { id: "misyonumuz", label: "Misyonumuz" },
+    { id: "vizyonumuz", label: "Vizyonumuz" },
+] as const;
+
 export function Navbar({ locale }: { locale: string }) {
     const t = useTranslations();
     const pathname = usePathname();
+    const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const { version, toggleVersion } = useVersion();
+    const aboutPath = `/${locale}/hakkimizda`;
+
+    const smoothScrollToSection = useCallback((sectionId: string) => {
+        let attempt = 0;
+        const maxAttempts = 20;
+
+        const tryScroll = () => {
+            const target = document.getElementById(sectionId);
+            if (target) {
+                target.scrollIntoView({ behavior: "smooth", block: "start" });
+                return;
+            }
+
+            if (attempt < maxAttempts) {
+                attempt += 1;
+                window.setTimeout(tryScroll, 50);
+            }
+        };
+
+        tryScroll();
+    }, []);
+
+    const handleAboutSectionClick = (
+        event: React.MouseEvent<HTMLAnchorElement>,
+        sectionId: string
+    ) => {
+        event.preventDefault();
+        setIsOpen(false);
+
+        if (pathname === aboutPath) {
+            window.history.replaceState(null, "", `${aboutPath}#${sectionId}`);
+            smoothScrollToSection(sectionId);
+            return;
+        }
+
+        window.sessionStorage.setItem("about-scroll-target", sectionId);
+        router.push(`${aboutPath}#${sectionId}`);
+    };
+
+    useEffect(() => {
+        if (pathname !== aboutPath) {
+            return;
+        }
+
+        const pendingTarget = window.sessionStorage.getItem("about-scroll-target");
+        const hashTarget = window.location.hash.replace("#", "");
+        const target = pendingTarget || hashTarget;
+
+        if (!target) {
+            return;
+        }
+
+        window.sessionStorage.removeItem("about-scroll-target");
+        window.setTimeout(() => smoothScrollToSection(target), 80);
+    }, [aboutPath, pathname, smoothScrollToSection]);
 
     return (
         <nav className="fixed top-0 w-full z-50 transition-all duration-300 bg-white shadow-sm border-b border-gray-100 py-3">
             <div className="container-custom flex items-center justify-between">
                 {/* Logo */}
                 <Link href={`/${locale}`} className="flex items-center gap-2.5 group">
-                    <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center group-hover:bg-orange-600 transition-colors">
-                        <Building2 className="w-5 h-5 text-white" />
-                    </div>
+                    <Image
+                        src="/images/testimonials/logo-square.svg"
+                        alt="Güzel Invest logosu"
+                        width={40}
+                        height={40}
+                        className="h-10 w-10 object-contain"
+                        priority
+                    />
                     <span className="text-xl font-bold tracking-tight text-gray-900">
                         Güzel Invest
                     </span>
@@ -62,6 +132,42 @@ export function Navbar({ locale }: { locale: string }) {
                     {navigation.map((item) => {
                         const href = `/${locale}${item.href === "/" ? "" : item.href}`;
                         const isActive = pathname === href;
+
+                        if (item.href === "/hakkimizda") {
+                            return (
+                                <div key={item.href} className="relative group">
+                                    <Link
+                                        href={href}
+                                        className={cn(
+                                            "inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium transition-all",
+                                            isActive
+                                                ? "bg-white text-gray-900 shadow-sm"
+                                                : "text-gray-600 hover:text-gray-900"
+                                        )}
+                                    >
+                                        {item.label ?? t(item.name!)}
+                                        <ChevronDown className="h-4 w-4 opacity-70" />
+                                    </Link>
+
+                                    <div className="pointer-events-none invisible absolute left-1/2 top-full z-50 w-56 -translate-x-1/2 pt-2 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
+                                        <div className="rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl shadow-gray-200/60">
+                                            {aboutSectionLinks.map((section) => (
+                                                <a
+                                                    key={section.id}
+                                                    href={`${href}#${section.id}`}
+                                                    onClick={(event) =>
+                                                        handleAboutSectionClick(event, section.id)
+                                                    }
+                                                    className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-orange-50 hover:text-orange-600"
+                                                >
+                                                    {section.label}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        }
 
                         return (
                             <Link
