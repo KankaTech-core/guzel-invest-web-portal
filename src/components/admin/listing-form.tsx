@@ -47,6 +47,10 @@ import {
     getMediaUrl,
     cn,
 } from "@/lib/utils";
+import {
+    getFriendlyFetchErrorMessage,
+    parseApiErrorMessage,
+} from "@/lib/fetch-error";
 import { Select } from "@/components/ui";
 import { TagInput } from "./tag-input";
 import { AiFillModal, ParsedData } from "./ai-fill-modal";
@@ -183,6 +187,19 @@ const LOCALES = [
 
 type LocaleCode = (typeof LOCALES)[number]["code"];
 
+const MAX_MEDIA_FILE_SIZE_MB = 30;
+const MAX_MEDIA_FILE_SIZE_BYTES = MAX_MEDIA_FILE_SIZE_MB * 1024 * 1024;
+const MEDIA_UPLOAD_CHUNK_SIZE = 4;
+const MEDIA_UPLOAD_CHUNK_MAX_MB = 30;
+const MEDIA_UPLOAD_CHUNK_MAX_BYTES = MEDIA_UPLOAD_CHUNK_MAX_MB * 1024 * 1024;
+const ALLOWED_MEDIA_TYPES = new Set([
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "image/avif",
+]);
+
 const FIELD_LABELS: Record<
     "title" | "description" | "propertyType" | "saleType" | "heating" | "features" | "tags",
     Record<LocaleCode, string>
@@ -258,6 +275,53 @@ const hasNonTurkishTranslations = (
             ((translation.title && translation.title.trim().length > 0) ||
                 (translation.description && translation.description.trim().length > 0))
     );
+
+const validateMediaFiles = (files: File[]): string | null => {
+    if (files.length === 0) return "Yüklenecek dosya bulunamadı.";
+
+    const unsupportedFile = files.find((file) => !ALLOWED_MEDIA_TYPES.has(file.type));
+    if (unsupportedFile) {
+        return `Desteklenmeyen dosya türü: ${unsupportedFile.name}. Sadece JPG, PNG, WEBP, GIF veya AVIF yükleyin.`;
+    }
+
+    const oversizedFile = files.find(
+        (file) => file.size <= 0 || file.size > MAX_MEDIA_FILE_SIZE_BYTES
+    );
+    if (oversizedFile) {
+        return `${oversizedFile.name} için maksimum dosya boyutu ${MAX_MEDIA_FILE_SIZE_MB}MB olmalıdır.`;
+    }
+
+    return null;
+};
+
+const buildMediaUploadChunks = (items: PendingMedia[]): PendingMedia[][] => {
+    const chunks: PendingMedia[][] = [];
+    let currentChunk: PendingMedia[] = [];
+    let currentChunkBytes = 0;
+
+    for (const item of items) {
+        const fileSize = item.file.size;
+        const wouldExceedCount = currentChunk.length >= MEDIA_UPLOAD_CHUNK_SIZE;
+        const wouldExceedBytes =
+            currentChunk.length > 0 &&
+            currentChunkBytes + fileSize > MEDIA_UPLOAD_CHUNK_MAX_BYTES;
+
+        if (wouldExceedCount || wouldExceedBytes) {
+            chunks.push(currentChunk);
+            currentChunk = [];
+            currentChunkBytes = 0;
+        }
+
+        currentChunk.push(item);
+        currentChunkBytes += fileSize;
+    }
+
+    if (currentChunk.length > 0) {
+        chunks.push(currentChunk);
+    }
+
+    return chunks;
+};
 
 const formatTranslatedValue = (translated: string, turkish: string): string => {
     const translatedValue = translated?.trim() ?? "";
@@ -830,6 +894,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     const initialSnapshotRef = useRef<string>("");
     const currentUrlRef = useRef<string>("");
     const autoMapsLinkRef = useRef<string>("");
+    const errorBannerRef = useRef<HTMLDivElement | null>(null);
 
     // Room Options State
     const [roomOptions, setRoomOptions] = useState<string[]>([
@@ -844,6 +909,27 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    useEffect(() => {
+        if (!error) return;
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+
+        const rafId = window.requestAnimationFrame(() => {
+            errorBannerRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
+        });
+
+        return () => {
+            window.cancelAnimationFrame(rafId);
+        };
+    }, [error]);
+
     const resolveMediaUrl = (path: string) => getMediaUrl(path);
 
     const sensors = useSensors(
@@ -1462,14 +1548,18 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                 }),
             });
 
-            const data = await response.json().catch(() => ({}));
-
             if (!response.ok) {
                 if (response.status === 409) {
                     setTranslationsLocked(true);
                 }
-                throw new Error(data.error || "Çeviri başarısız");
+                const apiError = await parseApiErrorMessage(
+                    response,
+                    "Çeviri başarısız."
+                );
+                throw new Error(apiError);
             }
+
+            const data = await response.json().catch(() => ({}));
 
             const translations = data.translations;
 
@@ -1514,7 +1604,12 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
 
             setTranslationsLocked(true);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Çeviri başarısız");
+            setError(
+                getFriendlyFetchErrorMessage(err, "Çeviri başarısız.", {
+                    networkMessage:
+                        "Çeviri isteği sırasında bağlantı kesildi (Load failed). İnternet/proxy bağlantısını kontrol edip tekrar deneyin.",
+                })
+            );
         } finally {
             setIsTranslating(false);
         }
@@ -1529,44 +1624,199 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         items.forEach((item) => URL.revokeObjectURL(item.previewUrl));
     };
 
-    const uploadMediaFiles = async (listingId: string, files: File[]) => {
-        if (files.length === 0) return [];
+    const persistListing = async (
+        options: {
+            statusOverride?: ListingStatusValue;
+        } = {}
+    ): Promise<string> => {
+        const hasListing = Boolean(formData.id);
+        const endpoint = hasListing
+            ? `/api/admin/listings/${formData.id}`
+            : "/api/admin/listings";
+        const method = hasListing ? "PATCH" : "POST";
+
+        const body = {
+            ...formData,
+            status: options.statusOverride ?? formData.status,
+            tags: selectedTags,
+        };
+
+        const response = await fetch(endpoint, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            const apiError = await parseApiErrorMessage(response, "Kayıt başarısız.");
+            throw new Error(apiError);
+        }
+
+        const savedListing = await response.json();
+        const listingId = savedListing?.id || formData.id;
+
+        if (!listingId) {
+            throw new Error("İlan kimliği alınamadı. Lütfen tekrar deneyin.");
+        }
+
+        setFormData((prev) => ({
+            ...prev,
+            id: listingId,
+            slug: savedListing.slug || prev.slug,
+            sku: savedListing.sku ?? prev.sku,
+            company: savedListing.company || prev.company,
+            status: savedListing.status || prev.status,
+            showOnHomepageHero:
+                savedListing.showOnHomepageHero ?? prev.showOnHomepageHero,
+        }));
+
+        return listingId;
+    };
+
+    const uploadMediaFiles = async (
+        listingId: string,
+        items: PendingMedia[]
+    ): Promise<{ uploaded: Media[]; failed: PendingMedia[] }> => {
+        if (items.length === 0) {
+            return { uploaded: [], failed: [] };
+        }
+
+        const validationError = validateMediaFiles(items.map((item) => item.file));
+        if (validationError) {
+            setError(validationError);
+            return { uploaded: [], failed: items };
+        }
+
         setIsUploading(true);
         setError(null);
 
+        const uploadedMedia: Media[] = [];
+        let completedCount = 0;
+        let failedItems: PendingMedia[] = [];
+        const uploadChunks = buildMediaUploadChunks(items);
+
         try {
-            const payload = new FormData();
-            files.forEach((file) => payload.append("files", file));
+            for (const chunk of uploadChunks) {
+                const payload = new FormData();
+                chunk.forEach((item) => payload.append("files", item.file));
 
-            const response = await fetch(`/api/admin/listings/${listingId}/media`, {
-                method: "POST",
-                body: payload,
-            });
+                const response = await fetch(`/api/admin/listings/${listingId}/media`, {
+                    method: "POST",
+                    body: payload,
+                });
 
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || "Medya yükleme başarısız");
+                if (!response.ok) {
+                    const apiError = await parseApiErrorMessage(
+                        response,
+                        "Bir veya daha fazla görsel yüklenemedi."
+                    );
+                    throw new Error(apiError);
+                }
+
+                const data = (await response.json().catch(() => ({}))) as {
+                    media?: Media[];
+                };
+                const uploaded = Array.isArray(data.media) ? data.media : [];
+
+                if (uploaded.length === 0) {
+                    throw new Error(
+                        "Yüklenen görseller için sunucudan geçerli medya yanıtı alınamadı."
+                    );
+                }
+
+                uploadedMedia.push(...uploaded);
+                completedCount += chunk.length;
             }
+        } catch (err) {
+            failedItems = items.slice(completedCount);
+            const partialInfo =
+                completedCount > 0
+                    ? ` ${completedCount} görsel yüklendi, kalan ${failedItems.length} görsel beklemede.`
+                    : "";
+            const message = getFriendlyFetchErrorMessage(err, "Medya yükleme hatası.", {
+                networkMessage:
+                    "Yükleme sırasında bağlantı kesildi (Load failed). Dosya boyutunu küçültüp tekrar deneyin.",
+            });
+            setError(`${message}${partialInfo}`);
+        } finally {
+            setIsUploading(false);
+        }
 
-            const data = await response.json();
-            const uploadedMedia = data.media || [];
-
+        if (uploadedMedia.length > 0) {
             setFormData((prev) => ({
                 ...prev,
                 media: [...(prev.media || []), ...uploadedMedia],
             }));
+        }
 
-            return uploadedMedia;
+        return { uploaded: uploadedMedia, failed: failedItems };
+    };
+
+    const uploadMediaImmediately = async (items: PendingMedia[]) => {
+        if (items.length === 0) return;
+
+        setMediaOptimizationState("optimizing");
+        setError(null);
+
+        let listingId = formData.id;
+
+        try {
+            if (!listingId) {
+                setIsSaving(true);
+                listingId = await persistListing({ statusOverride: "DRAFT" });
+            }
+
+            const { uploaded, failed } = await uploadMediaFiles(listingId, items);
+            const failedIdSet = new Set(failed.map((item) => item.id));
+            const succeededItems = items.filter((item) => !failedIdSet.has(item.id));
+
+            if (succeededItems.length > 0) {
+                revokePendingMedia(succeededItems);
+            }
+
+            setPendingMedia((prev) => {
+                const uploadedAttemptIds = new Set(items.map((item) => item.id));
+                const untouchedItems = prev.filter(
+                    (item) => !uploadedAttemptIds.has(item.id)
+                );
+                return [...untouchedItems, ...failed];
+            });
+
+            if (uploaded.length > 0 && failed.length === 0) {
+                setMediaOptimizationState("completed");
+                await wait(MEDIA_OPTIMIZATION_SUCCESS_DURATION_MS);
+            }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Medya yükleme hatası");
-            return [];
+            setError(
+                getFriendlyFetchErrorMessage(err, "Medya yükleme hatası.", {
+                    networkMessage:
+                        "Yükleme sırasında bağlantı kesildi (Load failed). Dosya boyutunu küçültüp tekrar deneyin.",
+                })
+            );
         } finally {
-            setIsUploading(false);
+            setIsSaving(false);
+            setMediaOptimizationState("hidden");
         }
     };
 
     const handleFiles = (files: File[]) => {
         if (files.length === 0) return;
+
+        if (isUploading || isSaving) {
+            setError("Medya yükleme işlemi devam ediyor. Lütfen bitmesini bekleyin.");
+            return;
+        }
+
+        if (!files.every((file) => file.type.startsWith("image/"))) {
+            setError("Sadece görsel dosyaları yükleyebilirsiniz.");
+            return;
+        }
+
+        const validationError = validateMediaFiles(files);
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
 
         const pendingItems = files.map((file) => ({
             id: createPendingId(),
@@ -1574,6 +1824,9 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             previewUrl: URL.createObjectURL(file),
         }));
         setPendingMedia((prev) => [...prev, ...pendingItems]);
+        setError(null);
+
+        void uploadMediaImmediately(pendingItems);
     };
 
     const handleMediaSelect = async (
@@ -1601,6 +1854,11 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         e.stopPropagation();
         setIsDragging(false);
 
+        if (isUploading || isSaving) {
+            setError("Medya yükleme işlemi devam ediyor. Lütfen bitmesini bekleyin.");
+            return;
+        }
+
         const files = Array.from(e.dataTransfer.files).filter((file) =>
             file.type.startsWith("image/")
         );
@@ -1619,63 +1877,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         setError(null);
 
         try {
-            const hasListing = Boolean(formData.id);
-            const endpoint = hasListing
-                ? `/api/admin/listings/${formData.id}`
-                : "/api/admin/listings";
-            const method = hasListing ? "PATCH" : "POST";
-
-            const body = {
-                ...formData,
-                status: options.statusOverride ?? formData.status,
-                tags: selectedTags,
-            };
-
-            const response = await fetch(endpoint, {
-                method,
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body),
-            });
-
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || "Kayıt başarısız");
-            }
-
-            const savedListing = await response.json();
-            const listingId = savedListing?.id || formData.id;
-
-            if (listingId) {
-                setFormData((prev) => ({
-                    ...prev,
-                    id: listingId,
-                    slug: savedListing.slug || prev.slug,
-                    sku: savedListing.sku ?? prev.sku,
-                    company: savedListing.company || prev.company,
-                    status: savedListing.status || prev.status,
-                    showOnHomepageHero:
-                        savedListing.showOnHomepageHero ?? prev.showOnHomepageHero,
-                }));
-            }
-
-            if (listingId && pendingMedia.length > 0) {
-                setMediaOptimizationState("optimizing");
-                const uploaded = await uploadMediaFiles(
-                    listingId,
-                    pendingMedia.map((item) => item.file)
-                );
-
-                if (uploaded.length === 0) {
-                    setMediaOptimizationState("hidden");
-                    return false;
-                }
-
-                revokePendingMedia(pendingMedia);
-                setPendingMedia([]);
-                setMediaOptimizationState("completed");
-                await wait(MEDIA_OPTIMIZATION_SUCCESS_DURATION_MS);
-                setMediaOptimizationState("hidden");
-            }
+            await persistListing({ statusOverride: options.statusOverride });
 
             if (!options.skipRedirect) {
                 const target = options.redirectTo ?? "/admin/ilanlar";
@@ -1685,7 +1887,12 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             return true;
         } catch (err) {
             setMediaOptimizationState("hidden");
-            setError(err instanceof Error ? err.message : "Bir hata oluştu");
+            setError(
+                getFriendlyFetchErrorMessage(err, "Bir hata oluştu.", {
+                    networkMessage:
+                        "İşlem sırasında bağlantı kesildi (Load failed). İnternet/proxy bağlantısını kontrol edip tekrar deneyin.",
+                })
+            );
             return false;
         } finally {
             setIsSaving(false);
@@ -1700,8 +1907,8 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         });
 
         if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || "Silme başarısız");
+            const apiError = await parseApiErrorMessage(response, "Silme başarısız.");
+            throw new Error(apiError);
         }
     };
 
@@ -1715,8 +1922,11 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         });
 
         if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || "Durum güncellenemedi");
+            const apiError = await parseApiErrorMessage(
+                response,
+                "Durum güncellenemedi."
+            );
+            throw new Error(apiError);
         }
     };
 
@@ -1730,8 +1940,11 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         });
 
         if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || "Ana sayfa hero ayarı güncellenemedi");
+            const apiError = await parseApiErrorMessage(
+                response,
+                "Ana sayfa hero ayarı güncellenemedi."
+            );
+            throw new Error(apiError);
         }
 
         setFormData((prev) => ({
@@ -1770,7 +1983,12 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                 router.refresh();
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Bir hata oluştu");
+            setError(
+                getFriendlyFetchErrorMessage(err, "Bir hata oluştu.", {
+                    networkMessage:
+                        "İşlem sırasında bağlantı kesildi (Load failed). Lütfen tekrar deneyin.",
+                })
+            );
         } finally {
             setIsActionLoading(false);
             setConfirmAction(null);
@@ -2113,7 +2331,10 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             </div>
 
             {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-lg text-red-600">
+                <div
+                    ref={errorBannerRef}
+                    className="mb-6 p-4 bg-red-50 border border-red-100 rounded-lg text-red-600"
+                >
                     {error}
                 </div>
             )}
@@ -3225,8 +3446,8 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                                         </p>
                                         <p className="text-sm text-gray-500 mt-1">
                                             {isUploading
-                                                ? "Görseller yükleniyor..."
-                                                : "PNG, JPG, WebP formatları desteklenmektedir."}
+                                                ? "Görseller 4'lü partiler halinde optimize edilerek yükleniyor..."
+                                                : "PNG, JPG, WebP, GIF ve AVIF formatları desteklenmektedir."}
                                         </p>
                                     </div>
                                 </div>
@@ -3234,8 +3455,9 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
 
                             {pendingMedia.length > 0 && (
                                 <p className="text-xs text-gray-500">
-                                    Seçtiğiniz görseller, taslak kaydetme veya yayınlama sırasında
-                                    yüklenir ve WebP&apos;ye dönüştürülür.
+                                    {isUploading
+                                        ? "Seçilen görseller şimdi optimize edilip 4'lü partiler halinde yükleniyor."
+                                        : "Aşağıdaki görseller yüklenemedi. Kaldırıp yeniden deneyebilirsiniz."}
                                 </p>
                             )}
 

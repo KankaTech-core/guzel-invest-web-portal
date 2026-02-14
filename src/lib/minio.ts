@@ -22,6 +22,18 @@ const minioClient = new Minio.Client({
 });
 
 const BUCKET_NAME = process.env.MINIO_BUCKET || "guzel-invest";
+const DEFAULT_MAX_OPTIMIZED_IMAGE_MB = 8;
+
+const parsePositiveInt = (value: string | undefined, fallback: number): number => {
+    const parsed = Number.parseInt(value || "", 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const MAX_OPTIMIZED_IMAGE_SIZE_MB = parsePositiveInt(
+    process.env.MINIO_MAX_OPTIMIZED_IMAGE_MB,
+    DEFAULT_MAX_OPTIMIZED_IMAGE_MB
+);
+const MAX_OPTIMIZED_IMAGE_SIZE_BYTES = MAX_OPTIMIZED_IMAGE_SIZE_MB * 1024 * 1024;
 
 export interface UploadResult {
     url: string;
@@ -34,6 +46,22 @@ export interface UploadResult {
 interface UploadImageOptions {
     collection?: "listings" | "articles";
 }
+
+interface MinioUploadErrorLike extends Error {
+    code: string;
+    details?: string;
+}
+
+const createMinioUploadError = (
+    code: string,
+    message: string,
+    details?: string
+): MinioUploadErrorLike => {
+    const error = new Error(message) as MinioUploadErrorLike;
+    error.code = code;
+    error.details = details;
+    return error;
+};
 
 export async function ensureBucketExists(): Promise<void> {
     const exists = await minioClient.bucketExists(BUCKET_NAME);
@@ -75,6 +103,14 @@ export async function uploadImage(
     const optimizedBuffer = await image
         .webp({ quality: 85 })
         .toBuffer();
+
+    if (optimizedBuffer.length > MAX_OPTIMIZED_IMAGE_SIZE_BYTES) {
+        throw createMinioUploadError(
+            "MEDIA_OPTIMIZED_TOO_LARGE",
+            `Optimize edilen görsel ${MAX_OPTIMIZED_IMAGE_SIZE_MB}MB limitini aştı.`,
+            `Orijinal: ${(file.length / (1024 * 1024)).toFixed(2)}MB, optimize: ${(optimizedBuffer.length / (1024 * 1024)).toFixed(2)}MB`
+        );
+    }
 
     // Create thumbnail
     const thumbnailBuffer = await sharp(file)

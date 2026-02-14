@@ -3,6 +3,10 @@
 import { useState, useEffect } from "react";
 import { ListingCard, Listing } from "./listing-card";
 import { Loader2, Search, LayoutGrid, List } from "lucide-react";
+import {
+    getFriendlyFetchErrorMessage,
+    parseApiErrorMessage,
+} from "@/lib/fetch-error";
 
 interface ListingGridProps {
     locale: string;
@@ -40,11 +44,26 @@ export function ListingGrid({ locale, filters = {} }: ListingGridProps) {
                 if (filters.maxArea) params.append("maxArea", filters.maxArea.toString());
 
                 const res = await fetch(`/api/public/listings?${params.toString()}`);
-                if (!res.ok) throw new Error("Failed to fetch");
+                if (!res.ok) {
+                    const apiError = await parseApiErrorMessage(
+                        res,
+                        "İlanlar yüklenemedi."
+                    );
+                    throw new Error(apiError);
+                }
                 const data = await res.json();
                 setListings(data.listings);
-            } catch {
-                setError("İlanlar yüklenirken bir hata oluştu.");
+            } catch (err) {
+                setError(
+                    getFriendlyFetchErrorMessage(
+                        err,
+                        "İlanlar yüklenirken bir hata oluştu.",
+                        {
+                            networkMessage:
+                                "İlanlar yüklenirken bağlantı kesildi (Load failed). İnternet/proxy bağlantınızı kontrol edip tekrar deneyin.",
+                        }
+                    )
+                );
             } finally {
                 setLoading(false);
             }

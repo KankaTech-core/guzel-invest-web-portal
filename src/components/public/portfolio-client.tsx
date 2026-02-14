@@ -31,6 +31,11 @@ import {
     getPropertyTypeLabel,
     getSaleTypeLabel,
 } from "@/lib/utils";
+import {
+    getFriendlyFetchErrorMessage,
+    isAbortFetchError,
+    parseApiErrorMessage,
+} from "@/lib/fetch-error";
 
 interface PortfolioClientProps {
     locale: string;
@@ -722,7 +727,11 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 });
 
                 if (!response.ok) {
-                    throw new Error("Failed to fetch listings");
+                    const apiError = await parseApiErrorMessage(
+                        response,
+                        "İlanlar alınamadı."
+                    );
+                    throw new Error(apiError);
                 }
 
                 const data = (await response.json()) as { listings: Listing[] };
@@ -742,10 +751,19 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
                 setError("");
             } catch (fetchError) {
-                if ((fetchError as Error).name === "AbortError") {
+                if (isAbortFetchError(fetchError)) {
                     return;
                 }
-                setError("İlanlar yenilenirken bir hata oluştu.");
+                setError(
+                    getFriendlyFetchErrorMessage(
+                        fetchError,
+                        "İlanlar yenilenirken bir hata oluştu.",
+                        {
+                            networkMessage:
+                                "İlanlar yenilenirken bağlantı kesildi (Load failed). İnternet/proxy bağlantınızı kontrol edip tekrar deneyin.",
+                        }
+                    )
+                );
             } finally {
                 if (mode === "initial") {
                     setIsLoading(false);

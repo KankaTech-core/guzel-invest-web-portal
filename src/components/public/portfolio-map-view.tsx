@@ -31,6 +31,11 @@ import {
     getSaleTypeLabel,
     truncateText,
 } from "@/lib/utils";
+import {
+    getFriendlyFetchErrorMessage,
+    isAbortFetchError,
+    parseApiErrorMessage,
+} from "@/lib/fetch-error";
 import type { MapListing as LeafletMapListing } from "@/components/admin/listings-leaflet-map";
 
 type ListingStatusValue = "DRAFT" | "PUBLISHED" | "ARCHIVED" | "REMOVED";
@@ -532,14 +537,27 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                 });
 
                 if (!response.ok) {
-                    throw new Error("Failed to fetch listings");
+                    const apiError = await parseApiErrorMessage(
+                        response,
+                        "İlanlar yüklenemedi."
+                    );
+                    throw new Error(apiError);
                 }
 
                 const payload = (await response.json()) as { listings?: Listing[] };
                 setListings(payload.listings || []);
             } catch (fetchError) {
-                if ((fetchError as Error).name === "AbortError") return;
-                setError("İlanlar yüklenirken bir hata oluştu.");
+                if (isAbortFetchError(fetchError)) return;
+                setError(
+                    getFriendlyFetchErrorMessage(
+                        fetchError,
+                        "İlanlar yüklenirken bir hata oluştu.",
+                        {
+                            networkMessage:
+                                "İlanlar yüklenirken bağlantı kesildi (Load failed). İnternet/proxy bağlantınızı kontrol edip tekrar deneyin.",
+                        }
+                    )
+                );
                 setListings([]);
             } finally {
                 if (!controller.signal.aborted) {
