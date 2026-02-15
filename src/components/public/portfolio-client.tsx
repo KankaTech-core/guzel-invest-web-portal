@@ -134,10 +134,8 @@ const PRICE_MAX = 2000000;
 const PRICE_STEP = 10000;
 const AREA_MIN = 0;
 const AREA_MAX = 500;
-const AREA_STEP = 5;
 const COMMERCIAL_AREA_MIN = 0;
 const COMMERCIAL_AREA_MAX = 2000;
-const COMMERCIAL_AREA_STEP = 10;
 const EMSAL_MIN = 0;
 const EMSAL_MAX = 5;
 const EMSAL_STEP = 0.05;
@@ -849,54 +847,6 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         [listings]
     );
 
-    const areaRange = useMemo<[number, number]>(() => {
-        const minArea = filters.minArea ?? AREA_MIN;
-        const maxArea = filters.maxArea ?? AREA_MAX;
-        const boundedMin = Math.max(AREA_MIN, Math.min(minArea, AREA_MAX));
-        const boundedMax = Math.max(AREA_MIN, Math.min(maxArea, AREA_MAX));
-        return boundedMin <= boundedMax
-            ? [boundedMin, boundedMax]
-            : [boundedMax, boundedMax];
-    }, [filters.minArea, filters.maxArea]);
-    const groundFloorAreaRange = useMemo<[number, number]>(() => {
-        const minArea = filters.minGroundFloorArea ?? COMMERCIAL_AREA_MIN;
-        const maxArea = filters.maxGroundFloorArea ?? COMMERCIAL_AREA_MAX;
-        const boundedMin = Math.max(
-            COMMERCIAL_AREA_MIN,
-            Math.min(minArea, COMMERCIAL_AREA_MAX)
-        );
-        const boundedMax = Math.max(
-            COMMERCIAL_AREA_MIN,
-            Math.min(maxArea, COMMERCIAL_AREA_MAX)
-        );
-        return boundedMin <= boundedMax
-            ? [boundedMin, boundedMax]
-            : [boundedMax, boundedMax];
-    }, [filters.minGroundFloorArea, filters.maxGroundFloorArea]);
-    const basementAreaRange = useMemo<[number, number]>(() => {
-        const minArea = filters.minBasementArea ?? COMMERCIAL_AREA_MIN;
-        const maxArea = filters.maxBasementArea ?? COMMERCIAL_AREA_MAX;
-        const boundedMin = Math.max(
-            COMMERCIAL_AREA_MIN,
-            Math.min(minArea, COMMERCIAL_AREA_MAX)
-        );
-        const boundedMax = Math.max(
-            COMMERCIAL_AREA_MIN,
-            Math.min(maxArea, COMMERCIAL_AREA_MAX)
-        );
-        return boundedMin <= boundedMax
-            ? [boundedMin, boundedMax]
-            : [boundedMax, boundedMax];
-    }, [filters.minBasementArea, filters.maxBasementArea]);
-    const emsalRange = useMemo<[number, number]>(() => {
-        const minEmsal = filters.minEmsal ?? EMSAL_MIN;
-        const maxEmsal = filters.maxEmsal ?? EMSAL_MAX;
-        const boundedMin = Math.max(EMSAL_MIN, Math.min(minEmsal, EMSAL_MAX));
-        const boundedMax = Math.max(EMSAL_MIN, Math.min(maxEmsal, EMSAL_MAX));
-        return boundedMin <= boundedMax
-            ? [boundedMin, boundedMax]
-            : [boundedMax, boundedMax];
-    }, [filters.minEmsal, filters.maxEmsal]);
     const isRoomsFilterVisible = useMemo(
         () => isCategoryFieldVisibleForTypes("rooms", filters.types),
         [filters.types]
@@ -1635,21 +1585,6 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
                     Alan (<span className="normal-case">m<sup>2</sup></span>)
                 </h4>
-                <div className="mb-3 px-1">
-                    <InlineRangeSlider
-                        min={AREA_MIN}
-                        max={AREA_MAX}
-                        step={AREA_STEP}
-                        value={areaRange}
-                        onChange={([nextMin, nextMax]) =>
-                            setFilters((previous) => ({
-                                ...previous,
-                                minArea: nextMin === AREA_MIN ? undefined : nextMin,
-                                maxArea: nextMax === AREA_MAX ? undefined : nextMax,
-                            }))
-                        }
-                    />
-                </div>
                 <div className="grid grid-cols-2 gap-2">
                     <input
                         type="number"
@@ -1733,21 +1668,6 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                             Emsal
                         </h5>
-                        <div className="px-1">
-                            <InlineRangeSlider
-                                min={EMSAL_MIN}
-                                max={EMSAL_MAX}
-                                step={EMSAL_STEP}
-                                value={emsalRange}
-                                onChange={([nextMin, nextMax]) =>
-                                    setFilters((previous) => ({
-                                        ...previous,
-                                        minEmsal: nextMin === EMSAL_MIN ? undefined : nextMin,
-                                        maxEmsal: nextMax === EMSAL_MAX ? undefined : nextMax,
-                                    }))
-                                }
-                            />
-                        </div>
                         <div className="grid grid-cols-2 gap-2">
                             <input
                                 type="number"
@@ -1822,27 +1742,6 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                             <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                                 Zemin <span className="normal-case">(m²)</span>
                             </h5>
-                            <div className="px-1">
-                                <InlineRangeSlider
-                                    min={COMMERCIAL_AREA_MIN}
-                                    max={COMMERCIAL_AREA_MAX}
-                                    step={COMMERCIAL_AREA_STEP}
-                                    value={groundFloorAreaRange}
-                                    onChange={([nextMin, nextMax]) =>
-                                        setFilters((previous) => ({
-                                            ...previous,
-                                            minGroundFloorArea:
-                                                nextMin === COMMERCIAL_AREA_MIN
-                                                    ? undefined
-                                                    : nextMin,
-                                            maxGroundFloorArea:
-                                                nextMax === COMMERCIAL_AREA_MAX
-                                                    ? undefined
-                                                    : nextMax,
-                                        }))
-                                    }
-                                />
-                            </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <input
                                     type="number"
@@ -1917,27 +1816,6 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                             <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                                 Bodrum <span className="normal-case">(m²)</span>
                             </h5>
-                            <div className="px-1">
-                                <InlineRangeSlider
-                                    min={COMMERCIAL_AREA_MIN}
-                                    max={COMMERCIAL_AREA_MAX}
-                                    step={COMMERCIAL_AREA_STEP}
-                                    value={basementAreaRange}
-                                    onChange={([nextMin, nextMax]) =>
-                                        setFilters((previous) => ({
-                                            ...previous,
-                                            minBasementArea:
-                                                nextMin === COMMERCIAL_AREA_MIN
-                                                    ? undefined
-                                                    : nextMin,
-                                            maxBasementArea:
-                                                nextMax === COMMERCIAL_AREA_MAX
-                                                    ? undefined
-                                                    : nextMax,
-                                        }))
-                                    }
-                                />
-                            </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <input
                                     type="number"
@@ -2269,9 +2147,16 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 activeImageIndexes[listing.id] ?? 0,
                                 maxImageIndex
                             );
-                            const sortedTags = [...listing.tags].sort((left, right) =>
-                                left.tag.name.localeCompare(right.tag.name, "tr")
-                            );
+                            const sortedTags = listing.tags
+                                .filter((item) => {
+                                    const normalized = item.tag.name
+                                        .trim()
+                                        .toLocaleLowerCase("tr-TR");
+                                    return !normalized.startsWith("ana sayfa");
+                                })
+                                .sort((left, right) =>
+                                    left.tag.name.localeCompare(right.tag.name, "tr")
+                                );
                             const visibleTags = sortedTags.slice(0, 4);
                             const hiddenTagCount = Math.max(0, sortedTags.length - visibleTags.length);
 

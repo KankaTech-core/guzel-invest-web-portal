@@ -38,6 +38,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 status: true,
                 publishedAt: true,
                 showOnHomepageHero: true,
+                homepageHeroSlot: true,
             },
         });
 
@@ -60,7 +61,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 );
             }
 
-            if (existing.showOnHomepageHero) {
+            if (existing.homepageHeroSlot !== null) {
                 return NextResponse.json(
                     {
                         error:
@@ -78,8 +79,12 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 status,
                 showOnHomepageHero:
                     status === ListingStatus.PUBLISHED
-                        ? existing.showOnHomepageHero
+                        ? existing.homepageHeroSlot !== null
                         : false,
+                homepageHeroSlot:
+                    status === ListingStatus.PUBLISHED
+                        ? existing.homepageHeroSlot
+                        : null,
                 publishedAt:
                     status === ListingStatus.PUBLISHED &&
                     existing.status !== ListingStatus.PUBLISHED

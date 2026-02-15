@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { ListingStatus } from "@/generated/prisma";
 
 export const dynamic = "force-dynamic";
+const HOMEPAGE_HERO_SLOTS = [1, 2, 3] as const;
+type HomepageHeroSlot = (typeof HOMEPAGE_HERO_SLOTS)[number];
 
 export async function GET(request: NextRequest) {
     try {
@@ -24,37 +26,76 @@ export async function GET(request: NextRequest) {
             },
         };
 
-        const listing =
-            (await prisma.listing.findFirst({
-                where: {
-                    status: ListingStatus.PUBLISHED,
-                    showOnHomepageHero: true,
+        const selectedListings = await prisma.listing.findMany({
+            where: {
+                status: ListingStatus.PUBLISHED,
+                homepageHeroSlot: {
+                    in: [...HOMEPAGE_HERO_SLOTS],
                 },
-                include: includeConfig,
-                orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-            })) ||
-            (await prisma.listing.findFirst({
-                where: {
-                    status: ListingStatus.PUBLISHED,
-                },
-                include: includeConfig,
-                orderBy: { createdAt: "desc" },
-            }));
+            },
+            include: includeConfig,
+            orderBy: [{ homepageHeroSlot: "asc" }],
+            take: 3,
+        });
 
-        if (!listing) {
-            return NextResponse.json({ listing: null });
-        }
+        const selectedIds = selectedListings.map((listing) => listing.id);
+        const missingSlots = HOMEPAGE_HERO_SLOTS.filter(
+            (slot) =>
+                !selectedListings.some(
+                    (listing) => listing.homepageHeroSlot === slot
+                )
+        );
 
-        const translation =
-            listing.translations.find((item) => item.locale === locale) ||
-            listing.translations.find((item) => item.locale === "tr") ||
-            listing.translations[0] ||
-            null;
+        const fallbackListings =
+            missingSlots.length > 0
+                ? await prisma.listing.findMany({
+                    where: {
+                        status: ListingStatus.PUBLISHED,
+                        ...(selectedIds.length > 0
+                            ? { id: { notIn: selectedIds } }
+                            : {}),
+                    },
+                    include: includeConfig,
+                    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+                    take: missingSlots.length,
+                })
+                : [];
 
-        return NextResponse.json({
-            listing: {
+        const listingsBySlot = new Map<
+            HomepageHeroSlot,
+            (typeof selectedListings)[number]
+        >();
+
+        selectedListings.forEach((listing) => {
+            if (listing.homepageHeroSlot) {
+                listingsBySlot.set(
+                    listing.homepageHeroSlot as HomepageHeroSlot,
+                    listing
+                );
+            }
+        });
+
+        fallbackListings.forEach((listing, index) => {
+            const slot = missingSlots[index];
+            if (slot) {
+                listingsBySlot.set(slot, listing);
+            }
+        });
+
+        const listings = HOMEPAGE_HERO_SLOTS.map((slot) => {
+            const listing = listingsBySlot.get(slot);
+            if (!listing) return null;
+
+            const translation =
+                listing.translations.find((item) => item.locale === locale) ||
+                listing.translations.find((item) => item.locale === "tr") ||
+                listing.translations[0] ||
+                null;
+
+            return {
                 id: listing.id,
                 slug: listing.slug,
+                slot,
                 saleType: listing.saleType,
                 type: listing.type,
                 district: listing.district,
@@ -65,7 +106,15 @@ export async function GET(request: NextRequest) {
                 currency: listing.currency,
                 imageUrl: listing.media[0]?.url || null,
                 title: translation?.title || "",
-            },
+            };
+        }).filter((listing): listing is NonNullable<typeof listing> => Boolean(listing));
+
+        if (listings.length === 0) {
+            return NextResponse.json({ listings: [] });
+        }
+
+        return NextResponse.json({
+            listings,
         });
     } catch (error) {
         console.error("Public homepage hero listing API error:", error);

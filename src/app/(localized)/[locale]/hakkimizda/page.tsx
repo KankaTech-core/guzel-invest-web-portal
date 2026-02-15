@@ -175,7 +175,7 @@ export default async function AboutPage({ params }: PageProps) {
     const { locale } = await params;
 
     return (
-        <main className="overflow-x-hidden bg-white pt-24 pb-20">
+        <main className="overflow-x-hidden bg-white pt-16 pb-20">
             <section className="relative isolate min-h-[430px] overflow-hidden bg-gray-900 sm:min-h-[520px]">
                 <img
                     src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=2000&h=1200&fit=crop"

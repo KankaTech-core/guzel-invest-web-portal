@@ -9,6 +9,8 @@ interface RouteParams {
 }
 
 const HOMEPAGE_HERO_REMOVE_BLOCK_CODE = "HOMEPAGE_HERO_REMOVE_BLOCKED";
+const HOMEPAGE_HERO_SLOTS = [1, 2, 3] as const;
+type HomepageHeroSlot = (typeof HOMEPAGE_HERO_SLOTS)[number];
 
 const normalizeOptionalText = (value: unknown): string | null => {
     if (typeof value !== "string") return null;
@@ -20,6 +22,25 @@ const toNullableNumber = (value: unknown): number | null => {
     if (value === undefined || value === null || value === "") return null;
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
+};
+
+const parseHomepageHeroSlot = (
+    value: unknown
+): HomepageHeroSlot | null | "invalid" => {
+    if (value === undefined || value === null || value === "") {
+        return null;
+    }
+
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed)) {
+        return "invalid";
+    }
+
+    if (!HOMEPAGE_HERO_SLOTS.includes(parsed as HomepageHeroSlot)) {
+        return "invalid";
+    }
+
+    return parsed as HomepageHeroSlot;
 };
 
 interface MediaUpdateInput {
@@ -117,7 +138,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 );
             }
 
-            if (existing.showOnHomepageHero) {
+            if (existing.homepageHeroSlot !== null) {
                 return NextResponse.json(
                     {
                         error:
@@ -129,14 +150,37 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             }
         }
 
-        const requestedShowOnHomepageHero =
-            body.showOnHomepageHero !== undefined
-                ? body.showOnHomepageHero === true
-                : existing.showOnHomepageHero;
-        const showOnHomepageHero =
+        const requestedHomepageHeroSlot =
+            body.homepageHeroSlot !== undefined
+                ? parseHomepageHeroSlot(body.homepageHeroSlot)
+                : body.showOnHomepageHero !== undefined
+                    ? body.showOnHomepageHero === true
+                        ? 1
+                        : null
+                    : existing.homepageHeroSlot;
+
+        if (requestedHomepageHeroSlot === "invalid") {
+            return NextResponse.json(
+                { error: "Ana sayfa slotu sadece 1, 2 veya 3 olabilir." },
+                { status: 400 }
+            );
+        }
+
+        if (
+            requestedHomepageHeroSlot !== null &&
+            nextStatus !== ListingStatus.PUBLISHED
+        ) {
+            return NextResponse.json(
+                { error: "Ana sayfa için slot seçmek adına ilan yayında olmalıdır." },
+                { status: 400 }
+            );
+        }
+
+        const homepageHeroSlot =
             nextStatus === ListingStatus.PUBLISHED
-                ? requestedShowOnHomepageHero
-                : false;
+                ? requestedHomepageHeroSlot
+                : null;
+        const showOnHomepageHero = homepageHeroSlot !== null;
 
         // Update listing
         await prisma.$transaction(async (tx) => {
@@ -146,13 +190,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 create: { name: company },
             });
 
-            if (showOnHomepageHero) {
+            if (homepageHeroSlot !== null) {
                 await tx.listing.updateMany({
                     where: {
-                        showOnHomepageHero: true,
+                        homepageHeroSlot,
                         id: { not: id },
                     },
-                    data: { showOnHomepageHero: false },
+                    data: {
+                        homepageHeroSlot: null,
+                        showOnHomepageHero: false,
+                    },
                 });
             }
 
@@ -207,6 +254,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                     publishToHepsiemlak: body.publishToHepsiemlak ?? existing.publishToHepsiemlak,
                     publishToSahibinden: body.publishToSahibinden ?? existing.publishToSahibinden,
                     showOnHomepageHero,
+                    homepageHeroSlot,
                     publishedAt:
                         nextStatus === ListingStatus.PUBLISHED &&
                         existing.status !== ListingStatus.PUBLISHED

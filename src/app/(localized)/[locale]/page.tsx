@@ -10,6 +10,7 @@ import {
     getMediaUrl,
     getPropertyTypeLabel,
     getSaleTypeLabel,
+    cn,
 } from "@/lib/utils";
 import {
     Building2,
@@ -199,6 +200,7 @@ const testimonials = [
 interface HomepageHeroListing {
     id: string;
     slug: string;
+    slot?: number;
     saleType: string;
     type: string;
     district: string;
@@ -240,10 +242,12 @@ export default function HomePage() {
     const [neighborhood, setNeighborhood] = useState("");
     const [openDropdown, setOpenDropdown] = useState<"propertyType" | "neighborhood" | null>(null);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
-    const [heroListing, setHeroListing] = useState<HomepageHeroListing | null>(null);
+    const [heroListings, setHeroListings] = useState<HomepageHeroListing[]>([HERO_FALLBACK]);
+    const [heroSlideIndex, setHeroSlideIndex] = useState(0);
     const { version: searchVersion } = useVersion();
     const bannerRef = useRef<HTMLFormElement>(null);
     const testimonialRef = useRef<HTMLDivElement>(null);
+    const heroSwipeStartXRef = useRef<number | null>(null);
     const city = fixedCity;
     const district = fixedDistrict;
     const selectedPropertyType = propertyTypes.find((propertyTypeOption) => propertyTypeOption.value === propertyType);
@@ -281,10 +285,17 @@ export default function HomePage() {
                 const data = await response.json();
                 if (!isMounted) return;
 
-                setHeroListing(data?.listing || null);
+                const incomingListings = Array.isArray(data?.listings)
+                    ? data.listings
+                    : [];
+                setHeroListings(
+                    incomingListings.length > 0 ? incomingListings : [HERO_FALLBACK]
+                );
+                setHeroSlideIndex(0);
             } catch {
                 if (isMounted) {
-                    setHeroListing(null);
+                    setHeroListings([HERO_FALLBACK]);
+                    setHeroSlideIndex(0);
                 }
             }
         };
@@ -308,24 +319,66 @@ export default function HomePage() {
         router.push(`/${locale}/portfoy?${params.toString()}`);
     };
 
-    const activeHeroListing = heroListing || HERO_FALLBACK;
-    const heroImageUrl = activeHeroListing.imageUrl
-        ? getMediaUrl(activeHeroListing.imageUrl)
-        : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=700&h=500&fit=crop";
-    const heroSaleTypeLabel = getSaleTypeLabel(activeHeroListing.saleType, locale);
-    const heroTypeLabel = getPropertyTypeLabel(activeHeroListing.type, locale);
-    const heroFeatureParts = [
-        activeHeroListing.rooms,
-        activeHeroListing.area > 0 ? `${activeHeroListing.area}m²` : null,
-        activeHeroListing.seaView
-            ? locale === "tr"
-                ? "Deniz Manzaralı"
-                : "Sea View"
-            : activeHeroListing.district,
-    ].filter((item): item is string => Boolean(item));
-    const heroListingHref = activeHeroListing.slug
-        ? `/${locale}/ilan/${activeHeroListing.slug}`
-        : null;
+    const safeHeroListings =
+        heroListings.length > 0 ? heroListings : [HERO_FALLBACK];
+    const getHeroImageUrl = (listing: HomepageHeroListing) =>
+        listing.imageUrl
+            ? getMediaUrl(listing.imageUrl)
+            : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=700&h=500&fit=crop";
+    const getHeroListingHref = (listing: HomepageHeroListing) =>
+        listing.slug ? `/${locale}/ilan/${listing.slug}` : null;
+    const getHeroFeatureParts = (listing: HomepageHeroListing) =>
+        [
+            listing.rooms,
+            listing.area > 0 ? `${listing.area}m²` : null,
+            listing.seaView
+                ? locale === "tr"
+                    ? "Deniz Manzaralı"
+                    : "Sea View"
+                : listing.district,
+        ].filter((item): item is string => Boolean(item));
+    const canNavigateHero = safeHeroListings.length > 1;
+    const HERO_SWIPE_THRESHOLD_PX = 42;
+
+    const goToNextHeroSlide = () => {
+        if (!canNavigateHero) return;
+        setHeroSlideIndex((prev) => (prev + 1) % safeHeroListings.length);
+    };
+
+    const goToPrevHeroSlide = () => {
+        if (!canNavigateHero) return;
+        setHeroSlideIndex(
+            (prev) => (prev - 1 + safeHeroListings.length) % safeHeroListings.length
+        );
+    };
+
+    const handleHeroTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+        if (!canNavigateHero) return;
+        const touch = event.changedTouches[0];
+        heroSwipeStartXRef.current = touch ? touch.clientX : null;
+    };
+
+    const handleHeroTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+        if (!canNavigateHero) return;
+        const startX = heroSwipeStartXRef.current;
+        const touch = event.changedTouches[0];
+        heroSwipeStartXRef.current = null;
+
+        if (startX === null || !touch) return;
+
+        const deltaX = touch.clientX - startX;
+        if (Math.abs(deltaX) < HERO_SWIPE_THRESHOLD_PX) return;
+
+        if (deltaX < 0) {
+            goToNextHeroSlide();
+            return;
+        }
+        goToPrevHeroSlide();
+    };
+
+    const handleHeroTouchCancel = () => {
+        heroSwipeStartXRef.current = null;
+    };
 
     const renderCompactSearchBanner = (className = "") => (
         <form
@@ -492,77 +545,141 @@ export default function HomePage() {
                         {/* Right Column – Dashboard Cards */}
                         <div className="lg:col-span-7 grid grid-cols-12 gap-4">
                             {/* Featured Property Image */}
-                            {heroListingHref ? (
-                                <Link
-                                    href={heroListingHref}
-                                    className="col-span-12 sm:col-span-8 bg-gray-50 rounded-2xl overflow-hidden relative group min-h-[320px] block"
-                                    title="İlanı görüntüle"
-                                >
-                                    <img
-                                        src={heroImageUrl}
-                                        alt={activeHeroListing.title || "Featured Property"}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
-                                    <div className="absolute bottom-0 left-0 right-0 p-5">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="px-2 py-1 bg-orange-500 text-white text-[10px] font-semibold rounded uppercase">
-                                                {heroSaleTypeLabel}
-                                            </span>
-                                            <span className="px-2 py-1 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded">
-                                                {heroTypeLabel}
-                                            </span>
-                                        </div>
-                                        <h3 className="text-white text-lg font-semibold">
-                                            {activeHeroListing.title || "İlan"}
-                                        </h3>
-                                        <div className="flex items-center justify-between mt-2">
-                                            <span className="text-white/80 text-sm">
-                                                {heroFeatureParts.join(" · ")}
-                                            </span>
-                                            <span className="text-white text-lg font-bold">
-                                                {formatPrice(
-                                                    activeHeroListing.price,
-                                                    activeHeroListing.currency
-                                                )}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </Link>
-                            ) : (
-                                <div className="col-span-12 sm:col-span-8 bg-gray-50 rounded-2xl overflow-hidden relative group min-h-[320px]">
-                                    <img
-                                        src={heroImageUrl}
-                                        alt={activeHeroListing.title || "Featured Property"}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
-                                    <div className="absolute bottom-0 left-0 right-0 p-5">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className="px-2 py-1 bg-orange-500 text-white text-[10px] font-semibold rounded uppercase">
-                                                {heroSaleTypeLabel}
-                                            </span>
-                                            <span className="px-2 py-1 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded">
-                                                {heroTypeLabel}
-                                            </span>
-                                        </div>
-                                        <h3 className="text-white text-lg font-semibold">
-                                            {activeHeroListing.title || "İlan"}
-                                        </h3>
-                                        <div className="flex items-center justify-between mt-2">
-                                            <span className="text-white/80 text-sm">
-                                                {heroFeatureParts.join(" · ")}
-                                            </span>
-                                            <span className="text-white text-lg font-bold">
-                                                {formatPrice(
-                                                    activeHeroListing.price,
-                                                    activeHeroListing.currency
-                                                )}
-                                            </span>
-                                        </div>
+                            <div className="col-span-12 sm:col-span-8 bg-gray-50 rounded-2xl overflow-hidden relative min-h-[320px]">
+                                <div className="absolute inset-0 overflow-hidden">
+                                    <div
+                                        className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                                        style={{
+                                            transform: `translateX(-${heroSlideIndex * 100}%)`,
+                                            touchAction: "pan-y",
+                                        }}
+                                        onTouchStart={handleHeroTouchStart}
+                                        onTouchEnd={handleHeroTouchEnd}
+                                        onTouchCancel={handleHeroTouchCancel}
+                                    >
+                                        {safeHeroListings.map((listing, index) => {
+                                            const heroImageUrl = getHeroImageUrl(listing);
+                                            const heroListingHref = getHeroListingHref(listing);
+                                            const heroSaleTypeLabel = getSaleTypeLabel(
+                                                listing.saleType,
+                                                locale
+                                            );
+                                            const heroTypeLabel = getPropertyTypeLabel(
+                                                listing.type,
+                                                locale
+                                            );
+                                            const heroFeatureParts = getHeroFeatureParts(listing);
+
+                                            return (
+                                                <div
+                                                    key={`${listing.id}-${listing.slot ?? index}`}
+                                                    className="relative h-full w-full shrink-0"
+                                                >
+                                                    {heroListingHref ? (
+                                                        <Link
+                                                            href={heroListingHref}
+                                                            className="absolute inset-0 z-10"
+                                                            title="İlanı görüntüle"
+                                                        />
+                                                    ) : null}
+                                                    <img
+                                                        src={heroImageUrl}
+                                                        alt={listing.title || "Featured Property"}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
+                                                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 p-5">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="px-2 py-1 bg-orange-500 text-white text-[10px] font-semibold rounded uppercase">
+                                                                {heroSaleTypeLabel}
+                                                            </span>
+                                                            <span className="px-2 py-1 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded">
+                                                                {heroTypeLabel}
+                                                            </span>
+                                                        </div>
+                                                        <h3 className="text-white text-lg font-semibold">
+                                                            {listing.title || "İlan"}
+                                                        </h3>
+                                                        <div className="flex items-center justify-between mt-2">
+                                                            <span className="text-white/80 text-sm">
+                                                                {heroFeatureParts.join(" · ")}
+                                                            </span>
+                                                            <span className="text-white text-lg font-bold">
+                                                                {formatPrice(
+                                                                    listing.price,
+                                                                    listing.currency
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
-                            )}
+
+                                <div className="absolute inset-y-0 left-0 right-0 z-30 hidden sm:flex items-center justify-between px-3 pointer-events-none">
+                                    <button
+                                        type="button"
+                                        onClick={(event) => {
+                                            event.preventDefault();
+                                            event.stopPropagation();
+                                            goToPrevHeroSlide();
+                                        }}
+                                        disabled={!canNavigateHero}
+                                        className={cn(
+                                            "pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/45 bg-black/20 text-white backdrop-blur-sm transition-colors",
+                                            canNavigateHero
+                                                ? "hover:bg-black/35"
+                                                : "opacity-40 cursor-not-allowed"
+                                        )}
+                                        aria-label="Önceki ilan"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={(event) => {
+                                            event.preventDefault();
+                                            event.stopPropagation();
+                                            goToNextHeroSlide();
+                                        }}
+                                        disabled={!canNavigateHero}
+                                        className={cn(
+                                            "pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/45 bg-black/20 text-white backdrop-blur-sm transition-colors",
+                                            canNavigateHero
+                                                ? "hover:bg-black/35"
+                                                : "opacity-40 cursor-not-allowed"
+                                        )}
+                                        aria-label="Sonraki ilan"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </button>
+                                </div>
+
+                                {safeHeroListings.length > 1 ? (
+                                    <div className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5">
+                                        {safeHeroListings.map((item, index) => (
+                                            <button
+                                                key={`${item.id}-${item.slot ?? index}`}
+                                                type="button"
+                                                onClick={(event) => {
+                                                    event.preventDefault();
+                                                    event.stopPropagation();
+                                                    setHeroSlideIndex(index);
+                                                }}
+                                                className={cn(
+                                                    "h-1.5 rounded-full transition-all",
+                                                    index === heroSlideIndex
+                                                        ? "w-6 bg-white"
+                                                        : "w-2 bg-white/55 hover:bg-white/75"
+                                                )}
+                                                aria-label={`İlan ${index + 1}`}
+                                            />
+                                        ))}
+                                    </div>
+                                ) : null}
+                            </div>
 
                             {/* Mobile single version: V2 search banner right after image */}
                             <div className="col-span-12 lg:hidden">

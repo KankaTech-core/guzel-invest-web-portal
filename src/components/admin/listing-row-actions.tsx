@@ -13,14 +13,14 @@ interface ListingRowActionsProps {
     id: string;
     slug: string;
     status: ListingStatusValue;
-    showOnHomepageHero: boolean;
+    homepageHeroSlot: number | null;
 }
 
 export function ListingRowActions({
     id,
     slug,
     status,
-    showOnHomepageHero,
+    homepageHeroSlot,
 }: ListingRowActionsProps) {
     const router = useRouter();
     const [confirmAction, setConfirmAction] = useState<
@@ -76,7 +76,7 @@ export function ListingRowActions({
                 ? {
                     title: "Bu ilan ana sayfada gösteriliyor",
                     description:
-                        "Bu ilanı yayından kaldırmadan önce ana sayfa için başka bir ilan seçmelisiniz.",
+                        `Bu ilan Ana Sayfa ${homepageHeroSlot} alanında gösteriliyor. Yayından kaldırmadan önce bu slot için başka bir ilan seçmelisiniz.`,
                     confirmLabel: "İlanlara Git",
                     cancelLabel: "Vazgeç",
                     tone: "warning" as const,
@@ -121,7 +121,7 @@ export function ListingRowActions({
                     type="button"
                     onClick={() => {
                         if (!canRemove) return;
-                        if (showOnHomepageHero) {
+                        if (homepageHeroSlot !== null) {
                             setConfirmAction("homepageHeroGuard");
                             return;
                         }

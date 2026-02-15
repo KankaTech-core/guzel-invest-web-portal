@@ -84,6 +84,7 @@ model Listing {
   publishToHepsiemlak Boolean              @default(false)
   publishToSahibinden Boolean              @default(false)
   showOnHomepageHero  Boolean              @default(false)
+  homepageHeroSlot    Int?                 @unique
   aiTags              String[]
   aiProcessedAt       DateTime?
   createdAt           DateTime             @default(now())
@@ -103,6 +104,7 @@ model Listing {
   @@index([city, district])
   @@index([price])
   @@index([showOnHomepageHero, status])
+  @@index([homepageHeroSlot, status])
   @@map("listings")
 }
 

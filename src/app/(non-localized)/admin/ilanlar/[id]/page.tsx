@@ -85,7 +85,7 @@ export default async function EditListingPage({ params }: EditListingPageProps) 
         residenceEligible: listing.residenceEligible,
         publishToHepsiemlak: listing.publishToHepsiemlak,
         publishToSahibinden: listing.publishToSahibinden,
-        showOnHomepageHero: listing.showOnHomepageHero,
+        homepageHeroSlot: listing.homepageHeroSlot as 1 | 2 | 3 | null,
         translations: listing.translations.map((t) => ({
             id: t.id,
             locale: t.locale,

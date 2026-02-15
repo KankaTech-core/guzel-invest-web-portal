@@ -17,6 +17,27 @@ const toNullableNumber = (value: unknown): number | null => {
 };
 
 const toBoolean = (value: unknown): boolean => value === true;
+const HOMEPAGE_HERO_SLOTS = [1, 2, 3] as const;
+type HomepageHeroSlot = (typeof HOMEPAGE_HERO_SLOTS)[number];
+
+const parseHomepageHeroSlot = (
+    value: unknown
+): HomepageHeroSlot | null | "invalid" => {
+    if (value === undefined || value === null || value === "") {
+        return null;
+    }
+
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed)) {
+        return "invalid";
+    }
+
+    if (!HOMEPAGE_HERO_SLOTS.includes(parsed as HomepageHeroSlot)) {
+        return "invalid";
+    }
+
+    return parsed as HomepageHeroSlot;
+};
 
 export async function POST(request: NextRequest) {
     try {
@@ -53,7 +74,30 @@ export async function POST(request: NextRequest) {
         // Generate unique slug
         const slug = generateListingSlug(title, body.city, body.type);
         const company = normalizeOptionalText(body.company) || "Güzel Invest";
-        const showOnHomepageHero = toBoolean(body.showOnHomepageHero);
+        const nextStatus = (body.status || "DRAFT") as ListingStatus;
+        const requestedHomepageHeroSlot =
+            body.homepageHeroSlot !== undefined
+                ? parseHomepageHeroSlot(body.homepageHeroSlot)
+                : toBoolean(body.showOnHomepageHero)
+                    ? 1
+                    : null;
+
+        if (requestedHomepageHeroSlot === "invalid") {
+            return NextResponse.json(
+                { error: "Ana sayfa slotu sadece 1, 2 veya 3 olabilir." },
+                { status: 400 }
+            );
+        }
+
+        if (
+            requestedHomepageHeroSlot !== null &&
+            nextStatus !== ListingStatus.PUBLISHED
+        ) {
+            return NextResponse.json(
+                { error: "Ana sayfa için slot seçmek adına ilan yayında olmalıdır." },
+                { status: 400 }
+            );
+        }
 
         console.log("Creating listing with body:", JSON.stringify(body, null, 2));
 
@@ -68,10 +112,13 @@ export async function POST(request: NextRequest) {
                 create: { name: company },
             });
 
-            if (showOnHomepageHero) {
+            if (requestedHomepageHeroSlot !== null) {
                 await tx.listing.updateMany({
-                    where: { showOnHomepageHero: true },
-                    data: { showOnHomepageHero: false },
+                    where: { homepageHeroSlot: requestedHomepageHeroSlot },
+                    data: {
+                        homepageHeroSlot: null,
+                        showOnHomepageHero: false,
+                    },
                 });
             }
 
@@ -79,7 +126,7 @@ export async function POST(request: NextRequest) {
                 data: {
                     slug,
                     sku,
-                    status: body.status || "DRAFT",
+                    status: nextStatus,
                     type: body.type,
                     saleType: body.saleType,
                     company,
@@ -125,7 +172,8 @@ export async function POST(request: NextRequest) {
                     residenceEligible: toBoolean(body.residenceEligible),
                     publishToHepsiemlak: toBoolean(body.publishToHepsiemlak),
                     publishToSahibinden: toBoolean(body.publishToSahibinden),
-                    showOnHomepageHero,
+                    showOnHomepageHero: requestedHomepageHeroSlot !== null,
+                    homepageHeroSlot: requestedHomepageHeroSlot,
                     createdById: session.userId,
                     translations: {
                         create: (body.translations || [])

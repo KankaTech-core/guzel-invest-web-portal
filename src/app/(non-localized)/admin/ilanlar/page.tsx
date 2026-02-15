@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { getMediaUrl, cn, getPropertyTypeLabel, formatPrice } from "@/lib/utils";
-import { Plus, Star } from "lucide-react";
+import { ChevronDown, Plus, Star } from "lucide-react";
 import { ListingRowActions } from "@/components/admin/listing-row-actions";
 import { ListingStatus } from "@/generated/prisma";
 import ListingsFilters from "@/components/admin/listings-filters";
@@ -205,7 +205,7 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
         ...(platformFilter === "SAHIBINDEN" ? { publishToSahibinden: true } : {}),
     };
 
-    const [listings, companyOptionsFromListings, companyOptionsFromConfig, homepageHeroListing] =
+    const [listings, companyOptionsFromListings, companyOptionsFromConfig, homepageHeroListings] =
         await Promise.all([
             prisma.listing.findMany({
                 where,
@@ -234,14 +234,15 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                 select: { name: true },
                 orderBy: { name: "asc" },
             }),
-            prisma.listing.findFirst({
+            prisma.listing.findMany({
                 where: {
                     status: "PUBLISHED",
-                    showOnHomepageHero: true,
+                    homepageHeroSlot: { in: [1, 2, 3] },
                 },
                 select: {
                     id: true,
                     sku: true,
+                    homepageHeroSlot: true,
                     translations: {
                         where: { locale: "tr" },
                         take: 1,
@@ -250,6 +251,7 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                         },
                     },
                 },
+                orderBy: { homepageHeroSlot: "asc" },
             }),
         ]);
 
@@ -259,8 +261,9 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
             ...companyOptionsFromListings.map((listing) => listing.company),
         ])
     ).sort((a, b) => a.localeCompare(b, "tr-TR", { sensitivity: "base" }));
-    const homepageHeroTitle =
-        homepageHeroListing?.translations[0]?.title || "İsimsiz İlan";
+    const homepageHeroListingsBySlot = new Map(
+        homepageHeroListings.map((listing) => [listing.homepageHeroSlot, listing])
+    );
 
     return (
         <div>
@@ -271,32 +274,43 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                     <p className="text-gray-500 mt-1">Tüm ilanları yönetin</p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                    <Link
-                        href={
-                            homepageHeroListing
-                                ? `/admin/ilanlar/${homepageHeroListing.id}`
-                                : "#"
-                        }
-                        aria-disabled={!homepageHeroListing}
-                        className={cn(
-                            "btn btn-outline btn-md max-w-[320px]",
-                            homepageHeroListing
-                                ? "border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100"
-                                : "opacity-60 cursor-not-allowed pointer-events-none"
-                        )}
-                        title={
-                            homepageHeroListing
-                                ? "Ana sayfada gösterilen ilanı aç"
-                                : "Henüz ana sayfa hero için ilan seçilmedi"
-                        }
-                    >
-                        <Star className="w-4 h-4" />
-                        <span className="truncate">
-                            {homepageHeroListing
-                                ? `Ana Sayfada: ${homepageHeroListing.sku || homepageHeroTitle}`
-                                : "Ana Sayfada: Seçili İlan Yok"}
-                        </span>
-                    </Link>
+                    <details className="relative group">
+                        <summary className="btn btn-outline btn-md list-none border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100 cursor-pointer [&::-webkit-details-marker]:hidden">
+                            <Star className="w-4 h-4" />
+                            <span>Ana Sayfadakiler</span>
+                            <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180" />
+                        </summary>
+                        <div className="absolute right-0 top-[calc(100%+10px)] z-30 w-[360px] rounded-xl border border-gray-200 bg-white p-2 shadow-[0_16px_40px_rgba(15,23,42,0.16)]">
+                            {[1, 2, 3].map((slot) => {
+                                const slotListing = homepageHeroListingsBySlot.get(slot);
+                                const slotTitle =
+                                    slotListing?.translations[0]?.title || "İsimsiz İlan";
+
+                                if (!slotListing) {
+                                    return (
+                                        <div
+                                            key={slot}
+                                            className="rounded-lg px-3 py-2.5 text-sm text-gray-400"
+                                        >
+                                            Ana Sayfa {slot}: Seçili İlan Yok
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <Link
+                                        key={slot}
+                                        href={`/admin/ilanlar/${slotListing.id}`}
+                                        className="block rounded-lg px-3 py-2.5 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                                        title={`Ana sayfa ${slot}. alandaki ilanı aç`}
+                                    >
+                                        <span className="font-semibold">Ana Sayfa {slot}:</span>{" "}
+                                        <span>{slotListing.sku || slotTitle}</span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </details>
                     <Link
                         href="/admin/ilanlar/yeni"
                         className="btn btn-primary btn-md"
@@ -459,7 +473,7 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                                         id={listing.id}
                                         slug={listing.slug}
                                         status={listing.status as ListingStatus}
-                                        showOnHomepageHero={listing.showOnHomepageHero}
+                                        homepageHeroSlot={listing.homepageHeroSlot}
                                     />
                                 </td>
                             </tr>

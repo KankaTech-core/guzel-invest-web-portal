@@ -92,6 +92,7 @@ interface TagData {
 
 type ListingStatusValue = "DRAFT" | "PUBLISHED" | "ARCHIVED" | "REMOVED";
 type MediaOptimizationState = "hidden" | "optimizing" | "completed";
+type HomepageHeroSlotValue = 1 | 2 | 3;
 
 interface ListingData {
     id?: string;
@@ -143,7 +144,7 @@ interface ListingData {
     residenceEligible: boolean;
     publishToHepsiemlak: boolean;
     publishToSahibinden: boolean;
-    showOnHomepageHero: boolean;
+    homepageHeroSlot: HomepageHeroSlotValue | null;
     // Relations
     translations: ListingTranslation[];
     media?: Media[];
@@ -177,6 +178,8 @@ const SALE_TYPES = [
     { value: "SALE", label: "Satılık" },
     { value: "RENT", label: "Kiralık" },
 ];
+
+const HOMEPAGE_HERO_SLOT_OPTIONS: HomepageHeroSlotValue[] = [1, 2, 3];
 
 const LOCALES = [
     { code: "tr", label: "Türkçe", flag: "🇹🇷" },
@@ -524,7 +527,7 @@ const defaultListing: ListingData = {
     residenceEligible: false,
     publishToHepsiemlak: false,
     publishToSahibinden: false,
-    showOnHomepageHero: false,
+    homepageHeroSlot: null,
     translations: defaultTranslations,
     media: [],
     tags: [],
@@ -910,6 +913,9 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
     const [availableNeighborhoods, setAvailableNeighborhoods] = useState<string[]>([]);
     const [copiedField, setCopiedField] = useState<null | "id" | "sku">(null);
+    const [pendingHomepageHeroSlot, setPendingHomepageHeroSlot] = useState<
+        HomepageHeroSlotValue | null
+    >(null);
     const [isLeavePromptOpen, setIsLeavePromptOpen] = useState(false);
     const [leaveAction, setLeaveAction] = useState<null | "draft" | "publish">(null);
     const bypassUnsavedCheckRef = useRef(false);
@@ -1688,8 +1694,8 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             sku: savedListing.sku ?? prev.sku,
             company: savedListing.company || prev.company,
             status: savedListing.status || prev.status,
-            showOnHomepageHero:
-                savedListing.showOnHomepageHero ?? prev.showOnHomepageHero,
+            homepageHeroSlot:
+                savedListing.homepageHeroSlot ?? prev.homepageHeroSlot,
         }));
 
         return listingId;
@@ -1952,13 +1958,15 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         }
     };
 
-    const handleHomepageHeroUpdate = async () => {
+    const handleHomepageHeroUpdate = async (
+        slot: HomepageHeroSlotValue | null
+    ) => {
         if (!formData.id) return;
 
         const response = await fetch(`/api/admin/listings/${formData.id}/homepage-hero`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ show: true }),
+            body: JSON.stringify({ slot }),
         });
 
         if (!response.ok) {
@@ -1971,7 +1979,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
 
         setFormData((prev) => ({
             ...prev,
-            showOnHomepageHero: true,
+            homepageHeroSlot: slot,
         }));
     };
 
@@ -1987,7 +1995,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                 return;
             }
             if (confirmAction === "homepageHero") {
-                await handleHomepageHeroUpdate();
+                await handleHomepageHeroUpdate(pendingHomepageHeroSlot);
                 router.refresh();
                 return;
             }
@@ -2018,6 +2026,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         } finally {
             setIsActionLoading(false);
             setConfirmAction(null);
+            setPendingHomepageHeroSlot(null);
         }
     };
 
@@ -2119,24 +2128,31 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             confirmLabel: "İlanı Sil",
             cancelLabel: "Vazgeç",
         },
-        homepageHero: {
-            title: "Ana sayfa hero alanında gösterilsin mi?",
-            description:
-                "Bu işlemden sonra bu ilan ana sayfanın hero bölümünde görünür. Önceki seçim otomatik olarak kaldırılır.",
-            tone: "warning",
-            confirmLabel: "Evet, Göster",
-            cancelLabel: "Vazgeç",
-        },
         homepageHeroReplacementRequired: {
             title: "Bu ilan ana sayfada gösteriliyor",
             description:
-                "Bu ilanı yayından kaldırmadan önce ana sayfa için başka bir ilan seçmelisiniz.",
+                `Bu ilan Ana Sayfa ${formData.homepageHeroSlot ?? "?"} alanında gösteriliyor. Yayından kaldırmadan önce bu slot için başka bir ilan seçmelisiniz.`,
             tone: "warning",
             confirmLabel: "İlanlara Git",
             cancelLabel: "Vazgeç",
         },
     };
-    const activeConfirm = confirmAction ? confirmConfig[confirmAction] : null;
+    const activeConfirm =
+        confirmAction === "homepageHero"
+            ? {
+                title: pendingHomepageHeroSlot
+                    ? `Ana Sayfa ${pendingHomepageHeroSlot} alanında gösterilsin mi?`
+                    : "Ana sayfa slider alanından kaldırmak istiyor musunuz?",
+                description: pendingHomepageHeroSlot
+                    ? `Bu seçimden sonra ilan Ana Sayfa ${pendingHomepageHeroSlot} slotunda görünecek. O slotta seçili ilan varsa otomatik kaldırılacak.`
+                    : "Bu işlem ilanın ana sayfa slider slot atamasını kaldırır.",
+                tone: "warning" as const,
+                confirmLabel: pendingHomepageHeroSlot ? "Evet, Ata" : "Kaldır",
+                cancelLabel: "Vazgeç",
+            }
+            : confirmAction
+                ? confirmConfig[confirmAction]
+                : null;
 
     const handleCopyValue = async (field: "id" | "sku", value: string | null | undefined) => {
         if (!value || typeof navigator === "undefined") return;
@@ -2177,13 +2193,20 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         return null;
     };
 
-    const handleHomepageHeroRequest = () => {
-        const validationError = getHomepageHeroValidationError();
-        if (validationError) {
-            setError(validationError);
+    const handleHomepageHeroRequest = (slot: HomepageHeroSlotValue | null) => {
+        if (slot !== null) {
+            const validationError = getHomepageHeroValidationError();
+            if (validationError) {
+                setError(validationError);
+                return;
+            }
+        }
+
+        if (slot === formData.homepageHeroSlot) {
             return;
         }
 
+        setPendingHomepageHeroSlot(slot);
         setConfirmAction("homepageHero");
     };
 
@@ -2329,38 +2352,67 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                     )}
                     {!isNew && formData.id && (
                         <div className="flex flex-wrap justify-end gap-2">
-                            <button
-                                type="button"
-                                onClick={handleHomepageHeroRequest}
-                                disabled={
-                                    isActionLoading ||
-                                    formData.status !== "PUBLISHED" ||
-                                    formData.showOnHomepageHero
-                                }
-                                className={cn(
-                                    "inline-flex items-center gap-2 px-4 py-1.5 border text-sm font-semibold rounded-lg transition-all shadow-sm",
-                                    formData.showOnHomepageHero
-                                        ? "bg-orange-50 text-orange-700 border-orange-200"
-                                        : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50",
-                                    formData.status !== "PUBLISHED" &&
-                                        "opacity-60 cursor-not-allowed hover:bg-white",
-                                    isActionLoading && "opacity-75 cursor-wait"
-                                )}
-                                title={
-                                    formData.status !== "PUBLISHED"
-                                        ? "Ana sayfada göstermek için ilanın yayınlanmış olması gerekir."
-                                        : formData.showOnHomepageHero
-                                            ? "Bu ilan zaten ana sayfada gösteriliyor."
-                                            : "Ana Sayfada Göster"
-                                }
-                            >
-                                <Star className="w-3.5 h-3.5" />
-                                <span>
-                                    {formData.showOnHomepageHero
-                                        ? "Ana Sayfada Gösteriliyor"
-                                        : "Ana Sayfada Göster"}
-                                </span>
-                            </button>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {HOMEPAGE_HERO_SLOT_OPTIONS.map((slot) => {
+                                    const isSelected = formData.homepageHeroSlot === slot;
+                                    return (
+                                        <button
+                                            key={slot}
+                                            type="button"
+                                            onClick={() => handleHomepageHeroRequest(slot)}
+                                            disabled={
+                                                isActionLoading ||
+                                                formData.status !== "PUBLISHED"
+                                            }
+                                            className={cn(
+                                                "inline-flex items-center gap-2 px-4 py-1.5 border text-sm font-semibold rounded-lg transition-all shadow-sm",
+                                                isSelected
+                                                    ? "bg-orange-50 text-orange-700 border-orange-200"
+                                                    : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50",
+                                                formData.status !== "PUBLISHED" &&
+                                                    "opacity-60 cursor-not-allowed hover:bg-white",
+                                                isActionLoading && "opacity-75 cursor-wait"
+                                            )}
+                                            title={
+                                                formData.status !== "PUBLISHED"
+                                                    ? "Ana sayfada göstermek için ilanın yayınlanmış olması gerekir."
+                                                    : `Bu ilanı Ana Sayfa ${slot} slotuna ata`
+                                            }
+                                        >
+                                            <Star className="w-3.5 h-3.5" />
+                                            <span>
+                                                {isSelected
+                                                    ? `Ana Sayfa ${slot} (Seçili)`
+                                                    : `Ana Sayfa ${slot}`}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                                <button
+                                    type="button"
+                                    onClick={() => handleHomepageHeroRequest(null)}
+                                    disabled={
+                                        isActionLoading ||
+                                        formData.status !== "PUBLISHED" ||
+                                        formData.homepageHeroSlot === null
+                                    }
+                                    className={cn(
+                                        "inline-flex items-center gap-2 px-4 py-1.5 border text-sm font-semibold rounded-lg transition-all shadow-sm",
+                                        "bg-white text-gray-700 border-gray-200 hover:bg-gray-50",
+                                        (formData.status !== "PUBLISHED" ||
+                                            formData.homepageHeroSlot === null) &&
+                                            "opacity-60 cursor-not-allowed hover:bg-white",
+                                        isActionLoading && "opacity-75 cursor-wait"
+                                    )}
+                                    title={
+                                        formData.homepageHeroSlot === null
+                                            ? "Bu ilanın ana sayfa slot ataması bulunmuyor."
+                                            : "İlanı ana sayfa slotundan kaldır"
+                                    }
+                                >
+                                    Ana Sayfadan Kaldır
+                                </button>
+                            </div>
                             {formData.status === "PUBLISHED" && formData.slug && (
                                 <Link
                                     href={`/tr/ilan/${formData.slug}`}
@@ -3659,7 +3711,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                     {!isNew && formData.status === "PUBLISHED" && (
                         <button
                             onClick={() => {
-                                if (formData.showOnHomepageHero) {
+                                if (formData.homepageHeroSlot !== null) {
                                     setConfirmAction("homepageHeroReplacementRequired");
                                     return;
                                 }
@@ -3730,7 +3782,10 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                 tone={activeConfirm?.tone}
                 isLoading={isActionLoading}
                 onCancel={() => {
-                    if (!isActionLoading) setConfirmAction(null);
+                    if (!isActionLoading) {
+                        setConfirmAction(null);
+                        setPendingHomepageHeroSlot(null);
+                    }
                 }}
                 onConfirm={handleConfirmAction}
             />
