@@ -29,6 +29,7 @@ export interface ListingGalleryItem {
 interface ListingDetailGalleryProps {
     items: ListingGalleryItem[];
     title: string;
+    isRemoved?: boolean;
 }
 
 const subscribeNoop = () => () => { };
@@ -38,7 +39,11 @@ const isMobileViewport = () =>
     typeof window !== "undefined" &&
     window.matchMedia("(max-width: 767px)").matches;
 
-export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps) {
+export function ListingDetailGallery({
+    items,
+    title,
+    isRemoved = false,
+}: ListingDetailGalleryProps) {
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [isReelOpen, setIsReelOpen] = useState(false);
     const [desktopCarouselIndex, setDesktopCarouselIndex] = useState<number | null>(
@@ -435,6 +440,18 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
         );
     }
 
+    const renderRemovedBadge = () => {
+        if (!isRemoved) return null;
+
+        return (
+            <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-4">
+                <div className="rounded-xl border border-red-300 bg-red-600/95 px-5 py-3 text-center text-sm font-semibold text-white shadow-[0_10px_30px_rgba(220,38,38,0.35)] md:text-base">
+                    Bu İlan Kaldırıldı
+                </div>
+            </div>
+        );
+    };
+
     return (
         <>
             <div className="md:hidden">
@@ -476,6 +493,7 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
                             ))}
                         </div>
                     </div>
+                    {renderRemovedBadge()}
 
                     {canNavigate ? (
                         <div className="absolute bottom-3 right-3 z-20 flex items-center overflow-hidden rounded-lg border border-slate-200/90 bg-white/95 shadow-[0_4px_14px_rgba(15,23,42,0.18)] backdrop-blur-[2px]">
@@ -525,6 +543,7 @@ export function ListingDetailGallery({ items, title }: ListingDetailGalleryProps
                             sizes="(min-width: 768px) 75vw, 100vw"
                         />
                     </div>
+                    {renderRemovedBadge()}
                 </button>
 
                 <div className="grid gap-3 md:h-full md:grid-rows-2">

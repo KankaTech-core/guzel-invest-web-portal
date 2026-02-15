@@ -733,6 +733,8 @@ function SortableMediaItem({
     };
 
     const isCover = index === 0;
+    const isPortfolio = index > 0 && index < 4;
+    const imagePath = item.thumbnailUrl || item.url;
 
     return (
         <div
@@ -742,19 +744,34 @@ function SortableMediaItem({
             {...listeners}
             className={cn(
                 "relative aspect-square rounded-lg overflow-hidden border-2 transition-all cursor-grab active:cursor-grabbing group",
-                isCover ? "border-orange-500 shadow-md" : "border-transparent hover:border-orange-200",
-                isDragging && "scale-105 shadow-xl ring-2 ring-orange-400 z-50 opacity-80"
+                isCover
+                    ? "border-orange-500 shadow-md"
+                    : isPortfolio
+                        ? "border-blue-500 shadow-md"
+                        : "border-transparent hover:border-orange-200",
+                isDragging &&
+                    (isPortfolio
+                        ? "scale-105 shadow-xl ring-2 ring-blue-400 z-50 opacity-80"
+                        : "scale-105 shadow-xl ring-2 ring-orange-400 z-50 opacity-80")
             )}
         >
             <img
-                src={resolveMediaUrl(item.url)}
+                src={resolveMediaUrl(imagePath)}
                 alt=""
                 className="w-full h-full object-cover"
+                loading="lazy"
+                decoding="async"
+                draggable={false}
             />
 
             {isCover && (
                 <span className="absolute top-2 left-2 px-2 py-1 bg-orange-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-sm shadow-sm z-10">
                     Kapak
+                </span>
+            )}
+            {isPortfolio && (
+                <span className="absolute top-2 left-2 px-2 py-1 bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wider rounded-sm shadow-sm z-10">
+                    Portföy
                 </span>
             )}
 
@@ -870,7 +887,12 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     const [selectedTags, setSelectedTags] = useState<TagData[]>(listing?.tags || []);
     const [activeId, setActiveId] = useState<string | null>(null);
     const [confirmAction, setConfirmAction] = useState<
-        null | "archive" | "remove" | "delete" | "homepageHero"
+        | null
+        | "archive"
+        | "remove"
+        | "delete"
+        | "homepageHero"
+        | "homepageHeroReplacementRequired"
     >(null);
     const [isActionLoading, setIsActionLoading] = useState(false);
     const [translationsLocked, setTranslationsLocked] = useState(
@@ -1960,6 +1982,10 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         setError(null);
 
         try {
+            if (confirmAction === "homepageHeroReplacementRequired") {
+                safePush("/admin/ilanlar");
+                return;
+            }
             if (confirmAction === "homepageHero") {
                 await handleHomepageHeroUpdate();
                 router.refresh();
@@ -2062,24 +2088,36 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         () => parseTagTranslations(currentTranslation?.features),
         [currentTranslation?.features]
     );
-    const confirmConfig: Record<string, { title: string; description: string; tone: "warning" | "danger"; confirmLabel: string }> = {
+    const confirmConfig: Record<
+        string,
+        {
+            title: string;
+            description: string;
+            tone: "warning" | "danger";
+            confirmLabel: string;
+            cancelLabel?: string;
+        }
+    > = {
         archive: {
             title: "İlan arşivlensin mi?",
             description: "Arşivlenen ilan sitede görünmez.",
             tone: "warning",
             confirmLabel: "Arşivle",
+            cancelLabel: "Vazgeç",
         },
         remove: {
             title: "İlan yayından kaldırılsın mı?",
             description: "Bu işlem ilanın durumunu Kaldırıldı olarak günceller.",
             tone: "danger",
             confirmLabel: "Yayından Kaldır",
+            cancelLabel: "Vazgeç",
         },
         delete: {
             title: "İlan tamamen silinsin mi?",
             description: "Bu işlem geri alınamaz.",
             tone: "danger",
             confirmLabel: "İlanı Sil",
+            cancelLabel: "Vazgeç",
         },
         homepageHero: {
             title: "Ana sayfa hero alanında gösterilsin mi?",
@@ -2087,6 +2125,15 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                 "Bu işlemden sonra bu ilan ana sayfanın hero bölümünde görünür. Önceki seçim otomatik olarak kaldırılır.",
             tone: "warning",
             confirmLabel: "Evet, Göster",
+            cancelLabel: "Vazgeç",
+        },
+        homepageHeroReplacementRequired: {
+            title: "Bu ilan ana sayfada gösteriliyor",
+            description:
+                "Bu ilanı yayından kaldırmadan önce ana sayfa için başka bir ilan seçmelisiniz.",
+            tone: "warning",
+            confirmLabel: "İlanlara Git",
+            cancelLabel: "Vazgeç",
         },
     };
     const activeConfirm = confirmAction ? confirmConfig[confirmAction] : null;
@@ -3011,6 +3058,9 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                                             label: option,
                                         })),
                                     ]}
+                                    searchable
+                                    searchPlaceholder="Şehir yazın"
+                                    searchMatchMode="startsWith"
                                 />
                                 <Select
                                     label="İlçe"
@@ -3029,6 +3079,9 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                                             label: option,
                                         })),
                                     ]}
+                                    searchable
+                                    searchPlaceholder="İlçe yazın"
+                                    searchMatchMode="startsWith"
                                 />
                                 <Select
                                     label="Mahalle"
@@ -3460,6 +3513,11 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                                         : "Aşağıdaki görseller yüklenemedi. Kaldırıp yeniden deneyebilirsiniz."}
                                 </p>
                             )}
+                            {(formData.media?.length || 0) > 0 && (
+                                <p className="text-xs text-gray-500">
+                                    İlk görsel kapak olarak kullanılır. Sonraki ilk 3 görsel portföy carouseli için mavi etiketle işaretlenir.
+                                </p>
+                            )}
 
                             {isMounted && (
                                 <DndContext
@@ -3487,21 +3545,37 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                                     </div>
 
                                     <DragOverlay adjustScale={true}>
-                                        {activeId ? (
-                                            <div className="relative aspect-square rounded-lg overflow-hidden border-2 border-orange-500 shadow-2xl scale-105 ring-4 ring-orange-500/20 bg-white">
-                                                {(() => {
-                                                    const item = formData.media?.find((m) => m.id === activeId);
-                                                    if (!item) return null;
-                                                    return (
-                                                        <img
-                                                            src={resolveMediaUrl(item.url)}
-                                                            alt=""
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    );
-                                                })()}
-                                            </div>
-                                        ) : null}
+                                        {(() => {
+                                            if (!activeId) return null;
+                                            const activeMediaIndex =
+                                                formData.media?.findIndex((m) => m.id === activeId) ?? -1;
+                                            if (activeMediaIndex < 0) return null;
+                                            const item = formData.media?.[activeMediaIndex];
+                                            if (!item) return null;
+                                            const isActivePortfolio =
+                                                activeMediaIndex > 0 && activeMediaIndex < 4;
+
+                                            return (
+                                                <div
+                                                    className={cn(
+                                                        "relative aspect-square rounded-lg overflow-hidden border-2 shadow-2xl scale-105 ring-4 bg-white",
+                                                        isActivePortfolio
+                                                            ? "border-blue-500 ring-blue-500/20"
+                                                            : "border-orange-500 ring-orange-500/20"
+                                                    )}
+                                                >
+                                                    <img
+                                                        src={resolveMediaUrl(
+                                                            item.thumbnailUrl || item.url
+                                                        )}
+                                                        alt=""
+                                                        className="w-full h-full object-cover"
+                                                        decoding="async"
+                                                        draggable={false}
+                                                    />
+                                                </div>
+                                            );
+                                        })()}
                                     </DragOverlay>
                                 </DndContext>
                             )}
@@ -3584,7 +3658,13 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                     )}
                     {!isNew && formData.status === "PUBLISHED" && (
                         <button
-                            onClick={() => setConfirmAction("remove")}
+                            onClick={() => {
+                                if (formData.showOnHomepageHero) {
+                                    setConfirmAction("homepageHeroReplacementRequired");
+                                    return;
+                                }
+                                setConfirmAction("remove");
+                            }}
                             className="btn btn-ghost btn-md text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
                             <CircleOff className="w-4 h-4" />
@@ -3646,6 +3726,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                 title={activeConfirm?.title || ""}
                 description={activeConfirm?.description}
                 confirmLabel={activeConfirm?.confirmLabel}
+                cancelLabel={activeConfirm?.cancelLabel}
                 tone={activeConfirm?.tone}
                 isLoading={isActionLoading}
                 onCancel={() => {

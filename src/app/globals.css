@@ -517,6 +517,22 @@ select.input {
   transform: scale(1.1);
 }
 
+.slider-input-histogram::-webkit-slider-thumb {
+  width: 1.6rem;
+  height: 1.6rem;
+  background-color: #2563EB !important;
+  border: 3px solid #2563EB !important;
+  box-shadow: 0 6px 16px rgb(37 99 235 / 0.35);
+}
+
+.slider-input-histogram::-moz-range-thumb {
+  width: 1.6rem;
+  height: 1.6rem;
+  background-color: #2563EB !important;
+  border: 3px solid #2563EB !important;
+  box-shadow: 0 6px 16px rgb(37 99 235 / 0.35);
+}
+
 /* ============================================
    TEXT COLOR HELPERS
    ============================================ */

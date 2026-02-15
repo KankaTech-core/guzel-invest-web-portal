@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteImage } from "@/lib/minio";
+import { ListingStatus } from "@/generated/prisma";
 
 interface RouteParams {
     params: Promise<{ id: string }>;
 }
+
+const HOMEPAGE_HERO_REMOVE_BLOCK_CODE = "HOMEPAGE_HERO_REMOVE_BLOCKED";
 
 const normalizeOptionalText = (value: unknown): string | null => {
     if (typeof value !== "string") return null;
@@ -79,10 +82,61 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
         const requestedCompany = normalizeOptionalText(body.company);
         const company = requestedCompany || existing.company || "Güzel Invest";
-        const showOnHomepageHero =
+        const statusFromBody = body.status as ListingStatus | undefined;
+
+        if (
+            statusFromBody !== undefined &&
+            !Object.values(ListingStatus).includes(statusFromBody)
+        ) {
+            return NextResponse.json(
+                { error: "Geçersiz ilan durumu gönderildi." },
+                { status: 400 }
+            );
+        }
+
+        const nextStatus = statusFromBody ?? existing.status;
+
+        if (
+            nextStatus === ListingStatus.REMOVED &&
+            existing.status !== ListingStatus.REMOVED
+        ) {
+            if (existing.status === ListingStatus.DRAFT) {
+                return NextResponse.json(
+                    {
+                        error:
+                            "Taslak ilanlar yayından kaldırılamaz. Taslak ilanlar yalnızca silinebilir.",
+                    },
+                    { status: 400 }
+                );
+            }
+
+            if (existing.status !== ListingStatus.PUBLISHED) {
+                return NextResponse.json(
+                    { error: "Sadece yayındaki ilanlar kaldırılabilir." },
+                    { status: 400 }
+                );
+            }
+
+            if (existing.showOnHomepageHero) {
+                return NextResponse.json(
+                    {
+                        error:
+                            "Bu ilan ana sayfada gösteriliyor. Yayından kaldırmadan önce ana sayfa için başka bir ilan seçin.",
+                        code: HOMEPAGE_HERO_REMOVE_BLOCK_CODE,
+                    },
+                    { status: 409 }
+                );
+            }
+        }
+
+        const requestedShowOnHomepageHero =
             body.showOnHomepageHero !== undefined
                 ? body.showOnHomepageHero === true
                 : existing.showOnHomepageHero;
+        const showOnHomepageHero =
+            nextStatus === ListingStatus.PUBLISHED
+                ? requestedShowOnHomepageHero
+                : false;
 
         // Update listing
         await prisma.$transaction(async (tx) => {
@@ -106,7 +160,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 where: { id },
                 data: {
                     sku: existing.sku, // immutable guard
-                    status: body.status ?? existing.status,
+                    status: nextStatus,
                     type: body.type ?? existing.type,
                     saleType: body.saleType ?? existing.saleType,
                     company,
@@ -154,7 +208,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                     publishToSahibinden: body.publishToSahibinden ?? existing.publishToSahibinden,
                     showOnHomepageHero,
                     publishedAt:
-                        body.status === "PUBLISHED" && existing.status !== "PUBLISHED"
+                        nextStatus === ListingStatus.PUBLISHED &&
+                        existing.status !== ListingStatus.PUBLISHED
                             ? new Date()
                             : existing.publishedAt,
                 },

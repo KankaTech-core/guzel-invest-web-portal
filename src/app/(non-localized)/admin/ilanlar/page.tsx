@@ -313,32 +313,42 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 mb-3">
-                <Link
-                    href={buildUrl({ status: undefined })}
-                    className={cn(
-                        "px-4 py-2 rounded-full text-sm font-medium border transition-colors",
-                        !statusFilter
-                            ? "bg-orange-500 text-white border-orange-500"
-                            : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                    )}
-                >
-                    Tümü
-                </Link>
-                <Link
-                    href={buildUrl({ status: "ARCHIVED" })}
-                    className={cn(
-                        "px-4 py-2 rounded-full text-sm font-medium border transition-colors",
-                        statusFilter === "ARCHIVED"
-                            ? "bg-orange-500 text-white border-orange-500"
-                            : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                    )}
-                >
-                    Arşiv
-                </Link>
+            <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                    <Link
+                        href={buildUrl({ status: undefined })}
+                        className={cn(
+                            "px-4 py-2 rounded-full text-sm font-medium border transition-colors",
+                            !statusFilter
+                                ? "bg-orange-500 text-white border-orange-500"
+                                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                        )}
+                    >
+                        Tümü
+                    </Link>
+                    <Link
+                        href={buildUrl({ status: "ARCHIVED" })}
+                        className={cn(
+                            "px-4 py-2 rounded-full text-sm font-medium border transition-colors",
+                            statusFilter === "ARCHIVED"
+                                ? "bg-orange-500 text-white border-orange-500"
+                                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                        )}
+                    >
+                        Arşiv
+                    </Link>
+                </div>
+                {(saleTypeFilter || platformFilter) && (
+                    <Link
+                        href={buildUrl({ saleType: undefined, platform: undefined })}
+                        className="text-sm text-gray-400 hover:text-orange-500 transition-colors"
+                    >
+                        Temizle
+                    </Link>
+                )}
             </div>
 
-            <div className="mb-6">
+            <div className="mb-1">
                 <ListingsFilters companyOptions={companyOptions} />
             </div>
 
@@ -449,6 +459,7 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                                         id={listing.id}
                                         slug={listing.slug}
                                         status={listing.status as ListingStatus}
+                                        showOnHomepageHero={listing.showOnHomepageHero}
                                     />
                                 </td>
                             </tr>

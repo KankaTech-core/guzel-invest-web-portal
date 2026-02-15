@@ -11,10 +11,12 @@ export async function GET(
         const { searchParams } = new URL(req.url);
         const locale = searchParams.get("locale") || "tr";
 
-        const listing = await prisma.listing.findUnique({
+        const listing = await prisma.listing.findFirst({
             where: {
                 slug,
-                status: ListingStatus.PUBLISHED,
+                status: {
+                    in: [ListingStatus.PUBLISHED, ListingStatus.REMOVED],
+                },
             },
             include: {
                 translations: {

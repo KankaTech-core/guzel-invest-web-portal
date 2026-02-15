@@ -36,6 +36,13 @@ import {
     isAbortFetchError,
     parseApiErrorMessage,
 } from "@/lib/fetch-error";
+import {
+    isCategoryFieldVisibleForTypes,
+    normalizeZoningStatus,
+    PROPERTY_TYPE_OPTIONS,
+    ZONING_STATUS_OPTIONS,
+} from "@/lib/listing-type-rules";
+import { Select } from "@/components/ui";
 
 interface PortfolioClientProps {
     locale: string;
@@ -105,6 +112,16 @@ interface FiltersState {
     minArea?: number;
     maxArea?: number;
     rooms: string[];
+    zoningStatus: string;
+    parcelNo: string;
+    minEmsal?: number;
+    maxEmsal?: number;
+    minGroundFloorArea?: number;
+    maxGroundFloorArea?: number;
+    minBasementArea?: number;
+    maxBasementArea?: number;
+    hasWaterSource?: boolean;
+    hasFruitTrees?: boolean;
     sort: SortOption;
 }
 
@@ -118,20 +135,16 @@ const PRICE_STEP = 10000;
 const AREA_MIN = 0;
 const AREA_MAX = 500;
 const AREA_STEP = 5;
+const COMMERCIAL_AREA_MIN = 0;
+const COMMERCIAL_AREA_MAX = 2000;
+const COMMERCIAL_AREA_STEP = 10;
+const EMSAL_MIN = 0;
+const EMSAL_MAX = 5;
+const EMSAL_STEP = 0.05;
 const IMAGE_SWIPE_THRESHOLD_PX = 48;
 const MOBILE_DRAWER_ANIMATION_MS = 280;
-const DESCRIPTION_PREVIEW_WORD_COUNT = 35;
 
-const propertyTypes = [
-    { value: "APARTMENT", label: "Daire" },
-    { value: "VILLA", label: "Villa" },
-    { value: "PENTHOUSE", label: "Penthouse" },
-    { value: "LAND", label: "Arsa" },
-    { value: "COMMERCIAL", label: "Ticari" },
-    { value: "OFFICE", label: "Ofis" },
-    { value: "SHOP", label: "Dükkan" },
-    { value: "FARM", label: "Çiftlik" },
-] as const;
+const propertyTypes = PROPERTY_TYPE_OPTIONS;
 
 const saleTypes = [
     { value: "SALE", label: "Satılık" },
@@ -158,12 +171,36 @@ const sortOptions: { value: SortOption; label: string }[] = [
     { value: "areaDesc", label: "m² (Büyükten Küçüğe)" },
 ];
 
+const ACTIVE_FILTER_QUERY_KEYS = [
+    "type",
+    "saleType",
+    "city",
+    "district",
+    "neighborhood",
+    "minPrice",
+    "maxPrice",
+    "minArea",
+    "maxArea",
+    "rooms",
+    "zoningStatus",
+    "parcelNo",
+    "minEmsal",
+    "maxEmsal",
+    "minGroundFloorArea",
+    "maxGroundFloorArea",
+    "minBasementArea",
+    "maxBasementArea",
+    "hasWaterSource",
+    "hasFruitTrees",
+] as const;
+
 interface InlineRangeSliderProps {
     min: number;
     max: number;
     step: number;
     value: [number, number];
     onChange: (value: [number, number]) => void;
+    histogramValues?: number[];
 }
 
 interface DropdownOption {
@@ -280,12 +317,49 @@ function InlineRangeSlider({
     step,
     value,
     onChange,
+    histogramValues = [],
 }: InlineRangeSliderProps) {
     const getPercent = (inputValue: number) =>
         ((inputValue - min) / (max - min)) * 100;
 
     const minPercent = getPercent(value[0]);
     const maxPercent = getPercent(value[1]);
+    const histogramBars = useMemo(() => {
+        if (max <= min || histogramValues.length === 0) {
+            return [];
+        }
+
+        const binCount = 20;
+        const bins = Array.from({ length: binCount }, () => 0);
+        const range = max - min;
+
+        histogramValues.forEach((rawValue) => {
+            const boundedValue = Math.max(min, Math.min(max, rawValue));
+            const ratio = (boundedValue - min) / range;
+            const index = Math.min(binCount - 1, Math.floor(ratio * binCount));
+            bins[index] += 1;
+        });
+
+        const peak = Math.max(...bins);
+        if (peak === 0) {
+            return [];
+        }
+
+        return bins.map((count, index) => {
+            const normalized = count / peak;
+            const heightPercent = count === 0
+                ? 8
+                : Math.max(14, Math.round(18 + normalized * 82));
+
+            return {
+                id: index,
+                count,
+                heightPercent,
+                centerPercent: ((index + 0.5) / binCount) * 100,
+            };
+        });
+    }, [histogramValues, max, min]);
+    const hasHistogram = histogramBars.length > 0;
 
     const handleMinChange = (event: ChangeEvent<HTMLInputElement>) => {
         const nextMin = Math.min(Number(event.target.value), value[1] - step);
@@ -297,7 +371,7 @@ function InlineRangeSlider({
         onChange([value[0], nextMax]);
     };
 
-    return (
+    const sliderLayer = (
         <div className="relative h-6">
             <div className="slider-track-base" />
             <div
@@ -315,7 +389,7 @@ function InlineRangeSlider({
                 step={step}
                 value={value[0]}
                 onChange={handleMinChange}
-                className="slider-input"
+                className={hasHistogram ? "slider-input slider-input-histogram" : "slider-input"}
                 style={{ zIndex: value[0] > max - (max - min) / 10 ? 35 : 30 }}
             />
             <input
@@ -325,9 +399,39 @@ function InlineRangeSlider({
                 step={step}
                 value={value[1]}
                 onChange={handleMaxChange}
-                className="slider-input"
+                className={hasHistogram ? "slider-input slider-input-histogram" : "slider-input"}
                 style={{ zIndex: value[1] < min + (max - min) / 10 ? 35 : 30 }}
             />
+        </div>
+    );
+
+    if (!hasHistogram) {
+        return sliderLayer;
+    }
+
+    return (
+        <div className="relative h-24">
+            <div className="pointer-events-none absolute inset-x-1 bottom-3 top-0">
+                <div className="flex h-full items-end gap-0.5">
+                    {histogramBars.map((bar) => {
+                        const isInSelectedRange =
+                            bar.centerPercent >= minPercent && bar.centerPercent <= maxPercent;
+
+                        return (
+                            <span
+                                key={bar.id}
+                                className="min-w-[6px] flex-1 rounded-t-full transition-all duration-200"
+                                style={{
+                                    height: `${bar.heightPercent}%`,
+                                    backgroundColor: isInSelectedRange ? "#3B82F6" : "#93C5FD",
+                                    opacity: bar.count === 0 ? 0.18 : isInSelectedRange ? 0.95 : 0.56,
+                                }}
+                            />
+                        );
+                    })}
+                </div>
+            </div>
+            <div className="absolute inset-x-0 bottom-0">{sliderLayer}</div>
         </div>
     );
 }
@@ -339,6 +443,21 @@ function parseNumber(value: string | null) {
 
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseBooleanParam(value: string | null) {
+    if (!value) {
+        return undefined;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true" || normalized === "1" || normalized === "yes") {
+        return true;
+    }
+    if (normalized === "false" || normalized === "0" || normalized === "no") {
+        return false;
+    }
+    return undefined;
 }
 
 function parseMultiParam(params: URLSearchParams, key: string) {
@@ -361,12 +480,26 @@ function readInitialFilters(searchParams: URLSearchParams): FiltersState {
     const rawDistrict = searchParams.get("district") || "";
     const rawNeighborhood = searchParams.get("neighborhood") || "";
     const rawRooms = parseMultiParam(searchParams, "rooms");
+    const rawZoningStatus = normalizeZoningStatus(searchParams.get("zoningStatus")) || "";
+    const rawParcelNo = searchParams.get("parcelNo") || "";
+    const rawHasWaterSource = parseBooleanParam(searchParams.get("hasWaterSource"));
+    const rawHasFruitTrees = parseBooleanParam(searchParams.get("hasFruitTrees"));
     const rawSort = searchParams.get("sort") as SortOption | null;
 
     const selectedTypes = rawTypes.filter((value) => validTypeValues.has(value));
     const selectedSaleType = rawSaleType && validSaleTypeValues.has(rawSaleType)
         ? rawSaleType
         : undefined;
+    const canUseRoomFilters = isCategoryFieldVisibleForTypes("rooms", selectedTypes);
+    const canUseLandFilters = isCategoryFieldVisibleForTypes("zoningStatus", selectedTypes);
+    const canUseCommercialFilters = isCategoryFieldVisibleForTypes(
+        "groundFloorArea",
+        selectedTypes
+    );
+    const canUseFarmFilters = isCategoryFieldVisibleForTypes(
+        "hasWaterSource",
+        selectedTypes
+    );
 
     const selectedRooms = rawRooms.filter((value): value is (typeof roomOptions)[number] =>
         validRoomValues.has(value as (typeof roomOptions)[number])
@@ -386,7 +519,29 @@ function readInitialFilters(searchParams: URLSearchParams): FiltersState {
         maxPrice: parseNumber(searchParams.get("maxPrice")),
         minArea: parseNumber(searchParams.get("minArea")),
         maxArea: parseNumber(searchParams.get("maxArea")),
-        rooms: selectedRooms,
+        rooms: canUseRoomFilters ? selectedRooms : [],
+        zoningStatus: canUseLandFilters ? rawZoningStatus : "",
+        parcelNo: canUseLandFilters ? rawParcelNo : "",
+        minEmsal: canUseLandFilters
+            ? parseNumber(searchParams.get("minEmsal"))
+            : undefined,
+        maxEmsal: canUseLandFilters
+            ? parseNumber(searchParams.get("maxEmsal"))
+            : undefined,
+        minGroundFloorArea: canUseCommercialFilters
+            ? parseNumber(searchParams.get("minGroundFloorArea"))
+            : undefined,
+        maxGroundFloorArea: canUseCommercialFilters
+            ? parseNumber(searchParams.get("maxGroundFloorArea"))
+            : undefined,
+        minBasementArea: canUseCommercialFilters
+            ? parseNumber(searchParams.get("minBasementArea"))
+            : undefined,
+        maxBasementArea: canUseCommercialFilters
+            ? parseNumber(searchParams.get("maxBasementArea"))
+            : undefined,
+        hasWaterSource: canUseFarmFilters ? rawHasWaterSource : undefined,
+        hasFruitTrees: canUseFarmFilters ? rawHasFruitTrees : undefined,
         sort: selectedSort,
     };
 }
@@ -419,29 +574,6 @@ function getListingDescription(listing: Listing, locale: string) {
     return requested?.description || fallback?.description || "Açıklama bulunamadı.";
 }
 
-function getWordCount(text: string) {
-    const normalizedText = text.trim();
-    if (!normalizedText) {
-        return 0;
-    }
-
-    return normalizedText.split(/\s+/).length;
-}
-
-function truncateWords(text: string, maxWords: number) {
-    const normalizedText = text.trim();
-    if (!normalizedText) {
-        return text;
-    }
-
-    const words = normalizedText.split(/\s+/);
-    if (words.length <= maxWords) {
-        return text;
-    }
-
-    return `${words.slice(0, maxWords).join(" ")}...`;
-}
-
 export function PortfolioClient({ locale }: PortfolioClientProps) {
     const searchParams = useSearchParams();
     const searchParamsKey = searchParams.toString();
@@ -459,19 +591,21 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
     const [listings, setListings] = useState<Listing[]>([]);
     const [activeImageIndexes, setActiveImageIndexes] = useState<Record<string, number>>({});
-    const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
     const [activeMobilePanel, setActiveMobilePanel] = useState<MobilePanel | null>(null);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+    const [isCategoryExpanded, setIsCategoryExpanded] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
     const [availableCities, setAvailableCities] = useState<string[]>([]);
     const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
     const [availableNeighborhoods, setAvailableNeighborhoods] = useState<string[]>([]);
+    const [descriptionOverflowMap, setDescriptionOverflowMap] = useState<Record<string, boolean>>({});
 
     const abortRef = useRef<AbortController | null>(null);
     const snapshotRef = useRef("");
     const hasInitializedRef = useRef(false);
     const swipeStartXRef = useRef<Record<string, number>>({});
+    const descriptionRefs = useRef<Record<string, HTMLParagraphElement | null>>({});
     const mobileDrawerOpenTimerRef = useRef<number | null>(null);
     const mobileDrawerCloseTimerRef = useRef<number | null>(null);
 
@@ -659,6 +793,33 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             ? [boundedMin, boundedMax]
             : [boundedMax, boundedMax];
     }, [filters.minPrice, filters.maxPrice]);
+    const priceHistogramValues = useMemo(
+        () =>
+            listings
+                .map((listing) => {
+                    if (typeof listing.price === "number") {
+                        return Number.isFinite(listing.price) ? listing.price : null;
+                    }
+
+                    const normalizedPrice = listing.price
+                        .replace(/[^0-9,.-]/g, "")
+                        .replace(/\s/g, "");
+
+                    if (!normalizedPrice) {
+                        return null;
+                    }
+
+                    const canonicalPrice =
+                        normalizedPrice.includes(",") && !normalizedPrice.includes(".")
+                            ? normalizedPrice.replace(",", ".")
+                            : normalizedPrice.replace(/,/g, "");
+
+                    const parsedPrice = Number(canonicalPrice);
+                    return Number.isFinite(parsedPrice) ? parsedPrice : null;
+                })
+                .filter((price): price is number => price !== null),
+        [listings]
+    );
 
     const areaRange = useMemo<[number, number]>(() => {
         const minArea = filters.minArea ?? AREA_MIN;
@@ -669,12 +830,86 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             ? [boundedMin, boundedMax]
             : [boundedMax, boundedMax];
     }, [filters.minArea, filters.maxArea]);
+    const groundFloorAreaRange = useMemo<[number, number]>(() => {
+        const minArea = filters.minGroundFloorArea ?? COMMERCIAL_AREA_MIN;
+        const maxArea = filters.maxGroundFloorArea ?? COMMERCIAL_AREA_MAX;
+        const boundedMin = Math.max(
+            COMMERCIAL_AREA_MIN,
+            Math.min(minArea, COMMERCIAL_AREA_MAX)
+        );
+        const boundedMax = Math.max(
+            COMMERCIAL_AREA_MIN,
+            Math.min(maxArea, COMMERCIAL_AREA_MAX)
+        );
+        return boundedMin <= boundedMax
+            ? [boundedMin, boundedMax]
+            : [boundedMax, boundedMax];
+    }, [filters.minGroundFloorArea, filters.maxGroundFloorArea]);
+    const basementAreaRange = useMemo<[number, number]>(() => {
+        const minArea = filters.minBasementArea ?? COMMERCIAL_AREA_MIN;
+        const maxArea = filters.maxBasementArea ?? COMMERCIAL_AREA_MAX;
+        const boundedMin = Math.max(
+            COMMERCIAL_AREA_MIN,
+            Math.min(minArea, COMMERCIAL_AREA_MAX)
+        );
+        const boundedMax = Math.max(
+            COMMERCIAL_AREA_MIN,
+            Math.min(maxArea, COMMERCIAL_AREA_MAX)
+        );
+        return boundedMin <= boundedMax
+            ? [boundedMin, boundedMax]
+            : [boundedMax, boundedMax];
+    }, [filters.minBasementArea, filters.maxBasementArea]);
+    const emsalRange = useMemo<[number, number]>(() => {
+        const minEmsal = filters.minEmsal ?? EMSAL_MIN;
+        const maxEmsal = filters.maxEmsal ?? EMSAL_MAX;
+        const boundedMin = Math.max(EMSAL_MIN, Math.min(minEmsal, EMSAL_MAX));
+        const boundedMax = Math.max(EMSAL_MIN, Math.min(maxEmsal, EMSAL_MAX));
+        return boundedMin <= boundedMax
+            ? [boundedMin, boundedMax]
+            : [boundedMax, boundedMax];
+    }, [filters.minEmsal, filters.maxEmsal]);
+    const isRoomsFilterVisible = useMemo(
+        () => isCategoryFieldVisibleForTypes("rooms", filters.types),
+        [filters.types]
+    );
+    const isLandFiltersVisible = useMemo(
+        () => isCategoryFieldVisibleForTypes("zoningStatus", filters.types),
+        [filters.types]
+    );
+    const isCommercialFiltersVisible = useMemo(
+        () => isCategoryFieldVisibleForTypes("groundFloorArea", filters.types),
+        [filters.types]
+    );
+    const isFarmFiltersVisible = useMemo(
+        () => isCategoryFieldVisibleForTypes("hasWaterSource", filters.types),
+        [filters.types]
+    );
+
+    useEffect(() => {
+        if (isRoomsFilterVisible) {
+            return;
+        }
+
+        setFilters((previous) => {
+            if (previous.rooms.length === 0) {
+                return previous;
+            }
+
+            return {
+                ...previous,
+                rooms: [],
+            };
+        });
+    }, [isRoomsFilterVisible]);
 
     const queryString = useMemo(() => {
         const params = new URLSearchParams({ locale });
 
         filters.types.forEach((type) => params.append("type", type));
-        filters.rooms.forEach((room) => params.append("rooms", room));
+        if (isRoomsFilterVisible) {
+            filters.rooms.forEach((room) => params.append("rooms", room));
+        }
 
         if (filters.saleType) {
             params.set("saleType", filters.saleType);
@@ -700,12 +935,60 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         if (filters.maxArea !== undefined) {
             params.set("maxArea", String(filters.maxArea));
         }
+        if (isLandFiltersVisible) {
+            if (filters.zoningStatus) {
+                params.set("zoningStatus", filters.zoningStatus);
+            }
+            if (filters.parcelNo.trim()) {
+                params.set("parcelNo", filters.parcelNo.trim());
+            }
+            if (filters.minEmsal !== undefined) {
+                params.set("minEmsal", String(filters.minEmsal));
+            }
+            if (filters.maxEmsal !== undefined) {
+                params.set("maxEmsal", String(filters.maxEmsal));
+            }
+        }
+        if (isCommercialFiltersVisible) {
+            if (filters.minGroundFloorArea !== undefined) {
+                params.set("minGroundFloorArea", String(filters.minGroundFloorArea));
+            }
+            if (filters.maxGroundFloorArea !== undefined) {
+                params.set("maxGroundFloorArea", String(filters.maxGroundFloorArea));
+            }
+            if (filters.minBasementArea !== undefined) {
+                params.set("minBasementArea", String(filters.minBasementArea));
+            }
+            if (filters.maxBasementArea !== undefined) {
+                params.set("maxBasementArea", String(filters.maxBasementArea));
+            }
+        }
+        if (isFarmFiltersVisible) {
+            if (filters.hasWaterSource === true) {
+                params.set("hasWaterSource", "true");
+            }
+            if (filters.hasFruitTrees === true) {
+                params.set("hasFruitTrees", "true");
+            }
+        }
         if (filters.sort !== DEFAULT_SORT) {
             params.set("sort", filters.sort);
         }
 
         return params.toString();
-    }, [filters, locale]);
+    }, [
+        filters,
+        isCommercialFiltersVisible,
+        isFarmFiltersVisible,
+        isLandFiltersVisible,
+        isRoomsFilterVisible,
+        locale,
+    ]);
+
+    const hasActiveFilters = useMemo(() => {
+        const params = new URLSearchParams(queryString);
+        return ACTIVE_FILTER_QUERY_KEYS.some((key) => params.has(key));
+    }, [queryString]);
 
     const fetchListings = useCallback(
         async (mode: "initial" | "background" = "background") => {
@@ -825,6 +1108,47 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             return next;
         });
     }, [listings]);
+    const measureDescriptionOverflow = useCallback(() => {
+        setDescriptionOverflowMap((previous) => {
+            const next: Record<string, boolean> = {};
+
+            listings.forEach((listing) => {
+                const element = descriptionRefs.current[listing.id];
+                next[listing.id] = Boolean(
+                    element && element.scrollHeight - element.clientHeight > 1
+                );
+            });
+
+            const previousKeys = Object.keys(previous);
+            const nextKeys = Object.keys(next);
+            const isSame =
+                previousKeys.length === nextKeys.length &&
+                nextKeys.every((key) => previous[key] === next[key]);
+
+            return isSame ? previous : next;
+        });
+    }, [listings]);
+
+    useEffect(() => {
+        const rafId = window.requestAnimationFrame(() => {
+            measureDescriptionOverflow();
+        });
+        const timeoutId = window.setTimeout(() => {
+            measureDescriptionOverflow();
+        }, 120);
+
+        const handleResize = () => {
+            measureDescriptionOverflow();
+        };
+
+        window.addEventListener("resize", handleResize);
+
+        return () => {
+            window.cancelAnimationFrame(rafId);
+            window.clearTimeout(timeoutId);
+            window.removeEventListener("resize", handleResize);
+        };
+    }, [measureDescriptionOverflow]);
 
     const toggleType = (type: string) => {
         setFilters((previous) => ({
@@ -856,6 +1180,16 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             minArea: undefined,
             maxArea: undefined,
             rooms: [],
+            zoningStatus: "",
+            parcelNo: "",
+            minEmsal: undefined,
+            maxEmsal: undefined,
+            minGroundFloorArea: undefined,
+            maxGroundFloorArea: undefined,
+            minBasementArea: undefined,
+            maxBasementArea: undefined,
+            hasWaterSource: undefined,
+            hasFruitTrees: undefined,
             sort: previous.sort,
         }));
     };
@@ -923,13 +1257,6 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     const closeMobilePanel = () => {
         clearMobileDrawerTimers();
         setIsMobileDrawerOpen(false);
-    };
-
-    const handleApplyFilters = (closeAfterApply = false) => {
-        void fetchListings("background");
-        if (closeAfterApply) {
-            closeMobilePanel();
-        }
     };
 
     useEffect(() => {
@@ -1030,9 +1357,6 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             </div>
 
             <div className="mb-6">
-                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    İşlem Turu
-                </h4>
                 <div className="grid grid-cols-2 gap-2">
                     {saleTypes.map((saleType) => (
                         <button
@@ -1060,33 +1384,83 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             </div>
 
             <div className="mb-6">
-                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    Kategori
-                </h4>
-                <div className="space-y-1.5">
-                    {propertyTypes.map((type) => (
-                        <label
-                            key={type.value}
-                            className="group flex cursor-pointer items-center justify-between rounded-lg p-2 transition hover:bg-gray-50"
+                <button
+                    type="button"
+                    onClick={() => setIsCategoryExpanded((previous) => !previous)}
+                    className="group flex w-full cursor-pointer items-center justify-between rounded-xl border border-gray-200 bg-gradient-to-b from-white to-gray-50 px-3 py-2.5 text-left shadow-sm transition hover:border-gray-300 hover:shadow-[0_6px_14px_rgba(15,23,42,0.08)]"
+                    aria-expanded={isCategoryExpanded}
+                >
+                    <div className="flex items-center gap-2.5">
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                            <SlidersHorizontal className="h-3.5 w-3.5" />
+                        </span>
+                        <div>
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+                                Kategori
+                            </h4>
+                            <p className="text-[11px] text-gray-400">
+                                {filters.types.length > 0
+                                    ? `${filters.types.length} seçim aktif`
+                                    : "Tüm kategoriler"}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span
+                            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                                filters.types.length > 0
+                                    ? "bg-orange-100 text-orange-700"
+                                    : "bg-gray-100 text-gray-500"
+                            }`}
                         >
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    checked={filters.types.includes(type.value)}
-                                    onChange={() => toggleType(type.value)}
-                                    className="h-4 w-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-                                />
-                                <span className="text-sm text-gray-700">{type.label}</span>
-                            </div>
-                            <span
-                                className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-400"
-                                style={monoStyle}
-                            >
-                                {typeCounts[type.value] || 0}
-                            </span>
-                        </label>
-                    ))}
-                </div>
+                            {filters.types.length}
+                        </span>
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition group-hover:border-gray-300 group-hover:text-gray-700">
+                            <ChevronDown
+                                className={`h-4 w-4 transition-transform ${
+                                    isCategoryExpanded ? "rotate-180 text-gray-700" : ""
+                                }`}
+                            />
+                        </span>
+                    </div>
+                </button>
+                {isCategoryExpanded && (
+                    <div className="mt-2 space-y-1.5 rounded-xl border border-gray-200 bg-white p-2">
+                        {propertyTypes.map((type) => {
+                            const isSelected = filters.types.includes(type.value);
+
+                            return (
+                                <button
+                                    key={type.value}
+                                    type="button"
+                                    onClick={() => toggleType(type.value)}
+                                    className="group flex w-full cursor-pointer items-center justify-between rounded-lg p-2 text-left transition hover:bg-gray-50"
+                                    aria-pressed={isSelected}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <span
+                                            aria-hidden="true"
+                                            className={`inline-flex h-4 w-4 items-center justify-center rounded border transition ${
+                                                isSelected
+                                                    ? "border-orange-500 bg-orange-500 text-white"
+                                                    : "border-gray-300 bg-white text-transparent"
+                                            }`}
+                                        >
+                                            <Check className="h-3 w-3" />
+                                        </span>
+                                        <span className="text-sm text-gray-700">{type.label}</span>
+                                    </div>
+                                    <span
+                                        className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-400"
+                                        style={monoStyle}
+                                    >
+                                        {typeCounts[type.value] || 0}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             <div className="mb-6">
@@ -1099,6 +1473,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         max={PRICE_MAX}
                         step={PRICE_STEP}
                         value={priceRange}
+                        histogramValues={priceHistogramValues}
                         onChange={([nextMin, nextMax]) =>
                             setFilters((previous) => ({
                                 ...previous,
@@ -1158,63 +1533,67 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
                     Konum
                 </h4>
-                <InlineDropdown
+                <Select
                     value={filters.city}
-                    onChange={(nextCity) =>
+                    onChange={(value) =>
                         setFilters((previous) => ({
                             ...previous,
-                            city: nextCity,
+                            city: value,
                             district: "",
                             neighborhood: "",
                         }))
                     }
-                    placeholder="Tüm İller"
                     options={[
                         { value: "", label: "Tüm İller" },
-                        ...cityOptions.map((city) => ({
-                            value: city,
-                            label: city,
+                        ...cityOptions.map((option) => ({
+                            value: option,
+                            label: option,
                         })),
                     ]}
+                    searchable
+                    searchPlaceholder="İl yazın"
+                    searchMatchMode="startsWith"
                 />
 
-                <InlineDropdown
+                <Select
                     value={filters.district}
-                    onChange={(district) =>
+                    onChange={(value) =>
                         setFilters((previous) => ({
                             ...previous,
-                            district,
+                            district: value,
                             neighborhood: "",
                         }))
                     }
-                    disabled={!filters.city}
-                    placeholder="Tüm İlçeler"
                     options={[
                         { value: "", label: "Tüm İlçeler" },
-                        ...districtOptions.map((district) => ({
-                            value: district,
-                            label: district,
+                        ...districtOptions.map((option) => ({
+                            value: option,
+                            label: option,
                         })),
                     ]}
+                    searchable
+                    searchPlaceholder="İlçe yazın"
+                    searchMatchMode="startsWith"
                 />
 
-                <InlineDropdown
+                <Select
                     value={filters.neighborhood}
-                    onChange={(neighborhood) =>
+                    onChange={(value) =>
                         setFilters((previous) => ({
                             ...previous,
-                            neighborhood,
+                            neighborhood: value,
                         }))
                     }
-                    disabled={!filters.city || !filters.district}
-                    placeholder="Tüm Mahalleler"
                     options={[
                         { value: "", label: "Tüm Mahalleler" },
-                        ...neighborhoodOptions.map((neighborhood) => ({
-                            value: neighborhood,
-                            label: neighborhood,
+                        ...neighborhoodOptions.map((option) => ({
+                            value: option,
+                            label: option,
                         })),
                     ]}
+                    searchable
+                    searchPlaceholder="Mahalle yazın"
+                    searchMatchMode="startsWith"
                 />
             </div>
 
@@ -1283,36 +1662,388 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 </div>
             </div>
 
-            <div className="mb-6">
-                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    Oda Sayısı
-                </h4>
-                <div className="grid grid-cols-4 gap-1.5">
-                    {roomOptions.map((room) => (
+            {isLandFiltersVisible && (
+                <div className="mb-6 space-y-3">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        Arsa Detayları
+                    </h4>
+                    <Select
+                        value={filters.zoningStatus}
+                        onChange={(value) =>
+                            setFilters((previous) => ({
+                                ...previous,
+                                zoningStatus: value,
+                            }))
+                        }
+                        options={[
+                            { value: "", label: "İmar Durumu (Tümü)" },
+                            ...ZONING_STATUS_OPTIONS.map((option) => ({
+                                value: option.value,
+                                label: option.label,
+                            })),
+                        ]}
+                    />
+                    <input
+                        type="text"
+                        value={filters.parcelNo}
+                        onChange={(event) =>
+                            setFilters((previous) => ({
+                                ...previous,
+                                parcelNo: event.target.value,
+                            }))
+                        }
+                        placeholder="Ada / Parsel"
+                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                    />
+                    <div className="space-y-2 rounded-lg border border-gray-200 p-3">
+                        <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Emsal
+                        </h5>
+                        <div className="px-1">
+                            <InlineRangeSlider
+                                min={EMSAL_MIN}
+                                max={EMSAL_MAX}
+                                step={EMSAL_STEP}
+                                value={emsalRange}
+                                onChange={([nextMin, nextMax]) =>
+                                    setFilters((previous) => ({
+                                        ...previous,
+                                        minEmsal: nextMin === EMSAL_MIN ? undefined : nextMin,
+                                        maxEmsal: nextMax === EMSAL_MAX ? undefined : nextMax,
+                                    }))
+                                }
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <input
+                                type="number"
+                                inputMode="decimal"
+                                value={filters.minEmsal ?? ""}
+                                onChange={(event) =>
+                                    setFilters((previous) => {
+                                        const parsed = parseNumber(event.target.value);
+                                        if (parsed === undefined) {
+                                            return { ...previous, minEmsal: undefined };
+                                        }
+
+                                        const bounded = Math.max(
+                                            EMSAL_MIN,
+                                            Math.min(parsed, EMSAL_MAX)
+                                        );
+                                        const maxEmsal = previous.maxEmsal ?? EMSAL_MAX;
+                                        return {
+                                            ...previous,
+                                            minEmsal: Math.min(bounded, maxEmsal),
+                                        };
+                                    })
+                                }
+                                placeholder="Min"
+                                min={EMSAL_MIN}
+                                max={EMSAL_MAX}
+                                step={EMSAL_STEP}
+                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                style={monoStyle}
+                            />
+                            <input
+                                type="number"
+                                inputMode="decimal"
+                                value={filters.maxEmsal ?? ""}
+                                onChange={(event) =>
+                                    setFilters((previous) => {
+                                        const parsed = parseNumber(event.target.value);
+                                        if (parsed === undefined) {
+                                            return { ...previous, maxEmsal: undefined };
+                                        }
+
+                                        const bounded = Math.max(
+                                            EMSAL_MIN,
+                                            Math.min(parsed, EMSAL_MAX)
+                                        );
+                                        const minEmsal = previous.minEmsal ?? EMSAL_MIN;
+                                        return {
+                                            ...previous,
+                                            maxEmsal: Math.max(bounded, minEmsal),
+                                        };
+                                    })
+                                }
+                                placeholder="Max"
+                                min={EMSAL_MIN}
+                                max={EMSAL_MAX}
+                                step={EMSAL_STEP}
+                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                style={monoStyle}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {isCommercialFiltersVisible && (
+                <div className="mb-6 space-y-3">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        Ticari Detaylar
+                    </h4>
+                    <div className="space-y-3">
+                        <div className="space-y-2 rounded-lg border border-gray-200 p-3">
+                            <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                Zemin <span className="normal-case">(m²)</span>
+                            </h5>
+                            <div className="px-1">
+                                <InlineRangeSlider
+                                    min={COMMERCIAL_AREA_MIN}
+                                    max={COMMERCIAL_AREA_MAX}
+                                    step={COMMERCIAL_AREA_STEP}
+                                    value={groundFloorAreaRange}
+                                    onChange={([nextMin, nextMax]) =>
+                                        setFilters((previous) => ({
+                                            ...previous,
+                                            minGroundFloorArea:
+                                                nextMin === COMMERCIAL_AREA_MIN
+                                                    ? undefined
+                                                    : nextMin,
+                                            maxGroundFloorArea:
+                                                nextMax === COMMERCIAL_AREA_MAX
+                                                    ? undefined
+                                                    : nextMax,
+                                        }))
+                                    }
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    value={filters.minGroundFloorArea ?? ""}
+                                    onChange={(event) =>
+                                        setFilters((previous) => {
+                                            const parsed = parseNumber(event.target.value);
+                                            if (parsed === undefined) {
+                                                return {
+                                                    ...previous,
+                                                    minGroundFloorArea: undefined,
+                                                };
+                                            }
+
+                                            const bounded = Math.max(
+                                                COMMERCIAL_AREA_MIN,
+                                                Math.min(parsed, COMMERCIAL_AREA_MAX)
+                                            );
+                                            const maxArea =
+                                                previous.maxGroundFloorArea ??
+                                                COMMERCIAL_AREA_MAX;
+                                            return {
+                                                ...previous,
+                                                minGroundFloorArea: Math.min(bounded, maxArea),
+                                            };
+                                        })
+                                    }
+                                    placeholder="Min"
+                                    min={COMMERCIAL_AREA_MIN}
+                                    max={COMMERCIAL_AREA_MAX}
+                                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                    style={monoStyle}
+                                />
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    value={filters.maxGroundFloorArea ?? ""}
+                                    onChange={(event) =>
+                                        setFilters((previous) => {
+                                            const parsed = parseNumber(event.target.value);
+                                            if (parsed === undefined) {
+                                                return {
+                                                    ...previous,
+                                                    maxGroundFloorArea: undefined,
+                                                };
+                                            }
+
+                                            const bounded = Math.max(
+                                                COMMERCIAL_AREA_MIN,
+                                                Math.min(parsed, COMMERCIAL_AREA_MAX)
+                                            );
+                                            const minArea =
+                                                previous.minGroundFloorArea ??
+                                                COMMERCIAL_AREA_MIN;
+                                            return {
+                                                ...previous,
+                                                maxGroundFloorArea: Math.max(bounded, minArea),
+                                            };
+                                        })
+                                    }
+                                    placeholder="Max"
+                                    min={COMMERCIAL_AREA_MIN}
+                                    max={COMMERCIAL_AREA_MAX}
+                                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                    style={monoStyle}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2 rounded-lg border border-gray-200 p-3">
+                            <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                Bodrum <span className="normal-case">(m²)</span>
+                            </h5>
+                            <div className="px-1">
+                                <InlineRangeSlider
+                                    min={COMMERCIAL_AREA_MIN}
+                                    max={COMMERCIAL_AREA_MAX}
+                                    step={COMMERCIAL_AREA_STEP}
+                                    value={basementAreaRange}
+                                    onChange={([nextMin, nextMax]) =>
+                                        setFilters((previous) => ({
+                                            ...previous,
+                                            minBasementArea:
+                                                nextMin === COMMERCIAL_AREA_MIN
+                                                    ? undefined
+                                                    : nextMin,
+                                            maxBasementArea:
+                                                nextMax === COMMERCIAL_AREA_MAX
+                                                    ? undefined
+                                                    : nextMax,
+                                        }))
+                                    }
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    value={filters.minBasementArea ?? ""}
+                                    onChange={(event) =>
+                                        setFilters((previous) => {
+                                            const parsed = parseNumber(event.target.value);
+                                            if (parsed === undefined) {
+                                                return {
+                                                    ...previous,
+                                                    minBasementArea: undefined,
+                                                };
+                                            }
+
+                                            const bounded = Math.max(
+                                                COMMERCIAL_AREA_MIN,
+                                                Math.min(parsed, COMMERCIAL_AREA_MAX)
+                                            );
+                                            const maxArea =
+                                                previous.maxBasementArea ??
+                                                COMMERCIAL_AREA_MAX;
+                                            return {
+                                                ...previous,
+                                                minBasementArea: Math.min(bounded, maxArea),
+                                            };
+                                        })
+                                    }
+                                    placeholder="Min"
+                                    min={COMMERCIAL_AREA_MIN}
+                                    max={COMMERCIAL_AREA_MAX}
+                                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                    style={monoStyle}
+                                />
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    value={filters.maxBasementArea ?? ""}
+                                    onChange={(event) =>
+                                        setFilters((previous) => {
+                                            const parsed = parseNumber(event.target.value);
+                                            if (parsed === undefined) {
+                                                return {
+                                                    ...previous,
+                                                    maxBasementArea: undefined,
+                                                };
+                                            }
+
+                                            const bounded = Math.max(
+                                                COMMERCIAL_AREA_MIN,
+                                                Math.min(parsed, COMMERCIAL_AREA_MAX)
+                                            );
+                                            const minArea =
+                                                previous.minBasementArea ??
+                                                COMMERCIAL_AREA_MIN;
+                                            return {
+                                                ...previous,
+                                                maxBasementArea: Math.max(bounded, minArea),
+                                            };
+                                        })
+                                    }
+                                    placeholder="Max"
+                                    min={COMMERCIAL_AREA_MIN}
+                                    max={COMMERCIAL_AREA_MAX}
+                                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                    style={monoStyle}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {isFarmFiltersVisible && (
+                <div className="mb-6">
+                    <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        Çiftlik Detayları
+                    </h4>
+                    <div className="grid grid-cols-1 gap-2">
                         <button
-                            key={room}
                             type="button"
-                            onClick={() => toggleRoom(room)}
-                            className={`cursor-pointer rounded-md px-2 py-1.5 text-xs font-medium transition ${
-                                filters.rooms.includes(room)
-                                    ? "bg-orange-500 text-white"
-                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                            onClick={() =>
+                                setFilters((previous) => ({
+                                    ...previous,
+                                    hasWaterSource:
+                                        previous.hasWaterSource === true ? undefined : true,
+                                }))
+                            }
+                            className={`w-full cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                                filters.hasWaterSource === true
+                                    ? "border-orange-500 bg-orange-500 text-white"
+                                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                             }`}
                         >
-                            {room}
+                            Su Kaynağı Olanlar
                         </button>
-                    ))}
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setFilters((previous) => ({
+                                    ...previous,
+                                    hasFruitTrees:
+                                        previous.hasFruitTrees === true ? undefined : true,
+                                }))
+                            }
+                            className={`w-full cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${
+                                filters.hasFruitTrees === true
+                                    ? "border-orange-500 bg-orange-500 text-white"
+                                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                            }`}
+                        >
+                            Meyve Ağacı Olanlar
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
 
-            <button
-                type="button"
-                onClick={() => handleApplyFilters(isMobile)}
-                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
-            >
-                <SlidersHorizontal className="h-4 w-4" />
-                Filtreleri Uygula
-            </button>
+            {isRoomsFilterVisible && (
+                <div className="mb-6">
+                    <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        Oda Sayısı
+                    </h4>
+                    <div className="grid grid-cols-4 gap-1.5">
+                        {roomOptions.map((room) => (
+                            <button
+                                key={room}
+                                type="button"
+                                onClick={() => toggleRoom(room)}
+                                className={`cursor-pointer rounded-md px-2 py-1.5 text-xs font-medium transition ${
+                                    filters.rooms.includes(room)
+                                        ? "bg-orange-500 text-white"
+                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                }`}
+                            >
+                                {room}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
         </>
     );
 
@@ -1451,16 +2182,27 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 </div>
             </div>
 
-            <div className="mb-6 text-sm text-gray-500">
-                Toplam sonuç:{" "}
-                <span className="font-semibold text-gray-900" style={monoStyle}>
-                    {listings.length}
-                </span>{" "}
-                ilan
+            <div className="mb-6 flex items-center justify-between gap-3 text-sm text-gray-500">
+                <div>
+                    Toplam sonuç:{" "}
+                    <span className="font-semibold text-gray-900" style={monoStyle}>
+                        {listings.length}
+                    </span>{" "}
+                    ilan
+                </div>
+                {hasActiveFilters && (
+                    <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="cursor-pointer text-xs font-semibold text-orange-500 transition hover:text-orange-600 lg:hidden"
+                    >
+                        Temizle
+                    </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
-                <aside className="hidden h-fit rounded-xl border border-gray-200 bg-white p-5 lg:sticky lg:top-24 lg:block">
+                <aside className="hidden h-fit rounded-xl border border-gray-200 bg-white p-5 lg:block">
                     {renderFilterPanelContent(false)}
                 </aside>
 
@@ -1485,9 +2227,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         listings.map((listing) => {
                             const title = getListingTitle(listing, locale);
                             const description = getListingDescription(listing, locale);
-                            const isDescriptionLong =
-                                getWordCount(description) > DESCRIPTION_PREVIEW_WORD_COUNT;
-                            const isDescriptionExpanded = Boolean(expandedDescriptions[listing.id]);
+                            const hasDescriptionOverflow = Boolean(descriptionOverflowMap[listing.id]);
                             const locationLabel = buildLocationLabel(listing);
                             const galleryMedia = listing.media.slice(0, 4);
                             const maxImageIndex = Math.max(0, galleryMedia.length - 1);
@@ -1654,48 +2394,29 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                         {locationLabel || "Konum belirtilmedi"}
                                                     </p>
 
-                                                    <p className="text-sm text-gray-500">
-                                                        {isDescriptionExpanded
-                                                            ? description
-                                                            : truncateWords(
-                                                                  description,
-                                                                  DESCRIPTION_PREVIEW_WORD_COUNT
-                                                              )}
+                                                    <p
+                                                        ref={(node) => {
+                                                            descriptionRefs.current[listing.id] = node;
+                                                        }}
+                                                        className="min-h-[3rem] text-sm leading-6 text-gray-500"
+                                                        style={{
+                                                            display: "-webkit-box",
+                                                            overflow: "hidden",
+                                                            WebkitBoxOrient: "vertical",
+                                                            WebkitLineClamp: 2,
+                                                        }}
+                                                    >
+                                                        {description}
                                                     </p>
-                                                    {isDescriptionLong && (
-                                                        <span
-                                                            role="button"
-                                                            tabIndex={0}
-                                                            onClick={(event) => {
-                                                                event.preventDefault();
-                                                                event.stopPropagation();
-                                                                setExpandedDescriptions((previous) => ({
-                                                                    ...previous,
-                                                                    [listing.id]: !previous[listing.id],
-                                                                }));
-                                                            }}
-                                                            onKeyDown={(event) => {
-                                                                if (
-                                                                    event.key !== "Enter" &&
-                                                                    event.key !== " "
-                                                                ) {
-                                                                    return;
-                                                                }
-                                                                event.preventDefault();
-                                                                event.stopPropagation();
-                                                                setExpandedDescriptions((previous) => ({
-                                                                    ...previous,
-                                                                    [listing.id]: !previous[listing.id],
-                                                                }));
-                                                            }}
-                                                            className="mt-1 inline-flex cursor-pointer text-xs font-semibold text-orange-600 transition hover:text-orange-700"
-                                                            aria-expanded={isDescriptionExpanded}
-                                                        >
-                                                            {isDescriptionExpanded
-                                                                ? "Daha az göster"
-                                                                : "Devamını oku"}
-                                                        </span>
-                                                    )}
+                                                    <span
+                                                        className={`mt-1 inline-flex h-6 items-center text-xs font-semibold transition ${
+                                                            hasDescriptionOverflow
+                                                                ? "text-orange-600 hover:text-orange-700"
+                                                                : "invisible"
+                                                        }`}
+                                                    >
+                                                        Devamını oku
+                                                    </span>
                                                 </div>
 
                                                 <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-gray-100 pt-4">

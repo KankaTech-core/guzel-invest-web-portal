@@ -7,6 +7,8 @@ interface RouteParams {
     params: Promise<{ id: string }>;
 }
 
+const HOMEPAGE_HERO_REMOVE_BLOCK_CODE = "HOMEPAGE_HERO_REMOVE_BLOCKED";
+
 // PATCH /api/admin/listings/[id]/status - Update listing status only
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
     try {
@@ -31,18 +33,56 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
         const existing = await prisma.listing.findUnique({
             where: { id },
+            select: {
+                id: true,
+                status: true,
+                publishedAt: true,
+                showOnHomepageHero: true,
+            },
         });
 
         if (!existing) {
             return NextResponse.json({ error: "Listing not found" }, { status: 404 });
         }
 
+        if (status === ListingStatus.REMOVED && existing.status !== ListingStatus.REMOVED) {
+            if (existing.status === ListingStatus.DRAFT) {
+                return NextResponse.json(
+                    { error: "Taslak ilanlar yayından kaldırılamaz. Taslak ilanlar yalnızca silinebilir." },
+                    { status: 400 }
+                );
+            }
+
+            if (existing.status !== ListingStatus.PUBLISHED) {
+                return NextResponse.json(
+                    { error: "Sadece yayındaki ilanlar kaldırılabilir." },
+                    { status: 400 }
+                );
+            }
+
+            if (existing.showOnHomepageHero) {
+                return NextResponse.json(
+                    {
+                        error:
+                            "Bu ilan ana sayfada gösteriliyor. Yayından kaldırmadan önce ana sayfa için başka bir ilan seçin.",
+                        code: HOMEPAGE_HERO_REMOVE_BLOCK_CODE,
+                    },
+                    { status: 409 }
+                );
+            }
+        }
+
         const listing = await prisma.listing.update({
             where: { id },
             data: {
                 status,
+                showOnHomepageHero:
+                    status === ListingStatus.PUBLISHED
+                        ? existing.showOnHomepageHero
+                        : false,
                 publishedAt:
-                    status === "PUBLISHED" && existing.status !== "PUBLISHED"
+                    status === ListingStatus.PUBLISHED &&
+                    existing.status !== ListingStatus.PUBLISHED
                         ? new Date()
                         : existing.publishedAt,
             },

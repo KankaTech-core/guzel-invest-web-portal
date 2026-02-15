@@ -13,18 +13,32 @@ interface ListingRowActionsProps {
     id: string;
     slug: string;
     status: ListingStatusValue;
+    showOnHomepageHero: boolean;
 }
 
-export function ListingRowActions({ id, slug, status }: ListingRowActionsProps) {
+export function ListingRowActions({
+    id,
+    slug,
+    status,
+    showOnHomepageHero,
+}: ListingRowActionsProps) {
     const router = useRouter();
-    const [confirmAction, setConfirmAction] = useState<null | "archive" | "remove">(null);
+    const [confirmAction, setConfirmAction] = useState<
+        null | "archive" | "remove" | "homepageHeroGuard"
+    >(null);
     const [isLoading, setIsLoading] = useState(false);
 
     const canArchive = status !== "ARCHIVED" && status !== "REMOVED";
-    const canRemove = status !== "REMOVED";
+    const canRemove = status === "PUBLISHED";
 
     const handleConfirm = async () => {
         if (!confirmAction) return;
+
+        if (confirmAction === "homepageHeroGuard") {
+            setConfirmAction(null);
+            router.push("/admin/ilanlar");
+            return;
+        }
 
         setIsLoading(true);
         try {
@@ -55,12 +69,23 @@ export function ListingRowActions({ id, slug, status }: ListingRowActionsProps) 
                 title: "İlan arşivlensin mi?",
                 description: "Arşivlenen ilan sitede görünmez.",
                 confirmLabel: "Arşivle",
+                cancelLabel: "Vazgeç",
                 tone: "warning" as const,
             }
+            : confirmAction === "homepageHeroGuard"
+                ? {
+                    title: "Bu ilan ana sayfada gösteriliyor",
+                    description:
+                        "Bu ilanı yayından kaldırmadan önce ana sayfa için başka bir ilan seçmelisiniz.",
+                    confirmLabel: "İlanlara Git",
+                    cancelLabel: "Vazgeç",
+                    tone: "warning" as const,
+                }
             : {
                 title: "İlan yayından kaldırılsın mı?",
                 description: "Bu işlem ilanın durumunu Kaldırıldı yapar.",
                 confirmLabel: "Kaldır",
+                cancelLabel: "Vazgeç",
                 tone: "danger" as const,
             };
 
@@ -94,12 +119,23 @@ export function ListingRowActions({ id, slug, status }: ListingRowActionsProps) 
                 </button>
                 <button
                     type="button"
-                    onClick={() => canRemove && setConfirmAction("remove")}
+                    onClick={() => {
+                        if (!canRemove) return;
+                        if (showOnHomepageHero) {
+                            setConfirmAction("homepageHeroGuard");
+                            return;
+                        }
+                        setConfirmAction("remove");
+                    }}
                     className={cn(
                         "p-2 rounded-lg transition-colors",
                         canRemove ? "hover:bg-red-50" : "opacity-50 cursor-not-allowed"
                     )}
-                    title="Yayından Kaldır"
+                    title={
+                        canRemove
+                            ? "Yayından Kaldır"
+                            : "Sadece yayındaki ilanlar yayından kaldırılabilir"
+                    }
                     disabled={!canRemove}
                 >
                     <CircleOff className="w-4 h-4 text-red-400" />
@@ -111,6 +147,7 @@ export function ListingRowActions({ id, slug, status }: ListingRowActionsProps) 
                 title={confirmConfig.title}
                 description={confirmConfig.description}
                 confirmLabel={confirmConfig.confirmLabel}
+                cancelLabel={confirmConfig.cancelLabel}
                 tone={confirmConfig.tone}
                 isLoading={isLoading}
                 onCancel={() => {

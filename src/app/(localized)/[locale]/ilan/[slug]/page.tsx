@@ -54,10 +54,12 @@ export default async function ListingDetailPage({
 }) {
     const { locale, slug } = await params;
 
-    const listing = await prisma.listing.findUnique({
+    const listing = await prisma.listing.findFirst({
         where: {
             slug,
-            status: ListingStatus.PUBLISHED,
+            status: {
+                in: [ListingStatus.PUBLISHED, ListingStatus.REMOVED],
+            },
         },
         include: {
             translations: {
@@ -76,6 +78,8 @@ export default async function ListingDetailPage({
     if (!listing) {
         notFound();
     }
+
+    const isRemovedListing = listing.status === ListingStatus.REMOVED;
 
     const translation =
         listing.translations.find((item) => item.locale === "tr") ||
@@ -359,7 +363,11 @@ export default async function ListingDetailPage({
                 </nav>
 
                 <section className="-mx-4 sm:-mx-6 md:mx-0">
-                    <ListingDetailGallery items={imageItems} title={title} />
+                    <ListingDetailGallery
+                        items={imageItems}
+                        title={title}
+                        isRemoved={isRemovedListing}
+                    />
                     <div className="px-4 pt-3 sm:px-6 md:hidden">
                         <div className="flex items-center gap-2 text-sm font-medium">
                             <span className="rounded-full bg-[#ff6900] px-4 py-2 text-white">

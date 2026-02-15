@@ -129,9 +129,9 @@ export default function ListingsFilters({ companyOptions }: ListingsFiltersProps
     ];
 
     return (
-        <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2 min-w-[220px] flex-1">
-                <div className="w-full md:w-72">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap">
+                <div className="w-full sm:w-[220px]">
                     <Input
                         value={queryInput}
                         onChange={(event) => setQueryInput(event.target.value)}
@@ -146,67 +146,63 @@ export default function ListingsFilters({ companyOptions }: ListingsFiltersProps
                     onChange={(value) => updateParam("type", value === "" ? undefined : value)}
                     options={propertyTypeOptions}
                     placeholder="Tüm Mülk Tipleri"
-                    className="w-full md:w-64"
+                    className="w-full sm:w-[190px]"
                 />
                 <Select
                     value={activeCompany}
                     onChange={(value) => updateParam("company", value === "" ? undefined : value)}
                     options={companySelectOptions}
                     placeholder="Tüm Firmalar"
-                    className="w-full md:w-64"
+                    className="w-full sm:w-[190px]"
                 />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-                {SALE_TYPE_OPTIONS.map((option) => {
-                    const isActive = activeSaleType === option.value;
-                    return (
-                        <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => toggleSaleType(option.value)}
-                            aria-pressed={isActive}
-                            className={cn(
-                                "px-6 py-2 rounded-full text-sm font-medium border transition-all duration-200",
-                                isActive
-                                    ? "bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200"
-                                    : "bg-white border-gray-200 text-gray-600 hover:border-orange-500 hover:text-orange-500"
-                            )}
-                        >
-                            {option.label}
-                        </button>
-                    );
-                })}
+            <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap lg:justify-end">
+                <div className="inline-flex overflow-hidden rounded-full border border-gray-200 bg-white">
+                    {SALE_TYPE_OPTIONS.map((option, index) => {
+                        const isActive = activeSaleType === option.value;
+                        return (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => toggleSaleType(option.value)}
+                                aria-pressed={isActive}
+                                className={cn(
+                                    "px-5 py-2 text-sm font-medium transition-colors",
+                                    index > 0 && "border-l border-gray-200",
+                                    isActive
+                                        ? "bg-orange-500 text-white"
+                                        : "text-gray-600 hover:bg-orange-50 hover:text-orange-500"
+                                )}
+                            >
+                                {option.label}
+                            </button>
+                        );
+                    })}
+                </div>
 
-                {PLATFORM_OPTIONS.map((option) => {
-                    const isActive = activePlatform === option.value;
-                    return (
-                        <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => togglePlatform(option.value)}
-                            aria-pressed={isActive}
-                            className={cn(
-                                "px-6 py-2 rounded-full text-sm font-medium border transition-all duration-200",
-                                isActive
-                                    ? option.activeClassName
-                                    : "bg-white border-gray-200 text-gray-600 hover:border-orange-500 hover:text-orange-500"
-                            )}
-                        >
-                            {option.label}
-                        </button>
-                    );
-                })}
-
-                {(activeSaleType || activePlatform) && (
-                    <button
-                        type="button"
-                        onClick={() => updateParams({ saleType: "", platform: "" })}
-                        className="ml-2 text-sm text-gray-400 hover:text-orange-500 transition-colors"
-                    >
-                        Temizle
-                    </button>
-                )}
+                <div className="inline-flex overflow-hidden rounded-full border border-gray-200 bg-white">
+                    {PLATFORM_OPTIONS.map((option, index) => {
+                        const isActive = activePlatform === option.value;
+                        return (
+                            <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => togglePlatform(option.value)}
+                                aria-pressed={isActive}
+                                className={cn(
+                                    "px-5 py-2 text-sm font-medium transition-colors",
+                                    index > 0 && "border-l border-gray-200",
+                                    isActive
+                                        ? option.activeClassName
+                                        : "text-gray-600 hover:bg-orange-50 hover:text-orange-500"
+                                )}
+                            >
+                                {option.label}
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

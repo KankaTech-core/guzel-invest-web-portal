@@ -36,6 +36,12 @@ import {
     isAbortFetchError,
     parseApiErrorMessage,
 } from "@/lib/fetch-error";
+import {
+    isCategoryFieldVisibleForTypes,
+    normalizeZoningStatus,
+    PROPERTY_TYPE_OPTIONS,
+    ZONING_STATUS_OPTIONS,
+} from "@/lib/listing-type-rules";
 import type { MapListing as LeafletMapListing } from "@/components/admin/listings-leaflet-map";
 
 type ListingStatusValue = "DRAFT" | "PUBLISHED" | "ARCHIVED" | "REMOVED";
@@ -92,6 +98,16 @@ interface FiltersState {
     minArea?: number;
     maxArea?: number;
     rooms: string[];
+    zoningStatus: string;
+    parcelNo: string;
+    minEmsal?: number;
+    maxEmsal?: number;
+    minGroundFloorArea?: number;
+    maxGroundFloorArea?: number;
+    minBasementArea?: number;
+    maxBasementArea?: number;
+    hasWaterSource?: boolean;
+    hasFruitTrees?: boolean;
 }
 
 interface DropdownOption {
@@ -121,18 +137,15 @@ const PRICE_STEP = 10000;
 const AREA_MIN = 0;
 const AREA_MAX = 500;
 const AREA_STEP = 5;
+const COMMERCIAL_AREA_MIN = 0;
+const COMMERCIAL_AREA_MAX = 2000;
+const COMMERCIAL_AREA_STEP = 10;
+const EMSAL_MIN = 0;
+const EMSAL_MAX = 5;
+const EMSAL_STEP = 0.05;
 const IMAGE_SWIPE_THRESHOLD_PX = 48;
 
-const propertyTypes = [
-    { value: "APARTMENT", label: "Daire" },
-    { value: "VILLA", label: "Villa" },
-    { value: "PENTHOUSE", label: "Penthouse" },
-    { value: "LAND", label: "Arsa" },
-    { value: "COMMERCIAL", label: "Ticari" },
-    { value: "OFFICE", label: "Ofis" },
-    { value: "SHOP", label: "Dükkan" },
-    { value: "FARM", label: "Çiftlik" },
-] as const;
+const propertyTypes = PROPERTY_TYPE_OPTIONS;
 
 const saleTypes = [
     { value: "SALE", label: "Satılık" },
@@ -203,6 +216,16 @@ const FILTER_QUERY_KEYS = [
     "minArea",
     "maxArea",
     "rooms",
+    "zoningStatus",
+    "parcelNo",
+    "minEmsal",
+    "maxEmsal",
+    "minGroundFloorArea",
+    "maxGroundFloorArea",
+    "minBasementArea",
+    "maxBasementArea",
+    "hasWaterSource",
+    "hasFruitTrees",
 ] as const;
 
 const LeafletMap = dynamic(() => import("@/components/admin/listings-leaflet-map"), {
@@ -617,11 +640,69 @@ export function PortfolioMapView({ locale }: { locale: string }) {
         () => normalizeRange(filters.minArea, filters.maxArea, AREA_MIN, AREA_MAX),
         [filters.minArea, filters.maxArea]
     );
+    const groundFloorAreaRange = useMemo<[number, number]>(
+        () =>
+            normalizeRange(
+                filters.minGroundFloorArea,
+                filters.maxGroundFloorArea,
+                COMMERCIAL_AREA_MIN,
+                COMMERCIAL_AREA_MAX
+            ),
+        [filters.minGroundFloorArea, filters.maxGroundFloorArea]
+    );
+    const basementAreaRange = useMemo<[number, number]>(
+        () =>
+            normalizeRange(
+                filters.minBasementArea,
+                filters.maxBasementArea,
+                COMMERCIAL_AREA_MIN,
+                COMMERCIAL_AREA_MAX
+            ),
+        [filters.minBasementArea, filters.maxBasementArea]
+    );
+    const emsalRange = useMemo<[number, number]>(
+        () =>
+            normalizeRange(
+                filters.minEmsal,
+                filters.maxEmsal,
+                EMSAL_MIN,
+                EMSAL_MAX
+            ),
+        [filters.minEmsal, filters.maxEmsal]
+    );
+    const isRoomsFilterVisible = useMemo(
+        () => isCategoryFieldVisibleForTypes("rooms", filters.types),
+        [filters.types]
+    );
+    const isLandFiltersVisible = useMemo(
+        () => isCategoryFieldVisibleForTypes("zoningStatus", filters.types),
+        [filters.types]
+    );
+    const isCommercialFiltersVisible = useMemo(
+        () => isCategoryFieldVisibleForTypes("groundFloorArea", filters.types),
+        [filters.types]
+    );
+    const isFarmFiltersVisible = useMemo(
+        () => isCategoryFieldVisibleForTypes("hasWaterSource", filters.types),
+        [filters.types]
+    );
 
     const visibleListings = useMemo(
         () => listings.filter((listing) => listing.status === "PUBLISHED"),
         [listings]
     );
+
+    useEffect(() => {
+        if (isRoomsFilterVisible) return;
+
+        setFilters((previous) => {
+            if (previous.rooms.length === 0) return previous;
+            return {
+                ...previous,
+                rooms: [],
+            };
+        });
+    }, [isRoomsFilterVisible]);
 
     const mapListings = useMemo<LeafletMapListing[]>(() => {
         return visibleListings.flatMap((listing) => {
@@ -773,12 +854,138 @@ export function PortfolioMapView({ locale }: { locale: string }) {
         });
     };
 
+    const handleMinGroundFloorAreaInput = (event: ChangeEvent<HTMLInputElement>) => {
+        const rawValue = parseNumber(event.target.value);
+        setFilters((previous) => {
+            if (rawValue === undefined) {
+                return {
+                    ...previous,
+                    minGroundFloorArea: undefined,
+                };
+            }
+            const bounded = clampNumber(
+                rawValue,
+                COMMERCIAL_AREA_MIN,
+                COMMERCIAL_AREA_MAX
+            );
+            const maxValue = previous.maxGroundFloorArea ?? COMMERCIAL_AREA_MAX;
+            return {
+                ...previous,
+                minGroundFloorArea: Math.min(bounded, maxValue),
+            };
+        });
+    };
+
+    const handleMaxGroundFloorAreaInput = (event: ChangeEvent<HTMLInputElement>) => {
+        const rawValue = parseNumber(event.target.value);
+        setFilters((previous) => {
+            if (rawValue === undefined) {
+                return {
+                    ...previous,
+                    maxGroundFloorArea: undefined,
+                };
+            }
+            const bounded = clampNumber(
+                rawValue,
+                COMMERCIAL_AREA_MIN,
+                COMMERCIAL_AREA_MAX
+            );
+            const minValue = previous.minGroundFloorArea ?? COMMERCIAL_AREA_MIN;
+            return {
+                ...previous,
+                maxGroundFloorArea: Math.max(bounded, minValue),
+            };
+        });
+    };
+
+    const handleMinBasementAreaInput = (event: ChangeEvent<HTMLInputElement>) => {
+        const rawValue = parseNumber(event.target.value);
+        setFilters((previous) => {
+            if (rawValue === undefined) {
+                return {
+                    ...previous,
+                    minBasementArea: undefined,
+                };
+            }
+            const bounded = clampNumber(
+                rawValue,
+                COMMERCIAL_AREA_MIN,
+                COMMERCIAL_AREA_MAX
+            );
+            const maxValue = previous.maxBasementArea ?? COMMERCIAL_AREA_MAX;
+            return {
+                ...previous,
+                minBasementArea: Math.min(bounded, maxValue),
+            };
+        });
+    };
+
+    const handleMaxBasementAreaInput = (event: ChangeEvent<HTMLInputElement>) => {
+        const rawValue = parseNumber(event.target.value);
+        setFilters((previous) => {
+            if (rawValue === undefined) {
+                return {
+                    ...previous,
+                    maxBasementArea: undefined,
+                };
+            }
+            const bounded = clampNumber(
+                rawValue,
+                COMMERCIAL_AREA_MIN,
+                COMMERCIAL_AREA_MAX
+            );
+            const minValue = previous.minBasementArea ?? COMMERCIAL_AREA_MIN;
+            return {
+                ...previous,
+                maxBasementArea: Math.max(bounded, minValue),
+            };
+        });
+    };
+
+    const handleMinEmsalInput = (event: ChangeEvent<HTMLInputElement>) => {
+        const rawValue = parseNumber(event.target.value);
+        setFilters((previous) => {
+            if (rawValue === undefined) {
+                return {
+                    ...previous,
+                    minEmsal: undefined,
+                };
+            }
+            const bounded = clampNumber(rawValue, EMSAL_MIN, EMSAL_MAX);
+            const maxValue = previous.maxEmsal ?? EMSAL_MAX;
+            return {
+                ...previous,
+                minEmsal: Math.min(bounded, maxValue),
+            };
+        });
+    };
+
+    const handleMaxEmsalInput = (event: ChangeEvent<HTMLInputElement>) => {
+        const rawValue = parseNumber(event.target.value);
+        setFilters((previous) => {
+            if (rawValue === undefined) {
+                return {
+                    ...previous,
+                    maxEmsal: undefined,
+                };
+            }
+            const bounded = clampNumber(rawValue, EMSAL_MIN, EMSAL_MAX);
+            const minValue = previous.minEmsal ?? EMSAL_MIN;
+            return {
+                ...previous,
+                maxEmsal: Math.max(bounded, minValue),
+            };
+        });
+    };
+
     const applyFilters = () => {
         const params = new URLSearchParams(searchKey);
         FILTER_QUERY_KEYS.forEach((key) => params.delete(key));
 
         filters.types.forEach((type) => params.append("type", type));
-        filters.rooms.forEach((room) => params.append("rooms", room));
+        if (isRoomsFilterVisible) {
+            filters.rooms.forEach((room) => params.append("rooms", room));
+        }
 
         if (filters.saleType) params.set("saleType", filters.saleType);
         if (filters.city) params.set("city", filters.city);
@@ -788,6 +995,30 @@ export function PortfolioMapView({ locale }: { locale: string }) {
         if (filters.maxPrice !== undefined) params.set("maxPrice", String(filters.maxPrice));
         if (filters.minArea !== undefined) params.set("minArea", String(filters.minArea));
         if (filters.maxArea !== undefined) params.set("maxArea", String(filters.maxArea));
+        if (isLandFiltersVisible) {
+            if (filters.zoningStatus) params.set("zoningStatus", filters.zoningStatus);
+            if (filters.parcelNo.trim()) params.set("parcelNo", filters.parcelNo.trim());
+            if (filters.minEmsal !== undefined) params.set("minEmsal", String(filters.minEmsal));
+            if (filters.maxEmsal !== undefined) params.set("maxEmsal", String(filters.maxEmsal));
+        }
+        if (isCommercialFiltersVisible) {
+            if (filters.minGroundFloorArea !== undefined) {
+                params.set("minGroundFloorArea", String(filters.minGroundFloorArea));
+            }
+            if (filters.maxGroundFloorArea !== undefined) {
+                params.set("maxGroundFloorArea", String(filters.maxGroundFloorArea));
+            }
+            if (filters.minBasementArea !== undefined) {
+                params.set("minBasementArea", String(filters.minBasementArea));
+            }
+            if (filters.maxBasementArea !== undefined) {
+                params.set("maxBasementArea", String(filters.maxBasementArea));
+            }
+        }
+        if (isFarmFiltersVisible) {
+            if (filters.hasWaterSource === true) params.set("hasWaterSource", "true");
+            if (filters.hasFruitTrees === true) params.set("hasFruitTrees", "true");
+        }
 
         const query = params.toString();
         router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
@@ -1304,31 +1535,275 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                             </div>
                         </div>
 
-                        <div className="mb-6">
-                            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Oda Sayısı
-                            </h3>
-                            <div className="grid grid-cols-4 gap-1.5">
-                                {roomOptions.map((room) => {
-                                    const isActive = filters.rooms.includes(room);
-                                    return (
-                                        <button
-                                            key={room}
-                                            type="button"
-                                            onClick={() => toggleRoom(room)}
-                                            className={cn(
-                                                "rounded-md px-2 py-1.5 text-xs font-medium transition",
-                                                isActive
-                                                    ? "bg-orange-500 text-white"
-                                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                            )}
-                                        >
-                                            {room}
-                                        </button>
-                                    );
-                                })}
+                        {isLandFiltersVisible && (
+                            <div className="mb-6">
+                                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Arsa Detayları
+                                </h3>
+                                <div className="space-y-2">
+                                    <InlineDropdown
+                                        options={[
+                                            { value: "", label: "İmar Durumu (Tümü)" },
+                                            ...ZONING_STATUS_OPTIONS.map((option) => ({
+                                                value: option.value,
+                                                label: option.label,
+                                            })),
+                                        ]}
+                                        value={filters.zoningStatus}
+                                        onChange={(zoningStatus) =>
+                                            setFilters((previous) => ({
+                                                ...previous,
+                                                zoningStatus,
+                                            }))
+                                        }
+                                        placeholder="İmar durumu seçin"
+                                    />
+
+                                    <input
+                                        type="text"
+                                        value={filters.parcelNo}
+                                        onChange={(event) =>
+                                            setFilters((previous) => ({
+                                                ...previous,
+                                                parcelNo: event.target.value,
+                                            }))
+                                        }
+                                        placeholder="Ada / Parsel"
+                                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                    />
+
+                                    <div className="space-y-2 rounded-lg border border-gray-200 p-3">
+                                        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                            Emsal
+                                        </h4>
+                                        <InlineRangeSlider
+                                            min={EMSAL_MIN}
+                                            max={EMSAL_MAX}
+                                            step={EMSAL_STEP}
+                                            value={emsalRange}
+                                            onChange={([minValue, maxValue]) =>
+                                                setFilters((previous) => ({
+                                                    ...previous,
+                                                    minEmsal:
+                                                        minValue === EMSAL_MIN
+                                                            ? undefined
+                                                            : minValue,
+                                                    maxEmsal:
+                                                        maxValue === EMSAL_MAX
+                                                            ? undefined
+                                                            : maxValue,
+                                                }))
+                                            }
+                                        />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <input
+                                                type="number"
+                                                inputMode="decimal"
+                                                value={filters.minEmsal ?? ""}
+                                                onChange={handleMinEmsalInput}
+                                                placeholder="Min"
+                                                min={EMSAL_MIN}
+                                                max={EMSAL_MAX}
+                                                step={EMSAL_STEP}
+                                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                            />
+                                            <input
+                                                type="number"
+                                                inputMode="decimal"
+                                                value={filters.maxEmsal ?? ""}
+                                                onChange={handleMaxEmsalInput}
+                                                placeholder="Max"
+                                                min={EMSAL_MIN}
+                                                max={EMSAL_MAX}
+                                                step={EMSAL_STEP}
+                                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {isCommercialFiltersVisible && (
+                            <div className="mb-6">
+                                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Ticari Detaylar
+                                </h3>
+                                <div className="space-y-3">
+                                    <div className="space-y-2 rounded-lg border border-gray-200 p-3">
+                                        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                            Zemin <span className="normal-case">(m²)</span>
+                                        </h4>
+                                        <InlineRangeSlider
+                                            min={COMMERCIAL_AREA_MIN}
+                                            max={COMMERCIAL_AREA_MAX}
+                                            step={COMMERCIAL_AREA_STEP}
+                                            value={groundFloorAreaRange}
+                                            onChange={([minValue, maxValue]) =>
+                                                setFilters((previous) => ({
+                                                    ...previous,
+                                                    minGroundFloorArea:
+                                                        minValue === COMMERCIAL_AREA_MIN
+                                                            ? undefined
+                                                            : minValue,
+                                                    maxGroundFloorArea:
+                                                        maxValue === COMMERCIAL_AREA_MAX
+                                                            ? undefined
+                                                            : maxValue,
+                                                }))
+                                            }
+                                        />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <input
+                                                type="number"
+                                                inputMode="numeric"
+                                                value={filters.minGroundFloorArea ?? ""}
+                                                onChange={handleMinGroundFloorAreaInput}
+                                                placeholder="Min"
+                                                min={COMMERCIAL_AREA_MIN}
+                                                max={COMMERCIAL_AREA_MAX}
+                                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                            />
+                                            <input
+                                                type="number"
+                                                inputMode="numeric"
+                                                value={filters.maxGroundFloorArea ?? ""}
+                                                onChange={handleMaxGroundFloorAreaInput}
+                                                placeholder="Max"
+                                                min={COMMERCIAL_AREA_MIN}
+                                                max={COMMERCIAL_AREA_MAX}
+                                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2 rounded-lg border border-gray-200 p-3">
+                                        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                            Bodrum <span className="normal-case">(m²)</span>
+                                        </h4>
+                                        <InlineRangeSlider
+                                            min={COMMERCIAL_AREA_MIN}
+                                            max={COMMERCIAL_AREA_MAX}
+                                            step={COMMERCIAL_AREA_STEP}
+                                            value={basementAreaRange}
+                                            onChange={([minValue, maxValue]) =>
+                                                setFilters((previous) => ({
+                                                    ...previous,
+                                                    minBasementArea:
+                                                        minValue === COMMERCIAL_AREA_MIN
+                                                            ? undefined
+                                                            : minValue,
+                                                    maxBasementArea:
+                                                        maxValue === COMMERCIAL_AREA_MAX
+                                                            ? undefined
+                                                            : maxValue,
+                                                }))
+                                            }
+                                        />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <input
+                                                type="number"
+                                                inputMode="numeric"
+                                                value={filters.minBasementArea ?? ""}
+                                                onChange={handleMinBasementAreaInput}
+                                                placeholder="Min"
+                                                min={COMMERCIAL_AREA_MIN}
+                                                max={COMMERCIAL_AREA_MAX}
+                                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                            />
+                                            <input
+                                                type="number"
+                                                inputMode="numeric"
+                                                value={filters.maxBasementArea ?? ""}
+                                                onChange={handleMaxBasementAreaInput}
+                                                placeholder="Max"
+                                                min={COMMERCIAL_AREA_MIN}
+                                                max={COMMERCIAL_AREA_MAX}
+                                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {isFarmFiltersVisible && (
+                            <div className="mb-6">
+                                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Çiftlik Detayları
+                                </h3>
+                                <div className="grid grid-cols-1 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setFilters((previous) => ({
+                                                ...previous,
+                                                hasWaterSource:
+                                                    previous.hasWaterSource === true
+                                                        ? undefined
+                                                        : true,
+                                            }))
+                                        }
+                                        className={cn(
+                                            "rounded-lg border px-3 py-2 text-sm font-medium transition",
+                                            filters.hasWaterSource === true
+                                                ? "border-orange-500 bg-orange-50 text-orange-700"
+                                                : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                                        )}
+                                    >
+                                        Su Kaynağı Olanlar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setFilters((previous) => ({
+                                                ...previous,
+                                                hasFruitTrees:
+                                                    previous.hasFruitTrees === true
+                                                        ? undefined
+                                                        : true,
+                                            }))
+                                        }
+                                        className={cn(
+                                            "rounded-lg border px-3 py-2 text-sm font-medium transition",
+                                            filters.hasFruitTrees === true
+                                                ? "border-orange-500 bg-orange-50 text-orange-700"
+                                                : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                                        )}
+                                    >
+                                        Meyve Ağacı Olanlar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {isRoomsFilterVisible && (
+                            <div className="mb-6">
+                                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    Oda Sayısı
+                                </h3>
+                                <div className="grid grid-cols-4 gap-1.5">
+                                    {roomOptions.map((room) => {
+                                        const isActive = filters.rooms.includes(room);
+                                        return (
+                                            <button
+                                                key={room}
+                                                type="button"
+                                                onClick={() => toggleRoom(room)}
+                                                className={cn(
+                                                    "rounded-md px-2 py-1.5 text-xs font-medium transition",
+                                                    isActive
+                                                        ? "bg-orange-500 text-white"
+                                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                )}
+                                            >
+                                                {room}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-2 border-t border-gray-200 px-5 pb-[calc(env(safe-area-inset-bottom)+14px)] pt-4 md:py-4">
@@ -1357,6 +1832,18 @@ function parseNumber(value: string | null) {
     if (!value) return undefined;
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseBooleanParam(value: string | null) {
+    if (!value) return undefined;
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true" || normalized === "1" || normalized === "yes") {
+        return true;
+    }
+    if (normalized === "false" || normalized === "0" || normalized === "no") {
+        return false;
+    }
+    return undefined;
 }
 
 function clampNumber(value: number, min: number, max: number) {
@@ -1395,9 +1882,24 @@ function readInitialFilters(searchParams: URLSearchParams): FiltersState {
     const rawTypes = parseMultiParam(searchParams, "type");
     const rawSaleType = searchParams.get("saleType")?.toUpperCase();
     const rawRooms = parseMultiParam(searchParams, "rooms");
+    const rawZoningStatus = normalizeZoningStatus(searchParams.get("zoningStatus")) || "";
+    const rawParcelNo = searchParams.get("parcelNo") || "";
+    const rawHasWaterSource = parseBooleanParam(searchParams.get("hasWaterSource"));
+    const rawHasFruitTrees = parseBooleanParam(searchParams.get("hasFruitTrees"));
+    const selectedTypes = rawTypes.filter((value) => validTypeValues.has(value));
+    const canUseRoomFilters = isCategoryFieldVisibleForTypes("rooms", selectedTypes);
+    const canUseLandFilters = isCategoryFieldVisibleForTypes("zoningStatus", selectedTypes);
+    const canUseCommercialFilters = isCategoryFieldVisibleForTypes(
+        "groundFloorArea",
+        selectedTypes
+    );
+    const canUseFarmFilters = isCategoryFieldVisibleForTypes(
+        "hasWaterSource",
+        selectedTypes
+    );
 
     return {
-        types: rawTypes.filter((value) => validTypeValues.has(value)),
+        types: selectedTypes,
         saleType:
             rawSaleType && validSaleTypeValues.has(rawSaleType)
                 ? (rawSaleType as SaleType)
@@ -1409,9 +1911,33 @@ function readInitialFilters(searchParams: URLSearchParams): FiltersState {
         maxPrice: parseNumber(searchParams.get("maxPrice")),
         minArea: parseNumber(searchParams.get("minArea")),
         maxArea: parseNumber(searchParams.get("maxArea")),
-        rooms: rawRooms.filter((room): room is (typeof roomOptions)[number] =>
-            validRoomValues.has(room as (typeof roomOptions)[number])
-        ),
+        rooms: canUseRoomFilters
+            ? rawRooms.filter((room): room is (typeof roomOptions)[number] =>
+                validRoomValues.has(room as (typeof roomOptions)[number])
+            )
+            : [],
+        zoningStatus: canUseLandFilters ? rawZoningStatus : "",
+        parcelNo: canUseLandFilters ? rawParcelNo : "",
+        minEmsal: canUseLandFilters
+            ? parseNumber(searchParams.get("minEmsal"))
+            : undefined,
+        maxEmsal: canUseLandFilters
+            ? parseNumber(searchParams.get("maxEmsal"))
+            : undefined,
+        minGroundFloorArea: canUseCommercialFilters
+            ? parseNumber(searchParams.get("minGroundFloorArea"))
+            : undefined,
+        maxGroundFloorArea: canUseCommercialFilters
+            ? parseNumber(searchParams.get("maxGroundFloorArea"))
+            : undefined,
+        minBasementArea: canUseCommercialFilters
+            ? parseNumber(searchParams.get("minBasementArea"))
+            : undefined,
+        maxBasementArea: canUseCommercialFilters
+            ? parseNumber(searchParams.get("maxBasementArea"))
+            : undefined,
+        hasWaterSource: canUseFarmFilters ? rawHasWaterSource : undefined,
+        hasFruitTrees: canUseFarmFilters ? rawHasFruitTrees : undefined,
     };
 }
 

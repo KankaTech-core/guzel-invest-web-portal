@@ -23,6 +23,7 @@ const minioClient = new Minio.Client({
 
 const BUCKET_NAME = process.env.MINIO_BUCKET || "guzel-invest";
 const DEFAULT_MAX_OPTIMIZED_IMAGE_MB = 8;
+const WEBP_QUALITY = 60;
 
 const parsePositiveInt = (value: string | undefined, fallback: number): number => {
     const parsed = Number.parseInt(value || "", 10);
@@ -101,7 +102,7 @@ export async function uploadImage(
 
     // Convert to WebP for optimization
     const optimizedBuffer = await image
-        .webp({ quality: 85 })
+        .webp({ quality: WEBP_QUALITY })
         .toBuffer();
 
     if (optimizedBuffer.length > MAX_OPTIMIZED_IMAGE_SIZE_BYTES) {
@@ -115,7 +116,7 @@ export async function uploadImage(
     // Create thumbnail
     const thumbnailBuffer = await sharp(file)
         .resize(400, 300, { fit: "cover" })
-        .webp({ quality: 80 })
+        .webp({ quality: WEBP_QUALITY })
         .toBuffer();
 
     // Upload paths
