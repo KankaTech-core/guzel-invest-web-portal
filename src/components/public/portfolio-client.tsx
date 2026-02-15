@@ -201,6 +201,8 @@ interface InlineRangeSliderProps {
     value: [number, number];
     onChange: (value: [number, number]) => void;
     histogramValues?: number[];
+    hasCurrentRangeMatches?: boolean;
+    showHistogram?: boolean;
 }
 
 interface DropdownOption {
@@ -318,14 +320,23 @@ function InlineRangeSlider({
     value,
     onChange,
     histogramValues = [],
+    hasCurrentRangeMatches = true,
+    showHistogram = false,
 }: InlineRangeSliderProps) {
+    type HistogramBar = {
+        id: number;
+        count: number;
+        heightPercent: number;
+        centerPercent: number;
+    };
+
     const getPercent = (inputValue: number) =>
         ((inputValue - min) / (max - min)) * 100;
 
     const minPercent = getPercent(value[0]);
     const maxPercent = getPercent(value[1]);
-    const histogramBars = useMemo(() => {
-        if (max <= min || histogramValues.length === 0) {
+    const histogramBars = useMemo<HistogramBar[]>(() => {
+        if (!showHistogram || max <= min) {
             return [];
         }
 
@@ -333,20 +344,19 @@ function InlineRangeSlider({
         const bins = Array.from({ length: binCount }, () => 0);
         const range = max - min;
 
-        histogramValues.forEach((rawValue) => {
-            const boundedValue = Math.max(min, Math.min(max, rawValue));
-            const ratio = (boundedValue - min) / range;
-            const index = Math.min(binCount - 1, Math.floor(ratio * binCount));
-            bins[index] += 1;
-        });
-
-        const peak = Math.max(...bins);
-        if (peak === 0) {
-            return [];
+        if (histogramValues.length > 0) {
+            histogramValues.forEach((rawValue) => {
+                const boundedValue = Math.max(min, Math.min(max, rawValue));
+                const ratio = (boundedValue - min) / range;
+                const index = Math.min(binCount - 1, Math.floor(ratio * binCount));
+                bins[index] += 1;
+            });
         }
 
+        const peak = Math.max(...bins);
+
         return bins.map((count, index) => {
-            const normalized = count / peak;
+            const normalized = peak > 0 ? count / peak : 0;
             const heightPercent = count === 0
                 ? 8
                 : Math.max(14, Math.round(18 + normalized * 82));
@@ -358,8 +368,17 @@ function InlineRangeSlider({
                 centerPercent: ((index + 0.5) / binCount) * 100,
             };
         });
-    }, [histogramValues, max, min]);
+    }, [histogramValues, max, min, showHistogram]);
     const hasHistogram = histogramBars.length > 0;
+    const hasHistogramValues = histogramBars.some((bar) => bar.count > 0);
+    const canHighlightSelectedRange = hasCurrentRangeMatches && hasHistogramValues;
+    const isRangeCoveredByHistogram = histogramBars.some((bar) => {
+        if (bar.count === 0) {
+            return false;
+        }
+
+        return bar.centerPercent >= minPercent && bar.centerPercent <= maxPercent;
+    });
 
     const handleMinChange = (event: ChangeEvent<HTMLInputElement>) => {
         const nextMin = Math.min(Number(event.target.value), value[1] - step);
@@ -415,7 +434,10 @@ function InlineRangeSlider({
                 <div className="flex h-full items-end gap-0.5">
                     {histogramBars.map((bar) => {
                         const isInSelectedRange =
-                            bar.centerPercent >= minPercent && bar.centerPercent <= maxPercent;
+                            canHighlightSelectedRange &&
+                            isRangeCoveredByHistogram &&
+                            bar.centerPercent >= minPercent &&
+                            bar.centerPercent <= maxPercent;
 
                         return (
                             <span
@@ -423,8 +445,8 @@ function InlineRangeSlider({
                                 className="min-w-[6px] flex-1 rounded-t-full transition-all duration-200"
                                 style={{
                                     height: `${bar.heightPercent}%`,
-                                    backgroundColor: isInSelectedRange ? "#3B82F6" : "#93C5FD",
-                                    opacity: bar.count === 0 ? 0.18 : isInSelectedRange ? 0.95 : 0.56,
+                                    backgroundColor: isInSelectedRange ? "#3B82F6" : "#D1D5DB",
+                                    opacity: bar.count === 0 ? 0.22 : isInSelectedRange ? 0.95 : 0.58,
                                 }}
                             />
                         );
@@ -574,6 +596,34 @@ function getListingDescription(listing: Listing, locale: string) {
     return requested?.description || fallback?.description || "Açıklama bulunamadı.";
 }
 
+function getListingNumericPrice(listing: Listing) {
+    if (typeof listing.price === "number") {
+        return Number.isFinite(listing.price) ? listing.price : null;
+    }
+
+    const normalizedPrice = listing.price
+        .replace(/[^0-9,.-]/g, "")
+        .replace(/\s/g, "");
+
+    if (!normalizedPrice) {
+        return null;
+    }
+
+    const canonicalPrice =
+        normalizedPrice.includes(",") && !normalizedPrice.includes(".")
+            ? normalizedPrice.replace(",", ".")
+            : normalizedPrice.replace(/,/g, "");
+
+    const parsedPrice = Number(canonicalPrice);
+    return Number.isFinite(parsedPrice) ? parsedPrice : null;
+}
+
+function buildPriceHistogramValues(listings: Listing[]) {
+    return listings
+        .map((listing) => getListingNumericPrice(listing))
+        .filter((price): price is number => price !== null);
+}
+
 export function PortfolioClient({ locale }: PortfolioClientProps) {
     const searchParams = useSearchParams();
     const searchParamsKey = searchParams.toString();
@@ -590,6 +640,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     );
 
     const [listings, setListings] = useState<Listing[]>([]);
+    const [priceHistogramValues, setPriceHistogramValues] = useState<number[]>([]);
     const [activeImageIndexes, setActiveImageIndexes] = useState<Record<string, number>>({});
     const [activeMobilePanel, setActiveMobilePanel] = useState<MobilePanel | null>(null);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -793,31 +844,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             ? [boundedMin, boundedMax]
             : [boundedMax, boundedMax];
     }, [filters.minPrice, filters.maxPrice]);
-    const priceHistogramValues = useMemo(
-        () =>
-            listings
-                .map((listing) => {
-                    if (typeof listing.price === "number") {
-                        return Number.isFinite(listing.price) ? listing.price : null;
-                    }
-
-                    const normalizedPrice = listing.price
-                        .replace(/[^0-9,.-]/g, "")
-                        .replace(/\s/g, "");
-
-                    if (!normalizedPrice) {
-                        return null;
-                    }
-
-                    const canonicalPrice =
-                        normalizedPrice.includes(",") && !normalizedPrice.includes(".")
-                            ? normalizedPrice.replace(",", ".")
-                            : normalizedPrice.replace(/,/g, "");
-
-                    const parsedPrice = Number(canonicalPrice);
-                    return Number.isFinite(parsedPrice) ? parsedPrice : null;
-                })
-                .filter((price): price is number => price !== null),
+    const currentPriceHistogramValues = useMemo(
+        () => buildPriceHistogramValues(listings),
         [listings]
     );
 
@@ -1019,6 +1047,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
                 const data = (await response.json()) as { listings: Listing[] };
                 const nextListings = Array.isArray(data.listings) ? data.listings : [];
+                const nextPriceHistogramValues = buildPriceHistogramValues(nextListings);
                 const nextSnapshot = nextListings
                     .map((listing) => {
                         const mediaSignature = listing.media.map((media) => media.url).join(",");
@@ -1029,6 +1058,9 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
                 if (nextSnapshot !== snapshotRef.current) {
                     setListings(nextListings);
+                    if (nextPriceHistogramValues.length > 0) {
+                        setPriceHistogramValues(nextPriceHistogramValues);
+                    }
                     snapshotRef.current = nextSnapshot;
                 }
 
@@ -1473,7 +1505,9 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         max={PRICE_MAX}
                         step={PRICE_STEP}
                         value={priceRange}
+                        showHistogram
                         histogramValues={priceHistogramValues}
+                        hasCurrentRangeMatches={currentPriceHistogramValues.length > 0}
                         onChange={([nextMin, nextMax]) =>
                             setFilters((previous) => ({
                                 ...previous,
