@@ -11,11 +11,20 @@ import {
     getSaleTypeLabel,
 } from "@/lib/utils";
 import {
+    isCategoryFieldVisibleForTypes,
+    normalizeZoningStatus,
+    type ListingCategoryFieldKey,
+    ZONING_STATUS_OPTIONS,
+} from "@/lib/listing-type-rules";
+import {
     Bath,
     BedDouble,
     ChevronRight,
     MapPin,
     Square,
+    Layers,
+    Scaling,
+    Trees,
 } from "lucide-react";
 import {
     ListingDetailGallery,
@@ -119,6 +128,30 @@ export default async function ListingDetailPage({
         .filter(Boolean)
         .join(", ");
 
+    // Visibility Checks
+    const selectedTypeOfListing = [listing.type];
+    const isVisible = (key: ListingCategoryFieldKey) =>
+        isCategoryFieldVisibleForTypes(key, selectedTypeOfListing);
+
+    const showRooms = isVisible("rooms");
+    const showBathrooms = isVisible("bathrooms");
+    const showFloor = isVisible("floor");
+    const showTotalFloors = isVisible("totalFloors");
+    const showBuildYear = isVisible("buildYear");
+    const showHeating = isVisible("heating");
+
+    // Land / Commercial Fields
+    const showZoning = isVisible("zoningStatus");
+    const showParcel = isVisible("parcelNo");
+    const showEmsal = isVisible("emsal");
+    const showGroundArea = isVisible("groundFloorArea");
+    const showBasementArea = isVisible("basementArea");
+
+    const zoningLabel = ZONING_STATUS_OPTIONS.find(
+        (opt) => opt.value === normalizeZoningStatus(listing.zoningStatus)
+    )?.label || listing.zoningStatus || "-";
+
+
     const lat = toNumber(listing.latitude);
     const lng = toNumber(listing.longitude);
     const hasCoordinates =
@@ -155,52 +188,108 @@ export default async function ListingDetailPage({
         { label: "İlan Tipi", value: saleTypeLabel },
         { label: "Kategori", value: propertyTypeLabel },
         { label: "Brüt Alan", value: formatArea(listing.area) },
-        { label: "Oda Düzeni", value: roomValue },
-        {
-            label: "Banyo",
-            value:
-                typeof listing.bathrooms === "number"
-                    ? `${listing.bathrooms}`
-                    : "-",
-        },
-        {
-            label: "WC",
-            value: typeof listing.wcCount === "number" ? `${listing.wcCount}` : "-",
-        },
-        {
-            label: "Bulunduğu Kat",
-            value: typeof listing.floor === "number" ? `${listing.floor}` : "-",
-        },
-        {
-            label: "Toplam Kat",
-            value:
-                typeof listing.totalFloors === "number"
-                    ? `${listing.totalFloors}`
-                    : "-",
-        },
-        {
-            label: "Bina Yaşı",
-            value:
-                typeof listing.buildYear === "number"
-                    ? `${new Date().getFullYear() - listing.buildYear}`
-                    : "-",
-        },
-        { label: "Isıtma", value: listing.heating || "-" },
-        { label: "Eşya Durumu", value: listing.furnished ? "Eşyalı" : "Eşyasız" },
+        ...(showRooms ? [{ label: "Oda Düzeni", value: roomValue }] : []),
+        ...(showBathrooms
+            ? [
+                {
+                    label: "Banyo",
+                    value:
+                        typeof listing.bathrooms === "number"
+                            ? `${listing.bathrooms}`
+                            : "-",
+                },
+            ]
+            : []),
+        ...(isVisible("wcCount")
+            ? [
+                {
+                    label: "WC",
+                    value:
+                        typeof listing.wcCount === "number"
+                            ? `${listing.wcCount}`
+                            : "-",
+                },
+            ]
+            : []),
+        ...(showFloor
+            ? [
+                {
+                    label: "Bulunduğu Kat",
+                    value:
+                        typeof listing.floor === "number"
+                            ? `${listing.floor}`
+                            : "-",
+                },
+            ]
+            : []),
+        ...(showTotalFloors
+            ? [
+                {
+                    label: "Toplam Kat",
+                    value:
+                        typeof listing.totalFloors === "number"
+                            ? `${listing.totalFloors}`
+                            : "-",
+                },
+            ]
+            : []),
+        ...(showBuildYear
+            ? [
+                {
+                    label: "Bina Yaşı",
+                    value:
+                        typeof listing.buildYear === "number"
+                            ? `${new Date().getFullYear() - listing.buildYear}`
+                            : "-",
+                },
+            ]
+            : []),
+        ...(showHeating ? [{ label: "Isıtma", value: listing.heating || "-" }] : []),
+        ...(listing.furnished !== null
+            ? [{ label: "Eşya Durumu", value: listing.furnished ? "Eşyalı" : "Eşyasız" }]
+            : []),
+        // Land Specific
+        ...(showZoning ? [{ label: "İmar Durumu", value: zoningLabel }] : []),
+        ...(showParcel ? [{ label: "Ada / Parsel", value: listing.parcelNo || "-" }] : []),
+        ...(showEmsal
+            ? [
+                {
+                    label: "Emsal (Kaks)",
+                    value:
+                        typeof listing.emsal === "number" ? `${listing.emsal}` : "-",
+                },
+            ]
+            : []),
+        // Commercial Specific
+        ...(showGroundArea && listing.groundFloorArea
+            ? [{ label: "Zemin Alanı", value: formatArea(listing.groundFloorArea) }]
+            : []),
+        ...(showBasementArea && listing.basementArea
+            ? [{ label: "Bodrum Alanı", value: formatArea(listing.basementArea) }]
+            : []),
+
         { label: "Asansör", value: formatBoolean(listing.elevator) },
         { label: "Otopark", value: formatBoolean(listing.parking) },
         { label: "Havuz", value: formatBoolean(listing.pool) },
         { label: "Bahçe", value: formatBoolean(listing.garden) },
         { label: "Güvenlik", value: formatBoolean(listing.security) },
         { label: "Deniz Manzarası", value: formatBoolean(listing.seaView) },
-        {
-            label: "Vatandaşlığa Uygunluk",
-            value: listing.citizenshipEligible ? "Uygun" : "Uygun değil",
-        },
-        {
-            label: "İkamete Uygunluk",
-            value: listing.residenceEligible ? "Uygun" : "Uygun değil",
-        },
+        ...(isVisible("citizenshipEligible")
+            ? [
+                {
+                    label: "Vatandaşlığa Uygunluk",
+                    value: listing.citizenshipEligible ? "Uygun" : "Uygun değil",
+                },
+            ]
+            : []),
+        ...(isVisible("residenceEligible")
+            ? [
+                {
+                    label: "İkamete Uygunluk",
+                    value: listing.residenceEligible ? "Uygun" : "Uygun değil",
+                },
+            ]
+            : []),
     ];
     const visibleDetailItems = detailItems.filter(
         (item) => item.value && item.value !== "-"
@@ -408,18 +497,28 @@ export default async function ListingDetailPage({
                             </p>
 
                             <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-sm font-medium md:hidden">
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
-                                    <BedDouble className="h-4 w-4 text-gray-400" />
-                                    {roomValue} Oda
-                                </span>
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
-                                    <Bath className="h-4 w-4 text-gray-400" />
-                                    {bathroomValue} Banyo
-                                </span>
+                                {showRooms && roomValue && roomValue !== "-" && (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
+                                        <BedDouble className="h-4 w-4 text-gray-400" />
+                                        {roomValue} Oda
+                                    </span>
+                                )}
+                                {showBathrooms && bathroomValue && bathroomValue !== "-" && (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
+                                        <Bath className="h-4 w-4 text-gray-400" />
+                                        {bathroomValue} Banyo
+                                    </span>
+                                )}
                                 <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
                                     <Square className="h-4 w-4 text-gray-400" />
                                     {formatArea(listing.area)}
                                 </span>
+                                {showZoning && zoningLabel && zoningLabel !== "-" && (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
+                                        <Layers className="h-4 w-4 text-gray-400" />
+                                        {zoningLabel}
+                                    </span>
+                                )}
                             </div>
 
                             <div className="hidden flex-wrap gap-2.5 text-sm font-medium md:flex">
@@ -429,18 +528,28 @@ export default async function ListingDetailPage({
                                 <span className="rounded-full bg-[#5099ff] px-4 py-2 text-white">
                                     {propertyTypeLabel}
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
-                                    <BedDouble className="h-4 w-4 text-gray-400" />
-                                    {roomValue} Oda
-                                </span>
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
-                                    <Bath className="h-4 w-4 text-gray-400" />
-                                    {bathroomValue} Banyo
-                                </span>
+                                {showRooms && roomValue && roomValue !== "-" && (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
+                                        <BedDouble className="h-4 w-4 text-gray-400" />
+                                        {roomValue} Oda
+                                    </span>
+                                )}
+                                {showBathrooms && bathroomValue && bathroomValue !== "-" && (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
+                                        <Bath className="h-4 w-4 text-gray-400" />
+                                        {bathroomValue} Banyo
+                                    </span>
+                                )}
                                 <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
                                     <Square className="h-4 w-4 text-gray-400" />
                                     {formatArea(listing.area)}
                                 </span>
+                                {showZoning && zoningLabel && zoningLabel !== "-" && (
+                                    <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
+                                        <Layers className="h-4 w-4 text-gray-400" />
+                                        {zoningLabel}
+                                    </span>
+                                )}
                             </div>
                         </header>
 

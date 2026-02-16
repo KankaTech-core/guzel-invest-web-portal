@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
     useCallback,
     useEffect,
@@ -262,19 +262,17 @@ function InlineDropdown({
                 type="button"
                 disabled={disabled}
                 onClick={() => setIsOpen((previous) => !previous)}
-                className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm outline-none transition ring-orange-500 focus:ring-2 ${
-                    disabled
+                className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm outline-none transition ring-orange-500 focus:ring-2 ${disabled
                         ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                         : "cursor-pointer border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300"
-                }`}
+                    }`}
             >
                 <span className={selectedOption ? "" : "text-gray-400"}>
                     {selectedOption?.label || placeholder}
                 </span>
                 <ChevronDown
-                    className={`h-4 w-4 text-gray-400 transition-transform ${
-                        isOpen ? "rotate-180" : ""
-                    }`}
+                    className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""
+                        }`}
                 />
             </button>
 
@@ -292,11 +290,10 @@ function InlineDropdown({
                                             onChange(option.value);
                                             setIsOpen(false);
                                         }}
-                                        className={`flex w-full cursor-pointer items-center justify-between px-3 py-2 text-left text-sm transition ${
-                                            isActive
+                                        className={`flex w-full cursor-pointer items-center justify-between px-3 py-2 text-left text-sm transition ${isActive
                                                 ? "bg-orange-50 text-orange-600"
                                                 : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                                        }`}
+                                            }`}
                                     >
                                         <span>{option.label}</span>
                                         {isActive ? <Check className="h-4 w-4" /> : null}
@@ -623,6 +620,8 @@ function buildPriceHistogramValues(listings: Listing[]) {
 }
 
 export function PortfolioClient({ locale }: PortfolioClientProps) {
+    const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
     const searchParamsKey = searchParams.toString();
     const mapHref = useMemo(
@@ -962,6 +961,43 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         isRoomsFilterVisible,
         locale,
     ]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const current = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : searchParams.toString());
+            const next = new URLSearchParams(queryString);
+
+            // Remove locale from comparison as it's a path param, not query param usually, 
+            // but here we are constructing queryString with it.
+            // Let's ensure we are comparing relevant query params.
+
+            // We need to check if the *meaningful* query params have changed.
+            // The `queryString` includes `locale` which might not be in `searchParams` depending on how next-intl handles it.
+            // But `searchParams` from next/navigation usually strictly contains query params.
+
+            const currentString = current.toString();
+            // We need to exclude 'locale' from queryString if it's there but not in current search params (if it's a path param)
+            // effective next params
+            const nextParams = new URLSearchParams(queryString);
+            if (nextParams.has('locale')) nextParams.delete('locale');
+
+            // Also remove internal Next.js params if any
+
+            const nextString = nextParams.toString();
+
+            // Construct the full URL to replace
+            // If the strings are different, we update.
+            // Note: searchParams.toString() might return encoded/decoded differently than our manual construction.
+            // A better way is to check key-by-key or just compare strings if consistent.
+
+            // Simple comparison:
+            if (current.toString() !== nextParams.toString()) {
+                router.replace(`${pathname}?${nextString}`, { scroll: false });
+            }
+        }, 300); // Debounce for 300ms
+
+        return () => clearTimeout(timer);
+    }, [queryString, pathname, router, searchParams]);
 
     const hasActiveFilters = useMemo(() => {
         const params = new URLSearchParams(queryString);
@@ -1353,11 +1389,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                             : saleType.value,
                                 }))
                             }
-                            className={`w-full cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                                filters.saleType === saleType.value
+                            className={`w-full cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${filters.saleType === saleType.value
                                     ? "border-orange-500 bg-orange-500 text-white"
                                     : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-                            }`}
+                                }`}
                         >
                             {saleType.label}
                         </button>
@@ -1389,19 +1424,17 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                     </div>
                     <div className="flex items-center gap-2">
                         <span
-                            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                                filters.types.length > 0
+                            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${filters.types.length > 0
                                     ? "bg-orange-100 text-orange-700"
                                     : "bg-gray-100 text-gray-500"
-                            }`}
+                                }`}
                         >
                             {filters.types.length}
                         </span>
                         <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition group-hover:border-gray-300 group-hover:text-gray-700">
                             <ChevronDown
-                                className={`h-4 w-4 transition-transform ${
-                                    isCategoryExpanded ? "rotate-180 text-gray-700" : ""
-                                }`}
+                                className={`h-4 w-4 transition-transform ${isCategoryExpanded ? "rotate-180 text-gray-700" : ""
+                                    }`}
                             />
                         </span>
                     </div>
@@ -1422,11 +1455,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                     <div className="flex items-center gap-2">
                                         <span
                                             aria-hidden="true"
-                                            className={`inline-flex h-4 w-4 items-center justify-center rounded border transition ${
-                                                isSelected
+                                            className={`inline-flex h-4 w-4 items-center justify-center rounded border transition ${isSelected
                                                     ? "border-orange-500 bg-orange-500 text-white"
                                                     : "border-gray-300 bg-white text-transparent"
-                                            }`}
+                                                }`}
                                         >
                                             <Check className="h-3 w-3" />
                                         </span>
@@ -1904,11 +1936,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                         previous.hasWaterSource === true ? undefined : true,
                                 }))
                             }
-                            className={`w-full cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                                filters.hasWaterSource === true
+                            className={`w-full cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${filters.hasWaterSource === true
                                     ? "border-orange-500 bg-orange-500 text-white"
                                     : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-                            }`}
+                                }`}
                         >
                             Su Kaynağı Olanlar
                         </button>
@@ -1921,11 +1952,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                         previous.hasFruitTrees === true ? undefined : true,
                                 }))
                             }
-                            className={`w-full cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                                filters.hasFruitTrees === true
+                            className={`w-full cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${filters.hasFruitTrees === true
                                     ? "border-orange-500 bg-orange-500 text-white"
                                     : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
-                            }`}
+                                }`}
                         >
                             Meyve Ağacı Olanlar
                         </button>
@@ -1944,11 +1974,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 key={room}
                                 type="button"
                                 onClick={() => toggleRoom(room)}
-                                className={`cursor-pointer rounded-md px-2 py-1.5 text-xs font-medium transition ${
-                                    filters.rooms.includes(room)
+                                className={`cursor-pointer rounded-md px-2 py-1.5 text-xs font-medium transition ${filters.rooms.includes(room)
                                         ? "bg-orange-500 text-white"
                                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                }`}
+                                    }`}
                             >
                                 {room}
                             </button>
@@ -1979,11 +2008,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 }));
                                 closeMobilePanel();
                             }}
-                            className={`flex w-full cursor-pointer items-center justify-between rounded-lg border px-3 py-2.5 text-left text-sm transition ${
-                                isActive
+                            className={`flex w-full cursor-pointer items-center justify-between rounded-lg border px-3 py-2.5 text-left text-sm transition ${isActive
                                     ? "border-orange-500 bg-orange-50 text-orange-700"
                                     : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"
-                            }`}
+                                }`}
                         >
                             <span>{option.label}</span>
                             {isActive ? <Check className="h-4 w-4" /> : null}
@@ -2328,11 +2356,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                         {description}
                                                     </p>
                                                     <span
-                                                        className={`mt-1 inline-flex h-6 items-center text-xs font-semibold transition ${
-                                                            hasDescriptionOverflow
+                                                        className={`mt-1 inline-flex h-6 items-center text-xs font-semibold transition ${hasDescriptionOverflow
                                                                 ? "text-orange-600 hover:text-orange-700"
                                                                 : "invisible"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         Devamını oku
                                                     </span>
@@ -2394,24 +2421,21 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
             {activeMobilePanel && (
                 <div
-                    className={`fixed inset-0 z-[60] lg:hidden ${
-                        isMobileDrawerOpen ? "pointer-events-auto" : "pointer-events-none"
-                    }`}
+                    className={`fixed inset-0 z-[60] lg:hidden ${isMobileDrawerOpen ? "pointer-events-auto" : "pointer-events-none"
+                        }`}
                 >
                     <button
                         type="button"
                         aria-label="Çekmeceyi kapat"
                         onClick={closeMobilePanel}
-                        className={`absolute inset-0 bg-slate-900/45 transition-opacity duration-300 ${
-                            isMobileDrawerOpen ? "opacity-100" : "opacity-0"
-                        }`}
+                        className={`absolute inset-0 bg-slate-900/45 transition-opacity duration-300 ${isMobileDrawerOpen ? "opacity-100" : "opacity-0"
+                            }`}
                     />
                     <section
                         aria-modal="true"
                         role="dialog"
-                        className={`absolute inset-x-0 bottom-0 max-h-[82vh] overflow-hidden rounded-t-2xl bg-white shadow-[0_-14px_30px_rgba(15,23,42,0.24)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                            isMobileDrawerOpen ? "translate-y-0" : "translate-y-full"
-                        }`}
+                        className={`absolute inset-x-0 bottom-0 max-h-[82vh] overflow-hidden rounded-t-2xl bg-white shadow-[0_-14px_30px_rgba(15,23,42,0.24)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${isMobileDrawerOpen ? "translate-y-0" : "translate-y-full"
+                            }`}
                     >
                         <div className="border-b border-gray-200 px-4 pb-3 pt-2">
                             <span className="mx-auto mb-2 block h-1.5 w-12 rounded-full bg-gray-300" />
@@ -2452,11 +2476,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         <button
                             type="button"
                             onClick={() => toggleMobilePanel("filter")}
-                            className={`inline-flex cursor-pointer items-center justify-center gap-1.5 border-y border-r border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold uppercase tracking-wide shadow-[0_3px_14px_rgba(15,23,42,0.08)] transition ${
-                                activeMobilePanel === "filter" && isMobileDrawerOpen
+                            className={`inline-flex cursor-pointer items-center justify-center gap-1.5 border-y border-r border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold uppercase tracking-wide shadow-[0_3px_14px_rgba(15,23,42,0.08)] transition ${activeMobilePanel === "filter" && isMobileDrawerOpen
                                     ? "bg-gray-900 text-white"
                                     : "text-gray-700 hover:bg-gray-50"
-                            }`}
+                                }`}
                         >
                             <SlidersHorizontal className="h-3.5 w-3.5" />
                             Filtre
@@ -2464,11 +2487,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         <button
                             type="button"
                             onClick={() => toggleMobilePanel("sort")}
-                            className={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-r-xl border-y border-r border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold uppercase tracking-wide shadow-[0_3px_14px_rgba(15,23,42,0.08)] transition ${
-                                activeMobilePanel === "sort" && isMobileDrawerOpen
+                            className={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-r-xl border-y border-r border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold uppercase tracking-wide shadow-[0_3px_14px_rgba(15,23,42,0.08)] transition ${activeMobilePanel === "sort" && isMobileDrawerOpen
                                     ? "bg-gray-900 text-white"
                                     : "text-gray-700 hover:bg-gray-50"
-                            }`}
+                                }`}
                         >
                             <ArrowUpDown className="h-3.5 w-3.5" />
                             Sırala
