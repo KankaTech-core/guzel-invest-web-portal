@@ -31,6 +31,7 @@ import {
     type ListingGalleryItem,
 } from "@/components/public/listing-detail-gallery";
 import { ListingContactPanel } from "@/components/public/listing-contact-panel";
+import { ListingPriceDisplay } from "@/components/public/listing-price-display";
 
 const WHATSAPP_NUMBER = "902421234567";
 
@@ -401,6 +402,8 @@ export default async function ListingDetailPage({
                 locationLabel: candidateLocationLabel,
                 imageUrl: candidateImage ? getMediaUrl(candidateImage.url) : null,
                 priceLabel: formatPrice(candidatePriceValue, candidate.currency),
+                price: candidatePriceValue,
+                currency: candidate.currency,
                 areaLabel: formatArea(candidate.area),
                 roomLabel: candidateRoomValue,
                 typeLabel: getPropertyTypeLabel(candidate.type, "tr"),
@@ -487,13 +490,13 @@ export default async function ListingDetailPage({
                                 <div className="hidden min-w-[210px] rounded-[1.25rem] border border-gray-200 bg-white px-5 py-4 text-right md:block">
                                     <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Fiyat</p>
                                     <p className="mt-1 text-3xl font-semibold leading-none text-[#111828]">
-                                        {formattedPrice}
+                                        <ListingPriceDisplay price={priceValue} currency={listing.currency} />
                                     </p>
                                 </div>
                             </div>
 
                             <p className="text-[clamp(2rem,8vw,3rem)] font-semibold leading-none text-[#111828] md:hidden">
-                                {formattedPrice}
+                                <ListingPriceDisplay price={priceValue} currency={listing.currency} />
                             </p>
 
                             <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap text-sm font-medium md:hidden">
@@ -693,7 +696,7 @@ export default async function ListingDetailPage({
 
                                                         <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3 md:hidden">
                                                             <p className="text-[1.45rem] font-semibold leading-none text-[#111828]">
-                                                                {similar.priceLabel}
+                                                                <ListingPriceDisplay price={similar.price} currency={similar.currency} />
                                                             </p>
                                                             <Link
                                                                 href={`/${locale}/ilan/${similar.slug}`}
@@ -733,7 +736,7 @@ export default async function ListingDetailPage({
 
                                                     <div className="mt-4 hidden items-end justify-between gap-3 border-t border-gray-100 pt-3 md:flex">
                                                         <p className="text-[clamp(1.45rem,1.9vw,1.8rem)] font-semibold leading-none text-[#111828]">
-                                                            {similar.priceLabel}
+                                                            <ListingPriceDisplay price={similar.price} currency={similar.currency} />
                                                         </p>
                                                         <Link
                                                             href={`/${locale}/ilan/${similar.slug}`}

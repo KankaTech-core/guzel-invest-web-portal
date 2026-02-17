@@ -124,7 +124,7 @@ export default function FintechTrustClarityPage() {
                                         className="flex items-center justify-center gap-2 bg-gray-900 text-white px-5 py-3.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors"
                                         style={{ fontFamily: "'Sora', sans-serif" }}
                                     >
-                                        Portföye Bak
+                                        İlanlara Git
                                         <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                                         </svg>

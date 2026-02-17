@@ -31,6 +31,7 @@ import {
     getPropertyTypeLabel,
     getSaleTypeLabel,
 } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import {
     getFriendlyFetchErrorMessage,
     isAbortFetchError,
@@ -620,6 +621,7 @@ function buildPriceHistogramValues(listings: Listing[]) {
 }
 
 export function PortfolioClient({ locale }: PortfolioClientProps) {
+    const { convertPrice } = useCurrency();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -2398,7 +2400,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                             <div className="flex cursor-pointer items-center justify-between gap-3 bg-gray-50 p-5 md:flex-col md:items-stretch md:justify-between">
                                                 <div className="min-w-0 text-left md:text-right">
                                                     <p className="text-xl font-bold text-gray-900 sm:text-2xl" style={monoStyle}>
-                                                        {formatPrice(listing.price, listing.currency)}
+                                                        {(() => {
+                                                            const { amount, currency } = convertPrice(listing.price, listing.currency);
+                                                            return formatPrice(amount, currency);
+                                                        })()}
                                                     </p>
                                                     {listing.saleType === "RENT" && (
                                                         <p className="text-xs text-gray-400">/ ay</p>

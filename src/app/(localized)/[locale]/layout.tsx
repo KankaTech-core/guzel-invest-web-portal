@@ -9,6 +9,7 @@ import { Footer } from "@/components/public/footer";
 import { Navbar } from "@/components/public/navbar";
 import { AdminOverlayControls } from "@/components/public/admin-overlay-controls";
 import { VersionProvider } from "@/contexts/VersionContext";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { getSession } from "@/lib/auth";
 import { Role } from "@/generated/prisma";
 
@@ -45,6 +46,7 @@ export default async function LocaleLayout({ children, params }: Props) {
             <body className={`${outfit.variable} font-sans antialiased bg-white`}>
                 <NextIntlClientProvider messages={messages}>
                     <VersionProvider>
+                    <CurrencyProvider>
                         <div className="flex flex-col min-h-screen">
                             <Navbar locale={locale} />
                             <main className="flex-1">
@@ -53,6 +55,7 @@ export default async function LocaleLayout({ children, params }: Props) {
                             <Footer locale={locale} />
                             {isAdminUser ? <AdminOverlayControls /> : null}
                         </div>
+                    </CurrencyProvider>
                     </VersionProvider>
                 </NextIntlClientProvider>
             </body>

@@ -587,6 +587,17 @@ select.input {
   }
 }
 
+@keyframes slideNext {
+  from {
+    transform: translateX(100%);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out;
 }
@@ -597,6 +608,10 @@ select.input {
 
 .animate-pulse {
   animation: pulse 2s infinite;
+}
+
+.animate-slide-next {
+  animation: slideNext 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 /* ============================================

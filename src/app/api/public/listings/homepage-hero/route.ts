@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
             },
             media: {
                 orderBy: [{ isCover: "desc" as const }, { order: "asc" as const }],
-                take: 1,
+                take: 3,
             },
         };
 
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
                 seaView: listing.seaView,
                 price: listing.price.toString(),
                 currency: listing.currency,
-                imageUrl: listing.media[0]?.url || null,
+                images: listing.media.map((m) => m.url),
                 title: translation?.title || "",
             };
         }).filter((listing): listing is NonNullable<typeof listing> => Boolean(listing));

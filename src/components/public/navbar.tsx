@@ -9,15 +9,15 @@ import {
     X,
     Globe,
     ChevronDown,
-    ToggleLeft,
-    ToggleRight,
     Instagram,
     Youtube,
     Facebook,
+    Loader2,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useVersion } from "@/contexts/VersionContext";
+import { CurrencyToggle } from "@/components/public/currency-toggle";
 
 type NavigationItem = {
     href: string;
@@ -54,6 +54,16 @@ export function Navbar({ locale }: { locale: string }) {
     const [isOpen, setIsOpen] = useState(false);
     const { version, toggleVersion } = useVersion();
     const aboutPath = `/${locale}/hakkimizda`;
+
+    // Döviz butonu sadece portföy, tek ilan ve harita sayfalarında görünür
+    const currencyActiveRoutes = [
+        `/${locale}/portfoy`,
+        `/${locale}/harita`,
+        `/${locale}/ilan`,
+    ];
+    const showCurrencyToggle = currencyActiveRoutes.some((route) =>
+        pathname.startsWith(route)
+    );
 
     const smoothScrollToSection = useCallback((sectionId: string) => {
         let attempt = 0;
@@ -213,32 +223,31 @@ export function Navbar({ locale }: { locale: string }) {
                         <span className="text-sm font-medium text-gray-600">TR</span>
                     </div>
 
-                    {/* Version Toggle (Global) */}
+                    {/* Para Birimi Toggle - sadece portföy/ilan/harita sayfalarında */}
+                    {showCurrencyToggle && (
+                        <div className="ml-2">
+                            <CurrencyToggle />
+                        </div>
+                    )}
+                </div>
+
+                {/* Mobile: Currency Toggle + Menu Toggle */}
+                <div className="flex items-center gap-2 lg:hidden">
+                    {/* Para Birimi Toggle - sadece portföy/ilan/harita sayfalarında (mobile) */}
+                    {showCurrencyToggle && (
+                        <CurrencyToggle className="mr-1" />
+                    )}
                     <button
-                        onClick={toggleVersion}
-                        className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-gray-100 hover:text-orange-600 ml-2"
-                        title="Toggle Setup Version"
+                        className="w-10 h-10 flex items-center justify-center"
+                        onClick={() => setIsOpen(!isOpen)}
                     >
-                        <span>{version === "v1" ? "V1" : "V2"}</span>
-                        {version === "v1" ? (
-                            <ToggleLeft className="w-4 h-4 text-gray-400" />
+                        {isOpen ? (
+                            <X className="w-6 h-6 text-gray-900" />
                         ) : (
-                            <ToggleRight className="w-4 h-4 text-orange-500" />
+                            <Menu className="w-6 h-6 text-gray-900" />
                         )}
                     </button>
                 </div>
-
-                {/* Mobile Menu Toggle */}
-                <button
-                    className="lg:hidden w-10 h-10 flex items-center justify-center"
-                    onClick={() => setIsOpen(!isOpen)}
-                >
-                    {isOpen ? (
-                        <X className="w-6 h-6 text-gray-900" />
-                    ) : (
-                        <Menu className="w-6 h-6 text-gray-900" />
-                    )}
-                </button>
             </div>
 
             {/* Mobile Menu */}

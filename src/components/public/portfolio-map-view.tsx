@@ -31,6 +31,7 @@ import {
     getSaleTypeLabel,
     truncateText,
 } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import {
     getFriendlyFetchErrorMessage,
     isAbortFetchError,
@@ -383,6 +384,7 @@ function InlineRangeSlider({
 }
 
 export function PortfolioMapView({ locale }: { locale: string }) {
+    const { convertPrice } = useCurrency();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -710,18 +712,19 @@ export function PortfolioMapView({ locale }: { locale: string }) {
             const longitude = normalizeCoordinate(listing.longitude);
             if (latitude === null || longitude === null) return [];
 
+            const { amount, currency } = convertPrice(listing.price, listing.currency);
             return [
                 {
                     id: listing.id,
-                    price: listing.price,
-                    currency: listing.currency,
+                    price: amount,
+                    currency,
                     status: listing.status,
                     latitude,
                     longitude,
                 },
             ];
         });
-    }, [visibleListings]);
+    }, [visibleListings, convertPrice]);
 
     useEffect(() => {
         if (!activeId) return;
@@ -1237,10 +1240,10 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                     <div className="flex cursor-pointer items-center justify-between gap-3 bg-gray-50 p-5 md:flex-col md:items-stretch md:justify-between">
                                         <div className="min-w-0 text-left md:text-right">
                                             <p className="text-xl font-bold text-gray-900 sm:text-2xl">
-                                                {formatPrice(
-                                                    activeListing.price,
-                                                    activeListing.currency
-                                                )}
+                                                {(() => {
+                                                    const { amount, currency } = convertPrice(activeListing.price, activeListing.currency);
+                                                    return formatPrice(amount, currency);
+                                                })()}
                                             </p>
                                             {activeListing.saleType === "RENT" && (
                                                 <p className="text-xs text-gray-400">/ ay</p>

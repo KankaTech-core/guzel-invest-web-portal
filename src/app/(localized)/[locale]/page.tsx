@@ -209,8 +209,8 @@ interface HomepageHeroListing {
     seaView: boolean;
     price: string;
     currency: string;
-    imageUrl: string | null;
     title: string;
+    images: string[];
 }
 
 const HERO_FALLBACK: HomepageHeroListing = {
@@ -224,7 +224,7 @@ const HERO_FALLBACK: HomepageHeroListing = {
     seaView: true,
     price: "485000",
     currency: "EUR",
-    imageUrl: null,
+    images: [],
     title: "Kargıcak Premium Villa",
 };
 
@@ -321,9 +321,9 @@ export default function HomePage() {
 
     const safeHeroListings =
         heroListings.length > 0 ? heroListings : [HERO_FALLBACK];
-    const getHeroImageUrl = (listing: HomepageHeroListing) =>
-        listing.imageUrl
-            ? getMediaUrl(listing.imageUrl)
+    const getHeroImageUrl = (listing: HomepageHeroListing, index = 0) =>
+        listing.images[index]
+            ? getMediaUrl(listing.images[index])
             : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=700&h=500&fit=crop";
     const getHeroListingHref = (listing: HomepageHeroListing) =>
         listing.slug ? `/${locale}/ilan/${listing.slug}` : null;
@@ -485,68 +485,51 @@ export default function HomePage() {
     return (
         <main className="min-h-screen">
             {/* ════════════════════════════════════════════
-                HERO SECTION
+                HERO SECTION (Updated to Variant /2 Design)
             ════════════════════════════════════════════ */}
-            <section className="pt-28 pb-16 px-4 sm:px-6 bg-white">
-                <div className="max-w-7xl mx-auto relative">
-                    {/* Version Toggle Switch removed - moved to Navbar */}
-
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 relative z-30">
-                        {/* Left Column */}
-                        <div className="lg:col-span-5 space-y-6">
-                            {/* Badge */}
-                            <div className="inline-flex items-center gap-2 bg-orange-50 border border-orange-200 text-orange-600 px-3 py-1.5 rounded-full text-xs font-medium">
-                                <Building2 className="w-3 h-3" />
-                                {th("badge")}
+            <section className="pt-28 pb-16 px-8 bg-white">
+                <div className="max-w-7xl mx-auto">
+                    {/* Hero Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        {/* Main Content */}
+                        <div className="lg:col-span-5 pt-8">
+                            <div className="flex items-center justify-center lg:justify-start gap-2 bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm mb-6 lg:mb-6 w-fit mx-auto lg:mx-0">
+                                <Globe className="w-4 h-4" />
+                                Alanya Satış & Yatırım Merkezi
                             </div>
 
-                            {/* Headline */}
-                            <h1 className="text-4xl md:text-5xl font-bold leading-tight text-gray-900">
-                                {th("title")}
-                                <br />
-                                <span className="text-orange-500">{th("titleHighlight")}</span>{" "}
-                                {th("titleEnd")}
+                            <h1 className="text-5xl md:text-6xl leading-tight text-gray-900 mb-6 font-semibold text-center lg:text-left">
+                                Güzel Şehre<br />
+                                <span className="text-orange-500">Güzel</span> Projeler
                             </h1>
 
-                            {/* Mobile always uses the V1 hero copy */}
-                            <p className="text-base text-gray-500 max-w-md leading-relaxed lg:hidden">
-                                {th("subtitle")}
+                            <p className="text-lg text-gray-500 mb-8 leading-relaxed max-w-md text-center lg:text-left mx-auto lg:mx-0">
+                                2001'den bu yana Alanya'da güvenilir gayrimenkul platformu. Satılık, kiralık mülkler ve profesyonel danışmanlık hizmetleriyle yanınızdayız.
                             </p>
 
-                            {/* Desktop keeps version-based subtitle behavior */}
-                            {searchVersion === "v1" && (
-                                <p className="hidden lg:block text-base text-gray-500 max-w-md leading-relaxed">
-                                    {th("subtitle")}
-                                </p>
-                            )}
-
-                            {/* CTA Buttons */}
-                            <div className="grid grid-cols-2 gap-3 pt-1">
+                            {/* Mobile Buttons - After subtitle */}
+                            <div className="flex lg:hidden items-center gap-4 mb-8">
                                 <Link
                                     href={`/${locale}/portfoy`}
-                                    className="flex items-center justify-center gap-2 bg-gray-900 text-white px-5 py-3.5 rounded-lg text-sm font-semibold hover:bg-gray-800 transition-colors"
+                                    className="inline-flex items-center gap-2 bg-gray-900 text-white px-7 py-4 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors"
                                 >
                                     {th("ctaPortfolio")}
                                     <ChevronRight className="w-4 h-4" />
                                 </Link>
                                 <Link
                                     href={`/${locale}/iletisim`}
-                                    className="flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-5 py-3.5 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                                    className="inline-flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors text-sm"
                                 >
-                                    <Building2 className="w-4 h-4" />
+                                    <span className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                        <Building2 className="w-4 h-4" />
+                                    </span>
                                     {th("ctaMap")}
                                 </Link>
                             </div>
 
-                            {/* Desktop keeps V2 compact search in left column */}
-                            {searchVersion === "v2" && renderCompactSearchBanner("hidden lg:block")}
-                        </div>
-
-                        {/* Right Column – Dashboard Cards */}
-                        <div className="lg:col-span-7 grid grid-cols-12 gap-4">
-                            {/* Featured Property Image */}
-                            <div className="col-span-12 sm:col-span-8 bg-gray-50 rounded-2xl overflow-hidden relative min-h-[320px]">
-                                <div className="absolute inset-0 overflow-hidden">
+                            {/* Mobile Image Slider - Taller Aspect Ratio */}
+                            <div className="lg:hidden mb-8">
+                                <div className="aspect-[4/5] rounded-3xl overflow-hidden shadow-xl relative">
                                     <div
                                         className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
                                         style={{
@@ -558,191 +541,279 @@ export default function HomePage() {
                                         onTouchCancel={handleHeroTouchCancel}
                                     >
                                         {safeHeroListings.map((listing, index) => {
-                                            const heroImageUrl = getHeroImageUrl(listing);
+                                            const heroImageUrl = getHeroImageUrl(listing, 0);
                                             const heroListingHref = getHeroListingHref(listing);
-                                            const heroSaleTypeLabel = getSaleTypeLabel(
-                                                listing.saleType,
-                                                locale
-                                            );
-                                            const heroTypeLabel = getPropertyTypeLabel(
-                                                listing.type,
-                                                locale
-                                            );
-                                            const heroFeatureParts = getHeroFeatureParts(listing);
+                                            const isSale = listing.saleType === "SALE";
 
                                             return (
                                                 <div
                                                     key={`${listing.id}-${listing.slot ?? index}`}
-                                                    className="relative h-full w-full shrink-0"
+                                                    className="relative h-full w-full shrink-0 px-1"
                                                 >
-                                                    {heroListingHref ? (
-                                                        <Link
-                                                            href={heroListingHref}
-                                                            className="absolute inset-0 z-10"
-                                                            title="İlanı görüntüle"
-                                                        />
-                                                    ) : null}
-                                                    <img
-                                                        src={heroImageUrl}
-                                                        alt={listing.title || "Featured Property"}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/20 to-transparent" />
-                                                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 p-5">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <span className="px-2 py-1 bg-orange-500 text-white text-[10px] font-semibold rounded uppercase">
-                                                                {heroSaleTypeLabel}
-                                                            </span>
-                                                            <span className="px-2 py-1 bg-white/20 backdrop-blur-sm text-white text-[10px] font-medium rounded">
-                                                                {heroTypeLabel}
-                                                            </span>
-                                                        </div>
-                                                        <h3 className="text-white text-lg font-semibold">
-                                                            {listing.title || "İlan"}
-                                                        </h3>
-                                                        <div className="flex items-center justify-between mt-2">
-                                                            <span className="text-white/80 text-sm">
-                                                                {heroFeatureParts.join(" · ")}
-                                                            </span>
-                                                            <span className="text-white text-lg font-bold">
-                                                                {formatPrice(
-                                                                    listing.price,
-                                                                    listing.currency
-                                                                )}
-                                                            </span>
+                                                    {/* Card Container */}
+                                                    <div className="relative h-full w-full overflow-hidden rounded-3xl bg-white shadow-lg">
+                                                        {/* Image Section - Fill Parent */}
+                                                        <div className="relative h-full w-full overflow-hidden">
+                                                            {heroListingHref ? (
+                                                                <Link
+                                                                    href={heroListingHref}
+                                                                    className="absolute inset-0 z-10"
+                                                                    title={listing.title}
+                                                                />
+                                                            ) : null}
+                                                            <img
+                                                                src={heroImageUrl}
+                                                                alt={listing.title || "Featured Property"}
+                                                                className="h-full w-full object-cover"
+                                                            />
+
+                                                            {/* Overlay Content (Badges + Text) */}
+                                                            <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5">
+
+                                                                {/* Badges Row - Smaller Text */}
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <span className={`px-2.5 py-0.5 text-[10px] font-medium text-white uppercase tracking-wider rounded-md ${isSale ? "bg-orange-500" : "bg-blue-600"
+                                                                        }`}>
+                                                                        {getSaleTypeLabel(listing.saleType, locale)}
+                                                                    </span>
+                                                                    <span className="px-2.5 py-0.5 text-[10px] font-medium text-white bg-white/20 backdrop-blur-md rounded-md">
+                                                                        {getPropertyTypeLabel(listing.type, locale)}
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Title - Smaller Text */}
+                                                                <h3 className="text-xl font-medium text-white mb-2 uppercase tracking-wide leading-tight line-clamp-2">
+                                                                    {listing.title}
+                                                                </h3>
+
+                                                                {/* Bottom Row: Info + Price - Smaller Text */}
+                                                                <div className="flex items-end justify-between w-full">
+                                                                    {/* Info: 4+1 · 220m² · Alanya */}
+                                                                    <div className="flex items-center text-white/90 text-xs font-normal">
+                                                                        {getHeroFeatureParts(listing).join(" · ")}
+                                                                    </div>
+
+                                                                    {/* Price */}
+                                                                    <div className="text-xl font-medium text-white tracking-tight">
+                                                                        {formatPrice(listing.price, listing.currency)}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             );
                                         })}
                                     </div>
-                                </div>
 
-                                <div className="absolute inset-y-0 left-0 right-0 z-30 hidden sm:flex items-center justify-between px-3 pointer-events-none">
-                                    <button
-                                        type="button"
-                                        onClick={(event) => {
-                                            event.preventDefault();
-                                            event.stopPropagation();
-                                            goToPrevHeroSlide();
-                                        }}
-                                        disabled={!canNavigateHero}
-                                        className={cn(
-                                            "pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/45 bg-black/20 text-white backdrop-blur-sm transition-colors",
-                                            canNavigateHero
-                                                ? "hover:bg-black/35"
-                                                : "opacity-40 cursor-not-allowed"
-                                        )}
-                                        aria-label="Önceki ilan"
-                                    >
-                                        <ChevronLeft className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={(event) => {
-                                            event.preventDefault();
-                                            event.stopPropagation();
-                                            goToNextHeroSlide();
-                                        }}
-                                        disabled={!canNavigateHero}
-                                        className={cn(
-                                            "pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/45 bg-black/20 text-white backdrop-blur-sm transition-colors",
-                                            canNavigateHero
-                                                ? "hover:bg-black/35"
-                                                : "opacity-40 cursor-not-allowed"
-                                        )}
-                                        aria-label="Sonraki ilan"
-                                    >
-                                        <ChevronRight className="h-4 w-4" />
-                                    </button>
-                                </div>
-
-                                {safeHeroListings.length > 1 ? (
-                                    <div className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5">
-                                        {safeHeroListings.map((item, index) => (
+                                    {/* Mobile Navigation Dots */}
+                                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
+                                        {safeHeroListings.map((_, index) => (
                                             <button
-                                                key={`${item.id}-${item.slot ?? index}`}
-                                                type="button"
-                                                onClick={(event) => {
-                                                    event.preventDefault();
-                                                    event.stopPropagation();
-                                                    setHeroSlideIndex(index);
-                                                }}
-                                                className={cn(
-                                                    "h-1.5 rounded-full transition-all",
-                                                    index === heroSlideIndex
-                                                        ? "w-6 bg-white"
-                                                        : "w-2 bg-white/55 hover:bg-white/75"
-                                                )}
-                                                aria-label={`İlan ${index + 1}`}
+                                                key={index}
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setHeroSlideIndex(index); }}
+                                                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${index === heroSlideIndex ? "w-4 bg-white" : "bg-white/50"
+                                                    }`}
                                             />
                                         ))}
                                     </div>
-                                ) : null}
+                                </div>
                             </div>
 
-                            {/* Mobile single version: V2 search banner right after image */}
-                            <div className="col-span-12 lg:hidden">
+                            {/* Mobile Search Banner */}
+                            <div className="lg:hidden mb-8">
                                 {renderCompactSearchBanner()}
                             </div>
 
-                            {/* Side Stat Cards */}
-                            <div className="col-span-12 sm:col-span-4 grid grid-cols-3 gap-2 sm:flex sm:flex-col sm:gap-4">
-                                {/* Aktif İlan */}
-                                <div className="h-full bg-gray-900 rounded-xl p-3 sm:p-4 text-white">
-                                    <div className="mb-2 flex items-center justify-between">
-                                        <span className="text-[11px] sm:text-xs text-gray-400">{th("statListings")}</span>
-                                        <span className="inline-flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-green-500/15 text-green-400">
-                                            <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                        </span>
-                                    </div>
-                                    <p className="text-2xl sm:text-3xl font-bold mt-1.5 sm:mt-2">156</p>
-                                    <div className="flex items-center gap-1 mt-2 sm:mt-3">
-                                        <div className="flex-1 h-1 bg-gray-700 rounded-full overflow-hidden">
-                                            <div className="w-3/4 h-full bg-orange-500 rounded-full" />
+                            {/* Desktop Buttons */}
+                            <div className="hidden lg:flex items-center gap-4">
+                                <Link
+                                    href={`/${locale}/portfoy`}
+                                    className="inline-flex items-center gap-2 bg-gray-900 text-white px-7 py-4 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors"
+                                >
+                                    {th("ctaPortfolio")}
+                                    <ChevronRight className="w-4 h-4" />
+                                </Link>
+                                <Link
+                                    href={`/${locale}/iletisim`}
+                                    className="inline-flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors text-sm"
+                                >
+                                    <span className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 transition-colors">
+                                        <Building2 className="w-4 h-4" />
+                                    </span>
+                                    {th("ctaMap")}
+                                </Link>
+                            </div>
+
+                            {/* Stats */}
+                            <div className="flex items-center gap-8 mt-12 pt-8 border-t border-gray-200">
+                                <div>
+                                    <p className="text-3xl font-semibold text-gray-900">300+</p>
+                                    <p className="text-sm text-gray-500">Mutlu Müşteri</p>
+                                </div>
+                                <div className="w-px h-12 bg-gray-200" />
+                                <div>
+                                    <p className="text-3xl font-semibold text-gray-900">20+</p>
+                                    <p className="text-sm text-gray-500">Yıllık Tecrübe</p>
+                                </div>
+                                <div className="w-px h-12 bg-gray-200" />
+                                <div>
+                                    <p className="text-3xl font-semibold text-gray-900">150+</p>
+                                    <p className="text-sm text-gray-500">Aktif İlan</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Hero Image Grid - Desktop Only */}
+                        <div className="hidden lg:grid grid-cols-12 gap-4 lg:col-span-7">
+                            {/* Main large image - Swiper */}
+                            <div className="col-span-12 lg:col-span-8 aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl shadow-gray-300/40 relative group">
+                                <div
+                                    className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                                    style={{
+                                        transform: `translateX(-${heroSlideIndex * 100}%)`,
+                                        touchAction: "pan-y",
+                                    }}
+                                    onTouchStart={handleHeroTouchStart}
+                                    onTouchEnd={handleHeroTouchEnd}
+                                    onTouchCancel={handleHeroTouchCancel}
+                                >
+                                    {safeHeroListings.map((listing, index) => {
+                                        const heroImageUrl = getHeroImageUrl(listing, 0);
+                                        const heroListingHref = getHeroListingHref(listing);
+
+                                        return (
+                                            <div
+                                                key={`${listing.id}-${listing.slot ?? index}`}
+                                                className="relative h-full w-full shrink-0"
+                                            >
+                                                {heroListingHref ? (
+                                                    <Link
+                                                        href={heroListingHref}
+                                                        className="absolute inset-0 z-10"
+                                                        title={listing.title}
+                                                    />
+                                                ) : null}
+                                                <img
+                                                    src={heroImageUrl}
+                                                    alt={listing.title || "Featured Property"}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-transparent" />
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Fixed Navigation Controls - Outside the slider */}
+                                <div className="absolute inset-x-0 bottom-0 p-8 z-20 flex justify-between items-end pointer-events-none bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+                                    <div className="text-white pointer-events-auto pb-2">
+                                        {/* Badges Row */}
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <span className={`px-3 py-1 text-xs font-medium text-white uppercase tracking-wider rounded-md ${safeHeroListings[heroSlideIndex]?.saleType === "SALE" ? "bg-orange-500" : "bg-blue-600"
+                                                }`}>
+                                                {getSaleTypeLabel(safeHeroListings[heroSlideIndex]?.saleType, locale)}
+                                            </span>
+                                            <span className="px-3 py-1 text-xs font-medium text-white bg-white/20 backdrop-blur-md rounded-md">
+                                                {getPropertyTypeLabel(safeHeroListings[heroSlideIndex]?.type, locale)}
+                                            </span>
+                                        </div>
+
+                                        {/* Title */}
+                                        <h3 className="text-3xl mb-2 font-medium leading-tight">{safeHeroListings[heroSlideIndex]?.title}</h3>
+
+                                        {/* Info Row: Features + Price */}
+                                        <div className="flex items-center gap-4 text-white/90">
+                                            <div className="flex items-center gap-2 text-base font-normal">
+                                                {getHeroFeatureParts(safeHeroListings[heroSlideIndex]).join(" · ")}
+                                            </div>
+                                            <div className="w-1 h-1 rounded-full bg-white/50" />
+                                            <div className="text-2xl font-medium text-white tracking-tight">
+                                                {formatPrice(safeHeroListings[heroSlideIndex]?.price, safeHeroListings[heroSlideIndex]?.currency)}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                {/* Bu Ay */}
-                                <div className="h-full bg-orange-500 rounded-xl p-3 sm:p-4 text-white">
-                                    <div className="flex items-center justify-between mb-1.5 sm:mb-3">
-                                        <span className="text-[11px] sm:text-xs text-orange-200">Bu Ay</span>
-                                        <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                                    <div className="flex gap-2 pointer-events-auto pb-2">
+                                        <button
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); goToPrevHeroSlide(); }}
+                                            className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                                        >
+                                            <ChevronLeft className="w-6 h-6" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); goToNextHeroSlide(); }}
+                                            className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                                        >
+                                            <ChevronRight className="w-6 h-6" />
+                                        </button>
                                     </div>
-                                    <p className="text-2xl sm:text-3xl font-bold">37</p>
-                                    <p className="text-[11px] sm:text-xs text-orange-200 mt-1">Tamamlanan Satış</p>
+                                </div>
+                            </div>
+
+                            {/* Side images - Dynamic based on active slide */}
+                            <div className="hidden lg:flex col-span-4 flex-col gap-4">
+                                {/* Second Image - Slider */}
+                                <div className="flex-1 rounded-2xl overflow-hidden shadow-lg relative group">
+                                    <div
+                                        className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                                        style={{ transform: `translateX(-${heroSlideIndex * 100}%)` }}
+                                    >
+                                        {safeHeroListings.map((listing, index) => (
+                                            <div key={`side-top-${index}`} className="relative h-full w-full shrink-0">
+                                                <img
+                                                    src={getHeroImageUrl(listing, 1)}
+                                                    alt="Property View 2"
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                />
+                                                <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
 
-                                {/* Tecrübe */}
-                                <div className="h-full bg-gray-50 rounded-xl p-3 sm:p-4 border border-gray-100">
-                                    <span className="text-[11px] sm:text-xs text-gray-500">{th("statExperience")}</span>
-                                    <p className="text-2xl sm:text-3xl font-bold text-gray-900 mt-1.5 sm:mt-2">20+</p>
-                                    <p className="text-[11px] sm:text-xs text-gray-500 mt-1">{th("statExperienceUnit")}</p>
+                                {/* Third Image - Slider */}
+                                <div className="flex-1 rounded-2xl overflow-hidden shadow-lg relative group">
+                                    <div
+                                        className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                                        style={{ transform: `translateX(-${heroSlideIndex * 100}%)` }}
+                                    >
+                                        {safeHeroListings.map((listing, index) => (
+                                            <div key={`side-bottom-${index}`} className="relative h-full w-full shrink-0">
+                                                <img
+                                                    src={getHeroImageUrl(listing, 2)}
+                                                    alt="Property View 3"
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                                />
+                                                <div className="absolute inset-0 bg-orange-500/0 group-hover:bg-orange-500/10 transition-colors flex items-center justify-center">
+                                                    {getHeroListingHref(listing) && (
+                                                        <Link
+                                                            href={getHeroListingHref(listing)!}
+                                                            className="w-12 h-12 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300"
+                                                        >
+                                                            <ArrowRight className="w-5 h-5 text-orange-500" />
+                                                        </Link>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </section>
 
-                    {/* V2 mode: subtitle replaces the V1 search banner position */}
-                    {searchVersion === "v2" && (
-                        <div className="hidden lg:block mt-10 max-w-4xl mx-auto px-4 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
-                            <h2 className="text-xl md:text-2xl text-gray-900 font-medium leading-tight">
-                                <span className="text-orange-500 font-bold">2001&apos;den bu yana</span> Alanya&apos;da güvenilir gayrimenkul platformu.
-                            </h2>
-                            <p className="mt-2 text-sm md:text-base text-gray-500 font-normal leading-relaxed max-w-xl mx-auto">
-                                <span className="text-orange-500 font-semibold">Satılık, kiralık mülkler</span> ve profesyonel danışmanlık hizmetleriyle yanınızdayız.
-                            </p>
-                        </div>
-                    )}
-
-                    {searchVersion === "v1" && (<form
+            {/* Search Banner - Below Hero (Desktop) */}
+            <div className="hidden lg:block relative z-30 mt-8 px-4 mb-20">
+                <div className="max-w-7xl mx-auto bg-white rounded-[36px] shadow-xl shadow-gray-200/50">
+                    <form
                         ref={bannerRef}
                         onSubmit={(event) => {
                             event.preventDefault();
                             handleSearch();
                         }}
-                        className="hidden lg:block relative z-20 mt-10 w-full rounded-[36px] border border-gray-200 bg-white"
                     >
                         <div className="grid grid-cols-2 border-b border-gray-200">
                             <button
@@ -914,9 +985,9 @@ export default function HomePage() {
                                 {th("filterSearch")}
                             </button>
                         </div>
-                    </form>)}
+                    </form>
                 </div>
-            </section>
+            </div>
 
             {/* ════════════════════════════════════════════
                 CATEGORIES SECTION
@@ -1314,28 +1385,30 @@ export default function HomePage() {
 
                     {/* Right – Action links */}
                     <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-px bg-gray-700/50 rounded-xl overflow-hidden flex-shrink-0">
-                        {[
-                            { icon: Search, title: "Portföyü Keşfet", href: `/${locale}/portfoy` },
-                            { icon: Handshake, title: "İletişime Geç", href: `/${locale}/iletisim` },
-                            { icon: Building2, title: "Satış Yap", href: `/${locale}/iletisim` },
-                        ].map((card, idx) => {
-                            const CardIcon = card.icon;
-                            return (
-                                <Link
-                                    key={idx}
-                                    href={card.href}
-                                    className="group w-full sm:w-auto bg-gray-800 px-6 py-5 flex items-center justify-between sm:justify-start gap-4 hover:bg-gray-800/60 transition-colors duration-300"
-                                >
-                                    <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center group-hover:bg-orange-400 transition-colors">
-                                        <CardIcon className="w-4 h-4 text-white" />
-                                    </div>
-                                    <span className="text-sm font-semibold text-white group-hover:text-orange-400 transition-colors whitespace-nowrap">
-                                        {card.title}
-                                    </span>
-                                    <ArrowRight className="ml-auto sm:ml-0 w-4 h-4 text-gray-500 group-hover:text-orange-400 group-hover:translate-x-1 transition-all duration-300" />
-                                </Link>
-                            );
-                        })}
+                        {
+                            [
+                                { icon: Search, title: "Portföyü Keşfet", href: `/${locale}/portfoy` },
+                                { icon: Handshake, title: "İletişime Geç", href: `/${locale}/iletisim` },
+                                { icon: Building2, title: "Satış Yap", href: `/${locale}/iletisim` },
+                            ].map((card, idx) => {
+                                const CardIcon = card.icon;
+                                return (
+                                    <Link
+                                        key={idx}
+                                        href={card.href}
+                                        className="group w-full sm:w-auto bg-gray-800 px-6 py-5 flex items-center justify-between sm:justify-start gap-4 hover:bg-gray-800/60 transition-colors duration-300"
+                                    >
+                                        <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center group-hover:bg-orange-400 transition-colors">
+                                            <CardIcon className="w-4 h-4 text-white" />
+                                        </div>
+                                        <span className="text-sm font-semibold text-white group-hover:text-orange-400 transition-colors whitespace-nowrap">
+                                            {card.title}
+                                        </span>
+                                        <ArrowRight className="ml-auto sm:ml-0 w-4 h-4 text-gray-500 group-hover:text-orange-400 group-hover:translate-x-1 transition-all duration-300" />
+                                    </Link>
+                                );
+                            })
+                        }
                     </div>
                 </div>
             </section>
@@ -1520,6 +1593,6 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
-        </main>
+        </main >
     );
 }
