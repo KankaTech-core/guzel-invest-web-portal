@@ -707,20 +707,20 @@ export default function HomePage() {
 
                                 {/* Fixed Navigation Controls - Outside the slider */}
                                 <div className="absolute inset-x-0 bottom-0 p-8 z-20 flex justify-between items-end pointer-events-none bg-gradient-to-t from-black/80 via-black/40 to-transparent">
-                                    <div className="text-white pointer-events-auto pb-2">
+                                    <div className="text-white pointer-events-auto pb-2 font-light">
                                         {/* Badges Row */}
                                         <div className="flex items-center gap-2 mb-3">
-                                            <span className={`px-3 py-1 text-xs font-medium text-white uppercase tracking-wider rounded-md ${safeHeroListings[heroSlideIndex]?.saleType === "SALE" ? "bg-orange-500" : "bg-blue-600"
+                                            <span className={`px-3 py-1 text-xs font-light text-white uppercase tracking-wider rounded-md ${safeHeroListings[heroSlideIndex]?.saleType === "SALE" ? "bg-orange-500" : "bg-blue-600"
                                                 }`}>
                                                 {getSaleTypeLabel(safeHeroListings[heroSlideIndex]?.saleType, locale)}
                                             </span>
-                                            <span className="px-3 py-1 text-xs font-medium text-white bg-white/20 backdrop-blur-md rounded-md">
+                                            <span className="px-3 py-1 text-xs font-light text-white bg-white/20 backdrop-blur-md rounded-md">
                                                 {getPropertyTypeLabel(safeHeroListings[heroSlideIndex]?.type, locale)}
                                             </span>
                                         </div>
 
                                         {/* Title */}
-                                        <h3 className="text-3xl mb-2 font-medium leading-tight">{safeHeroListings[heroSlideIndex]?.title}</h3>
+                                        <h3 className="text-3xl mb-2 font-light leading-tight">{safeHeroListings[heroSlideIndex]?.title}</h3>
 
                                         {/* Info Row: Features + Price */}
                                         <div className="flex items-center gap-4 text-white/90">
@@ -728,7 +728,7 @@ export default function HomePage() {
                                                 {getHeroFeatureParts(safeHeroListings[heroSlideIndex]).join(" · ")}
                                             </div>
                                             <div className="w-1 h-1 rounded-full bg-white/50" />
-                                            <div className="text-2xl font-medium text-white tracking-tight">
+                                            <div className="text-2xl font-light text-white tracking-tight">
                                                 {formatPrice(safeHeroListings[heroSlideIndex]?.price, safeHeroListings[heroSlideIndex]?.currency)}
                                             </div>
                                         </div>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
+import { Agentation } from "agentation";
 import "@/app/globals.css";
 
 const outfit = Outfit({
@@ -21,6 +22,7 @@ export default function RootLayout({
         <html lang="tr">
             <body className={`${outfit.variable} font-sans antialiased bg-white`}>
                 {children}
+                {process.env.NODE_ENV === "development" && <Agentation />}
             </body>
         </html>
     );

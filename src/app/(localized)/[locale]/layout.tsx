@@ -3,6 +3,7 @@ import { Outfit } from "next/font/google";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { getMessages } from "next-intl/server";
+import { Agentation } from "agentation";
 import { locales, isRtl, type Locale } from "@/i18n/request";
 import "@/app/globals.css";
 import { Footer } from "@/components/public/footer";
@@ -46,18 +47,17 @@ export default async function LocaleLayout({ children, params }: Props) {
             <body className={`${outfit.variable} font-sans antialiased bg-white`}>
                 <NextIntlClientProvider messages={messages}>
                     <VersionProvider>
-                    <CurrencyProvider>
-                        <div className="flex flex-col min-h-screen">
-                            <Navbar locale={locale} />
-                            <main className="flex-1">
-                                {children}
-                            </main>
-                            <Footer locale={locale} />
-                            {isAdminUser ? <AdminOverlayControls /> : null}
-                        </div>
-                    </CurrencyProvider>
+                        <CurrencyProvider>
+                            <div className="flex flex-col min-h-screen">
+                                <Navbar locale={locale} />
+                                <main className="flex-1">{children}</main>
+                                <Footer locale={locale} />
+                                {isAdminUser ? <AdminOverlayControls /> : null}
+                            </div>
+                        </CurrencyProvider>
                     </VersionProvider>
                 </NextIntlClientProvider>
+                {process.env.NODE_ENV === "development" && <Agentation />}
             </body>
         </html>
     );

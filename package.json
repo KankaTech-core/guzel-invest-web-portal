@@ -36,6 +36,7 @@
     "@mantine/hooks": "^8.3.14",
     "@mantine/utils": "^6.0.22",
     "@prisma/client": "^6.19.2",
+    "agentation": "^2.2.1",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "jose": "^6.1.3",
