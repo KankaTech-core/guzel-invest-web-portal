@@ -47,7 +47,7 @@ export const MapAndCTA = () => {
 
                     {/* Full Width Map */}
                     <div className="w-full h-[400px] rounded-3xl overflow-hidden relative shadow-inner">
-                        <Image src={interactiveMap.bgImage} alt="Map" fill className="object-cover filter contrast-75" />
+                        <Image quality={100} unoptimized src={interactiveMap.bgImage} alt="Map" fill className="object-cover filter contrast-75" />
                         <div className="absolute inset-0 flex items-center justify-center">
                             <div className="bg-white py-3 px-6 rounded-full shadow-2xl flex items-center gap-3 animate-bounce">
                                 <MapPin className="text-[#ec6804] w-6 h-6" />
@@ -66,7 +66,7 @@ export const MapAndCTA = () => {
                         {otherProjects.map((project, idx) => (
                             <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2 group">
                                 <div className="h-64 overflow-hidden relative">
-                                    <Image src={project.image} alt={project.title} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+                                    <Image quality={100} unoptimized src={project.image} alt={project.title} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                                     {project.badge && (
                                         <div className="absolute top-4 right-4 bg-[#ec6804] text-white text-xs font-bold px-3 py-1 rounded-full">
                                             {project.badge}

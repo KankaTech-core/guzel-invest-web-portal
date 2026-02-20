@@ -26,16 +26,16 @@ export const Visuals = () => {
                     </h3>
                     <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 min-h-[600px]">
                         <div className="md:col-span-7 relative z-10 w-full h-[500px]">
-                            <Image src={exteriorVisuals.images[0]} alt="Exterior 1" fill className="object-cover shadow-2xl rounded" />
+                            <Image quality={100} unoptimized src={exteriorVisuals.images[0]} alt="Exterior 1" fill className="object-cover shadow-2xl rounded" />
                         </div>
                         <div className="md:col-span-6 md:col-start-6 md:-mt-32 relative z-20 pt-8 md:pt-0 pl-4 md:pl-0 w-full h-[450px]">
                             <div className="relative w-full h-full shadow-2xl border-8 border-white rounded">
-                                <Image src={exteriorVisuals.images[1]} alt="Exterior 2" fill className="object-cover" />
+                                <Image quality={100} unoptimized src={exteriorVisuals.images[1]} alt="Exterior 2" fill className="object-cover" />
                             </div>
                         </div>
                         <div className="hidden md:block md:col-span-4 md:col-start-2 md:-mt-24 relative z-30 w-full h-[300px]">
                             <div className="relative w-full h-full shadow-xl border-8 border-white rounded">
-                                <Image src={exteriorVisuals.images[2]} alt="Exterior 3" fill className="object-cover" />
+                                <Image quality={100} unoptimized src={exteriorVisuals.images[2]} alt="Exterior 3" fill className="object-cover" />
                             </div>
                         </div>
                     </div>
@@ -58,7 +58,7 @@ export const Visuals = () => {
                         </div>
                         <div className="flex-1 flex gap-6 h-[600px]">
                             <div className="flex-1 h-full relative">
-                                <Image src={socialFacilities.image} alt="Facilities" fill className="object-cover rounded-sm grayscale hover:grayscale-0 transition-all duration-500" />
+                                <Image quality={100} unoptimized src={socialFacilities.image} alt="Facilities" fill className="object-cover rounded-sm grayscale hover:grayscale-0 transition-all duration-500" />
                             </div>
                             <div className="hidden md:flex items-end pb-8">
                                 <h2 className="writing-vertical-rl text-6xl md:text-8xl font-black text-gray-300 uppercase tracking-tighter transform rotate-180" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
@@ -82,11 +82,11 @@ export const Visuals = () => {
                     </div>
                     <div className="relative grid grid-cols-1 md:grid-cols-12 gap-6 min-h-[600px]">
                         <div className="md:col-span-8 md:col-start-5 relative z-10 w-full h-[550px]">
-                            <Image src={interiorVisuals.images[0]} alt="Interior 1" fill className="object-cover shadow-2xl rounded" />
+                            <Image quality={100} unoptimized src={interiorVisuals.images[0]} alt="Interior 1" fill className="object-cover shadow-2xl rounded" />
                         </div>
                         <div className="md:col-span-5 md:col-start-2 md:-mt-48 relative z-20 pt-8 md:pt-0 pr-4 md:pr-0 w-full h-[400px]">
                             <div className="relative w-full h-full shadow-2xl border-8 border-white rounded">
-                                <Image src={interiorVisuals.images[1]} alt="Interior 2" fill className="object-cover" />
+                                <Image quality={100} unoptimized src={interiorVisuals.images[1]} alt="Interior 2" fill className="object-cover" />
                             </div>
                         </div>
                     </div>
@@ -98,10 +98,10 @@ export const Visuals = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                         <div className="relative h-[500px] w-full flex items-center justify-center">
                             <div className="absolute left-0 top-10 w-3/4 h-3/4 bg-white shadow-xl p-4 transform -rotate-3 z-10 border border-gray-100 rounded">
-                                <Image src={floorPlans.images[0]} alt="Plan A" fill className="object-contain" />
+                                <Image quality={100} unoptimized src={floorPlans.images[0]} alt="Plan A" fill className="object-contain" />
                             </div>
                             <div className="absolute right-0 bottom-10 w-3/4 h-3/4 bg-white shadow-xl p-4 transform rotate-2 z-20 border border-gray-100 rounded">
-                                <Image src={floorPlans.images[1]} alt="Plan B" fill className="object-contain" />
+                                <Image quality={100} unoptimized src={floorPlans.images[1]} alt="Plan B" fill className="object-contain" />
                             </div>
                         </div>
                         <div className="flex flex-col gap-8">

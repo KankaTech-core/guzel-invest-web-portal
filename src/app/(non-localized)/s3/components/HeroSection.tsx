@@ -40,7 +40,7 @@ export const HeroSection = () => {
             </div>
             {/* Right Side: Image */}
             <div className="relative h-64 lg:h-auto bg-gray-200">
-                <Image src={hero.bgImage} alt="Hero image" fill className="object-cover" />
+                <Image quality={100} unoptimized src={hero.bgImage} alt="Hero image" fill className="object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent lg:hidden"></div>
             </div>
         </section>

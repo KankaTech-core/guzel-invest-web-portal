@@ -78,7 +78,7 @@ export const ProjectInfo = () => {
                 <div className="max-w-5xl mx-auto px-4">
                     <div className="aspect-video bg-gray-100 rounded-3xl overflow-hidden relative group">
                         <Image
-                            fill
+quality={100} unoptimized                             fill
                             className="object-cover opacity-80"
                             alt="Video thumbnail"
                             src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmQOQjrEb7OZZz8_6s4Mdft9xtelVQCVMEQbHbccF_siaaMLBa4WWi49elnH5xosnyH7tyiVLAOa4SriILRcXKN7CpXkqiL7_PYMboEdOcKLgUuqrS818pSt2JDDskA2zT2qsHKakFICYax026UpDHZ2gfzQfIiIsq_zIC7QqyInckKuhT8wMfLwvt2jLTiTplRjdzeXgABtgD_JRGW0UrNNvYqEV7uHTA2yLqz9lwFyjanCRoreTQ3u-fnoiNB0OOg93vcfZMg08F"

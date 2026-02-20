@@ -80,7 +80,7 @@ export const ProjectInfo = () => {
                 <div className="max-w-[1600px] mx-auto px-4 md:px-8">
                     <div className="relative w-full aspect-video bg-gray-900 overflow-hidden group rounded-xl">
                         <Image
-                            fill
+quality={100} unoptimized                             fill
                             className="object-cover opacity-60 transition-transform duration-700 group-hover:scale-105"
                             alt="Video thumbnail"
                             src={promotionalVideo.bgImage}

@@ -30,13 +30,13 @@ export const MapAndCTA = () => {
                     <h2 className="text-center text-4xl font-bold text-gray-900 mb-12">Harita Görselleri</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div className="relative aspect-square bg-gray-100 p-2 border border-gray-100 rounded">
-                            <Image src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSWpTh6LoJQ94Ypdang6eUrWTN7EozQs7Mf3DtSb7BM9ywFShj8cVpd5-zcuAS2Rf-DSrBKopOqO2eb7jtC19v96wCkuflLWSbyWqcBj_qKD3JfrtYeXtjCtN5daUXuqcUBfDa5EAYfZXHlJ5x81mBXQ0KQguRqA4dj8-Q6q-9Qzs4Z81ismLchLTwYJ8yz6WXum_flTPVYchYtoY6MAy_28D0DBjJ0Ew4Bc4NVKso9ovk2hyg1HdmZr12WG6pYb3SyJIiC-rsO19q" alt="Map 1" fill className="object-cover grayscale hover:grayscale-0 transition-all duration-500" />
+                            <Image quality={100} unoptimized src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSWpTh6LoJQ94Ypdang6eUrWTN7EozQs7Mf3DtSb7BM9ywFShj8cVpd5-zcuAS2Rf-DSrBKopOqO2eb7jtC19v96wCkuflLWSbyWqcBj_qKD3JfrtYeXtjCtN5daUXuqcUBfDa5EAYfZXHlJ5x81mBXQ0KQguRqA4dj8-Q6q-9Qzs4Z81ismLchLTwYJ8yz6WXum_flTPVYchYtoY6MAy_28D0DBjJ0Ew4Bc4NVKso9ovk2hyg1HdmZr12WG6pYb3SyJIiC-rsO19q" alt="Map 1" fill className="object-cover grayscale hover:grayscale-0 transition-all duration-500" />
                         </div>
                         <div className="relative aspect-square bg-gray-100 p-2 border border-gray-100 rounded">
-                            <Image src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsvVX_9UtuJ3grqkmlgju8Q_7x_q4qxd4cL4I-ps_WesbVvL6PdYRrtFzdK9vcix6pCtYbY-jmJtNI1PsWQm-jFweTvyJvJ8d4nVwtUDKNK7M-8YPQ9kwT5NEQIQKqzlGZfNYgU5Ed8fVdxBxS9T7dvLgcS5F223dB3FZ2q0oK4QmmpmdCnBdg8B0IY-vUiZ2S7yNn8AOyM2nO1pVKdei0VlEv0VS39AF7aC6_rZkIU9axpEyurdsyZvdqKo58Ui-aFenCN4BHjkwk" alt="Map 2" fill className="object-cover grayscale hover:grayscale-0 transition-all duration-500" />
+                            <Image quality={100} unoptimized src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsvVX_9UtuJ3grqkmlgju8Q_7x_q4qxd4cL4I-ps_WesbVvL6PdYRrtFzdK9vcix6pCtYbY-jmJtNI1PsWQm-jFweTvyJvJ8d4nVwtUDKNK7M-8YPQ9kwT5NEQIQKqzlGZfNYgU5Ed8fVdxBxS9T7dvLgcS5F223dB3FZ2q0oK4QmmpmdCnBdg8B0IY-vUiZ2S7yNn8AOyM2nO1pVKdei0VlEv0VS39AF7aC6_rZkIU9axpEyurdsyZvdqKo58Ui-aFenCN4BHjkwk" alt="Map 2" fill className="object-cover grayscale hover:grayscale-0 transition-all duration-500" />
                         </div>
                         <div className="relative aspect-square bg-gray-100 p-2 border border-gray-100 rounded">
-                            <Image src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQbAfJsbrBrSJKdymMsF7yfdsm32lcg3RUQiCE19bHlTFlDOulacLGd5mEiJhqGPx6gfC75ZFY1iYSDMiEQ_8y-rXoMl6fwNrNoVBpeC-2jbZTp5te2xNFTZQDYDvmq4iZi-NhnxIXxswLqWXmntNhm-GLb6CyMSEZOO_ARYzCD36Tr01IC23wRe5zMoaaq-kSk2k52vOP-cHV-nvgPquuAUQQnTW5g4DiaQHw2S7yPXOdVvQVKlRwnPGEYQjfBNfjDT_WZ45zahcU" alt="Map 3" fill className="object-cover grayscale hover:grayscale-0 transition-all duration-500" />
+                            <Image quality={100} unoptimized src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQbAfJsbrBrSJKdymMsF7yfdsm32lcg3RUQiCE19bHlTFlDOulacLGd5mEiJhqGPx6gfC75ZFY1iYSDMiEQ_8y-rXoMl6fwNrNoVBpeC-2jbZTp5te2xNFTZQDYDvmq4iZi-NhnxIXxswLqWXmntNhm-GLb6CyMSEZOO_ARYzCD36Tr01IC23wRe5zMoaaq-kSk2k52vOP-cHV-nvgPquuAUQQnTW5g4DiaQHw2S7yPXOdVvQVKlRwnPGEYQjfBNfjDT_WZ45zahcU" alt="Map 3" fill className="object-cover grayscale hover:grayscale-0 transition-all duration-500" />
                         </div>
                     </div>
                 </div>
@@ -64,7 +64,7 @@ export const MapAndCTA = () => {
                         {otherProjects.map((project) => (
                             <div key={project.id} className="group cursor-pointer">
                                 <div className="overflow-hidden mb-4 rounded">
-                                    <Image src={project.image} alt={project.title} width={600} height={400} className="w-full h-80 object-cover transition-transform duration-700 group-hover:scale-110" />
+                                    <Image quality={100} unoptimized src={project.image} alt={project.title} width={600} height={400} className="w-full h-80 object-cover transition-transform duration-700 group-hover:scale-110" />
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 mb-1">{project.title}</h3>
                                 <p className="text-sm text-gray-500 font-light">{project.location} — <span className="text-orange-500 font-medium">{project.status}</span></p>

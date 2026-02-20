@@ -27,7 +27,7 @@ export const Visuals = () => {
                     <div className="grid grid-cols-2 gap-4 auto-rows-[200px]">
                         {exteriorVisuals.images.map((img, idx) => (
                             <div key={idx} className={`bg-gray-200 rounded-2xl overflow-hidden relative ${idx === 0 ? "row-span-2" : ""}`}>
-                                <Image src={img} alt="Exterior" fill className="object-cover" />
+                                <Image quality={100} unoptimized src={img} alt="Exterior" fill className="object-cover" />
                             </div>
                         ))}
                     </div>
@@ -48,7 +48,7 @@ export const Visuals = () => {
                     </div>
                     <div className="lg:w-1/2 relative">
                         <div className="rounded-[2.5rem] overflow-hidden relative aspect-[4/3]">
-                            <Image src={socialFacilities.image} alt="Facilities" fill className="object-cover" />
+                            <Image quality={100} unoptimized src={socialFacilities.image} alt="Facilities" fill className="object-cover" />
                         </div>
                         <div className="absolute -bottom-6 -left-6 bg-orange-500 text-white p-8 rounded-3xl max-w-xs shadow-lg">
                             <h3 className="text-2xl font-black mb-2">{socialFacilities.title}</h3>
@@ -69,7 +69,7 @@ export const Visuals = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {interiorVisuals.images.map((img, idx) => (
                             <div key={idx} className={`aspect-[4/5] rounded-3xl overflow-hidden relative ${idx === 1 ? 'md:mt-12' : idx === 2 ? 'md:mt-24' : ''}`}>
-                                <Image src={img} alt="Interior" fill className="object-cover" />
+                                <Image quality={100} unoptimized src={img} alt="Interior" fill className="object-cover" />
                             </div>
                         ))}
                     </div>
@@ -82,7 +82,7 @@ export const Visuals = () => {
                         {floorPlans.plans.map((plan, idx) => (
                             <div key={idx} className="bg-gray-50 p-6 rounded-3xl border border-gray-100">
                                 <div className="w-full h-64 relative rounded-xl mb-4 overflow-hidden">
-                                    <Image src={plan.image} alt={plan.title} fill className="object-cover" />
+                                    <Image quality={100} unoptimized src={plan.image} alt={plan.title} fill className="object-cover" />
                                 </div>
                                 <div className="flex justify-between items-center text-gray-900">
                                     <span className="font-bold">{plan.title}</span>

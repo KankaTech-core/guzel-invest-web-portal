@@ -82,7 +82,7 @@ export const Visuals = () => {
                         <div key={idx} className="flex flex-col items-center gap-6">
                             <div className="w-full bg-white p-8 rounded-lg flex justify-center items-center">
                                 <Image
-                                    src={plan.image}
+quality={100} unoptimized                                     src={plan.image}
                                     alt={plan.type}
                                     width={400}
                                     height={400}

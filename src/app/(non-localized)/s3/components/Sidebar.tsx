@@ -11,7 +11,7 @@ export const Sidebar = () => {
                 <div className="grid grid-cols-3 gap-0.5 border-b border-gray-200">
                     {sidebar.maps.map((map, idx) => (
                         <div key={idx} className="aspect-square bg-gray-200 relative group overflow-hidden">
-                            <Image src={map.image} alt={map.label} fill className={`object-cover ${map.grayscale ? 'grayscale' : ''}`} />
+                            <Image quality={100} unoptimized src={map.image} alt={map.label} fill className={`object-cover ${map.grayscale ? 'grayscale' : ''}`} />
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                 <span className="text-white text-xs font-bold uppercase">{map.label}</span>
                             </div>
@@ -21,7 +21,7 @@ export const Sidebar = () => {
 
                 {/* 11. Interactive Map Placeholder */}
                 <div className="relative h-64 w-full bg-gray-200 group">
-                    <Image src={sidebar.interactiveMapImage} alt={sidebar.locationDetails.title} fill className="object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                    <Image quality={100} unoptimized src={sidebar.interactiveMapImage} alt={sidebar.locationDetails.title} fill className="object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                     {/* Minimal Overlay Card */}
                     <div className="absolute bottom-4 left-4 right-4 bg-white p-4 rounded-sm shadow-lg border-l-4 border-orange-600">
                         <h4 className="text-sm font-bold text-[#0F172A] uppercase mb-1">{sidebar.locationDetails.title}</h4>

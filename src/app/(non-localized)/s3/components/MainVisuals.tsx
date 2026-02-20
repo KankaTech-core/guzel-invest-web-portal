@@ -10,7 +10,7 @@ export const MainVisuals = () => {
         <>
             {/* 4. Promotional Video */}
             <section className="aspect-video w-full bg-gray-900 relative group cursor-pointer overflow-hidden">
-                <Image src={promotionalVideo.bgImage} alt="Video" fill className="object-cover opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
+                <Image quality={100} unoptimized src={promotionalVideo.bgImage} alt="Video" fill className="object-cover opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
                 <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-20 h-20 border-2 border-white/30 rounded-full flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition-transform duration-300">
                         <Play className="text-white w-10 h-10 ml-1" fill="currentColor" />
@@ -32,15 +32,15 @@ export const MainVisuals = () => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="col-span-1 md:col-span-2 aspect-[16/10] bg-gray-100 overflow-hidden rounded-sm relative group">
-                        <Image src={exteriorVisuals.images[0].src} alt={exteriorVisuals.images[0].alt} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <Image quality={100} unoptimized src={exteriorVisuals.images[0].src} alt={exteriorVisuals.images[0].alt} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                         <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-md px-2 py-1 text-white text-xs font-mono rounded-sm">{exteriorVisuals.images[0].label}</div>
                     </div>
                     <div className="flex flex-col gap-4">
                         <div className="flex-1 bg-gray-100 overflow-hidden rounded-sm relative group">
-                            <Image src={exteriorVisuals.images[1].src} alt={exteriorVisuals.images[1].alt} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <Image quality={100} unoptimized src={exteriorVisuals.images[1].src} alt={exteriorVisuals.images[1].alt} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                         </div>
                         <div className="flex-1 bg-gray-100 overflow-hidden rounded-sm relative group">
-                            <Image src={exteriorVisuals.images[2].src} alt={exteriorVisuals.images[2].alt} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <Image quality={100} unoptimized src={exteriorVisuals.images[2].src} alt={exteriorVisuals.images[2].alt} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                         </div>
                     </div>
                 </div>
@@ -66,7 +66,7 @@ export const MainVisuals = () => {
                     </div>
                 </div>
                 <div className="relative min-h-[300px] lg:min-h-auto">
-                    <Image src={socialFacilities.image} alt="Facilities" fill className="object-cover" />
+                    <Image quality={100} unoptimized src={socialFacilities.image} alt="Facilities" fill className="object-cover" />
                 </div>
             </section>
 
@@ -78,7 +78,7 @@ export const MainVisuals = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-0.5 border border-gray-200 bg-gray-200 rounded-sm overflow-hidden">
                     {interiorVisuals.images.map((img, idx) => (
                         <div key={idx} className="relative group aspect-square md:aspect-auto h-64 md:h-80">
-                            <Image src={img.src} alt={img.label} fill className="object-cover group-hover:opacity-90 transition-opacity" />
+                            <Image quality={100} unoptimized src={img.src} alt={img.label} fill className="object-cover group-hover:opacity-90 transition-opacity" />
                             <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300">
                                 <p className="text-white text-sm font-bold">{img.label}</p>
                             </div>
@@ -113,7 +113,7 @@ export const MainVisuals = () => {
                                 </span>
                             </div>
                             <div className="aspect-square bg-gray-50 p-4 border border-dashed border-gray-200 flex items-center justify-center relative">
-                                <Image src={plan.image} alt={plan.type} fill className="object-contain mix-blend-multiply" />
+                                <Image quality={100} unoptimized src={plan.image} alt={plan.type} fill className="object-contain mix-blend-multiply" />
                             </div>
                             <button className="w-full mt-4 py-2 text-xs font-bold uppercase tracking-wide border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
                                 View Details

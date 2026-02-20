@@ -28,19 +28,19 @@ export const Visuals = () => {
                         {/* Image 1: Large Main */}
                         <div className="md:col-span-7 h-[300px] md:h-full relative z-10 w-full">
                             <div className="w-full h-full rounded-2xl overflow-hidden shadow-xl relative">
-                                <Image src={exteriorVisuals.images[0].src} alt={exteriorVisuals.images[0].alt} fill className="object-cover hover:scale-105 transition-transform duration-700" />
+                                <Image quality={100} unoptimized src={exteriorVisuals.images[0].src} alt={exteriorVisuals.images[0].alt} fill className="object-cover hover:scale-105 transition-transform duration-700" />
                             </div>
                         </div>
                         {/* Right Column for overlapping images */}
                         <div className="md:col-span-5 flex flex-col gap-6 h-full relative">
                             <div className="h-[250px] md:h-[45%] w-full md:w-[110%] md:-ml-[10%] relative z-20 mt-8 md:mt-12">
                                 <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl border-4 border-white relative">
-                                    <Image src={exteriorVisuals.images[1].src} alt={exteriorVisuals.images[1].alt} fill className="object-cover hover:scale-105 transition-transform duration-700" />
+                                    <Image quality={100} unoptimized src={exteriorVisuals.images[1].src} alt={exteriorVisuals.images[1].alt} fill className="object-cover hover:scale-105 transition-transform duration-700" />
                                 </div>
                             </div>
                             <div className="h-[250px] md:h-[45%] w-full relative z-10">
                                 <div className="w-full h-full rounded-2xl overflow-hidden shadow-lg relative">
-                                    <Image src={exteriorVisuals.images[2].src} alt={exteriorVisuals.images[2].alt} fill className="object-cover hover:scale-105 transition-transform duration-700" />
+                                    <Image quality={100} unoptimized src={exteriorVisuals.images[2].src} alt={exteriorVisuals.images[2].alt} fill className="object-cover hover:scale-105 transition-transform duration-700" />
                                 </div>
                             </div>
                         </div>
@@ -69,7 +69,7 @@ export const Visuals = () => {
                     </div>
                     <div className="flex-1 w-full">
                         <div className="h-[500px] w-full rounded-2xl md:rounded-[3rem] overflow-hidden shadow-2xl relative">
-                            <Image src={socialFacilities.image} alt="Lifestyle" fill className="object-cover" />
+                            <Image quality={100} unoptimized src={socialFacilities.image} alt="Lifestyle" fill className="object-cover" />
                             <div className="absolute bottom-6 left-6 right-6 bg-white/80 backdrop-blur-md p-6 rounded-2xl">
                                 <p className="text-[#1e3a8a] font-serif italic text-xl">{socialFacilities.quote}</p>
                             </div>
@@ -84,19 +84,19 @@ export const Visuals = () => {
                     <h3 className="text-3xl md:text-4xl font-bold text-[#1e3a8a] mb-12 text-center">{interiorVisuals.title}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="group relative overflow-hidden rounded-2xl h-[400px] lg:h-[500px] w-full">
-                            <Image src={interiorVisuals.images[0].src} alt={interiorVisuals.images[0].alt} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+                            <Image quality={100} unoptimized src={interiorVisuals.images[0].src} alt={interiorVisuals.images[0].alt} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                         </div>
                         <div className="flex flex-col gap-6 lg:h-[500px]">
                             <div className="group relative overflow-hidden rounded-2xl flex-1 h-[240px] w-full">
-                                <Image src={interiorVisuals.images[1].src} alt={interiorVisuals.images[1].alt} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+                                <Image quality={100} unoptimized src={interiorVisuals.images[1].src} alt={interiorVisuals.images[1].alt} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                             </div>
                             <div className="group relative overflow-hidden rounded-2xl flex-1 h-[240px] w-full">
-                                <Image src={interiorVisuals.images[2].src} alt={interiorVisuals.images[2].alt} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+                                <Image quality={100} unoptimized src={interiorVisuals.images[2].src} alt={interiorVisuals.images[2].alt} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                             </div>
                         </div>
                         <div className="group relative overflow-hidden rounded-2xl h-[400px] lg:h-[500px] w-full">
-                            <Image src={interiorVisuals.images[3].src} alt={interiorVisuals.images[3].alt} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
+                            <Image quality={100} unoptimized src={interiorVisuals.images[3].src} alt={interiorVisuals.images[3].alt} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                         </div>
                     </div>

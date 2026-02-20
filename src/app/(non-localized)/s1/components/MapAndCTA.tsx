@@ -36,15 +36,15 @@ export const MapAndCTA = () => {
                     <h2 className="text-3xl font-bold mb-8 text-gray-900">Harita Görselleri</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="bg-gray-100 rounded-2xl aspect-square overflow-hidden group relative border border-gray-100">
-                            <Image src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtY3wLlc28Xb_3IBCJjFOtqy3GiBs4vHXzrs-Cg0iSNtfeSIqqQitd2kvPz66kb6hPqe2SfybQVk5A5c_siRx5LM_TPsBV9209FS5omZ4SoII40xoDAIJBmfc0JZyBUnwi-7pEXXTsd3Ts88DGkqyIXC6Gwcex7c_lF15HLtFjiNh0Q4N2SNcBrTDj8s34JHrzXV_EihTCmv2mtnJWzaCi2DTzHzs8O4lI5Z2ykYx6NWnh1CielJDgeZ40EIK4K2xsEfaee1jwna-0" alt="Map" fill className="object-cover group-hover:scale-110 transition-transform" />
+                            <Image quality={100} unoptimized src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtY3wLlc28Xb_3IBCJjFOtqy3GiBs4vHXzrs-Cg0iSNtfeSIqqQitd2kvPz66kb6hPqe2SfybQVk5A5c_siRx5LM_TPsBV9209FS5omZ4SoII40xoDAIJBmfc0JZyBUnwi-7pEXXTsd3Ts88DGkqyIXC6Gwcex7c_lF15HLtFjiNh0Q4N2SNcBrTDj8s34JHrzXV_EihTCmv2mtnJWzaCi2DTzHzs8O4lI5Z2ykYx6NWnh1CielJDgeZ40EIK4K2xsEfaee1jwna-0" alt="Map" fill className="object-cover group-hover:scale-110 transition-transform" />
                             <div className="absolute inset-0 bg-black/20 flex items-end p-6"><p className="text-white font-bold text-lg">Ulaşım Ağı</p></div>
                         </div>
                         <div className="bg-gray-100 rounded-2xl aspect-square overflow-hidden group relative border border-gray-100">
-                            <Image src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGW0peZlIgICmmq_nST08O_KRYZnLiK5NuhvsEq_BXiOD4A1hEW-at82oRIzvab2HfJBXQtksH0FBJEZcbhPZL52wvYjkDroPWW9lbVtG0ldk1u5WzS0UmGVQGSnKfaSVpF38XuDKaHmPFav-jHjMoWLk7WkL4WeZdWt93xge8QaNq5tLibuSORnufeGEdD2shKhbfJ9JZITKM9ZUH8PzDSMNv0iinwduKlG6IutVJkQAnKZdoTmb0IgkIFWuf47C3nKUbGLeUa1Ej" alt="Map" fill className="object-cover group-hover:scale-110 transition-transform" />
+                            <Image quality={100} unoptimized src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGW0peZlIgICmmq_nST08O_KRYZnLiK5NuhvsEq_BXiOD4A1hEW-at82oRIzvab2HfJBXQtksH0FBJEZcbhPZL52wvYjkDroPWW9lbVtG0ldk1u5WzS0UmGVQGSnKfaSVpF38XuDKaHmPFav-jHjMoWLk7WkL4WeZdWt93xge8QaNq5tLibuSORnufeGEdD2shKhbfJ9JZITKM9ZUH8PzDSMNv0iinwduKlG6IutVJkQAnKZdoTmb0IgkIFWuf47C3nKUbGLeUa1Ej" alt="Map" fill className="object-cover group-hover:scale-110 transition-transform" />
                             <div className="absolute inset-0 bg-black/20 flex items-end p-6"><p className="text-white font-bold text-lg">Çevre İmkanları</p></div>
                         </div>
                         <div className="bg-gray-100 rounded-2xl aspect-square overflow-hidden group relative border border-gray-100">
-                            <Image src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5f-Azvhhj6hZyJjkuajQPz2PTzMO5tseCYRTXvPCaHvvsLXMF_hKXxC209U1bYS9-EtADhnPA85uD2XbV5ZQ1aUWnLzCSUoJL39JBstMbMTeEPbNACn40aJLzl3Cr9dsr92h14GOZaPlcxgv5QA5soAt63sOBbb6Aj5cOqemsjZ51rmsW0PJ_YJkfWJul3UmKDAssS5U9Ygjs_HIMtx5Zyg3mD77YvwmiZnoCfCQLtu7UxoQrJMLuPuIpyOR4ejlY_ZrxciCyLoQe" alt="Map" fill className="object-cover group-hover:scale-110 transition-transform" />
+                            <Image quality={100} unoptimized src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5f-Azvhhj6hZyJjkuajQPz2PTzMO5tseCYRTXvPCaHvvsLXMF_hKXxC209U1bYS9-EtADhnPA85uD2XbV5ZQ1aUWnLzCSUoJL39JBstMbMTeEPbNACn40aJLzl3Cr9dsr92h14GOZaPlcxgv5QA5soAt63sOBbb6Aj5cOqemsjZ51rmsW0PJ_YJkfWJul3UmKDAssS5U9Ygjs_HIMtx5Zyg3mD77YvwmiZnoCfCQLtu7UxoQrJMLuPuIpyOR4ejlY_ZrxciCyLoQe" alt="Map" fill className="object-cover group-hover:scale-110 transition-transform" />
                             <div className="absolute inset-0 bg-black/20 flex items-end p-6"><p className="text-white font-bold text-lg">Konum Analizi</p></div>
                         </div>
                     </div>
@@ -83,7 +83,7 @@ export const MapAndCTA = () => {
                         {otherProjects.map((project) => (
                             <div key={project.id} className="bg-white rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-lg transition-all group border border-gray-100">
                                 <div className="h-64 overflow-hidden relative">
-                                    <Image src={project.image} alt={project.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <Image quality={100} unoptimized src={project.image} alt={project.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                                     <div className={`absolute top-4 left-4 ${project.status === "YENİ PROJE" ? "bg-orange-500 text-white" : "bg-white/90 text-orange-500"} backdrop-blur px-3 py-1 rounded-lg text-xs font-bold`}>
                                         {project.status}
                                     </div>

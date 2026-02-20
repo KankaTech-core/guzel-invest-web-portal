@@ -59,7 +59,7 @@ export const FooterArea = () => {
                     {otherProjects.projects.map((project, idx) => (
                         <div key={idx} className="group cursor-pointer">
                             <div className="aspect-[4/3] w-full overflow-hidden rounded-md bg-gray-100 mb-4 inline-block relative">
-                                <Image src={project.image} alt={project.title} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                                <Image quality={100} unoptimized src={project.image} alt={project.title} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
                             </div>
                             <div className="flex justify-between items-baseline">
                                 <h4 className="text-lg font-bold text-[#374151] group-hover:text-[#ec6c04] transition-colors">{project.title}</h4>
