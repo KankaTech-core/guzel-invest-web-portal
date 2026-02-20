@@ -58,7 +58,7 @@ export const s1Data: ProjectData = {
         ctaTitle: "Özel Sunum Talebi",
         ctaDescription: "Proje hakkında detaylı bilgi ve özel ödeme planları için uzmanlarımıza ulaşın.",
         ctaButton: "Hemen İletişime Geç",
-        bgImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuA9GAcpIIQUszVUgzVGbHSCxuCnsb7ysV4VezsUGBYNUms34ZIn8fvxYFfiIp7Er7qQzMHjWT1YwEkRlZldIsxHElthq3HgFZTVJ16LN6nrC4-bluQJlTu41JKSIaFxV4fJ2NiBGBxDE0iL1va4Qe8EwdnOTh0Hr75q3AOPv9ImDrW72-zxL6k6bO6s-eCCbKrKb--bRNZY77XwBv2kk3l1l9t_IcPHMNK5YrAodYiOKDSmgguITMjAA1admw3hkp3pKZKQq5vcDS0a",
+        bgImage: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=2800&q=80",
     },
     propertiesRibbon: [
         { icon: "Bed", label: "Daire Tipi", value: "1+1 - 4+1" },

@@ -74,7 +74,7 @@ export const s3Data: S3ProjectData = {
         yearRange: "2022 - 2027",
         title: "Proje Başlığı",
         description: "A premium investment opportunity in the heart of the financial district, offering high-yield returns.",
-        bgImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuCo7LvFTlmoE1Pxn_h7yNKYuhnXEZBw86qdTlQa_w0h-aYCMylTtxerYrWgREAAevMnEjSDQs7qFnPXh4GnXlJViJKNQnX0q0lAdBAbtKIzk7Mij0e3qwmV8kAK9v8lXxUK7Uh30lxYcrkQA7V07UsWP0Z6p_hiPTaOtaZD4aVipQXuC2fOokCy-Rij4aag4OAYrDRJdTx3NGu8apCKm7zWNuQewzIL2yINJKXOcZFHIJG23ynoXMWDWMWE4RZ44e8r92kYEGW4eR4",
+        bgImage: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2800&q=80",
         liveTradingText: "LIVE TRADING",
         id: "#TK-8821"
     },

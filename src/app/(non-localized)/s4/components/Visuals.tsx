@@ -49,8 +49,8 @@ export const Visuals = () => {
             </div>
 
             {/* 6. Social Facilities */}
-            <div className="max-w-[1400px] mx-auto px-6 py-24">
-                <div className="flex flex-col-reverse lg:flex-row gap-12 items-center">
+            <div className="w-full max-w-[1700px] mx-auto px-6 lg:px-12 py-24">
+                <div className="flex flex-col-reverse lg:flex-row gap-16 lg:gap-24 items-center">
                     <div className="flex-1 space-y-8">
                         <h3 className="text-3xl font-bold text-[#1e3a8a] mb-6">{socialFacilities.title}</h3>
                         <ul className="space-y-6">

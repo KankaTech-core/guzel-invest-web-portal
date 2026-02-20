@@ -6,8 +6,8 @@ export const ProjectSummary = () => {
     const { summary, promotionalVideo } = s4Data;
 
     return (
-        <div className="max-w-[1400px] mx-auto px-6 py-20 lg:py-32">
-            <div className="flex flex-col lg:flex-row gap-16 items-center">
+        <div className="w-full max-w-[1700px] mx-auto px-6 lg:px-12 py-20 lg:py-32">
+            <div className="flex flex-col lg:flex-row gap-16 lg:gap-24 items-center">
                 <div className="flex-1 space-y-8">
                     <h2 className="text-4xl lg:text-5xl font-bold text-[#1e3a8a] leading-tight">
                         {summary.titleHeading} <span className="text-[#ec6804] italic">{summary.titleSpan}</span>

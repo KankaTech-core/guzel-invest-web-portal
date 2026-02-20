@@ -69,7 +69,7 @@ export const s5Data: S5ProjectData = {
     hero: {
         yearRange: "2022 - 2027",
         title: "Proje Başlığı",
-        bgImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuDkM89VUcQsSIM4uW2QrD_Laj1qKGe70BL5MpVCwsPte3bscZDqRZb3YIY66gwzFcHNm5R7ECMjH_sEt174plmsavkkBVmsUsemtQRLcOzwo3TVrXKdAaFy2Nh1Cof18aN7yJStGM5v99WMJ2lRMb3dDV15M_31138eBAaCCMieaYE68-Mgswo26Fr0fdIlryhhfunPhKIgVukNFBBBlJWJX_tR7caOaJD_Liri-3NZ0w44wQqfV4XJ7cJYZSc96gi73zFSbUEK58s",
+        bgImage: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2800&q=80",
         exploreText: "EXPLORE PROJECT"
     },
     propertiesRibbon: [

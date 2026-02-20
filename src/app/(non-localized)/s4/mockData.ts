@@ -66,7 +66,7 @@ export const s4Data: S4ProjectData = {
     hero: {
         yearRange: "2022 - 2027",
         title: "Mediterranean\nEstates",
-        bgImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuACEOC8Yvc9vrwEWj58VPWmDJXUEyr_Y05pCtPsAskZh90TwRAaWnbP-C5E6BG4_oOFyS3uR3U0glZZ7VFDhIeE6vwj2RhH4keUp-4jB_mTdNNVyxKcQOxkorjOUsC7tRjLHwTXhAbzvhO_Df4I8YNLE7YAFZzB9_uGYbTv9z80taaEP5XbrA1vmVcMSZnZoBJKI4izXbdEXNTqFx6_iP-gSeEbAruprXQwwuHhz-DoU4sE3wRHZXnZqQn0HfhXCk5PZBh5ySYP4Ac",
+        bgImage: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-4.0.3&auto=format&fit=crop&w=2800&q=80",
         price: "€850,000",
     },
     propertiesRibbon: [

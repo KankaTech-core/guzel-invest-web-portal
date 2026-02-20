@@ -51,7 +51,7 @@ export const s2Data: ProjectData = {
     hero: {
         yearRange: "2022 - 2027",
         title: "PROJE BAŞLIĞI",
-        bgImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuCTWxJ-cguHSwFM2FGHuO9jfuMKql4c1f5Q_CRZNrMdkyCktceW8gHtZqrGjmwZxk3P4w5sR1zgxU38Wyiqj8JIHQovpA86OCay2i_IC7OVIekodopnGhUQaW7bXYCcrm85Ac7m1pHs-hjyB6Klks005dbgT5QYF0s5Jbvlr7WJPVF_Shn3poWYqZwoRIK4lKVh-bXxkug9MwTZLCF6laD15Fe6A3KMV6Lemfxc8WW-WhsWEb3ZpQ9t2nK1yHxlUkwtTny9atTemTw-",
+        bgImage: "https://images.unsplash.com/photo-1600607686527-6fb886090705?ixlib=rb-4.0.3&auto=format&fit=crop&w=2800&q=80",
     },
     propertiesRibbon: [
         { icon: "Bed", value: "2+1, 3+1" },
