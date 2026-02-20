@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mediterranean Real Estate Project Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#ec6804", // Terracotta
+              "background-light": "#faf9f6", // Warm cream
+              "background-dark": "#23180f",
+              "sand-beige": "#e5e0d8",
+              "deep-blue": "#1e3a8a",
+            },
+            fontFamily: {
+              "display": ["Manrope", "sans-serif"]
+            },
+            borderRadius: {
+              "DEFAULT": "1rem", 
+              "lg": "1.5rem", 
+              "xl": "2rem", 
+              "2xl": "3rem",
+              "3xl": "5rem",
+              "full": "9999px"
+            },
+          },
+        },
+      }
+    </script>
+<style>
+      /* Custom scrollbar for a cleaner look */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #faf9f6; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #e5e0d8; 
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #ec6804; 
+      }
+      .masonry-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        grid-auto-rows: 20px;
+        gap: 0;
+      }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display selection:bg-primary selection:text-white">
+<div class="relative w-full overflow-x-hidden">
+<!-- 1. Hero Section: Massive edge-to-edge image -->
+<div class="relative h-screen min-h-[700px] w-full group">
+<div class="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[2s] ease-out group-hover:scale-105" data-alt="Luxurious Mediterranean villa with pool at sunset" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuACEOC8Yvc9vrwEWj58VPWmDJXUEyr_Y05pCtPsAskZh90TwRAaWnbP-C5E6BG4_oOFyS3uR3U0glZZ7VFDhIeE6vwj2RhH4keUp-4jB_mTdNNVyxKcQOxkorjOUsC7tRjLHwTXhAbzvhO_Df4I8YNLE7YAFZzB9_uGYbTv9z80taaEP5XbrA1vmVcMSZnZoBJKI4izXbdEXNTqFx6_iP-gSeEbAruprXQwwuHhz-DoU4sE3wRHZXnZqQn0HfhXCk5PZBh5ySYP4Ac');">
+<div class="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60"></div>
+</div>
+<!-- Content Overlay -->
+<div class="absolute inset-0 flex flex-col justify-end pb-20 px-8 md:px-16 max-w-[1400px] mx-auto w-full pointer-events-none">
+<div class="pointer-events-auto animate-fade-in-up">
+<span class="inline-block px-4 py-2 mb-4 text-sm font-bold tracking-wider text-white bg-white/20 backdrop-blur-md rounded-full border border-white/30">
+                        2022 - 2027
+                    </span>
+<h1 class="text-5xl md:text-7xl lg:text-8xl font-bold text-white leading-tight tracking-tight drop-shadow-lg mb-6">
+                        Mediterranean <br/> Estates
+                    </h1>
+</div>
+</div>
+<!-- Floating CTA Card -->
+<div class="absolute bottom-8 right-8 md:bottom-12 md:right-12 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-6 rounded-2xl shadow-2xl max-w-sm w-full border border-white/50 animate-fade-in pointer-events-auto transform hover:-translate-y-1 transition-transform duration-300">
+<div class="flex justify-between items-start mb-4">
+<div>
+<p class="text-xs font-bold text-primary uppercase tracking-widest mb-1">Starting from</p>
+<p class="text-3xl font-bold text-slate-900 dark:text-white">€850,000</p>
+</div>
+<span class="material-symbols-outlined text-primary text-3xl">verified</span>
+</div>
+<button class="w-full bg-primary hover:bg-orange-700 text-white font-bold py-4 px-6 rounded-full transition-all shadow-lg shadow-primary/30 flex items-center justify-center gap-2 group/btn">
+                    Schedule a Visit
+                    <span class="material-symbols-outlined transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- 2. Properties Ribbon -->
+<div class="bg-sand-beige/30 dark:bg-white/5 border-b border-sand-beige dark:border-white/10">
+<div class="max-w-[1400px] mx-auto px-6 py-10">
+<div class="flex flex-wrap justify-center md:justify-between gap-8 md:gap-4">
+<!-- Icon Item -->
+<div class="flex flex-col items-center gap-3 min-w-[100px] group">
+<div class="w-16 h-16 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+<span class="material-symbols-outlined text-3xl">bed</span>
+</div>
+<div class="text-center">
+<p class="font-bold text-lg text-slate-900 dark:text-white">4 Beds</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">En-suite</p>
+</div>
+</div>
+<!-- Icon Item -->
+<div class="flex flex-col items-center gap-3 min-w-[100px] group">
+<div class="w-16 h-16 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+<span class="material-symbols-outlined text-3xl">bathtub</span>
+</div>
+<div class="text-center">
+<p class="font-bold text-lg text-slate-900 dark:text-white">3 Baths</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">Premium fittings</p>
+</div>
+</div>
+<!-- Icon Item -->
+<div class="flex flex-col items-center gap-3 min-w-[100px] group">
+<div class="w-16 h-16 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+<span class="material-symbols-outlined text-3xl">square_foot</span>
+</div>
+<div class="text-center">
+<p class="font-bold text-lg text-slate-900 dark:text-white">250m²</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">Living Area</p>
+</div>
+</div>
+<!-- Icon Item -->
+<div class="flex flex-col items-center gap-3 min-w-[100px] group">
+<div class="w-16 h-16 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+<span class="material-symbols-outlined text-3xl">pool</span>
+</div>
+<div class="text-center">
+<p class="font-bold text-lg text-slate-900 dark:text-white">Private</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">Infinity Pool</p>
+</div>
+</div>
+<!-- Icon Item -->
+<div class="flex flex-col items-center gap-3 min-w-[100px] group">
+<div class="w-16 h-16 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+<span class="material-symbols-outlined text-3xl">directions_car</span>
+</div>
+<div class="text-center">
+<p class="font-bold text-lg text-slate-900 dark:text-white">2 Cars</p>
+<p class="text-sm text-slate-500 dark:text-slate-400">Garage</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 3. Project Summary -->
+<div class="max-w-[1400px] mx-auto px-6 py-20 lg:py-32">
+<div class="flex flex-col lg:flex-row gap-16 items-center">
+<div class="flex-1 space-y-8">
+<h2 class="text-4xl lg:text-5xl font-bold text-deep-blue dark:text-blue-100 leading-tight">
+                        Experience the pinnacle of <span class="text-primary italic">Mediterranean</span> living.
+                    </h2>
+<p class="text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Open spaces, natural light, and seamless indoor-outdoor flow define this exclusive development. Nestled on the sun-drenched coast, each residence is designed to capture the essence of the Mediterranean lifestyle, blending modern luxury with timeless architectural warmth.
+                    </p>
+<div class="pt-4">
+<button class="bg-primary hover:bg-orange-700 text-white font-bold py-4 px-10 rounded-full shadow-xl shadow-primary/20 transition-all hover:scale-105">
+                            Inquire Now
+                        </button>
+</div>
+</div>
+<!-- 4. Promotional Video -->
+<div class="flex-1 w-full">
+<div class="relative aspect-video rounded-2xl overflow-hidden shadow-2xl group cursor-pointer">
+<div class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105" data-alt="Video thumbnail showing modern interior living room" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBKFUSWCeLR91MfjEeu9wdV-EniIfukV6I4JNubv8PUL8byA6KltzFkGzfAjqiWtlmRxKNH2IRoD7lrL-Pw5HM3w2Hy2k3U55CqxMIq5rjMJ-vZRtbO_apUO6nWe0AVrnCyXfCAczNxPIpIbzrKyx-dI4HBKNpRqdXg4hgD3kI8sc5slC9g5LQrVA6qQiRsXmHWhPAMXzQi-Z3AwSlh7KjYMnrCrB1dBQN2v48i5CYeKCCvkU3R6d__t7b2J53cjXW9CwyNIB9iero');"></div>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-20 h-20 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center border border-white/50 group-hover:scale-110 transition-transform">
+<div class="w-14 h-14 rounded-full bg-white text-primary flex items-center justify-center shadow-lg pl-1">
+<span class="material-symbols-outlined text-3xl">play_arrow</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 5. Exterior Visuals -->
+<div class="bg-sand-beige/20 dark:bg-white/5 py-24 overflow-hidden">
+<div class="max-w-[1400px] mx-auto px-6">
+<div class="mb-16 max-w-2xl">
+<span class="text-primary font-bold tracking-widest uppercase text-sm mb-2 block">Gallery</span>
+<h3 class="text-3xl md:text-4xl font-bold text-deep-blue dark:text-white">Projenin vaziyet planı ve dış görselleri</h3>
+</div>
+<div class="relative grid grid-cols-1 md:grid-cols-12 gap-6 h-auto md:h-[600px]">
+<!-- Image 1: Large Main -->
+<div class="md:col-span-7 h-[300px] md:h-full relative z-10">
+<div class="w-full h-full rounded-2xl overflow-hidden shadow-xl">
+<img alt="Exterior" class="w-full h-full object-cover hover:scale-105 transition-transform duration-700" data-alt="Modern exterior facade of the villa with landscaping" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiWwdWUBBg8G6572CvbzhXXTx0ZXhMLl-ecaPz7-R_pVaSQYuz-5inI_0OrQyBMeaBTeykjlcis1Mq1gRC3BcW_oUyLw3hPgFqg7E9QIiIbrsKc7xIB3VCrYOB9zGfoMoFZuWrU64OGQU-hg_WvfU9NN1vAFye9K5qjTifEw0iIVR2v3g_RR2Bb8Y5jj_6n6vy95JObhjQqguolk96PybdMkg8clZ-_lGDwEZw_WT_Oc_wqW0KGZS9iXyf8kGCgQbOSYT5CjP9SB4"/>
+</div>
+</div>
+<!-- Right Column for overlapping images -->
+<div class="md:col-span-5 flex flex-col gap-6 h-full relative">
+<!-- Image 2: Top Right Overlap -->
+<div class="h-[250px] md:h-[45%] w-full md:w-[110%] md:-ml-[10%] relative z-20 mt-8 md:mt-12">
+<div class="w-full h-full rounded-2xl overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800">
+<img alt="Pool Area" class="w-full h-full object-cover hover:scale-105 transition-transform duration-700" data-alt="Aerial view of the property showing the pool area" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAaV4nBb-TQwa0QyB77jSfIZUaHRmnAp62Kz2biYjsfEnLx5ROrZwkjUkz-IUeI89PC5gu8D9dLasSOLYBaLfOZYn13LCTE4IJ51AX_xniLBCLlQtW8wA1wdOKMnJ3N3c8jtZoOZHrw2CJ-e1iaQ8x4I-TPCixbqWC1PkBZ6nJhTOlR2aIQIvf1YYpNpvY0scknEQfFjmLCQVTX8CDUGOS0eGOoIFRlcEPcoF3T3u8L1x4Eq7bWq8ipXAEhwjNj65mxVZvgB1oVaPE"/>
+</div>
+</div>
+<!-- Image 3: Bottom Right -->
+<div class="h-[250px] md:h-[45%] w-full relative z-10">
+<div class="w-full h-full rounded-2xl overflow-hidden shadow-lg">
+<img alt="Patio" class="w-full h-full object-cover hover:scale-105 transition-transform duration-700" data-alt="Outdoor patio seating area at dusk" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4ISfd8JtF7iQPBpZssEKKSwC0-1Wnth_Jmlb8yUZwwKTPnmRTHoKdoc18pExIIwmJHdUzzAca1y9V5NTRH333H2RkNFnuneJ-m6T6GDl5BfRQhfAhd7mgPHeIgOaTt6e-CdV6UfALp0JKutHvvOqPt8SZI2e4wpm3yMJ8CPJesGCwJ1iKp1AeMDuHd62a0n6BbJ8uhI-LqPUuWorvKe5EdSGxAwu7d02rY1bVQL0om6zJFm3g3XqndXFCceLkCcacqXHbGs3ULNs"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 6. Social Facilities -->
+<div class="max-w-[1400px] mx-auto px-6 py-24">
+<div class="flex flex-col-reverse lg:flex-row gap-12 items-center">
+<!-- List -->
+<div class="flex-1 space-y-8">
+<h3 class="text-3xl font-bold text-deep-blue dark:text-white mb-6">Exclusive Amenities</h3>
+<ul class="space-y-6">
+<li class="flex items-start gap-4 p-4 rounded-xl hover:bg-sand-beige/30 transition-colors cursor-default">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined">fitness_center</span>
+</div>
+<div>
+<h4 class="text-xl font-bold text-slate-900 dark:text-white mb-1">State-of-the-art Gym</h4>
+<p class="text-slate-500 dark:text-slate-400">Fully equipped fitness center with garden views.</p>
+</div>
+</li>
+<li class="flex items-start gap-4 p-4 rounded-xl hover:bg-sand-beige/30 transition-colors cursor-default">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined">spa</span>
+</div>
+<div>
+<h4 class="text-xl font-bold text-slate-900 dark:text-white mb-1">Wellness Spa</h4>
+<p class="text-slate-500 dark:text-slate-400">Relaxing sauna, steam room, and massage areas.</p>
+</div>
+</li>
+<li class="flex items-start gap-4 p-4 rounded-xl hover:bg-sand-beige/30 transition-colors cursor-default">
+<div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined">beach_access</span>
+</div>
+<div>
+<h4 class="text-xl font-bold text-slate-900 dark:text-white mb-1">Private Beach Access</h4>
+<p class="text-slate-500 dark:text-slate-400">Direct pathway to the pristine Mediterranean waters.</p>
+</div>
+</li>
+</ul>
+</div>
+<!-- Lifestyle Image -->
+<div class="flex-1 w-full">
+<div class="h-[500px] w-full rounded-2xl md:rounded-[3rem] overflow-hidden shadow-2xl relative">
+<img alt="Lifestyle" class="w-full h-full object-cover" data-alt="Woman relaxing by the pool with a drink" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQceu29t6ODDk3shg6f1yBdwjS2V3uUBz2yMqSQuKcBFlOJUEDG4PuHq5_o9phtUBiJwcPWa2w5esaiZxRLQ5gbpU53aPqh4Ff6VqjNjh9o2zOEAcsoE4r0ETHQCjcBkbBW8A00a2S3LxEQEfzdG7DY_BEK7CdXdeViTaxgMHeuOiJIb2NyFF-cPfo9iqDkQbZ0nbj0qqs4ZPxOZTzdWonQRVd5L6bpIpCC2BCWRdShXf97igX8TBefscyGXNbwRebVIvONWrlLKc"/>
+<div class="absolute bottom-6 left-6 right-6 bg-white/80 dark:bg-black/60 backdrop-blur-md p-6 rounded-2xl">
+<p class="text-deep-blue dark:text-white font-serif italic text-xl">"Every day feels like a holiday."</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 7. Interior Visuals (Masonry-ish Grid) -->
+<div class="bg-background-light dark:bg-background-dark py-20">
+<div class="max-w-[1400px] mx-auto px-6">
+<h3 class="text-3xl md:text-4xl font-bold text-deep-blue dark:text-white mb-12 text-center">Projenin İç Görselleri</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Tall Image -->
+<div class="group relative overflow-hidden rounded-2xl h-[400px] lg:h-[500px]">
+<img alt="Living Room" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Modern minimalist living room with beige furniture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCp39DasZDDr7m1FlzUvqLQ33S4bV2B3mmrl9xd2kQvcpunk_mzngQM8tS_YDuQxiFX0OOFHMa8Xlnp6OWshQ4VO1diqrzcTI7DCVzsdjQOik5IC-6QVPmKkIXQIS_xgzjL0WVyVxzHnKl5M6aOkoBsLwSfMaubMXLe7VxLwWMW9XoDB0MY0tL2CnGbcl2dNTfajUUULmnY0uFBlPaUVHAp6tMU6AeA8nMdHIjDV30M2YqwXUTCrJJodxogh_6BdfH2QKWhw2ZQbd4"/>
+<div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+</div>
+<!-- Wide Image stacked -->
+<div class="flex flex-col gap-6 lg:h-[500px]">
+<div class="group relative overflow-hidden rounded-2xl flex-1 h-[240px]">
+<img alt="Kitchen" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Open concept kitchen with marble island" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCD_HH7lsNWGqyXABmwVcVl0036zvXYAq2EffW2rS6lycODvkg2H9s8y_vkNtitXvBClgUPkTNjbtoWfap8V74E4Zw-l2LlmyR-rY2IQsS66bi90Uw1Q3RE6FuWBoim-acED6n7OgP9KvbeVgnnlR6Hz631zUa0p7i9N0_r3UwmmK-r6FtA-nadImrSwSomMglyZyuWO_KkK6UsjZkdvymOLhin7ly3Dc95yRv6qq6H0bP-pPavj_GaIQXZMMYc3d0IOep_1bbOlMg"/>
+</div>
+<div class="group relative overflow-hidden rounded-2xl flex-1 h-[240px]">
+<img alt="Dining" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Bright dining area with large windows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2n2d5ck94DeZv69v47v1xxCF_kYWJ_-Hed_C7uuT6zp8lVLlVTLG8na1WOut-GtKUc0S0jIi-RQAnK_tf3ZDmCAV2_HzT4L4mP5ip99cqe18xhVfIEjb05yUmhDR7nZ2_Zo_wIv10pIPLNkGhg8s-zISXD8Fi_4yB6zZEcc_MflgDNefcUP2YfjPglb3nMwd4fehw-nb0ETnxPpZbVtAFI3bX3YEfWK0G8OWrI0FBAPwvt2YBG14zK3gtzF9KNva1d8yedRFX12U"/>
+</div>
+</div>
+<!-- Tall Image -->
+<div class="group relative overflow-hidden rounded-2xl h-[400px] lg:h-[500px]">
+<img alt="Bedroom" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Master bedroom with panoramic view" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCo-cFs-g3X24ozxXDjFmZ2MUfAMP3XtQw32wJfdu209Y6tXaR6NsbgcWbwv79yb3iYdkOBUnF-24ETFoNjjL518X34FiDTLXduHfuguhT9SSj_Mp1uwBwXbgDiQW3c6mo5d2eVzEdl9V3VR7lxwFkNDk1W5vXPmA-2562ce41dKboW9IkkZqvKXGnhXr7DUrLf5l0tZ_T9Vb7FCYmez3rd76AX8mbJMwZcDjOT7n1G2AS2dDhX2C_H91NVZzheMEkzlXvBW0PNUh0"/>
+<div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- 8. Floor Plans -->
+<div class="bg-sand-beige/10 dark:bg-white/5 py-24">
+<div class="max-w-[1400px] mx-auto px-6">
+<div class="text-center mb-16">
+<h3 class="text-3xl font-bold text-deep-blue dark:text-white">Floor Plans</h3>
+<p class="text-slate-500 mt-4 max-w-xl mx-auto">Thoughtfully designed layouts maximizing space and light.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+<div class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-lg hover:shadow-xl transition-shadow border border-sand-beige/50 dark:border-white/10">
+<h4 class="text-xl font-bold text-center mb-6 text-primary">Ground Floor</h4>
+<div class="aspect-square bg-contain bg-center bg-no-repeat opacity-80 mix-blend-multiply dark:mix-blend-normal dark:invert" data-alt="2D blueprint layout of ground floor" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCtpb3RJBetbiXVM73eYwUyy5qv7FmwSPbAB1IAW9QL-zw1KEIAc80x8q97kunj5_aXjPrg1M-NvCpde4QiXYtl2tFL1HjY5yZsBp1HGdZUmwYZidAxElq3jePjfSN4gkxH9nG-XZ648MwI6-eCVR2DvkIOwg7XjQO-ljtOTSzKRH58UMkz8WLPlbfrYCZmgClrYLE2tGcFdz0If7I-8i0g03NPP99mlR6N46g4frlDsAeSyjtfilNDNf7jfvkIqs0-nLLdK-CokE8');"></div>
+</div>
+<div class="bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-lg hover:shadow-xl transition-shadow border border-sand-beige/50 dark:border-white/10">
+<h4 class="text-xl font-bold text-center mb-6 text-primary">First Floor</h4>
+<div class="aspect-square bg-contain bg-center bg-no-repeat opacity-80 mix-blend-multiply dark:mix-blend-normal dark:invert" data-alt="2D blueprint layout of first floor" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBR0DoNCBVQW5PDTG_qqMWU-ecpK-wi7BHN1ivpgmHxu_nPm_C60YLUpjUgv5SvEl1ijt-LTL4Dl4Yk01rPu9KEThJ-CLo--6Ty2azvJJ3098zQ67m9qA6D6masLSsJW3cgOCeQtmEhIXnXi1KoyF8eJIEfZ80v6SgNI60TwHJemW1YjXV7JeDcUC6qVynkkYSYfsYIlhBb-QtWJ2N6RM-DgTI4V1AhZuDW8Kg8nfThjtfeIaUfqzVshHwMtJBTcl19yE8UPkAl6R0'); transform: rotate(180deg);"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- 9. Document CTA -->
+<div class="bg-sand-beige dark:bg-slate-900 py-20">
+<div class="max-w-[1000px] mx-auto px-6 text-center">
+<h3 class="text-2xl md:text-3xl font-bold text-deep-blue dark:text-white mb-8">Detailed Specifications &amp; Brochure</h3>
+<div class="flex flex-col sm:flex-row justify-center gap-6">
+<button class="bg-white hover:bg-slate-50 text-deep-blue font-bold py-4 px-8 rounded-full shadow-md transition-all flex items-center justify-center gap-3">
+<span class="material-symbols-outlined">download</span>
+                        Download Brochure
+                    </button>
+<button class="bg-primary hover:bg-orange-700 text-white font-bold py-4 px-8 rounded-full shadow-md shadow-primary/20 transition-all flex items-center justify-center gap-3">
+<span class="material-symbols-outlined">description</span>
+                        Technical Specs
+                    </button>
+</div>
+</div>
+</div>
+<!-- 10 & 11. Maps & Location -->
+<div class="bg-white dark:bg-black py-24">
+<div class="max-w-[1400px] mx-auto px-6">
+<h3 class="text-3xl font-bold text-deep-blue dark:text-white mb-12">Prime Location</h3>
+<!-- 3 Map Snapshots -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+<div class="relative group rounded-2xl overflow-hidden aspect-[4/3]">
+<div class="absolute inset-0 bg-cover bg-center" data-location="Antalya" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBqDTkV9y6vzBvwEL6viy7h_sbuKVmxT-3t0PVfgagmqR85uwzcYktKBygCCiR-Jo1eyrxyugCNsUf8OI0lENc4v9QYQGk3fN57fIec8grZfIJ2iMBViAO0Tsy8Xy1s7Lc2R9vsh7S969lkl9r-_7NIPw7tWnG49dfcqQjweYu_HByO5orz0emA7GHf4Ym_UtgU7E5EK1CjhJIrMupG-e3HnpjN1K7OQy_RzZHrzwk0-8K0CG5Dmd5PTyB80CPphy-L5Nr8SLF1Gac');"></div>
+<div class="absolute inset-0 bg-black/30 flex items-end p-6">
+<span class="text-white font-bold text-lg">City Center (15 min)</span>
+</div>
+</div>
+<div class="relative group rounded-2xl overflow-hidden aspect-[4/3]">
+<div class="absolute inset-0 bg-cover bg-center" data-location="Mediterranean Sea" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDawJGyX8P1-s_Ao4amnsOEaci6DP5PQVxNN4BCBZ43a02bIjNEBmxhfq2uA-EmxudpKchTKrjtspb_M4ozdA4vO33TjrcqD9rVlW7TJEu_fiL2NtYpHimt4Z2mx5IBLjir3y1yX8rvpWw7GnGS-xCOmHKqVmP5tNr8a-qFnGr4dBtETCERXTwR-Yt11UNdj1oY4dnlUEa6NNxfE8xsA8rQ8hoEUP1SvPayxii-kt_PToMrPyRZc4pmwQQ6swIjWVNRLff1uhvxtM0');"></div>
+<div class="absolute inset-0 bg-black/30 flex items-end p-6">
+<span class="text-white font-bold text-lg">Beach (5 min)</span>
+</div>
+</div>
+<div class="relative group rounded-2xl overflow-hidden aspect-[4/3]">
+<div class="absolute inset-0 bg-cover bg-center" data-location="Marina" style="background-image: url('https://placeholder.pics/svg/300');"></div>
+<div class="absolute inset-0 bg-black/30 flex items-end p-6">
+<span class="text-white font-bold text-lg">Marina (10 min)</span>
+</div>
+</div>
+</div>
+<!-- Full Width Map -->
+<div class="w-full h-[400px] rounded-3xl overflow-hidden relative shadow-inner">
+<img alt="Map" class="w-full h-full object-cover filter contrast-75" data-alt="Map view showing location pins" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABOU0SZkNPU27vziGYs5Ru1jSS8cSa2eaRDcVVpu9PsnhvF3I4A0a4BtdQ_tnfEANCLLH9j1zcF4z-frsQ5AczsCYBMo6WPErDPuskdmbTUk9Z6Jo_8CvNmtoFMKxXOOqJ_Yv51yOZl4sR2qbQ7hp_whLzlCiF3KDIhSFqhPc4KDckXQIrG3khFbG9SCkCn8OvDMWE-JVHBJcT4bdaYP0k4QzAcGnI2dP1SieA7gLbGeX3nfmJIj5j-3c-gK2jtWp9ULAjj8uuRl4"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="bg-white dark:bg-slate-800 py-3 px-6 rounded-full shadow-2xl flex items-center gap-3 animate-bounce">
+<span class="material-symbols-outlined text-primary">location_on</span>
+<span class="font-bold text-slate-900 dark:text-white">Mediterranean Estates, Coastline Ave.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- 12. Other Projects -->
+<div class="bg-background-light dark:bg-background-dark py-24">
+<div class="max-w-[1400px] mx-auto px-6">
+<h3 class="text-3xl font-bold text-deep-blue dark:text-white mb-12">You might also like</h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Card 1 -->
+<div class="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2 group">
+<div class="h-64 overflow-hidden relative">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Modern white villa exterior with pool" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAW6zXHPf2XV6_dAx-IUnR4KCG8vhLByT4mnxUcC7JfQz4h0XrV4kOoUABP5ChFEPThIURThPiVmKWBmTTi_GKyrTW0O5cmysK5f8fAX_exE8iyGyEmM8NJ9eem8RIouAf-_aKfVmJcyz39H08kohsht1VDeUUgODQqTFiILDPC_vmXo8B58BiTimeAD9Gt8p1m-AjTQIumm4kiO9uMQyQUohasAVx7eqQI-90jjANMFveVukOsaEG-0nTBza-_1H2dIti6Mgj1ilk"/>
+<div class="absolute top-4 right-4 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">New</div>
+</div>
+<div class="p-6">
+<h4 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Azure Heights</h4>
+<p class="text-slate-500 mb-4 text-sm">Sea view apartments with luxury amenities.</p>
+<div class="flex items-center justify-between">
+<span class="text-primary font-bold">€450,000</span>
+<button class="w-8 h-8 rounded-full bg-sand-beige/50 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2 group">
+<div class="h-64 overflow-hidden relative">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Luxury estate with palm trees" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXbkLvAuKCjVeF5BoOjHefmMFYL6CbWH8o95FBy9u4vFwAQybHEPEZ18LSVPBWVe1iPemwiPuXyCJWLz4Rwhiv-5f6NmGllkWntQ6cGN3i3UHQh6i1PqZKJGTP1DVcPiwTYe8jZSSQlBwfE7_sWACO1SUN89xg66WlESZ4iE3GsnRp8mQoMXwGuUFLqNDsClH1x_QL90MdykbBG5jkJWzEP4nlPUCxA8Ei3zi5rzlQYEw10pTVyCkspcKtLzQ8ficcRQDSoyBlcs0"/>
+</div>
+<div class="p-6">
+<h4 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Palm Grove</h4>
+<p class="text-slate-500 mb-4 text-sm">Exclusive gated community near the marina.</p>
+<div class="flex items-center justify-between">
+<span class="text-primary font-bold">€1,200,000</span>
+<button class="w-8 h-8 rounded-full bg-sand-beige/50 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2 group">
+<div class="h-64 overflow-hidden relative">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Modern house architecture at dusk" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzA8sjd65VXrhDcXo-uNxXyAJwxSj0XY8_oNN2hPFGzReGnXQyqF96o-MM7O_BZUNwJsPrP_W4wCbSbD9uHF0ts77x8IylvYMZYGejChmI_S1aGdjmTEP3KmLzYsFWGZsWM3RJQnpCUAHSjinc087HDxLx0VsG0ERsofO0zAQi3ijJmKu6XM_s_X3olEfbZ0MYe1SXyUpjMBdrm0uMfFZ4wX-NHrIJRaNOetNzb1ibVNayghkmHf--QnX8FqMx3fx0YjSquwX3gUQ"/>
+</div>
+<div class="p-6">
+<h4 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Sunset Villas</h4>
+<p class="text-slate-500 mb-4 text-sm">Contemporary design maximizing natural light.</p>
+<div class="flex items-center justify-between">
+<span class="text-primary font-bold">€720,000</span>
+<button class="w-8 h-8 rounded-full bg-sand-beige/50 flex items-center justify-center hover:bg-primary hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer simple -->
+<footer class="bg-white dark:bg-black py-10 border-t border-slate-100 dark:border-slate-900">
+<div class="max-w-[1400px] mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+<h2 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Mediterranean Estates</h2>
+<div class="flex gap-6 text-sm font-medium text-slate-600 dark:text-slate-400">
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-primary transition-colors" href="#">Contact</a>
+</div>
+<p class="text-sm text-slate-400">© 2024 Real Estate Co.</p>
+</div>
+</footer>
+</div>
+<script>
+        // Simple script to handle dark mode toggle if needed later, or init animations
+        // Currently just leveraging Tailwind classes
+    </script>
+</body></html>

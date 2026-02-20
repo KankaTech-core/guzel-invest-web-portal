@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+
+<html lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Real Estate Project - Magazine Editorial</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec6c04",
+                        "background-light": "#ffffff", // Pure white for editorial look
+                        "background-dark": "#181411",
+                        "surface": "#f8f7f5",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"],
+                        "body": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        '128': '32rem',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .writing-vertical-rl {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+        /* Hide scrollbar for clean look */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+</head>
+<body class="bg-background-light text-slate-900 font-display antialiased overflow-x-hidden selection:bg-primary selection:text-white">
+<!-- 1. Hero Section -->
+<header class="relative w-full h-screen min-h-[700px] flex items-end justify-start overflow-hidden">
+<!-- Background Image -->
+<div class="absolute inset-0 z-0">
+<img alt="Modern luxury villa exterior at dusk with warm lighting" class="w-full h-full object-cover brightness-[0.75]" data-alt="Modern luxury villa exterior at dusk with warm lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTWxJ-cguHSwFM2FGHuO9jfuMKql4c1f5Q_CRZNrMdkyCktceW8gHtZqrGjmwZxk3P4w5sR1zgxU38Wyiqj8JIHQovpA86OCay2i_IC7OVIekodopnGhUQaW7bXYCcrm85Ac7m1pHs-hjyB6Klks005dbgT5QYF0s5Jbvlr7WJPVF_Shn3poWYqZwoRIK4lKVh-bXxkug9MwTZLCF6laD15Fe6A3KMV6Lemfxc8WW-WhsWEb3ZpQ9t2nK1yHxlUkwtTny9atTemTw-"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+</div>
+<!-- Content -->
+<div class="relative z-10 w-full max-w-[1440px] mx-auto px-6 pb-16 md:px-12 md:pb-24 lg:px-20">
+<div class="flex flex-col gap-2 max-w-4xl">
+<span class="text-white/90 text-xl md:text-2xl font-light tracking-[0.2em] uppercase mb-2 block pl-2 border-l-4 border-primary">2022 - 2027</span>
+<h1 class="text-white text-6xl md:text-8xl lg:text-[140px] font-black leading-[0.85] tracking-tight">
+                    PROJE<br/>
+<span class="text-primary">BAŞLIĞI</span>
+</h1>
+</div>
+</div>
+</header>
+<!-- 2. Properties Ribbon -->
+<section class="w-full border-b border-slate-100 bg-white py-12">
+<div class="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
+<div class="grid grid-cols-2 md:grid-cols-5 gap-8 items-center justify-items-center">
+<!-- Item 1 -->
+<div class="flex flex-col items-center gap-3 group cursor-default">
+<div class="w-16 h-16 rounded-full border border-slate-200 flex items-center justify-center text-slate-800 transition-colors group-hover:border-primary group-hover:text-primary">
+<span class="material-symbols-outlined text-3xl font-light">bed</span>
+</div>
+<span class="text-sm font-medium tracking-widest uppercase text-slate-500">2+1, 3+1</span>
+</div>
+<!-- Item 2 -->
+<div class="flex flex-col items-center gap-3 group cursor-default">
+<div class="w-16 h-16 rounded-full border border-slate-200 flex items-center justify-center text-slate-800 transition-colors group-hover:border-primary group-hover:text-primary">
+<span class="material-symbols-outlined text-3xl font-light">square_foot</span>
+</div>
+<span class="text-sm font-medium tracking-widest uppercase text-slate-500">120 - 240m²</span>
+</div>
+<!-- Item 3 -->
+<div class="flex flex-col items-center gap-3 group cursor-default">
+<div class="w-16 h-16 rounded-full border border-slate-200 flex items-center justify-center text-slate-800 transition-colors group-hover:border-primary group-hover:text-primary">
+<span class="material-symbols-outlined text-3xl font-light">calendar_month</span>
+</div>
+<span class="text-sm font-medium tracking-widest uppercase text-slate-500">Aralık 2027</span>
+</div>
+<!-- Item 4 -->
+<div class="flex flex-col items-center gap-3 group cursor-default">
+<div class="w-16 h-16 rounded-full border border-slate-200 flex items-center justify-center text-slate-800 transition-colors group-hover:border-primary group-hover:text-primary">
+<span class="material-symbols-outlined text-3xl font-light">apartment</span>
+</div>
+<span class="text-sm font-medium tracking-widest uppercase text-slate-500">4 Blok</span>
+</div>
+<!-- Item 5 -->
+<div class="flex flex-col items-center gap-3 group cursor-default">
+<div class="w-16 h-16 rounded-full border border-slate-200 flex items-center justify-center text-slate-800 transition-colors group-hover:border-primary group-hover:text-primary">
+<span class="material-symbols-outlined text-3xl font-light">location_on</span>
+</div>
+<span class="text-sm font-medium tracking-widest uppercase text-slate-500">İstanbul</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. Project Summary -->
+<section class="w-full bg-white py-24 md:py-32">
+<div class="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
+<div class="flex flex-col lg:flex-row gap-12 lg:gap-24 items-start">
+<!-- Logo & Title -->
+<div class="flex-1 flex flex-col gap-8">
+<div class="w-20 h-20 bg-slate-900 text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl">domain</span>
+</div>
+<div>
+<h2 class="text-5xl md:text-7xl font-bold text-slate-900 tracking-tight leading-none mb-6">
+                            Proje<br/>Özeti.
+                        </h2>
+<p class="text-xl md:text-2xl text-slate-500 font-light leading-relaxed max-w-2xl">
+                            Modern mimarisi ve merkezi konumuyla dikkat çeken bu proje, lüks ve konforu bir araya getiriyor. Şehrin kalbinde, doğayla iç içe bir yaşam.
+                        </p>
+</div>
+</div>
+<!-- Metadata & Actions -->
+<div class="w-full lg:w-auto flex flex-col gap-8 lg:min-w-[400px]">
+<div class="grid grid-cols-1 gap-4">
+<div class="flex items-center justify-between py-4 border-b border-slate-200">
+<span class="text-slate-400 font-medium uppercase tracking-wider text-sm">Lokasyon</span>
+<span class="text-slate-900 font-bold text-lg">Beşiktaş, İstanbul</span>
+</div>
+<div class="flex items-center justify-between py-4 border-b border-slate-200">
+<span class="text-slate-400 font-medium uppercase tracking-wider text-sm">Durum</span>
+<span class="text-slate-900 font-bold text-lg">Yapım Aşamasında</span>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row gap-4 mt-4">
+<button class="flex-1 h-14 bg-primary hover:bg-orange-700 text-white font-bold tracking-wide uppercase text-sm transition-all flex items-center justify-center px-8">
+                            İletişime Geç
+                        </button>
+<button class="flex-1 h-14 border border-primary text-primary hover:bg-primary hover:text-white font-bold tracking-wide uppercase text-sm transition-all flex items-center justify-center px-8">
+                            Broşür İndir
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. Promotional Video -->
+<section class="w-full bg-slate-50 py-12">
+<div class="max-w-[1600px] mx-auto px-4 md:px-8">
+<div class="relative w-full aspect-video bg-slate-900 overflow-hidden group">
+<img alt="Panoramic view of a modern apartment complex interior" class="w-full h-full object-cover opacity-60 transition-transform duration-700 group-hover:scale-105" data-alt="Panoramic view of a modern apartment complex interior" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXsdr-SrjpQnc1s3fIS2Vq141kVKyhegBw1DqdNEus-CtRDMNf29FnnamPItCKBbP431j0Gr4zh4dTURQkR6H5OMfB9zjgUwu4-FV5NaFHShURH3sNi1P_0ufKIAanvl7VNs0k49w0byFjSV-Dlr_bsca6s2kMjRLDJf-ilzTGCC_ch5rbYVkci7CyvjCrUqOZDnOji064yeNjGwuSBqchVPS9PKACeRKaE_7srAgC8iRQ3sNMIfPqZISvV4kEe0klbzCawZwbCOBi"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<button class="w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm border border-white/50 flex items-center justify-center text-white transition-transform hover:scale-110 group-hover:bg-primary group-hover:border-primary">
+<span class="material-symbols-outlined text-5xl ml-2">play_arrow</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- 5. Exterior Visuals (Overlapping Grid) -->
+<section class="w-full bg-white py-24 md:py-32 overflow-hidden">
+<div class="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
+<h3 class="text-4xl md:text-6xl font-bold text-slate-900 mb-16 max-w-3xl leading-tight">
+                Projenin vaziyet planı ve <span class="text-primary italic">dış görselleri</span>
+</h3>
+<div class="relative grid grid-cols-1 md:grid-cols-12 gap-6 min-h-[600px]">
+<!-- Image 1 (Large Left) -->
+<div class="md:col-span-7 relative z-10">
+<img alt="Luxurious modern house exterior with swimming pool" class="w-full h-[500px] object-cover shadow-2xl" data-alt="Luxurious modern house exterior with swimming pool" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDit9fTziL_--VZ59upWwd8hsx1z_5IgpCYzhPVtsJULBZqgQGzuyREeo1jnLwRil7Uq96W9_kHAe7sXDpcxQY0Id9rC0vjXWsioW4bnGoZXZvjUB3h6zK5RU7xciBcmgGad5LS2UBBhMaatCvkCxDtzFGP9Ih5-ANLI1BMsMQTyNJsgKY8jY5u4AeJTdFTvdQ9fDNGdSvGfDODbsWqMq1g97jjzxYFlmKIaGfUMbq6XQrieIoH-iNaYdVupHsSfE-INWniC6O-N6-A"/>
+</div>
+<!-- Image 2 (Overlap Center/Right) -->
+<div class="md:col-span-6 md:col-start-6 md:-mt-32 relative z-20 pt-8 md:pt-0 pl-4 md:pl-0">
+<img alt="Close up architectural detail of modern building facade" class="w-full h-[450px] object-cover shadow-2xl border-8 border-white" data-alt="Close up architectural detail of modern building facade" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGYs_fQ6CCxwktz6jZQhPGj_bLzYNGmdOFkpaHsU_XbTvtekS5sePGv7BMyi4yBRrpjHoaMdfrn2oUJ2ygFwdmXJsoAmbzQyYXVe9XUOU7-rYlIxvAp8u-VYqaP7uP7wWjab3H50K3rmcyZKT7KjSZNtUEr15V3yB-pocuWMtiZN8yQtj-Pu2oh04L0MrTIWBZxaM18NdlyWmCe1d2n3LqOL-bAsA64iL7QcjjM5uRfCJiS5YVbAss5L1zR-aJVWwh5Y8IyOaOCvNH"/>
+</div>
+<!-- Image 3 (Bottom Left accent) -->
+<div class="hidden md:block md:col-span-4 md:col-start-2 md:-mt-24 relative z-30">
+<img alt="Landscaped garden path leading to entrance" class="w-full h-[300px] object-cover shadow-xl border-8 border-white" data-alt="Landscaped garden path leading to entrance" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmgmhByQNfF1UzrCS2wefA1Sm6AEnwYsDa9xZc5DD48oHkTyjnS4phJB2WfKlAR5V4AfNM50o8nHFeJsj5GzR4VEmn32gkw6ZyyCvat4x-7HBy97h_KuTkX_NZy9FQEkwY2P582Y5tpeSGvlNlx83iiQrsupPEUV_yDI4PlNn66ctng7sWFwVQB9z4M3UhIAH0ul4nI53kX5kBMba01M2P2Ec9lQCokU6QCytHDIUnMPW-5zB642tGE1TwMQz9v-8rW-Q9hzFDTzMc"/>
+</div>
+</div>
+</div>
+</section>
+<!-- 6. Social Facilities -->
+<section class="w-full bg-surface py-24">
+<div class="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
+<div class="flex flex-col md:flex-row gap-12 h-full">
+<!-- Left: Icons Grid -->
+<div class="flex-1 flex flex-col justify-center">
+<div class="grid grid-cols-2 gap-x-8 gap-y-12">
+<!-- Icon Item -->
+<div class="flex flex-col gap-3">
+<span class="material-symbols-outlined text-4xl text-primary font-light">pool</span>
+<h4 class="text-lg font-bold uppercase tracking-widest text-slate-900">Yüzme Havuzu</h4>
+<p class="text-slate-500 text-sm font-light">Olimpik standartlarda kapalı ve açık havuzlar.</p>
+</div>
+<!-- Icon Item -->
+<div class="flex flex-col gap-3">
+<span class="material-symbols-outlined text-4xl text-primary font-light">fitness_center</span>
+<h4 class="text-lg font-bold uppercase tracking-widest text-slate-900">Fitness</h4>
+<p class="text-slate-500 text-sm font-light">Son teknoloji ekipmanlarla donatılmış salon.</p>
+</div>
+<!-- Icon Item -->
+<div class="flex flex-col gap-3">
+<span class="material-symbols-outlined text-4xl text-primary font-light">spa</span>
+<h4 class="text-lg font-bold uppercase tracking-widest text-slate-900">Spa &amp; Sauna</h4>
+<p class="text-slate-500 text-sm font-light">Günün yorgunluğunu atabileceğiniz özel alanlar.</p>
+</div>
+<!-- Icon Item -->
+<div class="flex flex-col gap-3">
+<span class="material-symbols-outlined text-4xl text-primary font-light">park</span>
+<h4 class="text-lg font-bold uppercase tracking-widest text-slate-900">Yeşil Alan</h4>
+<p class="text-slate-500 text-sm font-light">Geniş peyzaj ve yürüyüş parkurları.</p>
+</div>
+</div>
+</div>
+<!-- Right: Vertical Image & Text -->
+<div class="flex-1 flex gap-6 h-[600px]">
+<div class="flex-1 h-full">
+<img alt="Serene indoor swimming pool area with lounge chairs" class="w-full h-full object-cover rounded-sm grayscale hover:grayscale-0 transition-all duration-500" data-alt="Serene indoor swimming pool area with lounge chairs" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQSq_nL06GAiQpxMFG2g4C1n7fZrjJmiokJXLCUp8kSPp3SrgsT8eL-QtqqrKIKExHOSRpsp3zQdMoMB_p3APf3UVdF_q5bj7T3GFk9KBZ5BrAB1lMsiAiMj6JXCLhm0UPW1l96IsqU4Boxu6i4cf2QJiJl4x1OgqHcYy48CAxmkODQvRYUtinos0T7bgFXjmqL_2OGdqwd5Pvmek6coV2GEwBh_9ij4Hw7p_jrRFipHy1ArW0Z0rqMZBgqb5BcxFaSS_e7mgesvRT"/>
+</div>
+<div class="hidden md:flex items-end pb-8">
+<h2 class="writing-vertical-rl text-6xl md:text-8xl font-black text-slate-200 uppercase tracking-tighter transform rotate-180">
+                            Sosyal İmkanlar
+                        </h2>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 7. Interior Visuals -->
+<section class="w-full bg-white py-24 md:py-32">
+<div class="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
+<div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+<h3 class="text-4xl md:text-6xl font-bold text-slate-900 leading-tight">
+                    Projenin<br/>İç Görselleri
+                </h3>
+<p class="text-slate-500 max-w-md text-right md:text-left">
+                    Her detayında kaliteyi hissedeceğiniz, modern yaşamın tüm gerekliliklerini sunan iç mekan tasarımları.
+                </p>
+</div>
+<!-- Overlapping Grid Mirrored -->
+<div class="relative grid grid-cols-1 md:grid-cols-12 gap-6 min-h-[600px]">
+<!-- Image 1 (Large Right) -->
+<div class="md:col-span-8 md:col-start-5 relative z-10">
+<img alt="Spacious modern living room with large windows" class="w-full h-[550px] object-cover shadow-2xl" data-alt="Spacious modern living room with large windows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCteN5xkjJaZEsQ_QUfbUAb19tX8AwSfw1Hxs16fzdYQzxgyEkoOzb1v6be7mlUuNeF_1TouMEGs-cWjlKNMT3LiDlJXrmmCcvvXchakecUe3e_rGZgsm8aEDYoJWQvI-G9xk0WPawOP19-SNv3OVwuMpEvwMlV6BN-cNAFovaP3sQbnmAVD1QxbZ0QsssTyffUV8MMhKhZ38DW1PnCPtJ-1y_ETN11T_bMD5ETmYmcY-I_Da3FSex5Z6FMPao1KLZ_IMySNHj496q"/>
+</div>
+<!-- Image 2 (Overlap Left) -->
+<div class="md:col-span-5 md:col-start-2 md:-mt-48 relative z-20 pt-8 md:pt-0 pr-4 md:pr-0">
+<img alt="Minimalist modern kitchen design with island" class="w-full h-[400px] object-cover shadow-2xl border-8 border-white" data-alt="Minimalist modern kitchen design with island" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0NZk6bQkbcuJWijdyF0fsMGJXvbfFDL7DvcXj2LwSS4wMEoX8zfyaCuC7k7G_83IXJdbDuHtwS2AL-WMwkjVZXpY00JR3IHttGSesnHTZXOPazEiizFr1T300R4UXKW6_CriXo6nwCwM__JYu0s_gKlxXbj3INITJLTRJfXdoYHkK0lD-UCzmkzHUYvf5BbDEs58U8GOli7cDCOC_Rxi0RARIKQyGcPuaLOSZptHmwEhK16dbpXpStOVVF-cCpSvM8SLwvO1LpvHx"/>
+</div>
+</div>
+</div>
+</section>
+<!-- 8. Floor Plans -->
+<section class="w-full bg-slate-50 py-24">
+<div class="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+<!-- Plans Visuals -->
+<div class="relative h-[500px] w-full flex items-center justify-center">
+<div class="absolute left-0 top-10 w-3/4 h-3/4 bg-white shadow-xl p-4 transform -rotate-3 z-10 border border-slate-100">
+<img alt="2D floor plan layout for Type A apartment" class="w-full h-full object-contain" data-alt="2D floor plan layout for Type A apartment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXoUCmWbUr41aCtlYhRjKDbdbqZIRO4ExSmJuT5afYh5kokP8mM2JHKiMh8VlA0_w4oFCSOQDGGJmKfQq13Aef-of-m1GoW44GDpvJVDGJIzbBP29tL5gRqlhOmgbue7AgJjPytW4I4i52ovVaQofZKwqlx3PK4WNqk0fNdei_KXoVEVorn6HvHblIdrK9d6F2HOZseTzfXA03gU2GV2Jsz7i08qmOFs7a8gJWHa8qbBxCjB3acX2ZlUL-AJnRJqfbBMZxoA4XJ0qi"/>
+</div>
+<div class="absolute right-0 bottom-10 w-3/4 h-3/4 bg-white shadow-xl p-4 transform rotate-2 z-20 border border-slate-100">
+<img alt="2D floor plan layout for Type B apartment" class="w-full h-full object-contain" data-alt="2D floor plan layout for Type B apartment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMmoh8Or1Pp8rShUsphW3DeGK8VBXYIzPm93VFDjxzi_bHPS8Yori-uj9p2lSv4Bkyu8nJF6abQ1pnKA3OXisXq7WVQ2enJcNXlMvGtivw3QpFStXBX4eS9FC7JXh2MLLD8xu3igfP6ye1cehsXBqxjUVxjLiYc7whqpoOJ046kbV8GPmO8ZDDHGYvWsTxMQnGxCcvlHvKXvGQS8MFRlwG77EViEcSqbY8K3qQQt_LwKy1LD9qOnmr5ajWXIzXbSnZI4GC21Y5rCAs"/>
+</div>
+</div>
+<!-- Content -->
+<div class="flex flex-col gap-8">
+<h2 class="text-5xl font-bold text-slate-900">Varsa Kat Planı</h2>
+<p class="text-slate-600 text-lg font-light leading-relaxed">
+                        Farklı yaşam tarzlarına uygun olarak tasarlanmış 2+1 ve 3+1 daire seçenekleri. Geniş balkonlar, ferah odalar ve fonksiyonel kullanım alanları.
+                    </p>
+<div class="flex flex-col gap-4">
+<div class="flex justify-between items-center border-b border-slate-300 py-3">
+<span class="font-medium text-slate-800">Tip A (2+1)</span>
+<span class="text-slate-500">120m²</span>
+</div>
+<div class="flex justify-between items-center border-b border-slate-300 py-3">
+<span class="font-medium text-slate-800">Tip B (3+1)</span>
+<span class="text-slate-500">165m²</span>
+</div>
+<div class="flex justify-between items-center border-b border-slate-300 py-3">
+<span class="font-medium text-slate-800">Tip C (Dubleks)</span>
+<span class="text-slate-500">240m²</span>
+</div>
+</div>
+<button class="mt-4 text-primary font-bold uppercase tracking-widest flex items-center gap-2 hover:gap-4 transition-all">
+                        Tüm Planları İndir <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- 9. Document CTA Banner -->
+<section class="w-full bg-slate-900 py-16">
+<div class="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
+<div class="flex flex-col md:flex-row items-center justify-between gap-8">
+<div>
+<h2 class="text-3xl md:text-4xl font-bold text-white mb-2">CTA + Belgeler</h2>
+<p class="text-slate-400 font-light">Proje hakkında daha detaylı bilgi ve teknik şartnameler.</p>
+</div>
+<div class="flex gap-4 w-full md:w-auto">
+<button class="flex-1 md:flex-none h-12 px-6 border border-slate-600 text-white hover:bg-white hover:text-slate-900 transition-colors font-medium rounded">
+                        Info
+                    </button>
+<button class="flex-1 md:flex-none h-12 px-6 bg-primary text-white hover:bg-orange-700 transition-colors font-bold rounded shadow-lg shadow-orange-900/20">
+                        Proje Sunum Dosyası
+                    </button>
+</div>
+</div>
+</div>
+</section>
+<!-- 10. Map Images -->
+<section class="w-full bg-white py-24">
+<div class="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
+<h2 class="text-center text-4xl font-bold text-slate-900 mb-12">Harita Görselleri</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="aspect-square bg-slate-100 p-2 border border-slate-100">
+<img alt="Aerial view map of city layout" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" data-alt="Aerial view map of city layout" data-location="Istanbul" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSWpTh6LoJQ94Ypdang6eUrWTN7EozQs7Mf3DtSb7BM9ywFShj8cVpd5-zcuAS2Rf-DSrBKopOqO2eb7jtC19v96wCkuflLWSbyWqcBj_qKD3JfrtYeXtjCtN5daUXuqcUBfDa5EAYfZXHlJ5x81mBXQ0KQguRqA4dj8-Q6q-9Qzs4Z81ismLchLTwYJ8yz6WXum_flTPVYchYtoY6MAy_28D0DBjJ0Ew4Bc4NVKso9ovk2hyg1HdmZr12WG6pYb3SyJIiC-rsO19q"/>
+</div>
+<div class="aspect-square bg-slate-100 p-2 border border-slate-100">
+<img alt="Street map closeup" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" data-alt="Street map closeup" data-location="Besiktas" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsvVX_9UtuJ3grqkmlgju8Q_7x_q4qxd4cL4I-ps_WesbVvL6PdYRrtFzdK9vcix6pCtYbY-jmJtNI1PsWQm-jFweTvyJvJ8d4nVwtUDKNK7M-8YPQ9kwT5NEQIQKqzlGZfNYgU5Ed8fVdxBxS9T7dvLgcS5F223dB3FZ2q0oK4QmmpmdCnBdg8B0IY-vUiZ2S7yNn8AOyM2nO1pVKdei0VlEv0VS39AF7aC6_rZkIU9axpEyurdsyZvdqKo58Ui-aFenCN4BHjkwk"/>
+</div>
+<div class="aspect-square bg-slate-100 p-2 border border-slate-100">
+<img alt="Urban landscape map view" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" data-alt="Urban landscape map view" data-location="Turkey" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQbAfJsbrBrSJKdymMsF7yfdsm32lcg3RUQiCE19bHlTFlDOulacLGd5mEiJhqGPx6gfC75ZFY1iYSDMiEQ_8y-rXoMl6fwNrNoVBpeC-2jbZTp5te2xNFTZQDYDvmq4iZi-NhnxIXxswLqWXmntNhm-GLb6CyMSEZOO_ARYzCD36Tr01IC23wRe5zMoaaq-kSk2k52vOP-cHV-nvgPquuAUQQnTW5g4DiaQHw2S7yPXOdVvQVKlRwnPGEYQjfBNfjDT_WZ45zahcU"/>
+</div>
+</div>
+</div>
+</section>
+<!-- 11. Interactive Map -->
+<section class="w-full h-[500px] bg-slate-200 relative">
+<iframe allowfullscreen="" height="100%" loading="lazy" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d12037.904259836566!2d29.0034636!3d41.0422!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14cab7a249767a47%3A0x7d00248c8236d3f2!2zQmVaWt0YcWfLCBJc3RhbmJ1bA!5e0!3m2!1sen!2str!4v1647890000000!5m2!1sen!2str" style="border:0; filter: grayscale(100%) contrast(1.1);" width="100%">
+</iframe>
+<div class="absolute top-8 left-8 bg-white p-6 shadow-xl max-w-sm hidden md:block">
+<h3 class="font-bold text-lg mb-2">Lokasyon Avantajları</h3>
+<ul class="text-sm text-slate-600 space-y-2">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-base">directions_bus</span> Metro İstasyonuna 5dk</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-base">school</span> Üniversitelere Yakın</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-base">local_mall</span> AVM'lere 10dk</li>
+</ul>
+</div>
+</section>
+<!-- 12. Other Projects -->
+<section class="w-full bg-white py-24 border-t border-slate-100">
+<div class="max-w-[1440px] mx-auto px-6 md:px-12 lg:px-20">
+<div class="flex justify-between items-end mb-12">
+<h2 class="text-4xl font-bold text-slate-900 tracking-tight">Diğer Projeler</h2>
+<a class="text-sm font-bold text-slate-900 border-b border-slate-900 pb-1 uppercase tracking-widest hover:text-primary hover:border-primary transition-colors" href="#">Tümünü Gör</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+<!-- Card 1 -->
+<div class="group cursor-pointer">
+<div class="overflow-hidden mb-4">
+<img alt="Modern dark facade apartment complex" class="w-full h-80 object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Modern dark facade apartment complex" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoXiLKGSOKVRprP4kffTOQggsmz9GVFLBGgh4Vcy8QFa1AjBsxojAKpI01T2oyDGedONxjm6eXrReEvN2aX1-ZcGv3FuIlZZeELyFflBDSu7BuLwjrMg4s3n4Sqe7qloZt3IZB2_q5VIacFBmTv4pNvgbmvWgYpplvhBQx_y8yCpxFbXE9eDwpWHr6ekBRqVMlaudmQrkbGq9hi0F1qeXn1HJ5v82RXMBpzZQiSg5g2kYuagxCUv_wnYdwcoFunqTZGEcdbHdkMzKn"/>
+</div>
+<h3 class="text-xl font-bold text-slate-900 mb-1">Vadi İstanbul</h3>
+<p class="text-sm text-slate-500 font-light">Sarıyer, İstanbul — <span class="text-primary font-medium">Satışta</span></p>
+</div>
+<!-- Card 2 -->
+<div class="group cursor-pointer">
+<div class="overflow-hidden mb-4">
+<img alt="Sunlit minimalist residential building" class="w-full h-80 object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Sunlit minimalist residential building" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFvD4jQRLKqitP0J5N0D8fXuDnXSPo6Y2YsGBRjMi_DrHpRKFuWPKN6haP1yfdoNn_EnKnhCrwhx6JX8L5b2lTK5qnvBXuWLLj1iHx_DVPr_0o3Dt_V3iBc6Y0rT8DWnVPM3nhGjBf-VRQUxPKxQxEQd-Ctd6hiMPvsNZy6H7AjHYU276JcvZooKnKMelzuWwsJ80VYjqEutLPvRVxok7PGqSs4jtUbm95DgA6dfZ8AuwswzNoU_e18cJF6qFssxm8NIGQk6j4o-Zv"/>
+</div>
+<h3 class="text-xl font-bold text-slate-900 mb-1">Skyline Tower</h3>
+<p class="text-sm text-slate-500 font-light">Maslak, İstanbul — <span class="text-primary font-medium">Son 2 Daire</span></p>
+</div>
+<!-- Card 3 -->
+<div class="group cursor-pointer">
+<div class="overflow-hidden mb-4">
+<img alt="Contemporary urban housing development" class="w-full h-80 object-cover transition-transform duration-700 group-hover:scale-110" data-alt="Contemporary urban housing development" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbtHocGt2WESzoallrdon0CmgnjSNPFRcytVguM7q6sW02HsOtorBGKIWMWMq5LZfZ5kKAqIlIomYfLxyJBxT07d4z8Xxle_ggujMFx8EOvJ_LwHEvSHkWYKbQ-_EmBHAEw_JqbQVxE7SvFJeN-DmU_vFEeWGUkCIEW1WduRt01RMxnJkQ6KAHbAhIBmUPNO4ClG2NtwWkzYauDQ-PGGTswSbGA0jwfwdQvr_8hbQ0QJypdXk6170dCNQAiIkcsOLT3P3v7m2oKqPF"/>
+</div>
+<h3 class="text-xl font-bold text-slate-900 mb-1">Marina Residence</h3>
+<p class="text-sm text-slate-500 font-light">Kartal, İstanbul — <span class="text-primary font-medium">Proje Aşamasında</span></p>
+</div>
+</div>
+</div>
+</section>
+<!-- Simple Footer -->
+<footer class="bg-background-dark text-white/40 py-12 text-center text-xs tracking-widest uppercase">
+<p>© 2024 Real Estate Developer. All rights reserved.</p>
+</footer>
+</body></html>

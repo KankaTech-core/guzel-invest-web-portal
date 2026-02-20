@@ -8,6 +8,7 @@ import {
     SAMPLE_ARTICLE_PREVIEW,
     SAMPLE_ARTICLE_SLUG,
 } from "@/data/sample-article";
+import { ScrollRevealSection } from "@/components/ui/scroll-reveal-section";
 
 type BlogPageProps = {
     params: Promise<{ locale: string }>;
@@ -52,9 +53,9 @@ export default async function BlogPage({ params }: BlogPageProps) {
 
     return (
         <main className="relative isolate overflow-hidden bg-white pb-24 pt-24">
-            <section className="container-custom relative z-10">
+            <ScrollRevealSection as="section" className="container-custom relative z-10">
                 <div className="grid grid-cols-12 gap-6 lg:items-stretch">
-                    <div className="relative col-span-12 overflow-hidden rounded-[2rem] border border-gray-200 bg-white px-6 py-6 shadow-sm sm:px-8 lg:col-span-9 lg:px-9 lg:py-7">
+                    <div className="reveal relative col-span-12 overflow-hidden rounded-[2rem] border border-gray-200 bg-white px-6 py-6 shadow-sm sm:px-8 lg:col-span-9 lg:px-9 lg:py-7">
                         <div className="relative z-10 max-w-2xl">
                             <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-700">
                                 Yeni • Makale Merkezi
@@ -100,8 +101,8 @@ export default async function BlogPage({ params }: BlogPageProps) {
                         </div>
                     </div>
 
-                    <div className="col-span-12 grid grid-cols-2 gap-2 lg:col-span-3 lg:flex lg:h-full lg:flex-col lg:gap-3">
-                        <div className="order-1 rounded-2xl border border-[#111828] bg-[#111828] px-4 py-4 shadow-sm sm:rounded-[2rem] sm:px-8 sm:py-5 lg:order-1 lg:flex-1">
+                    <div className="reveal-stagger col-span-12 grid grid-cols-2 gap-2 lg:col-span-3 lg:flex lg:h-full lg:flex-col lg:gap-3">
+                        <div className="reveal order-1 rounded-2xl border border-[#111828] bg-[#111828] px-4 py-4 shadow-sm sm:rounded-[2rem] sm:px-8 sm:py-5 lg:order-1 lg:flex-1">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-300 sm:text-[12px]">
                                 Toplam İçerik
                             </p>
@@ -110,7 +111,7 @@ export default async function BlogPage({ params }: BlogPageProps) {
                             </p>
                         </div>
 
-                        <div className="order-3 col-span-2 rounded-2xl border border-gray-200 bg-[#f2f4f7] px-4 py-4 shadow-sm sm:rounded-[2rem] sm:px-8 sm:py-5 lg:order-2 lg:flex-1">
+                        <div className="reveal order-3 col-span-2 rounded-2xl border border-gray-200 bg-[#f2f4f7] px-4 py-4 shadow-sm sm:rounded-[2rem] sm:px-8 sm:py-5 lg:order-2 lg:flex-1">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#667085] sm:text-[12px]">
                                 Yayın Odağı
                             </p>
@@ -119,7 +120,7 @@ export default async function BlogPage({ params }: BlogPageProps) {
                             </p>
                         </div>
 
-                        <div className="order-2 relative overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm sm:rounded-[2rem] sm:px-8 sm:py-5 lg:order-3 lg:flex-1">
+                        <div className="reveal order-2 relative overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 py-4 shadow-sm sm:rounded-[2rem] sm:px-8 sm:py-5 lg:order-3 lg:flex-1">
                             <p className="relative z-10 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#667085] sm:text-[12px]">
                                 Son Güncelleme
                             </p>
@@ -139,8 +140,8 @@ export default async function BlogPage({ params }: BlogPageProps) {
                     </div>
                 </div>
 
-                <section className="mt-10">
-                    <div className="mb-6 flex items-center justify-between gap-4">
+                <ScrollRevealSection as="section" className="mt-10">
+                    <div className="reveal mb-6 flex items-center justify-between gap-4">
                         <div>
                             <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-600">
                                 Yayındaki Yazılar
@@ -155,7 +156,7 @@ export default async function BlogPage({ params }: BlogPageProps) {
                     </div>
 
                     {listedArticles.length > 0 ? (
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        <div className="reveal-stagger grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                             {listedArticles.map((article, index) => {
                                 const isNewest = index === 0;
                                 const cardCover = article.coverThumbnailUrl || article.coverImageUrl;
@@ -164,7 +165,7 @@ export default async function BlogPage({ params }: BlogPageProps) {
                                     return (
                                         <article
                                             key={article.id}
-                                            className="group overflow-hidden rounded-3xl border border-orange-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl md:col-span-2 xl:col-span-3"
+                                            className="reveal group overflow-hidden rounded-3xl border border-orange-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl md:col-span-2 xl:col-span-3"
                                         >
                                             <Link href={`/${locale}/blog/${article.slug}`} className="grid md:grid-cols-12">
                                                 <div className="relative h-52 bg-gray-100 md:col-span-4 md:h-full md:min-h-[220px]">
@@ -219,62 +220,62 @@ export default async function BlogPage({ params }: BlogPageProps) {
                                 }
 
                                 return (
-                                <article
-                                    key={article.id}
-                                    className="group overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
-                                >
-                                    <Link href={`/${locale}/blog/${article.slug}`}>
-                                        <div className="relative h-52 bg-gray-100">
-                                            {cardCover ? (
-                                                <Image
-                                                    src={getMediaUrl(cardCover)}
-                                                    alt={article.title}
-                                                    fill
-                                                    sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
-                                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-                                                />
-                                            ) : (
-                                                <div className="flex h-full w-full items-center justify-center text-gray-300">
-                                                    <Newspaper className="h-12 w-12" />
-                                                </div>
-                                            )}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/15 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                                        </div>
-                                    </Link>
-
-                                    <div className="space-y-4 p-6">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="rounded-full bg-orange-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-orange-700">
-                                                {article.category || "Genel"}
-                                            </span>
-                                            <span className="text-xs font-medium text-gray-400">
-                                                {formatDate(
-                                                    article.publishedAt || article.createdAt,
-                                                    locale
+                                    <article
+                                        key={article.id}
+                                        className="reveal group overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                                    >
+                                        <Link href={`/${locale}/blog/${article.slug}`}>
+                                            <div className="relative h-52 bg-gray-100">
+                                                {cardCover ? (
+                                                    <Image
+                                                        src={getMediaUrl(cardCover)}
+                                                        alt={article.title}
+                                                        fill
+                                                        sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
+                                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-full w-full items-center justify-center text-gray-300">
+                                                        <Newspaper className="h-12 w-12" />
+                                                    </div>
                                                 )}
-                                            </span>
-                                        </div>
-
-                                        <h3 className="line-clamp-2 text-xl font-semibold leading-snug text-gray-900">
-                                            <Link href={`/${locale}/blog/${article.slug}`}>
-                                                {article.title}
-                                            </Link>
-                                        </h3>
-
-                                        <p className="line-clamp-3 text-sm leading-relaxed text-gray-600">
-                                            {article.excerpt ||
-                                                "Makale özeti yakında eklenecek."}
-                                        </p>
-
-                                        <Link
-                                            href={`/${locale}/blog/${article.slug}`}
-                                            className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700 transition-colors hover:text-orange-600"
-                                        >
-                                            Makaleyi Oku
-                                            <ArrowRight className="h-4 w-4" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-gray-900/15 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                                            </div>
                                         </Link>
-                                    </div>
-                                </article>
+
+                                        <div className="space-y-4 p-6">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="rounded-full bg-orange-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-orange-700">
+                                                    {article.category || "Genel"}
+                                                </span>
+                                                <span className="text-xs font-medium text-gray-400">
+                                                    {formatDate(
+                                                        article.publishedAt || article.createdAt,
+                                                        locale
+                                                    )}
+                                                </span>
+                                            </div>
+
+                                            <h3 className="line-clamp-2 text-xl font-semibold leading-snug text-gray-900">
+                                                <Link href={`/${locale}/blog/${article.slug}`}>
+                                                    {article.title}
+                                                </Link>
+                                            </h3>
+
+                                            <p className="line-clamp-3 text-sm leading-relaxed text-gray-600">
+                                                {article.excerpt ||
+                                                    "Makale özeti yakında eklenecek."}
+                                            </p>
+
+                                            <Link
+                                                href={`/${locale}/blog/${article.slug}`}
+                                                className="inline-flex items-center gap-2 text-sm font-semibold text-gray-700 transition-colors hover:text-orange-600"
+                                            >
+                                                Makaleyi Oku
+                                                <ArrowRight className="h-4 w-4" />
+                                            </Link>
+                                        </div>
+                                    </article>
                                 );
                             })}
                         </div>
@@ -285,8 +286,8 @@ export default async function BlogPage({ params }: BlogPageProps) {
                             </p>
                         </div>
                     )}
-                </section>
-            </section>
+                </ScrollRevealSection>
+            </ScrollRevealSection>
         </main>
     );
 }

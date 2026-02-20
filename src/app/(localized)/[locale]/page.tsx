@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useVersion } from "@/contexts/VersionContext";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 import {
     formatPrice,
     getMediaUrl,
@@ -250,6 +251,17 @@ export default function HomePage() {
     const heroSwipeStartXRef = useRef<number | null>(null);
     const city = fixedCity;
     const district = fixedDistrict;
+
+    /* scroll-reveal refs */
+    const heroRevealRef = useScrollReveal<HTMLDivElement>({ threshold: 0.05, rootMargin: "0px" });
+    const searchBannerRevealRef = useScrollReveal<HTMLDivElement>();
+    const categoriesRevealRef = useScrollReveal<HTMLElement>();
+    const servicesRevealRef = useScrollReveal<HTMLElement>();
+    const highlightRevealRef = useScrollReveal<HTMLElement>();
+    const testimonialsRevealRef = useScrollReveal<HTMLElement>();
+    const ctaRevealRef = useScrollReveal<HTMLElement>();
+    const blogRevealRef = useScrollReveal<HTMLElement>();
+    const faqRevealRef = useScrollReveal<HTMLElement>();
     const selectedPropertyType = propertyTypes.find((propertyTypeOption) => propertyTypeOption.value === propertyType);
 
     useEffect(() => {
@@ -488,27 +500,27 @@ export default function HomePage() {
                 HERO SECTION (Updated to Variant /2 Design)
             ════════════════════════════════════════════ */}
             <section className="pt-28 pb-16 px-8 bg-white">
-                <div className="max-w-7xl mx-auto">
+                <div ref={heroRevealRef} className="max-w-7xl mx-auto">
                     {/* Hero Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                         {/* Main Content */}
                         <div className="lg:col-span-5 pt-8">
-                            <div className="flex items-center justify-center lg:justify-start gap-2 bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm mb-6 lg:mb-6 w-fit mx-auto lg:mx-0">
+                            <div className="reveal flex items-center justify-center lg:justify-start gap-2 bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm mb-6 lg:mb-6 w-fit mx-auto lg:mx-0">
                                 <Globe className="w-4 h-4" />
                                 Alanya Satış & Yatırım Merkezi
                             </div>
 
-                            <h1 className="text-5xl md:text-6xl leading-tight text-gray-900 mb-6 font-semibold text-center lg:text-left">
+                            <h1 className="reveal text-5xl md:text-6xl leading-tight text-gray-900 mb-6 font-semibold text-center lg:text-left">
                                 Güzel Şehre<br />
                                 <span className="text-orange-500">Güzel</span> Projeler
                             </h1>
 
-                            <p className="text-lg text-gray-500 mb-8 leading-relaxed max-w-md text-center lg:text-left mx-auto lg:mx-0">
+                            <p className="reveal text-lg text-gray-500 mb-8 leading-relaxed max-w-md text-center lg:text-left mx-auto lg:mx-0">
                                 2001'den bu yana Alanya'da güvenilir gayrimenkul platformu. Satılık, kiralık mülkler ve profesyonel danışmanlık hizmetleriyle yanınızdayız.
                             </p>
 
                             {/* Mobile Buttons - After subtitle */}
-                            <div className="flex lg:hidden items-center gap-4 mb-8">
+                            <div className="reveal flex lg:hidden items-center gap-4 mb-8">
                                 <Link
                                     href={`/${locale}/portfoy`}
                                     className="inline-flex items-center gap-2 bg-gray-900 text-white px-7 py-4 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors"
@@ -626,7 +638,7 @@ export default function HomePage() {
                             </div>
 
                             {/* Desktop Buttons */}
-                            <div className="hidden lg:flex items-center gap-4">
+                            <div className="reveal hidden lg:flex items-center gap-4">
                                 <Link
                                     href={`/${locale}/portfoy`}
                                     className="inline-flex items-center gap-2 bg-gray-900 text-white px-7 py-4 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors"
@@ -646,7 +658,7 @@ export default function HomePage() {
                             </div>
 
                             {/* Stats */}
-                            <div className="flex items-center gap-8 mt-12 pt-8 border-t border-gray-200">
+                            <div className="reveal flex items-center gap-8 mt-12 pt-8 border-t border-gray-200">
                                 <div>
                                     <p className="text-3xl font-semibold text-gray-900">300+</p>
                                     <p className="text-sm text-gray-500">Mutlu Müşteri</p>
@@ -665,7 +677,7 @@ export default function HomePage() {
                         </div>
 
                         {/* Hero Image Grid - Desktop Only */}
-                        <div className="hidden lg:grid grid-cols-12 gap-4 lg:col-span-7">
+                        <div className="reveal-scale hidden lg:grid grid-cols-12 gap-4 lg:col-span-7">
                             {/* Main large image - Swiper */}
                             <div className="col-span-12 lg:col-span-8 aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl shadow-gray-300/40 relative group">
                                 <div
@@ -751,53 +763,18 @@ export default function HomePage() {
                                 </div>
                             </div>
 
-                            {/* Side images - Dynamic based on active slide */}
+                            {/* Side content - YouTube Video */}
                             <div className="hidden lg:flex col-span-4 flex-col gap-4">
-                                {/* Second Image - Slider */}
-                                <div className="flex-1 rounded-2xl overflow-hidden shadow-lg relative group">
-                                    <div
-                                        className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                                        style={{ transform: `translateX(-${heroSlideIndex * 100}%)` }}
-                                    >
-                                        {safeHeroListings.map((listing, index) => (
-                                            <div key={`side-top-${index}`} className="relative h-full w-full shrink-0">
-                                                <img
-                                                    src={getHeroImageUrl(listing, 1)}
-                                                    alt="Property View 2"
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                                />
-                                                <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Third Image - Slider */}
-                                <div className="flex-1 rounded-2xl overflow-hidden shadow-lg relative group">
-                                    <div
-                                        className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                                        style={{ transform: `translateX(-${heroSlideIndex * 100}%)` }}
-                                    >
-                                        {safeHeroListings.map((listing, index) => (
-                                            <div key={`side-bottom-${index}`} className="relative h-full w-full shrink-0">
-                                                <img
-                                                    src={getHeroImageUrl(listing, 2)}
-                                                    alt="Property View 3"
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                                />
-                                                <div className="absolute inset-0 bg-orange-500/0 group-hover:bg-orange-500/10 transition-colors flex items-center justify-center">
-                                                    {getHeroListingHref(listing) && (
-                                                        <Link
-                                                            href={getHeroListingHref(listing)!}
-                                                            className="w-12 h-12 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300"
-                                                        >
-                                                            <ArrowRight className="w-5 h-5 text-orange-500" />
-                                                        </Link>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                <div className="flex-1 rounded-3xl overflow-hidden shadow-2xl shadow-gray-300/40 relative bg-black">
+                                    <iframe
+                                        className="absolute inset-0 w-full h-full"
+                                        src="https://www.youtube.com/embed/E5uhQjs6xTk?si=qs85vA_X0AxPvCHj&mute=1"
+                                        title="YouTube video player"
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        referrerPolicy="strict-origin-when-cross-origin"
+                                        allowFullScreen
+                                    ></iframe>
                                 </div>
                             </div>
                         </div>
@@ -806,8 +783,8 @@ export default function HomePage() {
             </section>
 
             {/* Search Banner - Below Hero (Desktop) */}
-            <div className="hidden lg:block relative z-30 mt-8 px-4 mb-20">
-                <div className="max-w-7xl mx-auto bg-white rounded-[36px] shadow-xl shadow-gray-200/50">
+            <div ref={searchBannerRevealRef} className="hidden lg:block relative z-30 mt-8 px-4 mb-20">
+                <div className="reveal-scale max-w-7xl mx-auto bg-white rounded-[36px] shadow-xl shadow-gray-200/50">
                     <form
                         ref={bannerRef}
                         onSubmit={(event) => {
@@ -992,10 +969,10 @@ export default function HomePage() {
             {/* ════════════════════════════════════════════
                 CATEGORIES SECTION
             ════════════════════════════════════════════ */}
-            <section className="py-16 px-4 sm:px-6 bg-gray-50/50">
+            <section ref={categoriesRevealRef} className="py-16 px-4 sm:px-6 bg-gray-50/50">
                 <div className="max-w-7xl mx-auto">
                     {/* Section Header */}
-                    <div className="flex items-center justify-between mb-8">
+                    <div className="reveal flex items-center justify-between mb-8">
                         <div>
                             <span className="text-xs text-orange-500 font-semibold uppercase tracking-wide">
                                 {th("categoriesLabel")}
@@ -1014,12 +991,12 @@ export default function HomePage() {
                     </div>
 
                     {/* Category Cards Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="reveal-stagger grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {categories.map((cat) => (
                             <Link
                                 key={cat.type}
                                 href={`/${locale}/portfoy?type=${cat.type}`}
-                                className="group bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300"
+                                className="reveal group bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300"
                             >
                                 <div className="aspect-[16/10] overflow-hidden">
                                     <img
@@ -1046,7 +1023,7 @@ export default function HomePage() {
             {/* ════════════════════════════════════════════
                 SERVICES – NEDEN GÜZEL INVEST
             ════════════════════════════════════════════ */}
-            <section className="py-20 px-4 sm:px-6 bg-white relative overflow-hidden">
+            <section ref={servicesRevealRef} className="py-20 px-4 sm:px-6 bg-white relative overflow-hidden">
                 {/* Orange blob background – right side */}
                 <div className="absolute -right-32 top-1/2 -translate-y-1/2 w-[600px] h-[600px] opacity-[0.07] pointer-events-none">
                     <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
@@ -1055,7 +1032,7 @@ export default function HomePage() {
                 </div>
                 <div className="max-w-7xl mx-auto relative z-10">
                     {/* Section Header – Left-aligned for fintech clarity */}
-                    <div className="flex items-end justify-between mb-12 pb-6 border-b border-gray-100">
+                    <div className="reveal flex items-end justify-between mb-12 pb-6 border-b border-gray-100">
                         <div>
                             <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
                                 {th("servicesLabel")}
@@ -1081,7 +1058,7 @@ export default function HomePage() {
                             const featured = services[0];
                             const FeaturedIcon = featured.icon;
                             return (
-                                <div className="lg:col-span-5 group relative bg-white rounded-xl border border-gray-100 hover:border-orange-200 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 overflow-hidden">
+                                <div className="reveal lg:col-span-5 group relative bg-white rounded-xl border border-gray-100 hover:border-orange-200 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 overflow-hidden">
                                     {/* Orange left accent */}
                                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 rounded-l-xl z-10" />
 
@@ -1150,7 +1127,7 @@ export default function HomePage() {
 
                         {/* ── RIGHT: Remaining 5 services in gap-px grid ── */}
                         <div className="lg:col-span-7 rounded-xl overflow-hidden border border-gray-100">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-gray-100">
+                            <div className="reveal-stagger grid grid-cols-1 sm:grid-cols-2 gap-px bg-gray-100">
                                 {services.slice(1).map((svc, idx) => {
                                     const Icon = svc.icon;
                                     const num = String(idx + 2).padStart(2, "0");
@@ -1158,7 +1135,7 @@ export default function HomePage() {
                                     return (
                                         <div
                                             key={idx}
-                                            className={`group relative bg-white p-6 cursor-pointer hover:bg-orange-50/50 hover:-translate-y-0.5 transition-all duration-300 ${isLast ? "sm:col-span-2" : ""
+                                            className={`reveal group relative bg-white p-6 cursor-pointer hover:bg-orange-50/50 hover:-translate-y-0.5 transition-all duration-300 ${isLast ? "sm:col-span-2" : ""
                                                 }`}
                                         >
                                             {/* Left accent bar on hover */}
@@ -1200,10 +1177,10 @@ export default function HomePage() {
             {/* ════════════════════════════════════════════
                 HIGHLIGHT – NEDEN ALANYA
             ════════════════════════════════════════════ */}
-            <section className="py-16 px-4 sm:px-6 bg-gray-900">
+            <section ref={highlightRevealRef} className="py-16 px-4 sm:px-6 bg-gray-900">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                        <div>
+                        <div className="reveal">
                             <span className="text-xs text-orange-400 font-semibold uppercase tracking-wide">
                                 Lokasyon Analizi
                             </span>
@@ -1240,7 +1217,7 @@ export default function HomePage() {
                             </Link>
                         </div>
 
-                        <div className="relative">
+                        <div className="reveal relative">
                             <div className="aspect-[4/3] rounded-2xl overflow-hidden">
                                 <img
                                     src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=900&h=675&fit=crop"
@@ -1270,7 +1247,7 @@ export default function HomePage() {
             {/* ════════════════════════════════════════════
                 TESTIMONIALS – SİZDEN GELENLER
             ════════════════════════════════════════════ */}
-            <section className="py-20 px-4 sm:px-6 bg-white relative overflow-hidden">
+            <section ref={testimonialsRevealRef} className="py-20 px-4 sm:px-6 bg-white relative overflow-hidden">
                 {/* Orange blob background – left side, smoother round shape */}
                 <div className="absolute -left-32 top-1/2 -translate-y-1/2 w-[600px] h-[600px] opacity-[0.07] pointer-events-none scale-x-[-1]">
                     <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
@@ -1279,7 +1256,7 @@ export default function HomePage() {
                 </div>
                 <div className="max-w-7xl mx-auto relative z-10">
                     {/* Section Header */}
-                    <div className="flex items-end justify-between mb-12 pb-6 border-b border-gray-100">
+                    <div className="reveal flex items-end justify-between mb-12 pb-6 border-b border-gray-100">
                         <div>
                             <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
                                 Müşteri Deneyimleri
@@ -1318,7 +1295,7 @@ export default function HomePage() {
                     {/* Carousel */}
                     <div
                         ref={testimonialRef}
-                        className="flex gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 -mx-4 px-4"
+                        className="reveal flex gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-4 -mx-4 px-4"
                         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                     >
                         {testimonials.map((item, idx) => (
@@ -1362,11 +1339,11 @@ export default function HomePage() {
             {/* ════════════════════════════════════════════
                 CTA – YATIRIMA HEMEN BAŞLA
             ════════════════════════════════════════════ */}
-            <section className="py-12 px-4 sm:px-6 bg-gray-900 relative overflow-hidden">
+            <section ref={ctaRevealRef} className="py-12 px-4 sm:px-6 bg-gray-900 relative overflow-hidden">
                 {/* Subtle grid background */}
                 <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
 
-                <div className="max-w-7xl mx-auto relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+                <div className="reveal max-w-7xl mx-auto relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
                     {/* Left – Title */}
                     <div className="flex-shrink-0">
                         <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-400">
@@ -1416,10 +1393,10 @@ export default function HomePage() {
             {/* ════════════════════════════════════════════
                 BLOG – SON MAKALELER
             ════════════════════════════════════════════ */}
-            <section className="py-20 px-4 sm:px-6 bg-white">
+            <section ref={blogRevealRef} className="py-20 px-4 sm:px-6 bg-white">
                 <div className="max-w-7xl mx-auto">
                     {/* Section Header */}
-                    <div className="flex items-end justify-between mb-12 pb-6 border-b border-gray-100">
+                    <div className="reveal flex items-end justify-between mb-12 pb-6 border-b border-gray-100">
                         <div>
                             <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
                                 Blog
@@ -1438,7 +1415,7 @@ export default function HomePage() {
                     </div>
 
                     {/* Articles Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="reveal-stagger grid grid-cols-1 md:grid-cols-3 gap-6">
                         {[
                             {
                                 image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&h=400&fit=crop",
@@ -1462,7 +1439,7 @@ export default function HomePage() {
                             <Link
                                 key={idx}
                                 href={`/${locale}/blog`}
-                                className="group rounded-xl border border-gray-100 overflow-hidden hover:border-orange-200 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 bg-white"
+                                className="reveal group rounded-xl border border-gray-100 overflow-hidden hover:border-orange-200 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 bg-white"
                             >
                                 {/* Image */}
                                 <div className="h-48 overflow-hidden">
@@ -1509,10 +1486,10 @@ export default function HomePage() {
             {/* ════════════════════════════════════════════
                 FAQ – SIKÇA SORULAN SORULAR
             ════════════════════════════════════════════ */}
-            <section className="py-20 px-4 sm:px-6 bg-white">
+            <section ref={faqRevealRef} className="py-20 px-4 sm:px-6 bg-white">
                 <div className="max-w-7xl mx-auto">
                     {/* Section Header */}
-                    <div className="flex items-end justify-between mb-12 pb-6 border-b border-gray-100">
+                    <div className="reveal flex items-end justify-between mb-12 pb-6 border-b border-gray-100">
                         <div>
                             <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
                                 SSS
@@ -1531,7 +1508,7 @@ export default function HomePage() {
                     </div>
 
                     {/* FAQ Items */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-0">
+                    <div className="reveal-stagger grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-0">
                         {[
                             {
                                 q: "Yabancı uyruklu kişiler Türkiye'de mülk satın alabilir mi?",
@@ -1560,7 +1537,7 @@ export default function HomePage() {
                         ].map((faq, idx) => (
                             <div
                                 key={idx}
-                                className="border-b border-gray-100"
+                                className="reveal border-b border-gray-100"
                             >
                                 <button
                                     type="button"

@@ -592,6 +592,7 @@ select.input {
     transform: translateX(100%);
     opacity: 0.5;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -612,6 +613,103 @@ select.input {
 
 .animate-slide-next {
   animation: slideNext 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ============================================
+   SCROLL REVEAL – Entry Animations
+   !important needed to beat Tailwind v4 utility
+   specificity (e.g. transition-all, opacity-*)
+   ============================================ */
+
+.reveal:not(.is-visible) {
+  opacity: 0 !important;
+  transform: translateY(24px) !important;
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-fast:not(.is-visible) {
+  opacity: 0 !important;
+  transform: translateY(16px) !important;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.reveal-fast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-scale:not(.is-visible) {
+  opacity: 0 !important;
+  transform: scale(0.97) !important;
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.reveal-scale.is-visible {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Stagger delays for grid children */
+.reveal-stagger>.reveal:nth-child(1) {
+  transition-delay: 0ms;
+}
+
+.reveal-stagger>.reveal:nth-child(2) {
+  transition-delay: 80ms;
+}
+
+.reveal-stagger>.reveal:nth-child(3) {
+  transition-delay: 160ms;
+}
+
+.reveal-stagger>.reveal:nth-child(4) {
+  transition-delay: 240ms;
+}
+
+.reveal-stagger>.reveal:nth-child(5) {
+  transition-delay: 320ms;
+}
+
+.reveal-stagger>.reveal:nth-child(6) {
+  transition-delay: 400ms;
+}
+
+.reveal-stagger>.reveal-fast:nth-child(1) {
+  transition-delay: 0ms;
+}
+
+.reveal-stagger>.reveal-fast:nth-child(2) {
+  transition-delay: 60ms;
+}
+
+.reveal-stagger>.reveal-fast:nth-child(3) {
+  transition-delay: 120ms;
+}
+
+.reveal-stagger>.reveal-fast:nth-child(4) {
+  transition-delay: 180ms;
+}
+
+.reveal-stagger>.reveal-fast:nth-child(5) {
+  transition-delay: 240ms;
+}
+
+.reveal-stagger>.reveal-fast:nth-child(6) {
+  transition-delay: 300ms;
 }
 
 /* ============================================
@@ -764,7 +862,7 @@ select.input {
   padding-top: 1rem;
 }
 
-.article-content > *:first-child {
+.article-content>*:first-child {
   margin-top: 0;
 }
 
