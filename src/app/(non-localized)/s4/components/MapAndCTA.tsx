@@ -1,102 +1,183 @@
-import React from "react";
 import Image from "next/image";
-import { Download, FileText, MapPin, ArrowRight } from "lucide-react";
-import { s4Data } from "../mockData";
+import Link from "next/link";
+import { ArrowRight, Download, FileText, MapPin } from "lucide-react";
+import { S1SectionVisibility } from "../../s1/section-visibility";
+import {
+    S1DocumentItem,
+    S1FaqItem,
+    S1MapData,
+    S1MapImageItem,
+    S1OtherProjectItem,
+} from "../../s1/types";
 
-export const MapAndCTA = () => {
-    const { documentCta, mapImages, interactiveMap, otherProjects } = s4Data;
+interface MapAndCTAProps {
+    documents: S1DocumentItem[];
+    mapImages: S1MapImageItem[];
+    map?: S1MapData;
+    faqs: S1FaqItem[];
+    otherProjects: S1OtherProjectItem[];
+    visibility: S1SectionVisibility;
+}
 
+export const MapAndCTA = ({
+    documents,
+    mapImages,
+    map,
+    faqs,
+    otherProjects,
+    visibility,
+}: MapAndCTAProps) => {
     return (
         <>
-            {/* 9. Document CTA */}
-            <div className="bg-[#e5e0d8] py-20">
-                <div className="max-w-[1000px] mx-auto px-6 text-center">
-                    <h3 className="text-2xl md:text-3xl font-bold text-[#1e3a8a] mb-8">{documentCta.title}</h3>
-                    <div className="flex flex-col sm:flex-row justify-center gap-6">
-                        <button className="bg-white hover:bg-gray-50 text-[#1e3a8a] font-bold py-4 px-8 rounded-full shadow-md transition-all flex items-center justify-center gap-3">
-                            <Download className="w-6 h-6" />
-                            Download Brochure
-                        </button>
-                        <button className="bg-[#ec6804] hover:bg-orange-700 text-white font-bold py-4 px-8 rounded-full shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-3">
-                            <FileText className="w-6 h-6" />
-                            Technical Specs
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* 10 & 11. Maps & Location */}
-            <div className="bg-white py-24">
-                <div className="max-w-[1400px] mx-auto px-6">
-                    <h3 className="text-3xl font-bold text-[#1e3a8a] mb-12">Prime Location</h3>
-
-                    {/* 3 Map Snapshots */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                        {mapImages.map((map, idx) => (
-                            <div key={idx} className="relative group rounded-2xl overflow-hidden aspect-[4/3]">
-                                <div
-                                    className="absolute inset-0 bg-cover bg-center"
-                                    style={{ backgroundImage: `url('${map.bgImage}')` }}
-                                ></div>
-                                <div className="absolute inset-0 bg-black/30 flex items-end p-6">
-                                    <span className="text-white font-bold text-lg">{map.distance}</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Full Width Map */}
-                    <div className="w-full h-[400px] rounded-3xl overflow-hidden relative shadow-inner">
-                        <Image quality={100} unoptimized src={interactiveMap.bgImage} alt="Map" fill className="object-cover filter contrast-75" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="bg-white py-3 px-6 rounded-full shadow-2xl flex items-center gap-3 animate-bounce">
-                                <MapPin className="text-[#ec6804] w-6 h-6" />
-                                <span className="font-bold text-slate-900">{interactiveMap.address}</span>
-                            </div>
+            {visibility.documents ? (
+                <div className="bg-[#e5e0d8] py-20">
+                    <div className="mx-auto max-w-[1000px] px-6 text-center">
+                        <h3 className="mb-8 text-2xl font-bold text-[#1e3a8a] md:text-3xl">
+                            Proje Belgeleri
+                        </h3>
+                        <div className="flex flex-col justify-center gap-6 sm:flex-row">
+                            {documents.slice(0, 2).map((doc, idx) => (
+                                <Link
+                                    key={doc.id}
+                                    href={doc.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className={`flex items-center justify-center gap-3 rounded-full px-8 py-4 font-bold shadow-md transition-all ${
+                                        idx === 0
+                                            ? "bg-white text-[#1e3a8a] hover:bg-gray-50"
+                                            : "bg-[#ec6804] text-white shadow-orange-500/20 hover:bg-orange-700"
+                                    }`}
+                                >
+                                    {idx === 0 ? (
+                                        <Download className="h-6 w-6" />
+                                    ) : (
+                                        <FileText className="h-6 w-6" />
+                                    )}
+                                    {doc.name}
+                                </Link>
+                            ))}
                         </div>
                     </div>
                 </div>
-            </div>
+            ) : null}
 
-            {/* 12. Other Projects */}
-            <div className="bg-[#faf9f6] py-24">
-                <div className="max-w-[1400px] mx-auto px-6">
-                    <h3 className="text-3xl font-bold text-[#1e3a8a] mb-12">You might also like</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {otherProjects.map((project, idx) => (
-                            <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all hover:-translate-y-2 group">
-                                <div className="h-64 overflow-hidden relative">
-                                    <Image quality={100} unoptimized src={project.image} alt={project.title} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
-                                    {project.badge && (
-                                        <div className="absolute top-4 right-4 bg-[#ec6804] text-white text-xs font-bold px-3 py-1 rounded-full">
-                                            {project.badge}
+            {(visibility.mapImages || visibility.map) && (
+                <div className="bg-white py-24">
+                    <div className="mx-auto max-w-[1400px] px-6">
+                        <h3 className="mb-12 text-3xl font-bold text-[#1e3a8a]">
+                            Prime Location
+                        </h3>
+
+                        {visibility.mapImages ? (
+                            <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+                                {mapImages.map((mapImage, idx) => (
+                                    <div
+                                        key={mapImage.id}
+                                        className="group relative aspect-[4/3] overflow-hidden rounded-2xl"
+                                    >
+                                        <Image
+                                            quality={100}
+                                            unoptimized
+                                            src={mapImage.image}
+                                            alt={mapImage.title}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                        <div className="absolute inset-0 flex items-end bg-black/30 p-6">
+                                            <span className="text-lg font-bold text-white">
+                                                {mapImage.title || `Harita ${idx + 1}`}
+                                            </span>
                                         </div>
-                                    )}
-                                </div>
-                                <div className="p-6">
-                                    <h4 className="text-xl font-bold text-slate-900 mb-2">{project.title}</h4>
-                                    <p className="text-slate-500 mb-4 text-sm">{project.description}</p>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[#ec6804] font-bold">{project.price}</span>
-                                        <button className="w-8 h-8 rounded-full bg-[#e5e0d8]/50 flex items-center justify-center hover:bg-[#ec6804] hover:text-white transition-colors">
-                                            <ArrowRight className="w-4 h-4" />
-                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : null}
+
+                        {visibility.map && map ? (
+                            <div className="relative h-[400px] w-full overflow-hidden rounded-3xl shadow-inner">
+                                {map.embedSrc ? (
+                                    <iframe
+                                        src={map.embedSrc}
+                                        className="h-full w-full border-0 contrast-75"
+                                        loading="lazy"
+                                        title="Project location map"
+                                    />
+                                ) : null}
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="animate-bounce rounded-full bg-white px-6 py-3 shadow-2xl">
+                                        <span className="flex items-center gap-3 font-bold text-slate-900">
+                                            <MapPin className="h-6 w-6 text-[#ec6804]" />
+                                            {faqs[0]?.question || "Proje Lokasyonu"}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                        ) : null}
                     </div>
                 </div>
-            </div>
+            )}
 
-            {/* Footer */}
-            <footer className="bg-white py-10 border-t border-gray-100">
-                <div className="max-w-[1400px] mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Mediterranean Estates</h2>
+            {visibility.otherProjects ? (
+                <div className="bg-[#faf9f6] py-24">
+                    <div className="mx-auto max-w-[1400px] px-6">
+                        <h3 className="mb-12 text-3xl font-bold text-[#1e3a8a]">
+                            You might also like
+                        </h3>
+                        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+                            {otherProjects.map((project) => (
+                                <Link
+                                    key={project.id}
+                                    href={`/s4?slug=${project.slug}`}
+                                    className="group overflow-hidden rounded-2xl bg-white shadow-lg transition-all hover:-translate-y-2 hover:shadow-2xl"
+                                >
+                                    <div className="relative h-64 overflow-hidden">
+                                        <Image
+                                            quality={100}
+                                            unoptimized
+                                            src={project.image}
+                                            alt={project.title}
+                                            fill
+                                            className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                        />
+                                    </div>
+                                    <div className="p-6">
+                                        <h4 className="mb-2 text-xl font-bold text-slate-900">
+                                            {project.title}
+                                        </h4>
+                                        <p className="mb-4 text-sm text-slate-500">
+                                            {project.location}
+                                        </p>
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-[#ec6804]">
+                                                {project.roomSummary || project.status}
+                                            </span>
+                                            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#e5e0d8]/50 transition-colors group-hover:bg-[#ec6804] group-hover:text-white">
+                                                <ArrowRight className="h-4 w-4" />
+                                            </span>
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
+            <footer className="border-t border-gray-100 bg-white py-10">
+                <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-6 px-6 md:flex-row">
+                    <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+                        Mediterranean Estates
+                    </h2>
                     <div className="flex gap-6 text-sm font-medium text-slate-600">
-                        <a className="hover:text-[#ec6804] transition-colors cursor-pointer">Privacy Policy</a>
-                        <a className="hover:text-[#ec6804] transition-colors cursor-pointer">Terms of Service</a>
-                        <a className="hover:text-[#ec6804] transition-colors cursor-pointer">Contact</a>
+                        <a className="cursor-pointer transition-colors hover:text-[#ec6804]">
+                            Privacy Policy
+                        </a>
+                        <a className="cursor-pointer transition-colors hover:text-[#ec6804]">
+                            Terms of Service
+                        </a>
+                        <a className="cursor-pointer transition-colors hover:text-[#ec6804]">
+                            Contact
+                        </a>
                     </div>
                     <p className="text-sm text-slate-400">© 2026 Güzel Invest.</p>
                 </div>

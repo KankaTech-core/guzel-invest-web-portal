@@ -1,42 +1,75 @@
-import React from "react";
-import { Info, Download } from "lucide-react";
-import { s3Data } from "../mockData";
+import Link from "next/link";
+import { Download, Info } from "lucide-react";
+import { S1SectionVisibility } from "../../s1/section-visibility";
+import { S1SummaryData } from "../../s1/types";
 
-export const ProjectSummary = () => {
-    const { summary } = s3Data;
+interface ProjectSummaryProps {
+    summary?: S1SummaryData;
+    firstDocumentUrl?: string;
+    visibility: S1SectionVisibility;
+}
+
+export const ProjectSummary = ({
+    summary,
+    firstDocumentUrl,
+    visibility,
+}: ProjectSummaryProps) => {
+    if (!visibility.summary || !summary) return null;
+
     return (
-        <section className="p-8 lg:p-12 bg-white">
-            <div className="flex flex-col md:flex-row items-start justify-between gap-8">
+        <section className="bg-white p-8 lg:p-12">
+            <div className="flex flex-col items-start justify-between gap-8 md:flex-row">
                 <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 bg-[#0F172A] text-white flex items-center justify-center font-bold text-xl rounded-sm">
-                            PB
+                    <div className="mb-6 flex items-center gap-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-sm bg-[#0F172A] text-xl font-bold text-white">
+                            {summary.title.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-[#0F172A]">{summary.title}</h2>
-                            <p className="text-gray-500 text-sm">{summary.subtitle}</p>
+                            <h2 className="text-2xl font-bold text-[#0F172A]">
+                                {summary.title}
+                            </h2>
+                            <p className="text-sm text-gray-500">
+                                {summary.deliveryDate || "Proje Özeti"}
+                            </p>
                         </div>
                     </div>
-                    <p className="text-gray-600 leading-relaxed mb-6">
-                        {summary.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        {summary.tags.map((tag, idx) => (
-                            <span key={idx} className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-bold uppercase tracking-wide rounded-sm border border-gray-200">
-                                {tag}
-                            </span>
-                        ))}
-                    </div>
+                    {summary.description ? (
+                        <p className="mb-6 leading-relaxed text-gray-600">
+                            {summary.description}
+                        </p>
+                    ) : null}
+                    {summary.tags.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                            {summary.tags.map((tag, idx) => (
+                                <span
+                                    key={`${tag}-${idx}`}
+                                    className="rounded-sm border border-gray-200 bg-gray-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-gray-600"
+                                >
+                                    {tag}
+                                </span>
+                            ))}
+                        </div>
+                    ) : null}
                 </div>
-                <div className="w-full md:w-auto flex flex-col gap-3 min-w-[200px]">
-                    <button className="w-full py-3 px-4 bg-white border border-gray-300 text-[#0F172A] font-bold text-sm uppercase tracking-wide hover:bg-gray-50 transition-colors rounded-sm flex items-center justify-between group">
+                <div className="flex w-full min-w-[200px] flex-col gap-3 md:w-auto">
+                    <a
+                        href="#contact"
+                        className="group flex w-full items-center justify-between rounded-sm border border-gray-300 bg-white px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#0F172A] transition-colors hover:bg-gray-50"
+                    >
                         <span>Request Info</span>
-                        <Info className="w-5 h-5 text-gray-400 group-hover:text-orange-600 transition-colors" />
-                    </button>
-                    <button className="w-full py-3 px-4 bg-white border border-gray-300 text-[#0F172A] font-bold text-sm uppercase tracking-wide hover:bg-gray-50 transition-colors rounded-sm flex items-center justify-between group">
-                        <span>Download PDF</span>
-                        <Download className="w-5 h-5 text-gray-400 group-hover:text-orange-600 transition-colors" />
-                    </button>
+                        <Info className="h-5 w-5 text-gray-400 transition-colors group-hover:text-orange-600" />
+                    </a>
+                    {firstDocumentUrl ? (
+                        <Link
+                            href={firstDocumentUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="group flex w-full items-center justify-between rounded-sm border border-gray-300 bg-white px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#0F172A] transition-colors hover:bg-gray-50"
+                        >
+                            <span>Download PDF</span>
+                            <Download className="h-5 w-5 text-gray-400 transition-colors group-hover:text-orange-600" />
+                        </Link>
+                    ) : null}
                 </div>
             </div>
         </section>

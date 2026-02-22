@@ -41,7 +41,28 @@ export async function getSession(): Promise<JWTPayload | null> {
 
     if (!token) return null;
 
-    return verifyToken(token);
+    const payload = await verifyToken(token);
+    if (!payload?.userId) return null;
+
+    const user = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: {
+            id: true,
+            email: true,
+            role: true,
+        },
+    });
+
+    if (!user) {
+        return null;
+    }
+
+    return {
+        ...payload,
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+    };
 }
 
 export async function getCurrentUser() {

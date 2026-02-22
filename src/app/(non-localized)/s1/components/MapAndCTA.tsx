@@ -1,108 +1,223 @@
-import React from "react";
 import Image from "next/image";
-import { FileText, Download, MapPin, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
-import { s1Data } from "../mockData";
+import Link from "next/link";
+import {
+    ArrowRight,
+    Download,
+    FileText,
+    MapPin,
+    ExternalLink,
+} from "lucide-react";
+import { S1SectionVisibility } from "../section-visibility";
+import {
+    S1DocumentItem,
+    S1FaqItem,
+    S1MapData,
+    S1MapImageItem,
+    S1OtherProjectItem,
+} from "../types";
 
-export const MapAndCTA = () => {
-    const { otherProjects } = s1Data;
+interface MapAndCTAProps {
+    documents: S1DocumentItem[];
+    mapImages: S1MapImageItem[];
+    map?: S1MapData;
+    faqs: S1FaqItem[];
+    otherProjects: S1OtherProjectItem[];
+    visibility: S1SectionVisibility;
+}
+
+export const MapAndCTA = ({
+    documents,
+    mapImages,
+    map,
+    faqs,
+    otherProjects,
+    visibility,
+}: MapAndCTAProps) => {
     return (
         <>
-            <section className="py-8 bg-gray-50">
-                <div className="max-w-7xl mx-auto px-4">
-                    <div className="bg-white border border-gray-100 rounded-[2rem] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 shadow-sm">
-                        <div className="flex items-center gap-6">
-                            <div className="w-16 h-16 bg-orange-500/10 rounded-2xl flex items-center justify-center shrink-0">
-                                <FileText className="w-8 h-8 text-orange-500" />
-                            </div>
-                            <div>
-                                <h3 className="text-2xl font-bold text-gray-900">Proje Sunum Dosyası ve Belgeler</h3>
-                                <p className="text-gray-500 text-sm">Yatırım detayları ve teknik şartnameyi içeren dökümanlar.</p>
-                            </div>
-                        </div>
-                        <div className="flex flex-wrap gap-4 w-full md:w-auto">
-                            <button className="flex-1 md:flex-none border-2 border-gray-200 text-gray-700 font-bold py-3 px-8 rounded-xl hover:bg-gray-50 transition-colors">
-                                Bilgi Al
-                            </button>
-                            <button className="flex-1 md:flex-none bg-orange-500 text-white font-bold py-3 px-8 rounded-xl shadow-[0_1px_3px_rgba(236,104,3,0.3)] flex items-center gap-2 justify-center hover:bg-orange-600 transition-colors">
-                                <Download className="w-5 h-5" /> Sunumu İndir (PDF)
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section className="py-16 bg-white">
-                <div className="max-w-7xl mx-auto px-4">
-                    <h2 className="text-3xl font-bold mb-8 text-gray-900">Harita Görselleri</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-gray-100 rounded-2xl aspect-square overflow-hidden group relative border border-gray-100">
-                            <Image quality={100} unoptimized src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtY3wLlc28Xb_3IBCJjFOtqy3GiBs4vHXzrs-Cg0iSNtfeSIqqQitd2kvPz66kb6hPqe2SfybQVk5A5c_siRx5LM_TPsBV9209FS5omZ4SoII40xoDAIJBmfc0JZyBUnwi-7pEXXTsd3Ts88DGkqyIXC6Gwcex7c_lF15HLtFjiNh0Q4N2SNcBrTDj8s34JHrzXV_EihTCmv2mtnJWzaCi2DTzHzs8O4lI5Z2ykYx6NWnh1CielJDgeZ40EIK4K2xsEfaee1jwna-0" alt="Map" fill className="object-cover group-hover:scale-110 transition-transform" />
-                            <div className="absolute inset-0 bg-black/20 flex items-end p-6"><p className="text-white font-bold text-lg">Ulaşım Ağı</p></div>
-                        </div>
-                        <div className="bg-gray-100 rounded-2xl aspect-square overflow-hidden group relative border border-gray-100">
-                            <Image quality={100} unoptimized src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGW0peZlIgICmmq_nST08O_KRYZnLiK5NuhvsEq_BXiOD4A1hEW-at82oRIzvab2HfJBXQtksH0FBJEZcbhPZL52wvYjkDroPWW9lbVtG0ldk1u5WzS0UmGVQGSnKfaSVpF38XuDKaHmPFav-jHjMoWLk7WkL4WeZdWt93xge8QaNq5tLibuSORnufeGEdD2shKhbfJ9JZITKM9ZUH8PzDSMNv0iinwduKlG6IutVJkQAnKZdoTmb0IgkIFWuf47C3nKUbGLeUa1Ej" alt="Map" fill className="object-cover group-hover:scale-110 transition-transform" />
-                            <div className="absolute inset-0 bg-black/20 flex items-end p-6"><p className="text-white font-bold text-lg">Çevre İmkanları</p></div>
-                        </div>
-                        <div className="bg-gray-100 rounded-2xl aspect-square overflow-hidden group relative border border-gray-100">
-                            <Image quality={100} unoptimized src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5f-Azvhhj6hZyJjkuajQPz2PTzMO5tseCYRTXvPCaHvvsLXMF_hKXxC209U1bYS9-EtADhnPA85uD2XbV5ZQ1aUWnLzCSUoJL39JBstMbMTeEPbNACn40aJLzl3Cr9dsr92h14GOZaPlcxgv5QA5soAt63sOBbb6Aj5cOqemsjZ51rmsW0PJ_YJkfWJul3UmKDAssS5U9Ygjs_HIMtx5Zyg3mD77YvwmiZnoCfCQLtu7UxoQrJMLuPuIpyOR4ejlY_ZrxciCyLoQe" alt="Map" fill className="object-cover group-hover:scale-110 transition-transform" />
-                            <div className="absolute inset-0 bg-black/20 flex items-end p-6"><p className="text-white font-bold text-lg">Konum Analizi</p></div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section className="h-[500px] w-full bg-gray-100 relative">
-                <div className="absolute inset-0 grayscale contrast-125 opacity-[0.3]" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1569336415962-a4bd9f6dfc0f?auto=format&fit=crop&q=80&w=1600')", backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-white p-6 rounded-2xl shadow-lg flex items-center gap-4 border border-gray-100">
-                        <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white">
-                            <MapPin className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-gray-900">Proje Lokasyonu</h4>
-                            <p className="text-sm text-gray-500">Google Haritalar&apos;da Görüntüle</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section className="py-24 bg-gray-50">
-                <div className="max-w-7xl mx-auto px-4">
-                    <div className="flex items-center justify-between mb-12">
-                        <h2 className="text-3xl font-bold text-gray-900">Diğer Projeler</h2>
-                        <div className="flex gap-2">
-                            <button className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-white transition-colors text-gray-600">
-                                <ChevronLeft className="w-5 h-5" />
-                            </button>
-                            <button className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center hover:bg-white transition-colors text-gray-600">
-                                <ChevronRight className="w-5 h-5" />
-                            </button>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {otherProjects.map((project) => (
-                            <div key={project.id} className="bg-white rounded-[1.5rem] overflow-hidden shadow-sm hover:shadow-lg transition-all group border border-gray-100">
-                                <div className="h-64 overflow-hidden relative">
-                                    <Image quality={100} unoptimized src={project.image} alt={project.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                                    <div className={`absolute top-4 left-4 ${project.status === "YENİ PROJE" ? "bg-orange-500 text-white" : "bg-white/90 text-orange-500"} backdrop-blur px-3 py-1 rounded-lg text-xs font-bold`}>
-                                        {project.status}
-                                    </div>
+            {visibility.documents ? (
+                <section className="bg-gray-50 py-8">
+                    <div className="mx-auto max-w-7xl px-4">
+                        <div className="flex flex-col gap-6 rounded-[2rem] border border-gray-100 bg-white p-8 shadow-sm md:p-10">
+                            <div className="flex items-center gap-5">
+                                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-500/10">
+                                    <FileText className="h-7 w-7 text-orange-500" />
                                 </div>
-                                <div className="p-6">
-                                    <h3 className="text-xl font-bold mb-2 text-gray-900">{project.title}</h3>
-                                    <p className="text-sm text-gray-500 mb-4 flex items-center gap-1">
-                                        <MapPin className="w-4 h-4" /> {project.location}
+                                <div>
+                                    <h3 className="text-2xl font-bold text-gray-900">
+                                        Proje Belgeleri
+                                    </h3>
+                                    <p className="text-sm text-gray-500">
+                                        Sunum dosyası, teknik dökümanlar ve ek içerikler.
                                     </p>
-                                    <div className="flex justify-between items-center border-t border-gray-100 pt-4">
-                                        <span className="text-orange-500 font-black text-lg">₺ {project.price}&apos;dan</span>
-                                        <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-orange-500 transition-colors" />
-                                    </div>
                                 </div>
                             </div>
-                        ))}
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                {documents.map((document) => (
+                                    <Link
+                                        key={document.id}
+                                        href={document.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-700 transition-colors hover:border-orange-300 hover:bg-orange-50"
+                                    >
+                                        <span className="line-clamp-1 pr-3">{document.name}</span>
+                                        <Download className="h-4 w-4 shrink-0 text-orange-500" />
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            ) : null}
+
+            {visibility.mapImages ? (
+                <section className="bg-white py-16">
+                    <div className="mx-auto max-w-7xl px-4">
+                        <h2 className="mb-8 text-3xl font-bold text-gray-900">
+                            Harita Görselleri
+                        </h2>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                            {mapImages.map((item) => (
+                                <div
+                                    key={item.id}
+                                    className="group relative aspect-square overflow-hidden rounded-2xl border border-gray-100 bg-gray-100"
+                                >
+                                    <Image
+                                        quality={100}
+                                        unoptimized
+                                        src={item.image}
+                                        alt={item.title}
+                                        fill
+                                        className="object-cover transition-transform group-hover:scale-105"
+                                    />
+                                    <div className="absolute inset-0 flex items-end bg-black/20 p-6">
+                                        <p className="text-lg font-bold text-white">{item.title}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            ) : null}
+
+            {visibility.map && map ? (
+                <section className="relative min-h-[420px] w-full bg-gray-100">
+                    {map.embedSrc ? (
+                        <iframe
+                            src={map.embedSrc}
+                            className="h-[480px] w-full border-0"
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                            title="Proje konumu"
+                        />
+                    ) : (
+                        <div className="h-[480px] w-full" />
+                    )}
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                        <div className="pointer-events-auto rounded-2xl border border-gray-100 bg-white p-6 shadow-lg">
+                            <div className="flex items-center gap-4">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500 text-white">
+                                    <MapPin className="h-6 w-6" />
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Proje Lokasyonu</h4>
+                                    {map.mapsLink ? (
+                                        <Link
+                                            href={map.mapsLink}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="mt-1 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-orange-500"
+                                        >
+                                            Google Haritalar&apos;da Aç
+                                            <ExternalLink className="h-3.5 w-3.5" />
+                                        </Link>
+                                    ) : (
+                                        <p className="mt-1 text-sm text-gray-500">
+                                            Konum bilgisi mevcut.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            ) : null}
+
+            {visibility.faqs ? (
+                <section className="bg-white py-16">
+                    <div className="mx-auto max-w-5xl px-4">
+                        <h2 className="mb-8 text-3xl font-bold text-gray-900">
+                            Sıkça Sorulan Sorular
+                        </h2>
+                        <div className="space-y-3">
+                            {faqs.map((faq) => (
+                                <details
+                                    key={faq.id}
+                                    className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4"
+                                >
+                                    <summary className="cursor-pointer list-none font-semibold text-gray-900">
+                                        {faq.question}
+                                    </summary>
+                                    <p className="mt-3 leading-relaxed text-gray-600">
+                                        {faq.answer}
+                                    </p>
+                                </details>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            ) : null}
+
+            {visibility.otherProjects ? (
+                <section className="bg-gray-50 py-24">
+                    <div className="mx-auto max-w-7xl px-4">
+                        <div className="mb-12 flex items-center justify-between">
+                            <h2 className="text-3xl font-bold text-gray-900">
+                                Diğer Projeler
+                            </h2>
+                        </div>
+                        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+                            {otherProjects.map((project) => (
+                                <Link
+                                    key={project.id}
+                                    href={`/s1?slug=${project.slug}`}
+                                    className="group overflow-hidden rounded-[1.5rem] border border-gray-100 bg-white shadow-sm transition-all hover:shadow-lg"
+                                >
+                                    <div className="relative h-64 overflow-hidden">
+                                        <Image
+                                            quality={100}
+                                            unoptimized
+                                            src={project.image}
+                                            alt={project.title}
+                                            fill
+                                            className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                        />
+                                        <div className="absolute left-4 top-4 rounded-lg bg-white/90 px-3 py-1 text-xs font-bold text-orange-500 backdrop-blur">
+                                            {project.status}
+                                        </div>
+                                    </div>
+                                    <div className="p-6">
+                                        <h3 className="mb-2 text-xl font-bold text-gray-900">
+                                            {project.title}
+                                        </h3>
+                                        <p className="mb-4 flex items-center gap-1 text-sm text-gray-500">
+                                            <MapPin className="h-4 w-4" />
+                                            {project.location}
+                                        </p>
+                                        <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+                                            <span className="text-sm font-semibold text-gray-700">
+                                                {project.roomSummary || "Detayları Gör"}
+                                            </span>
+                                            <ArrowRight className="h-5 w-5 text-gray-300 transition-colors group-hover:text-orange-500" />
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            ) : null}
         </>
     );
 };

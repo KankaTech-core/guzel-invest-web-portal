@@ -9,19 +9,19 @@ datasource db {
 }
 
 model User {
-  id           String      @id @default(cuid())
-  email        String      @unique
-  passwordHash String
-  name         String
-  role         Role        @default(VIEWER)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  exportJobs   ExportJob[]
-  articles     Article[]
+  id               String                @id @default(cuid())
+  email            String                @unique
+  passwordHash     String
+  name             String
+  role             Role                  @default(VIEWER)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  articles         Article[]
+  exportJobs       ExportJob[]
+  listings         Listing[]
+  sessions         Session[]
   feedbackMessages SiteFeedbackMessage[] @relation("SiteFeedbackMessageAuthor")
   feedbackThreads  SiteFeedbackThread[]  @relation("SiteFeedbackThreadCreatedBy")
-  listings     Listing[]
-  sessions     Session[]
 
   @@map("users")
 }
@@ -91,6 +91,14 @@ model Listing {
   updatedAt           DateTime             @updatedAt
   publishedAt         DateTime?
   createdById         String
+  deliveryDate        String?
+  isProject           Boolean              @default(false)
+  projectType         String?
+  projectFeatures     ProjectFeature[]
+  customGalleries     CustomGallery[]
+  projectUnits        ProjectUnit[]
+  faqs                ListingFAQ[]
+  floorPlans          FloorPlan[]
   tags                ListingTag[]
   translations        ListingTranslation[]
   createdBy           User                 @relation(fields: [createdById], references: [id])
@@ -109,21 +117,21 @@ model Listing {
 }
 
 model Article {
-  id                 String        @id @default(cuid())
-  slug               String        @unique
-  status             ArticleStatus @default(DRAFT)
-  title              String
-  excerpt            String?
-  content            String
-  category           String?
-  tags               String[]      @default([])
-  coverImageUrl      String?
-  coverThumbnailUrl  String?
-  publishedAt        DateTime?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-  createdById        String
-  createdBy          User          @relation(fields: [createdById], references: [id])
+  id                String        @id @default(cuid())
+  slug              String        @unique
+  status            ArticleStatus @default(DRAFT)
+  title             String
+  excerpt           String?
+  content           String
+  category          String?
+  tags              String[]      @default([])
+  coverImageUrl     String?
+  coverThumbnailUrl String?
+  publishedAt       DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  createdById       String
+  createdBy         User          @relation(fields: [createdById], references: [id])
 
   @@index([status])
   @@index([publishedAt])
@@ -183,19 +191,24 @@ model ListingTranslation {
 }
 
 model Media {
-  id           String    @id @default(cuid())
-  listingId    String
-  url          String
-  thumbnailUrl String?
-  type         MediaType @default(IMAGE)
-  order        Int       @default(0)
-  isCover      Boolean   @default(false)
-  aiTags       String[]
-  width        Int?
-  height       Int?
-  size         Int?
-  createdAt    DateTime  @default(now())
-  listing      Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  id              String         @id @default(cuid())
+  listingId       String
+  url             String
+  thumbnailUrl    String?
+  type            MediaType      @default(IMAGE)
+  order           Int            @default(0)
+  isCover         Boolean        @default(false)
+  aiTags          String[]
+  width           Int?
+  height          Int?
+  size            Int?
+  createdAt       DateTime       @default(now())
+  category        String?
+  customGalleryId String?
+  projectUnitId   String?
+  customGallery   CustomGallery? @relation(fields: [customGalleryId], references: [id], onDelete: Cascade)
+  listing         Listing        @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  projectUnit     ProjectUnit?   @relation(fields: [projectUnitId], references: [id], onDelete: Cascade)
 
   @@index([listingId, order])
   @@map("media")
@@ -265,8 +278,8 @@ model SiteFeedbackThread {
   createdById String
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @updatedAt
-  createdBy   User                  @relation("SiteFeedbackThreadCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
   messages    SiteFeedbackMessage[]
+  createdBy   User                  @relation("SiteFeedbackThreadCreatedBy", fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([pagePath, hidden])
   @@index([updatedAt])
@@ -285,6 +298,120 @@ model SiteFeedbackMessage {
 
   @@index([threadId, createdAt])
   @@map("site_feedback_messages")
+}
+
+model ProjectFeature {
+  id           String                      @id @default(cuid())
+  listingId    String
+  category     String
+  icon         String
+  order        Int                         @default(0)
+  listing      Listing                     @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  translations ProjectFeatureTranslation[]
+
+  @@map("project_features")
+}
+
+model ProjectFeatureTranslation {
+  id        String         @id @default(cuid())
+  featureId String
+  locale    String
+  title     String
+  feature   ProjectFeature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([featureId, locale])
+  @@map("project_feature_translations")
+}
+
+model CustomGallery {
+  id           String                     @id @default(cuid())
+  listingId    String
+  order        Int                        @default(0)
+  listing      Listing                    @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  translations CustomGalleryTranslation[]
+  media        Media[]
+
+  @@map("custom_galleries")
+}
+
+model CustomGalleryTranslation {
+  id        String        @id @default(cuid())
+  galleryId String
+  locale    String
+  title     String
+  subtitle  String?
+  gallery   CustomGallery @relation(fields: [galleryId], references: [id], onDelete: Cascade)
+
+  @@unique([galleryId, locale])
+  @@map("custom_gallery_translations")
+}
+
+model ProjectUnit {
+  id           String                   @id @default(cuid())
+  listingId    String
+  rooms        String
+  area         Int?
+  price        Decimal?
+  listing      Listing                  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  translations ProjectUnitTranslation[]
+  media        Media[]
+
+  @@map("project_units")
+}
+
+model ProjectUnitTranslation {
+  id     String      @id @default(cuid())
+  unitId String
+  locale String
+  title  String?
+  unit   ProjectUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@unique([unitId, locale])
+  @@map("project_unit_translations")
+}
+
+model FloorPlan {
+  id           String                 @id @default(cuid())
+  listingId    String
+  imageUrl     String
+  area         String?
+  listing      Listing                @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  translations FloorPlanTranslation[]
+
+  @@map("floor_plans")
+}
+
+model FloorPlanTranslation {
+  id          String    @id @default(cuid())
+  floorPlanId String
+  locale      String
+  title       String
+  floorPlan   FloorPlan @relation(fields: [floorPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([floorPlanId, locale])
+  @@map("floor_plan_translations")
+}
+
+model ListingFAQ {
+  id           String                  @id @default(cuid())
+  listingId    String
+  order        Int                     @default(0)
+  listing      Listing                 @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  translations ListingFAQTranslation[]
+
+  @@map("listing_faqs")
+}
+
+model ListingFAQTranslation {
+  id       String     @id @default(cuid())
+  faqId    String
+  locale   String
+  question String
+  answer   String
+  faq      ListingFAQ @relation(fields: [faqId], references: [id], onDelete: Cascade)
+
+  @@unique([faqId, locale])
+  @@map("listing_faq_translations")
 }
 
 enum Role {
@@ -326,6 +453,7 @@ enum SaleType {
 enum MediaType {
   IMAGE
   VIDEO
+  DOCUMENT
 }
 
 enum SyncStatus {

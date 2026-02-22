@@ -1,51 +1,65 @@
-import React from "react";
-import { ArrowRight, Bed, ShowerHead as Shower, SquareAsterisk as SquareFoot, CarFront as LocalParking, CalendarDays as CalendarMonth } from "lucide-react";
-import { s5Data } from "../mockData";
+import { ArrowRight } from "lucide-react";
+import { ProjectIcon } from "@/components/single-project/ProjectIcon";
+import { S1SectionVisibility } from "../../s1/section-visibility";
+import { S1HeroData, S1RibbonItem } from "../../s1/types";
 
-export const HeroSection = () => {
-    const { hero, propertiesRibbon } = s5Data;
+interface HeroSectionProps {
+    hero: S1HeroData;
+    propertiesRibbon: S1RibbonItem[];
+    visibility: S1SectionVisibility;
+}
 
-    const getIcon = (iconName: string) => {
-        const props = { className: "w-8 h-8 font-light text-gray-700/80" };
-        switch (iconName) {
-            case "Bed": return <Bed {...props} />;
-            case "Shower": return <Shower {...props} />;
-            case "SquareFoot": return <SquareFoot {...props} />;
-            case "LocalParking": return <LocalParking {...props} />;
-            case "CalendarMonth": return <CalendarMonth {...props} />;
-            default: return null;
-        }
-    };
+const FALLBACK_HERO_IMAGE =
+    "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2800&q=80";
 
+export const HeroSection = ({
+    hero,
+    propertiesRibbon,
+    visibility,
+}: HeroSectionProps) => {
     return (
         <>
-            {/* 1. Hero Section */}
-            <section className="flex flex-col items-center pt-24 pb-12 text-center w-full max-w-[1440px] mx-auto px-6 md:px-12 lg:px-24">
-                <span className="text-sm font-medium tracking-widest uppercase text-gray-700/60 mb-3">{hero.yearRange}</span>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-[#374151] mb-8">{hero.title}</h1>
-                <div className="w-full h-[60vh] md:h-[70vh] relative overflow-hidden rounded-md mb-8">
+            <section className="mx-auto flex w-full max-w-[1440px] flex-col items-center px-6 pb-12 pt-24 text-center md:px-12 lg:px-24">
+                <span className="mb-3 text-sm font-medium uppercase tracking-widest text-gray-700/60">
+                    {hero.badge}
+                </span>
+                <h1 className="mb-8 text-4xl font-bold tracking-tight text-[#374151] md:text-5xl lg:text-6xl">
+                    {hero.title}
+                </h1>
+                <div className="relative mb-8 h-[60vh] w-full overflow-hidden rounded-md md:h-[70vh]">
                     <div
                         className="absolute inset-0 bg-cover bg-center"
-                        style={{ backgroundImage: `url('${hero.bgImage}')` }}
-                    ></div>
+                        style={{
+                            backgroundImage: `url('${hero.backgroundImage || FALLBACK_HERO_IMAGE}')`,
+                        }}
+                    />
                 </div>
-                <a className="inline-flex items-center gap-2 text-[#ec6c04] font-bold text-sm tracking-wide border-b border-transparent hover:border-[#ec6c04] transition-colors pb-0.5 group cursor-pointer">
-                    {hero.exploreText}
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <a className="group inline-flex cursor-pointer items-center gap-2 border-b border-transparent pb-0.5 text-sm font-bold tracking-wide text-[#ec6c04] transition-colors hover:border-[#ec6c04]">
+                    {hero.ctaButtonText}
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </a>
             </section>
 
-            {/* 2. Properties Ribbon */}
-            <section className="py-16 border-b border-gray-100 w-full max-w-[1440px] mx-auto px-6 md:px-12 lg:px-24">
-                <div className="flex flex-wrap justify-center gap-x-12 gap-y-8 md:gap-x-24">
-                    {propertiesRibbon.map((prop, idx) => (
-                        <div key={idx} className="flex flex-col items-center gap-3 group">
-                            {getIcon(prop.icon)}
-                            <span className="text-[10px] uppercase tracking-[0.2em] text-[#374151]/60 font-semibold">{prop.value}</span>
-                        </div>
-                    ))}
-                </div>
-            </section>
+            {visibility.propertiesRibbon ? (
+                <section className="mx-auto w-full max-w-[1440px] border-b border-gray-100 px-6 py-16 md:px-12 lg:px-24">
+                    <div className="flex flex-wrap justify-center gap-x-12 gap-y-8 md:gap-x-24">
+                        {propertiesRibbon.map((prop, idx) => (
+                            <div
+                                key={`${prop.icon}-${prop.label}-${idx}`}
+                                className="group flex flex-col items-center gap-3"
+                            >
+                                <ProjectIcon
+                                    name={prop.icon}
+                                    className="h-8 w-8 font-light text-gray-700/80"
+                                />
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#374151]/60">
+                                    {prop.value || prop.label}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            ) : null}
         </>
     );
 };

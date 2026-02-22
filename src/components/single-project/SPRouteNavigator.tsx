@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 const routes = [
@@ -13,6 +13,8 @@ const routes = [
 
 export default function SPRouteNavigator() {
     const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const queryString = searchParams.toString();
 
     return (
         <nav
@@ -25,10 +27,13 @@ export default function SPRouteNavigator() {
             <div className="flex flex-col gap-1">
                 {routes.map((route) => {
                     const isActive = pathname === route.path;
+                    const href = queryString
+                        ? `${route.path}?${queryString}`
+                        : route.path;
                     return (
                         <Link
                             key={route.path}
-                            href={route.path}
+                            href={href}
                             title={route.title}
                             className={`
                 relative w-9 h-9 flex items-center justify-center rounded-lg text-sm font-semibold transition-all duration-200

@@ -1,105 +1,231 @@
-import React from "react";
 import Image from "next/image";
-import { ArrowRight, Waves, Dumbbell, Film, Sparkles, Baby, Car, ZoomIn } from "lucide-react";
-import { s1Data } from "../mockData";
+import { ArrowRight, ZoomIn } from "lucide-react";
+import { S1SectionVisibility } from "../section-visibility";
+import {
+    S1CustomGalleryData,
+    S1ExteriorVisualsData,
+    S1FloorPlansData,
+    S1InteriorVisualsData,
+    S1SocialFacilitiesData,
+} from "../types";
+import { ProjectIcon } from "@/components/single-project/ProjectIcon";
 
-export const Visuals = () => {
-    const { exteriorVisuals, socialFacilities, interiorVisuals, floorPlans } = s1Data;
+interface VisualsProps {
+    exteriorVisuals?: S1ExteriorVisualsData;
+    socialFacilities?: S1SocialFacilitiesData;
+    interiorVisuals?: S1InteriorVisualsData;
+    customGalleries: S1CustomGalleryData[];
+    floorPlans?: S1FloorPlansData;
+    visibility: S1SectionVisibility;
+}
 
-    const getFacilityIcon = (iconName: string) => {
-        const props = { className: "w-8 h-8" };
-        switch (iconName) {
-            case "Waves": return <Waves {...props} />;
-            case "Dumbbell": return <Dumbbell {...props} />;
-            case "Film": return <Film {...props} />;
-            case "Sparkles": return <Sparkles {...props} />;
-            case "Baby": return <Baby {...props} />;
-            case "Car": return <Car {...props} />;
-            default: return null;
-        }
-    };
-
+export const Visuals = ({
+    exteriorVisuals,
+    socialFacilities,
+    interiorVisuals,
+    customGalleries,
+    floorPlans,
+    visibility,
+}: VisualsProps) => {
     return (
         <>
-            <section className="py-16 bg-gray-50">
-                <div className="max-w-7xl mx-auto px-4">
-                    <h2 className="text-3xl font-bold mb-8 text-gray-900">{exteriorVisuals.title}</h2>
-                    <div className="grid grid-cols-2 gap-4 auto-rows-[200px]">
-                        {exteriorVisuals.images.map((img, idx) => (
-                            <div key={idx} className={`bg-gray-200 rounded-2xl overflow-hidden relative ${idx === 0 ? "row-span-2" : ""}`}>
-                                <Image quality={100} unoptimized src={img} alt="Exterior" fill className="object-cover" />
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            <section className="py-24 bg-white overflow-hidden">
-                <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row gap-16 items-center">
-                    <div className="lg:w-1/2 grid grid-cols-3 gap-8">
-                        {socialFacilities.facilities.map((fac, idx) => (
-                            <div key={idx} className="text-center group">
-                                <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-orange-500 group-hover:text-white transition-all shadow-sm border border-gray-100 group-hover:border-orange-500">
-                                    {getFacilityIcon(fac.icon)}
+            {visibility.exteriorVisuals && exteriorVisuals ? (
+                <section className="bg-gray-50 py-16">
+                    <div className="mx-auto max-w-7xl px-4">
+                        <h2 className="mb-8 text-3xl font-bold text-gray-900">
+                            {exteriorVisuals.title}
+                        </h2>
+                        <div className="grid auto-rows-[200px] grid-cols-2 gap-4">
+                            {exteriorVisuals.images.map((image, idx) => (
+                                <div
+                                    key={`${image}-${idx}`}
+                                    className={`relative overflow-hidden rounded-2xl bg-gray-200 ${
+                                        idx === 0 ? "row-span-2" : ""
+                                    }`}
+                                >
+                                    <Image
+                                        quality={100}
+                                        unoptimized
+                                        src={image}
+                                        alt="Proje dış görseli"
+                                        fill
+                                        className="object-cover"
+                                    />
                                 </div>
-                                <p className="text-sm font-bold text-gray-700">{fac.name}</p>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="lg:w-1/2 relative">
-                        <div className="rounded-[2.5rem] overflow-hidden relative aspect-[4/3]">
-                            <Image quality={100} unoptimized src={socialFacilities.image} alt="Facilities" fill className="object-cover" />
-                        </div>
-                        <div className="absolute -bottom-6 -left-6 bg-orange-500 text-white p-8 rounded-3xl max-w-xs shadow-lg">
-                            <h3 className="text-2xl font-black mb-2">{socialFacilities.title}</h3>
-                            <p className="text-sm text-white/90">{socialFacilities.description}</p>
+                            ))}
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            ) : null}
 
-            <section className="py-16 bg-gray-50">
-                <div className="max-w-7xl mx-auto px-4">
-                    <div className="flex items-end justify-between mb-8">
-                        <h2 className="text-3xl font-bold text-gray-900">{interiorVisuals.title}</h2>
-                        <p className="text-orange-500 font-bold flex items-center gap-2 cursor-pointer hover:underline">
-                            Tümünü Gör <ArrowRight className="w-5 h-5" />
-                        </p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {interiorVisuals.images.map((img, idx) => (
-                            <div key={idx} className={`aspect-[4/5] rounded-3xl overflow-hidden relative ${idx === 1 ? 'md:mt-12' : idx === 2 ? 'md:mt-24' : ''}`}>
-                                <Image quality={100} unoptimized src={img} alt="Interior" fill className="object-cover" />
+            {visibility.socialFacilities && socialFacilities ? (
+                <section className="overflow-hidden bg-white py-24">
+                    <div className="mx-auto flex max-w-7xl flex-col items-center gap-16 px-4 lg:flex-row">
+                        <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:w-1/2">
+                            {socialFacilities.facilities.map((facility, idx) => (
+                                <div
+                                    key={`${facility.name}-${idx}`}
+                                    className="group text-center"
+                                >
+                                    <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full border border-gray-100 bg-gray-50 shadow-sm transition-all group-hover:border-orange-500 group-hover:bg-orange-500 group-hover:text-white">
+                                        <ProjectIcon
+                                            name={facility.icon}
+                                            className="h-8 w-8"
+                                        />
+                                    </div>
+                                    <p className="text-sm font-bold text-gray-700">
+                                        {facility.name}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="relative lg:w-1/2">
+                            {socialFacilities.image ? (
+                                <div className="relative aspect-[4/3] overflow-hidden rounded-[2.5rem]">
+                                    <Image
+                                        quality={100}
+                                        unoptimized
+                                        src={socialFacilities.image}
+                                        alt={socialFacilities.title}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                </div>
+                            ) : null}
+                            <div className="left-4 mt-6 max-w-xs rounded-3xl bg-orange-500 p-8 text-white shadow-lg sm:absolute sm:-bottom-6 sm:left-6 sm:mt-0">
+                                <h3 className="mb-2 text-2xl font-black">
+                                    {socialFacilities.title}
+                                </h3>
+                                <p className="text-sm text-white/90">
+                                    {socialFacilities.description}
+                                </p>
                             </div>
-                        ))}
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            ) : null}
 
-            <section className="py-24 bg-white">
-                <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row gap-16">
-                    <div className="lg:w-2/3 grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {floorPlans.plans.map((plan, idx) => (
-                            <div key={idx} className="bg-gray-50 p-6 rounded-3xl border border-gray-100">
-                                <div className="w-full h-64 relative rounded-xl mb-4 overflow-hidden">
-                                    <Image quality={100} unoptimized src={plan.image} alt={plan.title} fill className="object-cover" />
+            {visibility.interiorVisuals && interiorVisuals ? (
+                <section className="bg-gray-50 py-16">
+                    <div className="mx-auto max-w-7xl px-4">
+                        <div className="mb-8 flex items-end justify-between gap-4">
+                            <h2 className="text-3xl font-bold text-gray-900">
+                                {interiorVisuals.title}
+                            </h2>
+                            {interiorVisuals.images.length > 3 ? (
+                                <p className="flex items-center gap-2 font-bold text-orange-500">
+                                    Tümünü Gör <ArrowRight className="h-5 w-5" />
+                                </p>
+                            ) : null}
+                        </div>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                            {interiorVisuals.images.map((image, idx) => (
+                                <div
+                                    key={`${image}-${idx}`}
+                                    className={`relative aspect-[4/5] overflow-hidden rounded-3xl ${
+                                        idx === 1
+                                            ? "md:mt-12"
+                                            : idx === 2
+                                              ? "md:mt-24"
+                                              : ""
+                                    }`}
+                                >
+                                    <Image
+                                        quality={100}
+                                        unoptimized
+                                        src={image}
+                                        alt="Proje iç görseli"
+                                        fill
+                                        className="object-cover"
+                                    />
                                 </div>
-                                <div className="flex justify-between items-center text-gray-900">
-                                    <span className="font-bold">{plan.title}</span>
-                                    <span className="text-sm text-gray-500">{plan.area}</span>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            ) : null}
+
+            {visibility.customGalleries
+                ? customGalleries.map((gallery) => (
+                      <section key={gallery.id} className="bg-white py-16">
+                          <div className="mx-auto max-w-7xl px-4">
+                              <div className="mb-8">
+                                  <h2 className="text-3xl font-bold text-gray-900">
+                                      {gallery.title}
+                                  </h2>
+                                  {gallery.subtitle ? (
+                                      <p className="mt-2 text-sm text-gray-500">
+                                          {gallery.subtitle}
+                                      </p>
+                                  ) : null}
+                              </div>
+                              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                                  {gallery.images.map((image, idx) => (
+                                      <div
+                                          key={`${gallery.id}-${image}-${idx}`}
+                                          className="relative aspect-[4/3] overflow-hidden rounded-2xl"
+                                      >
+                                          <Image
+                                              quality={100}
+                                              unoptimized
+                                              src={image}
+                                              alt={gallery.title}
+                                              fill
+                                              className="object-cover"
+                                          />
+                                      </div>
+                                  ))}
+                              </div>
+                          </div>
+                      </section>
+                  ))
+                : null}
+
+            {visibility.floorPlans && floorPlans ? (
+                <section className="bg-white py-24">
+                    <div className="mx-auto flex max-w-7xl flex-col gap-16 px-4 lg:flex-row">
+                        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:w-2/3">
+                            {floorPlans.plans.map((plan) => (
+                                <div
+                                    key={plan.id}
+                                    className="rounded-3xl border border-gray-100 bg-gray-50 p-6"
+                                >
+                                    <div className="relative mb-4 h-64 w-full overflow-hidden rounded-xl">
+                                        <Image
+                                            quality={100}
+                                            unoptimized
+                                            src={plan.image}
+                                            alt={plan.title}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-4 text-gray-900">
+                                        <span className="font-bold">{plan.title}</span>
+                                        {plan.area ? (
+                                            <span className="text-sm text-gray-500">
+                                                {plan.area}
+                                            </span>
+                                        ) : null}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
+                        <div className="flex flex-col justify-center lg:w-1/3">
+                            <h2 className="mb-6 text-4xl font-black text-gray-900">
+                                {floorPlans.title}
+                            </h2>
+                            <p className="mb-8 leading-relaxed text-gray-600">
+                                {floorPlans.description}
+                            </p>
+                            <button className="flex items-center justify-center gap-3 rounded-xl bg-gray-900 py-4 font-bold text-white transition-colors hover:bg-gray-800">
+                                <ZoomIn className="h-5 w-5" />
+                                Tüm Planları İncele
+                            </button>
+                        </div>
                     </div>
-                    <div className="lg:w-1/3 flex flex-col justify-center">
-                        <h2 className="text-4xl font-black mb-6 text-gray-900">{floorPlans.title}</h2>
-                        <p className="text-gray-600 mb-8 leading-relaxed">{floorPlans.description}</p>
-                        <button className="bg-gray-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-3 hover:bg-gray-800 transition-colors">
-                            <ZoomIn className="w-5 h-5" /> Tüm Planları İncele
-                        </button>
-                    </div>
-                </div>
-            </section>
+                </section>
+            ) : null}
         </>
     );
 };

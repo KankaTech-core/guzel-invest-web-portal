@@ -48,6 +48,16 @@ interface UploadImageOptions {
     collection?: "listings" | "articles";
 }
 
+interface UploadDocumentOptions {
+    collection?: "listings" | "articles";
+    contentType?: string;
+}
+
+export interface UploadDocumentResult {
+    url: string;
+    size: number;
+}
+
 interface MinioUploadErrorLike extends Error {
     code: string;
     details?: string;
@@ -146,6 +156,36 @@ export async function uploadImage(
         width: metadata.width || 0,
         height: metadata.height || 0,
         size: optimizedBuffer.length,
+    };
+}
+
+const sanitizeFileExtension = (filename: string) => {
+    const parts = filename.toLowerCase().split(".");
+    if (parts.length < 2) return "bin";
+    const extension = parts.pop() || "bin";
+    return extension.replace(/[^a-z0-9]/g, "") || "bin";
+};
+
+export async function uploadDocument(
+    file: Buffer,
+    entityId: string,
+    originalFilename: string,
+    options: UploadDocumentOptions = {}
+): Promise<UploadDocumentResult> {
+    await ensureBucketExists();
+
+    const collection = options.collection || "listings";
+    const extension = sanitizeFileExtension(originalFilename);
+    const uuid = randomUUID();
+    const objectPath = `public/${collection}/${entityId}/documents/${uuid}.${extension}`;
+
+    await minioClient.putObject(BUCKET_NAME, objectPath, file, file.length, {
+        "Content-Type": options.contentType || "application/octet-stream",
+    });
+
+    return {
+        url: objectPath,
+        size: file.length,
     };
 }
 

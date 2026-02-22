@@ -1,96 +1,140 @@
-import React, { useMemo } from "react";
-import { Bed, Building2, Sofa, PenTool, Star, ImageIcon, Phone, Download, Play } from "lucide-react";
-import { s1Data } from "../mockData";
-import Image from "next/image";
+import Link from "next/link";
+import { Download, ImageIcon, Phone } from "lucide-react";
+import { S1SectionVisibility } from "../section-visibility";
+import { S1RibbonItem, S1SummaryData } from "../types";
+import { ProjectIcon } from "@/components/single-project/ProjectIcon";
 
-export const ProjectInfo = () => {
-    const { propertiesRibbon, summary } = s1Data;
+interface ProjectInfoProps {
+    propertiesRibbon: S1RibbonItem[];
+    summary?: S1SummaryData;
+    videoUrl?: string;
+    firstDocumentUrl?: string;
+    visibility: S1SectionVisibility;
+}
 
-    const getIcon = (iconName: string) => {
-        switch (iconName) {
-            case "Bed": return <Bed className="w-6 h-6 text-orange-500" />;
-            case "Building2": return <Building2 className="w-6 h-6 text-orange-500" />;
-            case "Sofa": return <Sofa className="w-6 h-6 text-orange-500" />;
-            case "PenTool": return <PenTool className="w-6 h-6 text-orange-500" />;
-            case "Star": return <Star className="w-6 h-6 text-orange-500" />;
-            default: return null;
-        }
-    };
-
+export const ProjectInfo = ({
+    propertiesRibbon,
+    summary,
+    videoUrl,
+    firstDocumentUrl,
+    visibility,
+}: ProjectInfoProps) => {
     return (
         <>
-            <section className="bg-white py-8 border-b border-gray-100">
-                <div className="max-w-7xl mx-auto px-4">
-                    <div className="flex flex-wrap justify-between gap-8 md:gap-4">
-                        {propertiesRibbon.map((prop, idx) => (
-                            <div key={idx} className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
-                                    {getIcon(prop.icon)}
+            {visibility.propertiesRibbon ? (
+                <section className="border-b border-gray-100 bg-white py-8">
+                    <div className="mx-auto max-w-7xl px-4">
+                        <div className="flex flex-wrap justify-between gap-6 md:gap-4">
+                            {propertiesRibbon.map((prop) => (
+                                <div
+                                    key={`${prop.icon}-${prop.label}-${prop.value || "x"}`}
+                                    className="flex items-center gap-4"
+                                >
+                                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500/10">
+                                        <ProjectIcon
+                                            name={prop.icon}
+                                            className="h-6 w-6 text-orange-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        {prop.value ? (
+                                            <p className="text-[10px] font-bold uppercase text-gray-400">
+                                                {prop.label}
+                                            </p>
+                                        ) : null}
+                                        <p className="font-bold text-gray-900">
+                                            {prop.value || prop.label}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-[10px] uppercase font-bold text-gray-400">{prop.label}</p>
-                                    <p className="font-bold text-gray-900">{prop.value}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            <section className="py-16 bg-gray-50">
-                <div className="max-w-7xl mx-auto px-4">
-                    <div className="bg-white rounded-[24px] p-8 flex flex-col lg:flex-row items-center gap-12 shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-gray-100">
-                        <div className="w-48 h-48 bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden shrink-0">
-                            <ImageIcon className="w-16 h-16 text-gray-300" />
+                            ))}
                         </div>
-                        <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-4">
-                                {summary.tags.map((tag, idx) => (
-                                    <span
-                                        key={idx}
-                                        className={`px-3 py-1 rounded-md text-xs font-bold ${idx === 0 ? "bg-orange-500/10 text-orange-500" : "bg-gray-100 text-gray-600"
-                                            }`}
+                    </div>
+                </section>
+            ) : null}
+
+            {visibility.summary && summary ? (
+                <section className="bg-gray-50 py-16">
+                    <div className="mx-auto max-w-7xl px-4">
+                        <div className="flex flex-col items-center gap-12 rounded-[24px] border border-gray-100 bg-white p-8 shadow-[0_1px_3px_rgba(0,0,0,0.05)] lg:flex-row">
+                            <div className="flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-50">
+                                <ImageIcon className="h-14 w-14 text-gray-300" />
+                            </div>
+                            <div className="flex-1">
+                                {summary.tags.length > 0 ? (
+                                    <div className="mb-4 flex flex-wrap items-center gap-3">
+                                        {summary.tags.map((tag, idx) => (
+                                            <span
+                                                key={`${tag}-${idx}`}
+                                                className={`rounded-md px-3 py-1 text-xs font-bold ${
+                                                    idx === 0
+                                                        ? "bg-orange-500/10 text-orange-500"
+                                                        : "bg-gray-100 text-gray-600"
+                                                }`}
+                                            >
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                ) : null}
+                                <h2 className="mb-4 text-3xl font-bold text-gray-900">
+                                    {summary.title}
+                                </h2>
+                                {summary.description ? (
+                                    <p className="leading-relaxed text-gray-600">
+                                        {summary.description}
+                                    </p>
+                                ) : null}
+                            </div>
+                            <div className="flex w-full flex-col gap-4 lg:w-64">
+                                {summary.deliveryDate ? (
+                                    <div className="mb-2 rounded-xl bg-gray-50 p-4 text-center">
+                                        <p className="text-xs font-bold uppercase text-gray-400">
+                                            Teslim Tarihi
+                                        </p>
+                                        <p className="text-xl font-bold text-orange-500">
+                                            {summary.deliveryDate}
+                                        </p>
+                                    </div>
+                                ) : null}
+                                <a
+                                    href="#contact"
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-3.5 font-bold text-white transition-all hover:bg-orange-600"
+                                >
+                                    <Phone className="h-5 w-5" />
+                                    İletişim
+                                </a>
+                                {firstDocumentUrl ? (
+                                    <Link
+                                        href={firstDocumentUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-orange-500 py-3.5 font-bold text-orange-500 transition-all hover:bg-orange-50"
                                     >
-                                        {tag}
-                                    </span>
-                                ))}
+                                        <Download className="h-5 w-5" />
+                                        Sunum İndir
+                                    </Link>
+                                ) : null}
                             </div>
-                            <h2 className="text-3xl font-bold mb-4 text-gray-900">{summary.title}</h2>
-                            <p className="text-gray-600 leading-relaxed">{summary.description}</p>
-                        </div>
-                        <div className="flex flex-col gap-4 w-full lg:w-64">
-                            <div className="bg-gray-50 p-4 rounded-xl mb-2 text-center">
-                                <p className="text-xs text-gray-400 font-bold uppercase">Teslim Tarihi</p>
-                                <p className="text-xl font-bold text-orange-500">{summary.deliveryDate}</p>
-                            </div>
-                            <button className="w-full bg-orange-500 text-white font-bold py-3.5 rounded-xl hover:bg-orange-600 transition-all flex items-center justify-center gap-2">
-                                <Phone className="w-5 h-5" /> İletişim
-                            </button>
-                            <button className="w-full border-2 border-orange-500 text-orange-500 font-bold py-3.5 rounded-xl hover:bg-orange-50 transition-all flex items-center justify-center gap-2">
-                                <Download className="w-5 h-5" /> Sunum İndir
-                            </button>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            ) : null}
 
-            <section className="py-16 bg-white">
-                <div className="max-w-5xl mx-auto px-4">
-                    <div className="aspect-video bg-gray-100 rounded-3xl overflow-hidden relative group">
-                        <Image
-quality={100} unoptimized                             fill
-                            className="object-cover opacity-80"
-                            alt="Video thumbnail"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmQOQjrEb7OZZz8_6s4Mdft9xtelVQCVMEQbHbccF_siaaMLBa4WWi49elnH5xosnyH7tyiVLAOa4SriILRcXKN7CpXkqiL7_PYMboEdOcKLgUuqrS818pSt2JDDskA2zT2qsHKakFICYax026UpDHZ2gfzQfIiIsq_zIC7QqyInckKuhT8wMfLwvt2jLTiTplRjdzeXgABtgD_JRGW0UrNNvYqEV7uHTA2yLqz9lwFyjanCRoreTQ3u-fnoiNB0OOg93vcfZMg08F"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <button className="w-24 h-24 bg-orange-500 text-white rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(236,104,3,0.3)] hover:scale-110 transition-transform">
-                                <Play className="w-10 h-10 ml-1" fill="currentColor" />
-                            </button>
+            {visibility.video && videoUrl ? (
+                <section className="bg-white py-16">
+                    <div className="mx-auto max-w-5xl px-4">
+                        <div className="aspect-video overflow-hidden rounded-3xl border border-gray-100 bg-gray-100">
+                            <video
+                                controls
+                                preload="metadata"
+                                className="h-full w-full object-cover"
+                                src={videoUrl}
+                            />
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            ) : null}
         </>
     );
 };

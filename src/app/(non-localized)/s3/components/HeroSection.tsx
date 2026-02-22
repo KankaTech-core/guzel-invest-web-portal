@@ -1,71 +1,107 @@
-import React from "react";
-import { ArrowRight, Info, Download, Play, ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import Image from "next/image";
-import { s3Data } from "../mockData";
+import { ProjectIcon } from "@/components/single-project/ProjectIcon";
+import { S1SectionVisibility } from "../../s1/section-visibility";
+import { S1HeroData, S1RibbonItem } from "../../s1/types";
 
-export const HeroSection = () => {
-    const { hero } = s3Data;
+interface HeroSectionProps {
+    hero: S1HeroData;
+}
+
+interface PropertiesRibbonProps {
+    propertiesRibbon: S1RibbonItem[];
+    visibility: S1SectionVisibility;
+}
+
+const FALLBACK_HERO_IMAGE =
+    "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=2800&q=80";
+
+export const HeroSection = ({ hero }: HeroSectionProps) => {
     return (
-        <section className="grid grid-cols-1 lg:grid-cols-2 min-h-[500px] border-b border-gray-200">
-            {/* Left Side: Content */}
-            <div className="relative flex flex-col justify-center p-8 lg:p-16 bg-white">
+        <section className="grid min-h-[500px] grid-cols-1 border-b border-gray-200 lg:grid-cols-2">
+            <div className="relative flex flex-col justify-center bg-white p-8 lg:p-16">
                 <div className="mb-6">
-                    <span className="inline-block bg-orange-50 text-orange-600 border border-orange-200 px-3 py-1 text-xs font-bold tracking-wider uppercase rounded-sm mb-4">
-                        {hero.yearRange}
+                    <span className="mb-4 inline-block rounded-sm border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-orange-600">
+                        {hero.badge}
                     </span>
-                    <h1 className="text-4xl lg:text-6xl font-extrabold text-[#0F172A] leading-[1.1] tracking-tight mb-4">
+                    <h1 className="mb-4 text-4xl font-extrabold leading-[1.1] tracking-tight text-[#0F172A] lg:text-6xl">
                         {hero.title}
                     </h1>
-                    <p className="text-gray-500 text-lg lg:text-xl font-medium max-w-md">
-                        {hero.description}
-                    </p>
+                    {hero.description ? (
+                        <p className="max-w-md text-lg font-medium text-gray-500 lg:text-xl">
+                            {hero.description}
+                        </p>
+                    ) : null}
                 </div>
-                <div className="flex flex-col sm:flex-row gap-4 mt-4 pb-12">
-                    <button className="flex items-center justify-center gap-2 h-12 px-8 bg-orange-600 hover:bg-orange-700 text-white font-bold text-sm tracking-wide rounded-sm transition-colors uppercase">
-                        <span>Invest Now</span>
-                        <ArrowRight className="w-5 h-5" />
-                    </button>
-                    <button className="flex items-center justify-center gap-2 h-12 px-8 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold text-sm tracking-wide rounded-sm transition-colors border border-gray-200 uppercase">
-                        Download Prospectus
+                <div className="mt-4 flex flex-col gap-4 pb-12 sm:flex-row">
+                    {hero.ctaHref ? (
+                        <Link
+                            href={hero.ctaHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex h-12 items-center justify-center gap-2 rounded-sm bg-orange-600 px-8 text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-orange-700"
+                        >
+                            <span>{hero.ctaButtonText}</span>
+                            <ArrowRight className="h-5 w-5" />
+                        </Link>
+                    ) : (
+                        <button className="flex h-12 items-center justify-center gap-2 rounded-sm bg-orange-600 px-8 text-sm font-bold uppercase tracking-wide text-white transition-colors hover:bg-orange-700">
+                            <span>{hero.ctaButtonText}</span>
+                            <ArrowRight className="h-5 w-5" />
+                        </button>
+                    )}
+                    <button className="flex h-12 items-center justify-center gap-2 rounded-sm border border-gray-200 bg-gray-100 px-8 text-sm font-bold uppercase tracking-wide text-gray-900 transition-colors hover:bg-gray-200">
+                        {hero.ctaTitle}
                     </button>
                 </div>
-                {/* Technical CTA Banner */}
-                <div className="absolute bottom-0 left-0 w-full border-t border-gray-100 bg-gray-50 py-3 px-8 lg:px-16 flex items-center justify-between text-xs font-mono text-gray-500">
+                <div className="absolute bottom-0 left-0 flex w-full items-center justify-between border-t border-gray-100 bg-gray-50 px-8 py-3 font-mono text-xs text-gray-500 lg:px-16">
                     <span className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                        {hero.liveTradingText}
+                        <span className="h-2 w-2 animate-pulse rounded-full bg-green-500" />
+                        LIVE
                     </span>
-                    <span>ID: {hero.id}</span>
+                    <span>{hero.ctaDescription}</span>
                 </div>
             </div>
-            {/* Right Side: Image */}
-            <div className="relative h-64 lg:h-auto bg-gray-200">
-                <Image quality={100} unoptimized src={hero.bgImage} alt="Hero image" fill className="object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent lg:hidden"></div>
+            <div className="relative h-64 bg-gray-200 lg:h-auto">
+                <Image
+                    quality={100}
+                    unoptimized
+                    src={hero.backgroundImage || FALLBACK_HERO_IMAGE}
+                    alt={hero.title}
+                    fill
+                    className="object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent lg:hidden" />
             </div>
         </section>
     );
 };
 
-export const PropertiesRibbon = () => {
-    const { propertiesRibbon } = s3Data;
+export const PropertiesRibbon = ({
+    propertiesRibbon,
+    visibility,
+}: PropertiesRibbonProps) => {
+    if (!visibility.propertiesRibbon) return null;
+
     return (
-        <div className="border-b border-gray-200 bg-white overflow-x-auto">
+        <div className="overflow-x-auto border-b border-gray-200 bg-white">
             <div className="flex min-w-max divide-x divide-gray-200">
                 {propertiesRibbon.map((prop, idx) => (
-                    <div key={idx} className="flex-1 flex items-center gap-4 px-8 py-5 group hover:bg-gray-50 transition-colors cursor-default">
-                        {/* Using a placeholder circle instead of mapping all lucide icons for simplicity */}
-                        <div className="w-8 h-8 rounded-sm bg-gray-100 flex items-center justify-center group-hover:bg-orange-50 group-hover:text-orange-600 transition-colors text-gray-400">
-                            <span className="text-xs font-bold">{idx + 1}</span>
+                    <div
+                        key={`${prop.icon}-${prop.label}-${idx}`}
+                        className="group flex flex-1 cursor-default items-center gap-4 px-8 py-5 transition-colors hover:bg-gray-50"
+                    >
+                        <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-gray-100 text-gray-400 transition-colors group-hover:bg-orange-50 group-hover:text-orange-600">
+                            <ProjectIcon name={prop.icon} className="h-4 w-4" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">{prop.label}</span>
-                            <div className="flex items-center gap-2">
-                                <span className="text-lg font-bold text-[#0F172A]">{prop.value}</span>
-                                {prop.highlight && (
-                                    <span className="text-xs font-bold text-green-600 bg-green-100 px-1 py-0.5 rounded-sm">{prop.highlight}</span>
-                                )}
-                            </div>
+                            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                                {prop.label}
+                            </span>
+                            <span className="text-lg font-bold text-[#0F172A]">
+                                {prop.value || prop.label}
+                            </span>
                         </div>
                     </div>
                 ))}

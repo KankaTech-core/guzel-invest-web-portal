@@ -4,6 +4,7 @@ import {
     isCategoryFieldVisibleForTypes,
     normalizeZoningStatus,
 } from "@/lib/listing-type-rules";
+import { buildListingsRoomScope } from "@/lib/public-listings";
 import {
     ListingStatus,
     Prisma,
@@ -132,10 +133,20 @@ export async function GET(req: NextRequest) {
             types
         );
 
-        if (canUseRoomFilters && rawRooms.length === 1) {
-            where.rooms = rawRooms[0];
-        } else if (canUseRoomFilters && rawRooms.length > 1) {
-            where.rooms = { in: rawRooms };
+        const roomScope = buildListingsRoomScope({
+            canUseRoomFilters,
+            rooms: rawRooms,
+        });
+
+        if (roomScope) {
+            const existingAnd = where.AND;
+            if (existingAnd) {
+                where.AND = Array.isArray(existingAnd)
+                    ? [...existingAnd, roomScope]
+                    : [existingAnd, roomScope];
+            } else {
+                where.AND = [roomScope];
+            }
         }
 
         if (canUseLandFilters && zoningStatus) {

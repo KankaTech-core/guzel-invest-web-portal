@@ -1,44 +1,55 @@
-import React from "react";
-import { Play } from "lucide-react";
-import { s4Data } from "../mockData";
+import { S1SectionVisibility } from "../../s1/section-visibility";
+import { S1SummaryData } from "../../s1/types";
 
-export const ProjectSummary = () => {
-    const { summary, promotionalVideo } = s4Data;
+interface ProjectSummaryProps {
+    summary?: S1SummaryData;
+    videoUrl?: string;
+    visibility: S1SectionVisibility;
+}
+
+export const ProjectSummary = ({
+    summary,
+    videoUrl,
+    visibility,
+}: ProjectSummaryProps) => {
+    if (!visibility.summary || !summary) return null;
 
     return (
-        <div className="w-full max-w-[1700px] mx-auto px-6 lg:px-12 py-20 lg:py-32">
-            <div className="flex flex-col lg:flex-row gap-16 lg:gap-24 items-center">
+        <div className="mx-auto w-full max-w-[1700px] px-6 py-20 lg:px-12 lg:py-32">
+            <div className="flex flex-col items-center gap-16 lg:flex-row lg:gap-24">
                 <div className="flex-1 space-y-8">
-                    <h2 className="text-4xl lg:text-5xl font-bold text-[#1e3a8a] leading-tight">
-                        {summary.titleHeading} <span className="text-[#ec6804] italic">{summary.titleSpan}</span>
+                    <h2 className="text-4xl font-bold leading-tight text-[#1e3a8a] lg:text-5xl">
+                        {summary.title}{" "}
+                        {summary.deliveryDate ? (
+                            <span className="italic text-[#ec6804]">
+                                ({summary.deliveryDate})
+                            </span>
+                        ) : null}
                     </h2>
-                    <p className="text-lg text-slate-600 leading-relaxed">
-                        {summary.description}
-                    </p>
+                    {summary.description ? (
+                        <p className="text-lg leading-relaxed text-slate-600">
+                            {summary.description}
+                        </p>
+                    ) : null}
                     <div className="pt-4">
-                        <button className="bg-[#ec6804] hover:bg-orange-700 text-white font-bold py-4 px-10 rounded-full shadow-xl shadow-orange-500/20 transition-all hover:scale-105">
+                        <button className="rounded-full bg-[#ec6804] px-10 py-4 font-bold text-white shadow-xl shadow-orange-500/20 transition-all hover:scale-105 hover:bg-orange-700">
                             Inquire Now
                         </button>
                     </div>
                 </div>
 
-                {/* Promotional Video */}
-                <div className="flex-1 w-full">
-                    <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl group cursor-pointer">
-                        <div
-                            className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                            style={{ backgroundImage: `url('${promotionalVideo.bgImage}')` }}
-                        ></div>
-                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors"></div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-20 h-20 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center border border-white/50 group-hover:scale-110 transition-transform">
-                                <div className="w-14 h-14 rounded-full bg-white text-[#ec6804] flex items-center justify-center shadow-lg pl-1">
-                                    <Play className="w-8 h-8" fill="currentColor" />
-                                </div>
-                            </div>
+                {visibility.video && videoUrl ? (
+                    <div className="w-full flex-1">
+                        <div className="group relative aspect-video overflow-hidden rounded-2xl shadow-2xl">
+                            <video
+                                controls
+                                preload="metadata"
+                                className="h-full w-full object-cover"
+                                src={videoUrl}
+                            />
                         </div>
                     </div>
-                </div>
+                ) : null}
             </div>
         </div>
     );
