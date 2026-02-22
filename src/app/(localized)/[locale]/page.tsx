@@ -214,6 +214,16 @@ interface HomepageHeroListing {
     images: string[];
 }
 
+interface HomepageProject {
+    id: string;
+    slug: string;
+    district: string;
+    projectType: string | null;
+    deliveryDate: string | null;
+    title: string;
+    images: string[];
+}
+
 const HERO_FALLBACK: HomepageHeroListing = {
     id: "fallback",
     slug: "",
@@ -227,6 +237,16 @@ const HERO_FALLBACK: HomepageHeroListing = {
     currency: "EUR",
     images: [],
     title: "Kargıcak Premium Villa",
+};
+
+const PROJECT_FALLBACK: HomepageProject = {
+    id: "project-fallback",
+    slug: "",
+    district: "Alanya",
+    projectType: "Konut Projesi",
+    deliveryDate: null,
+    title: "Alanya Yeni Yaşam Projesi",
+    images: [],
 };
 
 /* ─── page ─── */
@@ -245,6 +265,8 @@ export default function HomePage() {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [heroListings, setHeroListings] = useState<HomepageHeroListing[]>([HERO_FALLBACK]);
     const [heroSlideIndex, setHeroSlideIndex] = useState(0);
+    const [heroProjects, setHeroProjects] = useState<HomepageProject[]>([PROJECT_FALLBACK]);
+    const [projectSlideIndex, setProjectSlideIndex] = useState(0);
     const { version: searchVersion } = useVersion();
     const bannerRef = useRef<HTMLFormElement>(null);
     const testimonialRef = useRef<HTMLDivElement>(null);
@@ -320,6 +342,107 @@ export default function HomePage() {
         };
     }, [locale]);
 
+    useEffect(() => {
+        let isMounted = true;
+        const controller = new AbortController();
+
+        const loadHomepageProjects = async () => {
+            try {
+                const response = await fetch(
+                    `/api/public/projects?locale=${locale}`,
+                    {
+                        signal: controller.signal,
+                        cache: "no-store",
+                    }
+                );
+                if (!response.ok) return;
+
+                const data = await response.json() as {
+                    projects?: Array<{
+                        id: string;
+                        slug: string;
+                        district?: string | null;
+                        projectType?: string | null;
+                        deliveryDate?: string | null;
+                        translations?: Array<{
+                            locale?: string;
+                            title?: string | null;
+                        }>;
+                        media?: Array<{
+                            url?: string | null;
+                            category?: string | null;
+                            type?: string | null;
+                        }>;
+                    }>;
+                };
+                if (!isMounted) return;
+
+                const incomingProjects = Array.isArray(data?.projects)
+                    ? data.projects
+                    : [];
+
+                const normalizedProjects = incomingProjects
+                    .map((project) => {
+                        const translations = Array.isArray(project.translations)
+                            ? project.translations
+                            : [];
+                        const selectedTranslation =
+                            translations.find((item) => item?.locale === locale) ||
+                            translations.find((item) => item?.locale === "tr") ||
+                            translations[0];
+                        const title = selectedTranslation?.title?.trim();
+                        const media = Array.isArray(project.media) ? project.media : [];
+                        const exteriorImageUrls = media
+                            .filter((item) => item?.type === "IMAGE" && item?.category === "EXTERIOR")
+                            .map((item) => item?.url?.trim())
+                            .filter((url): url is string => Boolean(url));
+                        const fallbackImageUrls = media
+                            .filter((item) =>
+                                item?.type === "IMAGE" &&
+                                item?.category !== "DOCUMENT" &&
+                                item?.category !== "MAP"
+                            )
+                            .map((item) => item?.url?.trim())
+                            .filter((url): url is string => Boolean(url));
+                        const imageUrls =
+                            exteriorImageUrls.length > 0
+                                ? exteriorImageUrls
+                                : fallbackImageUrls;
+
+                        return {
+                            id: project.id,
+                            slug: project.slug,
+                            district: project.district || "Alanya",
+                            projectType: project.projectType || null,
+                            deliveryDate: project.deliveryDate || null,
+                            title: title || "Yeni Proje",
+                            images: imageUrls,
+                        } satisfies HomepageProject;
+                    })
+                    .filter((project) => Boolean(project.id) && Boolean(project.slug));
+
+                setHeroProjects(
+                    normalizedProjects.length > 0
+                        ? normalizedProjects
+                        : [PROJECT_FALLBACK]
+                );
+                setProjectSlideIndex(0);
+            } catch {
+                if (isMounted) {
+                    setHeroProjects([PROJECT_FALLBACK]);
+                    setProjectSlideIndex(0);
+                }
+            }
+        };
+
+        loadHomepageProjects();
+
+        return () => {
+            isMounted = false;
+            controller.abort();
+        };
+    }, [locale]);
+
     const handleSearch = () => {
         const params = new URLSearchParams();
         params.set("saleType", saleType);
@@ -349,7 +472,16 @@ export default function HomePage() {
                     : "Sea View"
                 : listing.district,
         ].filter((item): item is string => Boolean(item));
+    const safeHeroProjects =
+        heroProjects.length > 0 ? heroProjects : [PROJECT_FALLBACK];
+    const getProjectImageUrl = (project: HomepageProject, index = 0) =>
+        project.images[index]
+            ? getMediaUrl(project.images[index])
+            : "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=700&h=900&fit=crop";
+    const getProjectHref = (project: HomepageProject) =>
+        project.slug ? `/${locale}/ilan/${project.slug}` : null;
     const canNavigateHero = safeHeroListings.length > 1;
+    const canNavigateProject = safeHeroProjects.length > 1;
     const HERO_SWIPE_THRESHOLD_PX = 42;
 
     const goToNextHeroSlide = () => {
@@ -361,6 +493,18 @@ export default function HomePage() {
         if (!canNavigateHero) return;
         setHeroSlideIndex(
             (prev) => (prev - 1 + safeHeroListings.length) % safeHeroListings.length
+        );
+    };
+
+    const goToNextProjectSlide = () => {
+        if (!canNavigateProject) return;
+        setProjectSlideIndex((prev) => (prev + 1) % safeHeroProjects.length);
+    };
+
+    const goToPrevProjectSlide = () => {
+        if (!canNavigateProject) return;
+        setProjectSlideIndex(
+            (prev) => (prev - 1 + safeHeroProjects.length) % safeHeroProjects.length
         );
     };
 
@@ -678,83 +822,78 @@ export default function HomePage() {
 
                         {/* Hero Image Grid - Desktop Only */}
                         <div className="reveal-scale hidden lg:grid grid-cols-12 gap-4 lg:col-span-7">
-                            {/* Main large image - Swiper */}
+                            {/* Main large image - Project Swiper */}
                             <div className="col-span-12 lg:col-span-8 aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl shadow-gray-300/40 relative group">
                                 <div
                                     className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
                                     style={{
-                                        transform: `translateX(-${heroSlideIndex * 100}%)`,
-                                        touchAction: "pan-y",
+                                        transform: `translateX(-${projectSlideIndex * 100}%)`,
                                     }}
-                                    onTouchStart={handleHeroTouchStart}
-                                    onTouchEnd={handleHeroTouchEnd}
-                                    onTouchCancel={handleHeroTouchCancel}
                                 >
-                                    {safeHeroListings.map((listing, index) => {
-                                        const heroImageUrl = getHeroImageUrl(listing, 0);
-                                        const heroListingHref = getHeroListingHref(listing);
+                                    {safeHeroProjects.map((project, index) => {
+                                        const projectImageUrl = getProjectImageUrl(project, 0);
+                                        const projectHref = getProjectHref(project);
 
                                         return (
                                             <div
-                                                key={`${listing.id}-${listing.slot ?? index}`}
+                                                key={`${project.id}-${index}`}
                                                 className="relative h-full w-full shrink-0"
                                             >
-                                                {heroListingHref ? (
+                                                {projectHref ? (
                                                     <Link
-                                                        href={heroListingHref}
+                                                        href={projectHref}
                                                         className="absolute inset-0 z-10"
-                                                        title={listing.title}
+                                                        title={project.title}
                                                     />
                                                 ) : null}
                                                 <img
-                                                    src={heroImageUrl}
-                                                    alt={listing.title || "Featured Property"}
+                                                    src={projectImageUrl}
+                                                    alt={project.title || "Featured Project"}
                                                     className="w-full h-full object-cover"
                                                 />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-transparent" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-gray-900/70 via-transparent to-transparent" />
                                             </div>
                                         );
                                     })}
                                 </div>
 
-                                {/* Fixed Navigation Controls - Outside the slider */}
                                 <div className="absolute inset-x-0 bottom-0 p-8 z-20 flex justify-between items-end pointer-events-none bg-gradient-to-t from-black/80 via-black/40 to-transparent">
                                     <div className="text-white pointer-events-auto pb-2 font-light">
-                                        {/* Badges Row */}
                                         <div className="flex items-center gap-2 mb-3">
-                                            <span className={`px-3 py-1 text-xs font-light text-white uppercase tracking-wider rounded-md ${safeHeroListings[heroSlideIndex]?.saleType === "SALE" ? "bg-orange-500" : "bg-blue-600"
-                                                }`}>
-                                                {getSaleTypeLabel(safeHeroListings[heroSlideIndex]?.saleType, locale)}
+                                            <span className="px-3 py-1 text-xs font-light text-white uppercase tracking-wider rounded-md bg-orange-500">
+                                                Proje
                                             </span>
-                                            <span className="px-3 py-1 text-xs font-light text-white bg-white/20 backdrop-blur-md rounded-md">
-                                                {getPropertyTypeLabel(safeHeroListings[heroSlideIndex]?.type, locale)}
-                                            </span>
+                                            {safeHeroProjects[projectSlideIndex]?.projectType ? (
+                                                <span className="px-3 py-1 text-xs font-light text-white bg-white/20 backdrop-blur-md rounded-md">
+                                                    {safeHeroProjects[projectSlideIndex]?.projectType}
+                                                </span>
+                                            ) : null}
                                         </div>
 
-                                        {/* Title */}
-                                        <h3 className="text-3xl mb-2 font-light leading-tight">{safeHeroListings[heroSlideIndex]?.title}</h3>
+                                        <h3 className="text-3xl mb-2 font-light leading-tight">
+                                            {safeHeroProjects[projectSlideIndex]?.title}
+                                        </h3>
 
-                                        {/* Info Row: Features + Price */}
-                                        <div className="flex items-center gap-4 text-white/90">
-                                            <div className="flex items-center gap-2 text-base font-normal">
-                                                {getHeroFeatureParts(safeHeroListings[heroSlideIndex]).join(" · ")}
-                                            </div>
-                                            <div className="w-1 h-1 rounded-full bg-white/50" />
-                                            <div className="text-2xl font-light text-white tracking-tight">
-                                                {formatPrice(safeHeroListings[heroSlideIndex]?.price, safeHeroListings[heroSlideIndex]?.currency)}
-                                            </div>
+                                        <div className="flex items-center gap-2 text-white/90 text-base font-normal">
+                                            <span>{safeHeroProjects[projectSlideIndex]?.district}</span>
+                                            {safeHeroProjects[projectSlideIndex]?.deliveryDate ? (
+                                                <>
+                                                    <div className="w-1 h-1 rounded-full bg-white/50" />
+                                                    <span>Teslim: {safeHeroProjects[projectSlideIndex]?.deliveryDate}</span>
+                                                </>
+                                            ) : null}
                                         </div>
                                     </div>
 
                                     <div className="flex gap-2 pointer-events-auto pb-2">
                                         <button
-                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); goToPrevHeroSlide(); }}
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); goToPrevProjectSlide(); }}
                                             className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
                                         >
                                             <ChevronLeft className="w-6 h-6" />
                                         </button>
                                         <button
-                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); goToNextHeroSlide(); }}
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); goToNextProjectSlide(); }}
                                             className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
                                         >
                                             <ChevronRight className="w-6 h-6" />
@@ -763,13 +902,92 @@ export default function HomePage() {
                                 </div>
                             </div>
 
-                            {/* Side content - YouTube Video */}
-                            <div className="hidden lg:flex col-span-4 flex-col gap-4">
-                                <div className="flex-1 rounded-3xl overflow-hidden shadow-2xl shadow-gray-300/40 relative bg-black">
+                            {/* Side content - Top: Listing carousel, Bottom: YouTube short */}
+                            <div className="hidden lg:grid col-span-4 grid-rows-2 gap-4 h-full">
+                                <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-gray-300/40 bg-gray-900 min-h-0">
+                                    <div
+                                        className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                                        style={{
+                                            transform: `translateX(-${heroSlideIndex * 100}%)`,
+                                        }}
+                                    >
+                                        {safeHeroListings.map((listing, index) => {
+                                            const heroImageUrl = getHeroImageUrl(listing, 0);
+                                            const heroListingHref = getHeroListingHref(listing);
+
+                                            return (
+                                                <div
+                                                    key={`${listing.id}-${listing.slot ?? index}`}
+                                                    className="relative h-full w-full shrink-0"
+                                                >
+                                                    {heroListingHref ? (
+                                                        <Link
+                                                            href={heroListingHref}
+                                                            className="absolute inset-0 z-10"
+                                                            title={listing.title}
+                                                        />
+                                                    ) : null}
+                                                    <img
+                                                        src={heroImageUrl}
+                                                        alt={listing.title || "Featured Listing"}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="absolute inset-x-0 bottom-0 z-20 p-4 pointer-events-none">
+                                        <div className="pointer-events-auto">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className={`px-2 py-0.5 text-[10px] font-medium text-white uppercase tracking-wider rounded-md ${safeHeroListings[heroSlideIndex]?.saleType === "SALE" ? "bg-orange-500" : "bg-blue-600"}`}>
+                                                    {getSaleTypeLabel(safeHeroListings[heroSlideIndex]?.saleType, locale)}
+                                                </span>
+                                                <span className="px-2 py-0.5 text-[10px] font-medium text-white bg-white/20 backdrop-blur-md rounded-md">
+                                                    {getPropertyTypeLabel(safeHeroListings[heroSlideIndex]?.type, locale)}
+                                                </span>
+                                            </div>
+                                            <h4 className="text-base font-medium text-white leading-tight line-clamp-2">
+                                                {safeHeroListings[heroSlideIndex]?.title}
+                                            </h4>
+                                        </div>
+                                        <div className="pointer-events-auto mt-3 flex items-center justify-between">
+                                            <div className="flex gap-1.5">
+                                                {safeHeroListings.map((_, index) => (
+                                                    <button
+                                                        key={index}
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setHeroSlideIndex(index); }}
+                                                        className={cn(
+                                                            "h-1.5 rounded-full transition-all duration-300",
+                                                            index === heroSlideIndex ? "w-4 bg-white" : "w-1.5 bg-white/50"
+                                                        )}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); goToPrevHeroSlide(); }}
+                                                    className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                                                >
+                                                    <ChevronLeft className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); goToNextHeroSlide(); }}
+                                                    className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                                                >
+                                                    <ChevronRight className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-gray-300/40 bg-black min-h-0">
                                     <iframe
                                         className="absolute inset-0 w-full h-full"
                                         src="https://www.youtube.com/embed/E5uhQjs6xTk?si=qs85vA_X0AxPvCHj&mute=1"
-                                        title="YouTube video player"
+                                        title="YouTube short video player"
                                         frameBorder="0"
                                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                         referrerPolicy="strict-origin-when-cross-origin"

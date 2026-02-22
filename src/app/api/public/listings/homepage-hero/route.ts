@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
         const selectedListings = await prisma.listing.findMany({
             where: {
                 status: ListingStatus.PUBLISHED,
+                isProject: false,
                 homepageHeroSlot: {
                     in: [...HOMEPAGE_HERO_SLOTS],
                 },
@@ -51,6 +52,7 @@ export async function GET(request: NextRequest) {
                 ? await prisma.listing.findMany({
                     where: {
                         status: ListingStatus.PUBLISHED,
+                        isProject: false,
                         ...(selectedIds.length > 0
                             ? { id: { notIn: selectedIds } }
                             : {}),
