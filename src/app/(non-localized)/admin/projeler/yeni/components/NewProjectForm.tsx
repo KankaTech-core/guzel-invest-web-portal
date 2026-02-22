@@ -4,6 +4,26 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+    DndContext,
+    DragOverlay,
+    KeyboardSensor,
+    PointerSensor,
+    closestCenter,
+    useSensor,
+    useSensors,
+    type DragOverEvent,
+    type DragStartEvent,
+    type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+    SortableContext,
+    defaultAnimateLayoutChanges,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
     ArrowLeft,
     Building2,
     Check as CheckIcon,
@@ -40,10 +60,16 @@ import {
     getFriendlyFetchErrorMessage,
     parseApiErrorMessage,
 } from "@/lib/fetch-error";
+import {
+    fromFeatureSortableId,
+    reorderFeatureRows,
+    toFeatureSortableId,
+    type FeatureCategory,
+} from "@/lib/feature-reorder";
+import { splitFeaturesByCategory } from "@/lib/feature-category";
 import { cn, getMediaUrl } from "@/lib/utils";
 
 type ProjectStatusValue = "DRAFT" | "PUBLISHED" | "ARCHIVED";
-type FeatureCategory = "GENERAL" | "SOCIAL";
 type MediaOptimizationState = "hidden" | "optimizing" | "completed";
 
 interface UploadedMedia {
@@ -342,19 +368,6 @@ const buildMediaUploadChunks = (files: File[]): File[][] => {
     return chunks;
 };
 
-const reorderRows = <T extends { id: string }>(items: T[], activeId: string, overId: string) => {
-    const oldIndex = items.findIndex((item) => item.id === activeId);
-    const newIndex = items.findIndex((item) => item.id === overId);
-    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) {
-        return items;
-    }
-
-    const next = [...items];
-    const [moved] = next.splice(oldIndex, 1);
-    next.splice(newIndex, 0, moved);
-    return next;
-};
-
 const toUniqueMedia = (items: UploadedMedia[]): UploadedMedia[] => {
     const byId = new Map<string, UploadedMedia>();
     items.forEach((item) => byId.set(item.id, item));
@@ -498,6 +511,94 @@ function MediaGrid({ items, onRemove, emptyMessage }: MediaGridProps) {
     );
 }
 
+interface SortableFeatureRowProps {
+    category: FeatureCategory;
+    row: FeatureRow;
+    onOpenIconPicker: () => void;
+    onTitleChange: (value: string) => void;
+    onRemove: () => void;
+}
+
+function SortableFeatureRow({
+    category,
+    row,
+    onOpenIconPicker,
+    onTitleChange,
+    onRemove,
+}: SortableFeatureRowProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({
+        id: toFeatureSortableId(category, row.id),
+        animateLayoutChanges: (args) => defaultAnimateLayoutChanges(args),
+        transition: {
+            duration: 180,
+            easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+        },
+    });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        willChange: "transform",
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={cn(
+                "flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 group transition-[transform,box-shadow,border-color] duration-200",
+                isDragging
+                    ? "shadow-lg ring-2 ring-orange-200 bg-white border-orange-300 z-10"
+                    : "hover:border-orange-200"
+            )}
+        >
+            <button
+                type="button"
+                {...attributes}
+                {...listeners}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-400 hover:text-slate-600 hover:bg-white cursor-grab active:cursor-grabbing touch-none"
+                aria-label="Özelliği sürükleyerek sırala"
+                title="Sürükleyerek sırala"
+            >
+                <GripVertical className="w-5 h-5 shrink-0" />
+            </button>
+
+            <button
+                type="button"
+                onClick={onOpenIconPicker}
+                className="w-10 h-10 rounded border border-slate-200 bg-white flex items-center justify-center text-orange-500 cursor-pointer hover:border-orange-500 transition-all shadow-sm shrink-0"
+                title="İkon seç"
+            >
+                <ProjectIcon name={row.icon} className="w-5 h-5" />
+            </button>
+
+            <input
+                className="flex-1 bg-transparent border-none outline-none focus:ring-0 text-sm font-medium"
+                placeholder="Özellik adı girin..."
+                type="text"
+                value={row.title}
+                onChange={(event) => onTitleChange(event.target.value)}
+            />
+
+            <button
+                type="button"
+                onClick={onRemove}
+                className="text-slate-400 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100"
+                title="Özelliği sil"
+            >
+                <Trash2 className="w-5 h-5" />
+            </button>
+        </div>
+    );
+}
+
 export default function NewProjectForm({
     initialProjectId,
 }: NewProjectFormProps = {}) {
@@ -578,17 +679,27 @@ export default function NewProjectForm({
     const [mediaOptimizationState, setMediaOptimizationState] =
         useState<MediaOptimizationState>("hidden");
 
-    const [featureDragState, setFeatureDragState] = useState<{
-        category: FeatureCategory;
-        id: string;
-    } | null>(null);
-
     const [iconPickerTarget, setIconPickerTarget] = useState<{
         category: FeatureCategory;
         id: string;
     } | null>(null);
+    const [activeFeatureDrag, setActiveFeatureDrag] = useState<{
+        category: FeatureCategory;
+        id: string;
+    } | null>(null);
+    const [isFeatureDndReady, setIsFeatureDndReady] = useState(false);
     const customSvgInputRef = useRef<HTMLInputElement | null>(null);
     const autoMapsLinkRef = useRef("");
+    const featureSensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 4,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     const cityOptions =
         city && !availableCities.includes(city)
@@ -646,6 +757,10 @@ export default function NewProjectForm({
         if (manual) return manual;
         return toGoogleMapsEmbedLink(autoMapsLink);
     }, [googleMapsLink, autoMapsLink]);
+
+    useEffect(() => {
+        setIsFeatureDndReady(true);
+    }, []);
 
     useEffect(() => {
         const observerOptions = {
@@ -872,20 +987,34 @@ export default function NewProjectForm({
         }
 
         if (normalizedFeatures.length > 0) {
+            const categorizedFeatures = splitFeaturesByCategory(normalizedFeatures);
+            const toNormalizedSet = (rows: FeatureRow[]) =>
+                new Set(rows.map((item) => item.title.trim().toLocaleLowerCase("tr-TR")));
+
             setGeneralFeatures((prev) => {
-                const existingTitles = new Set(
-                    prev.map((item) => item.title.trim().toLocaleLowerCase("tr-TR"))
-                );
-                const newRows = normalizedFeatures
-                    .filter(
-                        (feature) =>
-                            !existingTitles.has(feature.toLocaleLowerCase("tr-TR"))
-                    )
-                    .map((feature) => ({
-                        id: createRowId(),
-                        title: feature,
-                        icon: "Building2",
-                    }));
+                const existingTitles = toNormalizedSet(prev);
+                const newRows = categorizedFeatures.GENERAL.filter(
+                    (feature) =>
+                        !existingTitles.has(feature.trim().toLocaleLowerCase("tr-TR"))
+                ).map((feature) => ({
+                    id: createRowId(),
+                    title: feature,
+                    icon: "Building2",
+                }));
+
+                return newRows.length > 0 ? [...prev, ...newRows] : prev;
+            });
+
+            setSocialFeatures((prev) => {
+                const existingTitles = toNormalizedSet(prev);
+                const newRows = categorizedFeatures.SOCIAL.filter(
+                    (feature) =>
+                        !existingTitles.has(feature.trim().toLocaleLowerCase("tr-TR"))
+                ).map((feature) => ({
+                    id: createRowId(),
+                    title: feature,
+                    icon: "Sparkles",
+                }));
 
                 return newRows.length > 0 ? [...prev, ...newRows] : prev;
             });
@@ -1264,29 +1393,63 @@ export default function NewProjectForm({
         updateFeatureRows(category, (rows) => rows.filter((row) => row.id !== id));
     };
 
-    const handleFeatureDragStart = (category: FeatureCategory, id: string) => {
-        setFeatureDragState({ category, id });
-    };
-
-    const handleFeatureDragOver = (
-        event: React.DragEvent<HTMLDivElement>,
+    const handleFeatureSortEnd = (
         category: FeatureCategory,
-        overId: string
+        event: DragEndEvent
     ) => {
-        event.preventDefault();
+        setActiveFeatureDrag(null);
 
-        if (!featureDragState) return;
-        if (featureDragState.category !== category) return;
-        if (featureDragState.id === overId) return;
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const activeFeature = fromFeatureSortableId(String(active.id));
+        const overFeature = fromFeatureSortableId(String(over.id));
+
+        if (!activeFeature || !overFeature) return;
+        if (activeFeature.category !== category || overFeature.category !== category) {
+            return;
+        }
 
         updateFeatureRows(category, (rows) =>
-            reorderRows(rows, featureDragState.id, overId)
+            reorderFeatureRows(rows, activeFeature.id, overFeature.id)
         );
-        setFeatureDragState({ category, id: overId });
     };
 
-    const handleFeatureDragEnd = () => {
-        setFeatureDragState(null);
+    const handleFeatureSortStart = (
+        category: FeatureCategory,
+        event: DragStartEvent
+    ) => {
+        const activeFeature = fromFeatureSortableId(String(event.active.id));
+        if (!activeFeature || activeFeature.category !== category) {
+            setActiveFeatureDrag(null);
+            return;
+        }
+
+        setActiveFeatureDrag(activeFeature);
+    };
+
+    const handleFeatureSortOver = (
+        category: FeatureCategory,
+        event: DragOverEvent
+    ) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const activeFeature = fromFeatureSortableId(String(active.id));
+        const overFeature = fromFeatureSortableId(String(over.id));
+
+        if (!activeFeature || !overFeature) return;
+        if (activeFeature.category !== category || overFeature.category !== category) {
+            return;
+        }
+
+        updateFeatureRows(category, (rows) =>
+            reorderFeatureRows(rows, activeFeature.id, overFeature.id)
+        );
+    };
+
+    const handleFeatureSortCancel = () => {
+        setActiveFeatureDrag(null);
     };
 
     const getIconPickerRow = () => {
@@ -2046,86 +2209,179 @@ export default function NewProjectForm({
                                             </button>
                                         </div>
 
-                                        <div className="p-6 space-y-3">
+                                        <div className="p-6">
                                             {section.rows.length === 0 && (
                                                 <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
                                                     Henüz özellik yok.
                                                 </div>
                                             )}
 
-                                            {section.rows.map((row) => (
-                                                <div
-                                                    key={row.id}
-                                                    draggable
-                                                    onDragStart={() =>
-                                                        handleFeatureDragStart(
-                                                            section.category,
-                                                            row.id
-                                                        )
-                                                    }
-                                                    onDragOver={(event) =>
-                                                        handleFeatureDragOver(
-                                                            event,
-                                                            section.category,
-                                                            row.id
-                                                        )
-                                                    }
-                                                    onDragEnd={handleFeatureDragEnd}
-                                                    className={cn(
-                                                        "flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 group",
-                                                        featureDragState?.id === row.id &&
-                                                            "opacity-70"
-                                                    )}
-                                                >
-                                                    <GripVertical className="text-slate-400 cursor-grab active:cursor-grabbing w-5 h-5 shrink-0" />
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            setIconPickerTarget({
-                                                                category: section.category,
-                                                                id: row.id,
-                                                            })
-                                                        }
-                                                        className="w-10 h-10 rounded border border-slate-200 bg-white flex items-center justify-center text-orange-500 cursor-pointer hover:border-orange-500 transition-all shadow-sm shrink-0"
-                                                        title="İkon seç"
-                                                    >
-                                                        <ProjectIcon
-                                                            name={row.icon}
-                                                            className="w-5 h-5"
-                                                        />
-                                                    </button>
-
-                                                    <input
-                                                        className="flex-1 bg-transparent border-none outline-none focus:ring-0 text-sm font-medium"
-                                                        placeholder="Özellik adı girin..."
-                                                        type="text"
-                                                        value={row.title}
-                                                        onChange={(event) =>
-                                                            updateFeatureRow(
+                                            {section.rows.length > 0 && (
+                                                isFeatureDndReady ? (
+                                                    <DndContext
+                                                        id={`project-feature-sort-${section.category.toLowerCase()}`}
+                                                        sensors={featureSensors}
+                                                        collisionDetection={closestCenter}
+                                                        onDragStart={(event) =>
+                                                            handleFeatureSortStart(
                                                                 section.category,
-                                                                row.id,
-                                                                {
-                                                                    title: event.target.value,
-                                                                }
+                                                                event
                                                             )
                                                         }
-                                                    />
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                            removeFeatureRow(
+                                                        onDragOver={(event) =>
+                                                            handleFeatureSortOver(
                                                                 section.category,
-                                                                row.id
+                                                                event
                                                             )
                                                         }
-                                                        className="text-slate-400 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100"
+                                                        onDragEnd={(event) =>
+                                                            handleFeatureSortEnd(
+                                                                section.category,
+                                                                event
+                                                            )
+                                                        }
+                                                        onDragCancel={handleFeatureSortCancel}
                                                     >
-                                                        <Trash2 className="w-5 h-5" />
-                                                    </button>
-                                                </div>
-                                            ))}
+                                                        <SortableContext
+                                                            items={section.rows.map((row) =>
+                                                                toFeatureSortableId(
+                                                                    section.category,
+                                                                    row.id
+                                                                )
+                                                            )}
+                                                            strategy={verticalListSortingStrategy}
+                                                        >
+                                                            <div className="space-y-3">
+                                                                {section.rows.map((row) => (
+                                                                    <SortableFeatureRow
+                                                                        key={row.id}
+                                                                        category={section.category}
+                                                                        row={row}
+                                                                        onOpenIconPicker={() =>
+                                                                            setIconPickerTarget({
+                                                                                category: section.category,
+                                                                                id: row.id,
+                                                                            })
+                                                                        }
+                                                                        onTitleChange={(value) =>
+                                                                            updateFeatureRow(
+                                                                                section.category,
+                                                                                row.id,
+                                                                                {
+                                                                                    title: value,
+                                                                                }
+                                                                            )
+                                                                        }
+                                                                        onRemove={() =>
+                                                                            removeFeatureRow(
+                                                                                section.category,
+                                                                                row.id
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                ))}
+                                                            </div>
+                                                        </SortableContext>
+                                                        <DragOverlay adjustScale>
+                                                            {activeFeatureDrag &&
+                                                            activeFeatureDrag.category ===
+                                                                section.category ? (
+                                                                <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-orange-300 shadow-xl ring-2 ring-orange-200">
+                                                                    <GripVertical className="w-5 h-5 text-slate-400 shrink-0" />
+                                                                    <div className="w-10 h-10 rounded border border-slate-200 bg-white flex items-center justify-center text-orange-500 shadow-sm shrink-0">
+                                                                        <ProjectIcon
+                                                                            name={
+                                                                                section.rows.find(
+                                                                                    (row) =>
+                                                                                        row.id ===
+                                                                                        activeFeatureDrag.id
+                                                                                )?.icon ||
+                                                                                "Building2"
+                                                                            }
+                                                                            className="w-5 h-5"
+                                                                        />
+                                                                    </div>
+                                                                    <span className="text-sm font-medium text-slate-800">
+                                                                        {section.rows.find(
+                                                                            (row) =>
+                                                                                row.id ===
+                                                                                activeFeatureDrag.id
+                                                                        )?.title ||
+                                                                            "Özellik"}
+                                                                    </span>
+                                                                </div>
+                                                            ) : null}
+                                                        </DragOverlay>
+                                                    </DndContext>
+                                                ) : (
+                                                    <div className="space-y-3">
+                                                        {section.rows.map((row) => (
+                                                            <div
+                                                                key={row.id}
+                                                                className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 group"
+                                                            >
+                                                                <button
+                                                                    type="button"
+                                                                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-400 hover:text-slate-600 hover:bg-white cursor-grab active:cursor-grabbing touch-none"
+                                                                    aria-label="Özelliği sürükleyerek sırala"
+                                                                    title="Sürükleyerek sırala"
+                                                                >
+                                                                    <GripVertical className="w-5 h-5 shrink-0" />
+                                                                </button>
+
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        setIconPickerTarget({
+                                                                            category: section.category,
+                                                                            id: row.id,
+                                                                        })
+                                                                    }
+                                                                    className="w-10 h-10 rounded border border-slate-200 bg-white flex items-center justify-center text-orange-500 cursor-pointer hover:border-orange-500 transition-all shadow-sm shrink-0"
+                                                                    title="İkon seç"
+                                                                >
+                                                                    <ProjectIcon
+                                                                        name={row.icon}
+                                                                        className="w-5 h-5"
+                                                                    />
+                                                                </button>
+
+                                                                <input
+                                                                    className="flex-1 bg-transparent border-none outline-none focus:ring-0 text-sm font-medium"
+                                                                    placeholder="Özellik adı girin..."
+                                                                    type="text"
+                                                                    value={row.title}
+                                                                    onChange={(event) =>
+                                                                        updateFeatureRow(
+                                                                            section.category,
+                                                                            row.id,
+                                                                            {
+                                                                                title:
+                                                                                    event.target
+                                                                                        .value,
+                                                                            }
+                                                                        )
+                                                                    }
+                                                                />
+
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        removeFeatureRow(
+                                                                            section.category,
+                                                                            row.id
+                                                                        )
+                                                                    }
+                                                                    className="text-slate-400 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100"
+                                                                    title="Özelliği sil"
+                                                                >
+                                                                    <Trash2 className="w-5 h-5" />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )
+                                            )}
                                         </div>
                                     </div>
                                 ))}
