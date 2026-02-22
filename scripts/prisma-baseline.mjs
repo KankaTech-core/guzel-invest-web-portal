@@ -33,21 +33,26 @@ if (migrationNames.length === 0) {
 
 console.log(`🔍 Checking baseline for ${migrationNames.length} migration(s)...`);
 
-for (const name of migrationNames) {
+// We ONLY want to baseline the initial schema migration.
+// Any subsequent migrations (like adding new project columns) must actually run!
+const baselineMigrationName = '00000000000000_baseline';
+
+if (!migrationNames.includes(baselineMigrationName)) {
+    console.log(`✅ Baseline migration '${baselineMigrationName}' not found in folder, skipping.`);
+} else {
+    console.log(`🔍 Checking baseline specifically for '${baselineMigrationName}'...`);
     try {
         execSync(
-            `npx prisma migrate resolve --applied "${name}" --schema "${schemaPath}"`,
+            `npx prisma migrate resolve --applied "${baselineMigrationName}" --schema "${schemaPath}"`,
             { stdio: 'pipe', cwd: projectRoot }
         );
-        console.log(`✅ Marked "${name}" as applied.`);
+        console.log(`✅ Marked "${baselineMigrationName}" as applied.`);
     } catch (err) {
         const stderr = err.stderr?.toString() || '';
-        // "already applied" or "already recorded" errors are fine
         if (stderr.includes('already') || stderr.includes('is already')) {
-            console.log(`✅ "${name}" is already tracked, skipping.`);
+            console.log(`✅ "${baselineMigrationName}" is already tracked, skipping.`);
         } else {
-            // Any other error — log but don't fail the build
-            console.log(`⚠️  Could not resolve "${name}": ${stderr.trim().split('\n').pop()}`);
+            console.log(`⚠️  Could not resolve "${baselineMigrationName}": ${stderr.trim().split('\\n').pop()}`);
         }
     }
 }
