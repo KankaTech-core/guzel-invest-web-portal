@@ -636,10 +636,7 @@ export default function NewProjectForm({
     const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
     const [availableNeighborhoods, setAvailableNeighborhoods] = useState<string[]>([]);
 
-    const [generalFeatures, setGeneralFeatures] = useState<FeatureRow[]>([
-        { id: createRowId(), title: "Asansör", icon: "Building2" },
-        { id: createRowId(), title: "Kapalı Otopark", icon: "Car" },
-    ]);
+    const [generalFeatures, setGeneralFeatures] = useState<FeatureRow[]>([]);
     const [socialFeatures, setSocialFeatures] = useState<FeatureRow[]>([
         { id: createRowId(), title: "Açık Yüzme Havuzu", icon: "Waves" },
         { id: createRowId(), title: "Fitness Salonu", icon: "Dumbbell" },

@@ -5,7 +5,6 @@ import {
     Download,
     FileText,
     MapPin,
-    ExternalLink,
 } from "lucide-react";
 import { S1SectionVisibility } from "../section-visibility";
 import {
@@ -114,33 +113,6 @@ export const MapAndCTA = ({
                     ) : (
                         <div className="h-[480px] w-full" />
                     )}
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                        <div className="pointer-events-auto rounded-2xl border border-gray-100 bg-white p-6 shadow-lg">
-                            <div className="flex items-center gap-4">
-                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-500 text-white">
-                                    <MapPin className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-gray-900">Proje Lokasyonu</h4>
-                                    {map.mapsLink ? (
-                                        <Link
-                                            href={map.mapsLink}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="mt-1 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-orange-500"
-                                        >
-                                            Google Haritalar&apos;da Aç
-                                            <ExternalLink className="h-3.5 w-3.5" />
-                                        </Link>
-                                    ) : (
-                                        <p className="mt-1 text-sm text-gray-500">
-                                            Konum bilgisi mevcut.
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </section>
             ) : null}
 

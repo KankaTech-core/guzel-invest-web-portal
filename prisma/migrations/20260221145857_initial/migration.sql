@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('ADMIN', 'EDITOR', 'VIEWER');
 
@@ -14,22 +17,13 @@ CREATE TYPE "PropertyType" AS ENUM ('APARTMENT', 'VILLA', 'PENTHOUSE', 'LAND', '
 CREATE TYPE "SaleType" AS ENUM ('SALE', 'RENT');
 
 -- CreateEnum
-CREATE TYPE "MediaType" AS ENUM ('IMAGE', 'VIDEO');
+CREATE TYPE "MediaType" AS ENUM ('IMAGE', 'VIDEO', 'DOCUMENT');
 
 -- CreateEnum
 CREATE TYPE "SyncStatus" AS ENUM ('PENDING', 'SYNCING', 'SUCCESS', 'FAILED');
 
 -- CreateEnum
 CREATE TYPE "ExportStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED');
-
--- CreateEnum
-CREATE TYPE "ProjectCategory" AS ENUM ('AVM', 'SITE', 'RESIDENCE', 'MIXED_USE', 'COMMERCIAL', 'OTHER');
-
--- CreateEnum
-CREATE TYPE "ProjectStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
-
--- CreateEnum
-CREATE TYPE "GalleryType" AS ENUM ('EXTERIOR', 'INTERIOR', 'FLOOR_PLAN', 'MAP', 'CUSTOM');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -110,6 +104,9 @@ CREATE TABLE "listings" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "publishedAt" TIMESTAMP(3),
     "createdById" TEXT NOT NULL,
+    "deliveryDate" TEXT,
+    "isProject" BOOLEAN NOT NULL DEFAULT false,
+    "projectType" TEXT,
 
     CONSTRAINT "listings_pkey" PRIMARY KEY ("id")
 );
@@ -197,6 +194,9 @@ CREATE TABLE "media" (
     "height" INTEGER,
     "size" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "category" TEXT,
+    "customGalleryId" TEXT,
+    "projectUnitId" TEXT,
 
     CONSTRAINT "media_pkey" PRIMARY KEY ("id")
 );
@@ -279,49 +279,11 @@ CREATE TABLE "site_feedback_messages" (
 );
 
 -- CreateTable
-CREATE TABLE "projects" (
-    "id" TEXT NOT NULL,
-    "slug" TEXT NOT NULL,
-    "status" "ProjectStatus" NOT NULL DEFAULT 'DRAFT',
-    "category" "ProjectCategory" NOT NULL,
-    "city" TEXT NOT NULL,
-    "district" TEXT NOT NULL,
-    "neighborhood" TEXT,
-    "address" TEXT,
-    "googleMapsLink" TEXT,
-    "latitude" DOUBLE PRECISION,
-    "longitude" DOUBLE PRECISION,
-    "heroImageUrl" TEXT,
-    "videoUrl" TEXT,
-    "deliveryDate" TEXT,
-    "yearRange" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-    "publishedAt" TIMESTAMP(3),
-    "createdById" TEXT NOT NULL,
-
-    CONSTRAINT "projects_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "project_translations" (
-    "id" TEXT NOT NULL,
-    "projectId" TEXT NOT NULL,
-    "locale" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
-    "description" TEXT NOT NULL,
-    "summary" TEXT,
-    "tags" TEXT[],
-
-    CONSTRAINT "project_translations_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "project_features" (
     "id" TEXT NOT NULL,
-    "projectId" TEXT NOT NULL,
-    "icon" TEXT,
-    "customIconUrl" TEXT,
+    "listingId" TEXT NOT NULL,
+    "category" TEXT NOT NULL,
+    "icon" TEXT NOT NULL,
     "order" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "project_features_pkey" PRIMARY KEY ("id")
@@ -332,86 +294,38 @@ CREATE TABLE "project_feature_translations" (
     "id" TEXT NOT NULL,
     "featureId" TEXT NOT NULL,
     "locale" TEXT NOT NULL,
-    "label" TEXT NOT NULL,
-    "value" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
 
     CONSTRAINT "project_feature_translations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "project_facilities" (
+CREATE TABLE "custom_galleries" (
     "id" TEXT NOT NULL,
-    "projectId" TEXT NOT NULL,
-    "icon" TEXT,
-    "customIconUrl" TEXT,
+    "listingId" TEXT NOT NULL,
     "order" INTEGER NOT NULL DEFAULT 0,
 
-    CONSTRAINT "project_facilities_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "custom_galleries_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "project_facility_translations" (
-    "id" TEXT NOT NULL,
-    "facilityId" TEXT NOT NULL,
-    "locale" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-
-    CONSTRAINT "project_facility_translations_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "project_galleries" (
-    "id" TEXT NOT NULL,
-    "projectId" TEXT NOT NULL,
-    "type" "GalleryType" NOT NULL,
-    "order" INTEGER NOT NULL DEFAULT 0,
-
-    CONSTRAINT "project_galleries_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "project_gallery_translations" (
+CREATE TABLE "custom_gallery_translations" (
     "id" TEXT NOT NULL,
     "galleryId" TEXT NOT NULL,
     "locale" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "subtitle" TEXT,
 
-    CONSTRAINT "project_gallery_translations_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "project_gallery_items" (
-    "id" TEXT NOT NULL,
-    "galleryId" TEXT NOT NULL,
-    "url" TEXT NOT NULL,
-    "thumbnailUrl" TEXT,
-    "order" INTEGER NOT NULL DEFAULT 0,
-    "width" INTEGER,
-    "height" INTEGER,
-
-    CONSTRAINT "project_gallery_items_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "project_gallery_item_translations" (
-    "id" TEXT NOT NULL,
-    "itemId" TEXT NOT NULL,
-    "locale" TEXT NOT NULL,
-    "caption" TEXT,
-    "area" TEXT,
-
-    CONSTRAINT "project_gallery_item_translations_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "custom_gallery_translations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "project_units" (
     "id" TEXT NOT NULL,
-    "projectId" TEXT NOT NULL,
+    "listingId" TEXT NOT NULL,
     "rooms" TEXT NOT NULL,
-    "areaMin" INTEGER,
-    "areaMax" INTEGER,
-    "order" INTEGER NOT NULL DEFAULT 0,
+    "area" INTEGER,
+    "price" DECIMAL(65,30),
 
     CONSTRAINT "project_units_pkey" PRIMARY KEY ("id")
 );
@@ -422,72 +336,48 @@ CREATE TABLE "project_unit_translations" (
     "unitId" TEXT NOT NULL,
     "locale" TEXT NOT NULL,
     "title" TEXT,
-    "description" TEXT,
 
     CONSTRAINT "project_unit_translations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "project_unit_galleries" (
+CREATE TABLE "floor_plans" (
     "id" TEXT NOT NULL,
-    "unitId" TEXT NOT NULL,
-    "order" INTEGER NOT NULL DEFAULT 0,
+    "listingId" TEXT NOT NULL,
+    "imageUrl" TEXT NOT NULL,
+    "area" TEXT,
 
-    CONSTRAINT "project_unit_galleries_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "floor_plans_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "project_unit_gallery_items" (
+CREATE TABLE "floor_plan_translations" (
     "id" TEXT NOT NULL,
-    "galleryId" TEXT NOT NULL,
-    "url" TEXT NOT NULL,
-    "thumbnailUrl" TEXT,
-    "order" INTEGER NOT NULL DEFAULT 0,
-
-    CONSTRAINT "project_unit_gallery_items_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "project_documents" (
-    "id" TEXT NOT NULL,
-    "projectId" TEXT NOT NULL,
-    "fileUrl" TEXT NOT NULL,
-    "fileType" TEXT NOT NULL,
-    "fileSize" INTEGER,
-    "order" INTEGER NOT NULL DEFAULT 0,
-
-    CONSTRAINT "project_documents_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
-CREATE TABLE "project_document_translations" (
-    "id" TEXT NOT NULL,
-    "documentId" TEXT NOT NULL,
+    "floorPlanId" TEXT NOT NULL,
     "locale" TEXT NOT NULL,
     "title" TEXT NOT NULL,
-    "description" TEXT,
 
-    CONSTRAINT "project_document_translations_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "floor_plan_translations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "project_faqs" (
+CREATE TABLE "listing_faqs" (
     "id" TEXT NOT NULL,
-    "projectId" TEXT NOT NULL,
+    "listingId" TEXT NOT NULL,
     "order" INTEGER NOT NULL DEFAULT 0,
 
-    CONSTRAINT "project_faqs_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "listing_faqs_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "project_faq_translations" (
+CREATE TABLE "listing_faq_translations" (
     "id" TEXT NOT NULL,
     "faqId" TEXT NOT NULL,
     "locale" TEXT NOT NULL,
     "question" TEXT NOT NULL,
     "answer" TEXT NOT NULL,
 
-    CONSTRAINT "project_faq_translations_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "listing_faq_translations_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -584,70 +474,19 @@ CREATE INDEX "site_feedback_threads_updatedAt_idx" ON "site_feedback_threads"("u
 CREATE INDEX "site_feedback_messages_threadId_createdAt_idx" ON "site_feedback_messages"("threadId", "createdAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "projects_slug_key" ON "projects"("slug");
-
--- CreateIndex
-CREATE INDEX "projects_status_idx" ON "projects"("status");
-
--- CreateIndex
-CREATE INDEX "projects_category_idx" ON "projects"("category");
-
--- CreateIndex
-CREATE INDEX "projects_city_district_idx" ON "projects"("city", "district");
-
--- CreateIndex
-CREATE UNIQUE INDEX "project_translations_projectId_locale_key" ON "project_translations"("projectId", "locale");
-
--- CreateIndex
-CREATE INDEX "project_features_projectId_order_idx" ON "project_features"("projectId", "order");
-
--- CreateIndex
 CREATE UNIQUE INDEX "project_feature_translations_featureId_locale_key" ON "project_feature_translations"("featureId", "locale");
 
 -- CreateIndex
-CREATE INDEX "project_facilities_projectId_order_idx" ON "project_facilities"("projectId", "order");
-
--- CreateIndex
-CREATE UNIQUE INDEX "project_facility_translations_facilityId_locale_key" ON "project_facility_translations"("facilityId", "locale");
-
--- CreateIndex
-CREATE INDEX "project_galleries_projectId_order_idx" ON "project_galleries"("projectId", "order");
-
--- CreateIndex
-CREATE UNIQUE INDEX "project_gallery_translations_galleryId_locale_key" ON "project_gallery_translations"("galleryId", "locale");
-
--- CreateIndex
-CREATE INDEX "project_gallery_items_galleryId_order_idx" ON "project_gallery_items"("galleryId", "order");
-
--- CreateIndex
-CREATE UNIQUE INDEX "project_gallery_item_translations_itemId_locale_key" ON "project_gallery_item_translations"("itemId", "locale");
-
--- CreateIndex
-CREATE INDEX "project_units_projectId_idx" ON "project_units"("projectId");
-
--- CreateIndex
-CREATE INDEX "project_units_rooms_idx" ON "project_units"("rooms");
+CREATE UNIQUE INDEX "custom_gallery_translations_galleryId_locale_key" ON "custom_gallery_translations"("galleryId", "locale");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "project_unit_translations_unitId_locale_key" ON "project_unit_translations"("unitId", "locale");
 
 -- CreateIndex
-CREATE INDEX "project_unit_galleries_unitId_idx" ON "project_unit_galleries"("unitId");
+CREATE UNIQUE INDEX "floor_plan_translations_floorPlanId_locale_key" ON "floor_plan_translations"("floorPlanId", "locale");
 
 -- CreateIndex
-CREATE INDEX "project_unit_gallery_items_galleryId_order_idx" ON "project_unit_gallery_items"("galleryId", "order");
-
--- CreateIndex
-CREATE INDEX "project_documents_projectId_idx" ON "project_documents"("projectId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "project_document_translations_documentId_locale_key" ON "project_document_translations"("documentId", "locale");
-
--- CreateIndex
-CREATE INDEX "project_faqs_projectId_order_idx" ON "project_faqs"("projectId", "order");
-
--- CreateIndex
-CREATE UNIQUE INDEX "project_faq_translations_faqId_locale_key" ON "project_faq_translations"("faqId", "locale");
+CREATE UNIQUE INDEX "listing_faq_translations_faqId_locale_key" ON "listing_faq_translations"("faqId", "locale");
 
 -- AddForeignKey
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -668,7 +507,13 @@ ALTER TABLE "listing_tags" ADD CONSTRAINT "listing_tags_tagId_fkey" FOREIGN KEY 
 ALTER TABLE "listing_translations" ADD CONSTRAINT "listing_translations_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "listings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "media" ADD CONSTRAINT "media_customGalleryId_fkey" FOREIGN KEY ("customGalleryId") REFERENCES "custom_galleries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "media" ADD CONSTRAINT "media_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "listings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "media" ADD CONSTRAINT "media_projectUnitId_fkey" FOREIGN KEY ("projectUnitId") REFERENCES "project_units"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "sync_logs" ADD CONSTRAINT "sync_logs_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "listings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -686,55 +531,32 @@ ALTER TABLE "site_feedback_messages" ADD CONSTRAINT "site_feedback_messages_auth
 ALTER TABLE "site_feedback_messages" ADD CONSTRAINT "site_feedback_messages_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "site_feedback_threads"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "projects" ADD CONSTRAINT "projects_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "project_translations" ADD CONSTRAINT "project_translations_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "project_features" ADD CONSTRAINT "project_features_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "project_features" ADD CONSTRAINT "project_features_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "listings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "project_feature_translations" ADD CONSTRAINT "project_feature_translations_featureId_fkey" FOREIGN KEY ("featureId") REFERENCES "project_features"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "project_facilities" ADD CONSTRAINT "project_facilities_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "custom_galleries" ADD CONSTRAINT "custom_galleries_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "listings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "project_facility_translations" ADD CONSTRAINT "project_facility_translations_facilityId_fkey" FOREIGN KEY ("facilityId") REFERENCES "project_facilities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "custom_gallery_translations" ADD CONSTRAINT "custom_gallery_translations_galleryId_fkey" FOREIGN KEY ("galleryId") REFERENCES "custom_galleries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "project_galleries" ADD CONSTRAINT "project_galleries_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "project_gallery_translations" ADD CONSTRAINT "project_gallery_translations_galleryId_fkey" FOREIGN KEY ("galleryId") REFERENCES "project_galleries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "project_gallery_items" ADD CONSTRAINT "project_gallery_items_galleryId_fkey" FOREIGN KEY ("galleryId") REFERENCES "project_galleries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "project_gallery_item_translations" ADD CONSTRAINT "project_gallery_item_translations_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "project_gallery_items"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "project_units" ADD CONSTRAINT "project_units_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "project_units" ADD CONSTRAINT "project_units_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "listings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "project_unit_translations" ADD CONSTRAINT "project_unit_translations_unitId_fkey" FOREIGN KEY ("unitId") REFERENCES "project_units"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "project_unit_galleries" ADD CONSTRAINT "project_unit_galleries_unitId_fkey" FOREIGN KEY ("unitId") REFERENCES "project_units"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "floor_plans" ADD CONSTRAINT "floor_plans_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "listings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "project_unit_gallery_items" ADD CONSTRAINT "project_unit_gallery_items_galleryId_fkey" FOREIGN KEY ("galleryId") REFERENCES "project_unit_galleries"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "floor_plan_translations" ADD CONSTRAINT "floor_plan_translations_floorPlanId_fkey" FOREIGN KEY ("floorPlanId") REFERENCES "floor_plans"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "project_documents" ADD CONSTRAINT "project_documents_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "listing_faqs" ADD CONSTRAINT "listing_faqs_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "listings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "project_document_translations" ADD CONSTRAINT "project_document_translations_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "project_documents"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "listing_faq_translations" ADD CONSTRAINT "listing_faq_translations_faqId_fkey" FOREIGN KEY ("faqId") REFERENCES "listing_faqs"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- AddForeignKey
-ALTER TABLE "project_faqs" ADD CONSTRAINT "project_faqs_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "projects"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "project_faq_translations" ADD CONSTRAINT "project_faq_translations_faqId_fkey" FOREIGN KEY ("faqId") REFERENCES "project_faqs"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -61,22 +61,6 @@ export const ProjectInfo = ({
                                 <ImageIcon className="h-14 w-14 text-gray-300" />
                             </div>
                             <div className="flex-1">
-                                {summary.tags.length > 0 ? (
-                                    <div className="mb-4 flex flex-wrap items-center gap-3">
-                                        {summary.tags.map((tag, idx) => (
-                                            <span
-                                                key={`${tag}-${idx}`}
-                                                className={`rounded-md px-3 py-1 text-xs font-bold ${
-                                                    idx === 0
-                                                        ? "bg-orange-500/10 text-orange-500"
-                                                        : "bg-gray-100 text-gray-600"
-                                                }`}
-                                            >
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                ) : null}
                                 <h2 className="mb-4 text-3xl font-bold text-gray-900">
                                     {summary.title}
                                 </h2>

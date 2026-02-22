@@ -265,28 +265,12 @@ export async function getS1ProjectPageData({
         })
         .filter((item) => item.label);
 
-    const roomSummary = toRoomSummary(project.projectUnits.map((unit) => unit.rooms));
-    const locationSummary = [project.district, project.city].filter(Boolean).join(", ");
     const metaRibbon: S1RibbonItem[] = [
-        roomSummary
-            ? {
-                  icon: "BedDouble",
-                  label: "Daire Tipleri",
-                  value: roomSummary,
-              }
-            : null,
         project.projectType
             ? {
                   icon: "Building2",
                   label: "Proje Tipi",
                   value: project.projectType,
-              }
-            : null,
-        locationSummary
-            ? {
-                  icon: "MapPin",
-                  label: "Konum",
-                  value: locationSummary,
               }
             : null,
     ].filter(isPresent);

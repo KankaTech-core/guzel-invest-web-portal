@@ -59,6 +59,7 @@ interface ListingMedia {
     id?: string;
     url: string;
     isCover: boolean;
+    category?: string | null;
 }
 
 interface ListingTag {
@@ -72,6 +73,7 @@ interface ListingTag {
 interface Listing {
     id: string;
     slug: string;
+    isProject: boolean;
     type: string;
     saleType: string;
     price: number | string;
@@ -568,6 +570,33 @@ function buildLocationLabel(listing: Listing) {
     return [listing.neighborhood, listing.district, listing.city]
         .filter(Boolean)
         .join(", ");
+}
+
+function getListingGalleryMedia(listing: Listing): ListingMedia[] {
+    const media = listing.media || [];
+    if (media.length === 0) return [];
+    if (!listing.isProject) return media.slice(0, 4);
+
+    const coverMedia = media.find((item) => item.isCover) || media[0];
+    const exteriorMedia = media.filter((item) =>
+        (item.category || "").trim().toUpperCase() === "EXTERIOR"
+    );
+
+    const uniqueByUrl = new Set<string>();
+    const ordered: ListingMedia[] = [];
+    const pushIfUnique = (item: ListingMedia | undefined) => {
+        if (!item) return;
+        const key = `${item.id || ""}::${item.url}`;
+        if (uniqueByUrl.has(key)) return;
+        uniqueByUrl.add(key);
+        ordered.push(item);
+    };
+
+    pushIfUnique(coverMedia);
+    exteriorMedia.forEach((item) => pushIfUnique(item));
+    media.forEach((item) => pushIfUnique(item));
+
+    return ordered.slice(0, 4);
 }
 
 function getListingTitle(listing: Listing, locale: string) {
@@ -2171,7 +2200,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                             const description = getListingDescription(listing, locale);
                             const hasDescriptionOverflow = Boolean(descriptionOverflowMap[listing.id]);
                             const locationLabel = buildLocationLabel(listing);
-                            const galleryMedia = listing.media.slice(0, 4);
+                            const galleryMedia = getListingGalleryMedia(listing);
                             const maxImageIndex = Math.max(0, galleryMedia.length - 1);
                             const activeImageIndex = Math.min(
                                 activeImageIndexes[listing.id] ?? 0,
@@ -2193,7 +2222,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                             return (
                                 <article
                                     key={listing.id}
-                                    className="group overflow-hidden rounded-xl border border-gray-200 bg-white transition-all hover:border-orange-200 hover:shadow-lg"
+                                    className={`group overflow-hidden rounded-xl border bg-white transition-all hover:shadow-lg ${listing.isProject
+                                            ? "border-orange-300 hover:border-orange-500"
+                                            : "border-gray-200 hover:border-orange-200"
+                                        }`}
                                 >
                                     <div className="grid grid-cols-1 md:grid-cols-[300px_1fr_200px]">
                                         <div className="relative min-h-[220px] overflow-hidden bg-gray-100">
@@ -2398,19 +2430,26 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                             </div>
 
                                             <div className="flex cursor-pointer items-center justify-between gap-3 bg-gray-50 p-5 md:flex-col md:items-stretch md:justify-between">
-                                                <div className="min-w-0 text-left md:text-right">
-                                                    <p className="text-xl font-bold text-gray-900 sm:text-2xl" style={monoStyle}>
-                                                        {(() => {
-                                                            const { amount, currency } = convertPrice(listing.price, listing.currency);
-                                                            return formatPrice(amount, currency);
-                                                        })()}
-                                                    </p>
-                                                    {listing.saleType === "RENT" && (
-                                                        <p className="text-xs text-gray-400">/ ay</p>
-                                                    )}
-                                                </div>
+                                                {!listing.isProject ? (
+                                                    <div className="min-w-0 text-left md:text-right">
+                                                        <p className="text-xl font-bold text-gray-900 sm:text-2xl" style={monoStyle}>
+                                                            {(() => {
+                                                                const { amount, currency } = convertPrice(listing.price, listing.currency);
+                                                                return formatPrice(amount, currency);
+                                                            })()}
+                                                        </p>
+                                                        {listing.saleType === "RENT" && (
+                                                            <p className="text-xs text-gray-400">/ ay</p>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div />
+                                                )}
 
-                                                <span className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800 md:mt-4 md:w-full md:gap-2 md:px-5 md:py-2.5 md:text-sm">
+                                                <span className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-white transition md:mt-4 md:w-full md:gap-2 md:px-5 md:py-2.5 md:text-sm ${listing.isProject
+                                                        ? "bg-orange-500 hover:bg-orange-600"
+                                                        : "bg-gray-900 hover:bg-gray-800"
+                                                    }`}>
                                                     İncele
                                                     <span aria-hidden="true">{"->"}</span>
                                                 </span>

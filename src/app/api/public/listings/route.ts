@@ -243,7 +243,7 @@ export async function GET(req: NextRequest) {
                 },
                 media: {
                     orderBy: [{ isCover: "desc" }, { order: "asc" }],
-                    take: 4,
+                    take: 16,
                 },
                 tags: {
                     include: {
