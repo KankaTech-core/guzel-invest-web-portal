@@ -1461,6 +1461,12 @@ export default function NewProjectForm({
                     (item) => item.category === "EXTERIOR" && item.type !== "DOCUMENT"
                 );
                 const cover = exterior.find((item) => item.isCover) || exterior[0];
+
+                const videoItems = media.filter((item) => item.type === "VIDEO" && item.category === "PROMO");
+                if (videoItems.length > 0 && videoItems[0].url) {
+                    setPromoVideoUrl(videoItems[0].url);
+                }
+
                 const interior = media.filter(
                     (item) => item.category === "INTERIOR" && item.type !== "DOCUMENT"
                 );
@@ -1962,6 +1968,7 @@ export default function NewProjectForm({
             mapMediaIds: mapMedia.map((media) => media.id),
             documentMediaIds: documents.map((document) => document.id),
             logoMediaIds: logoMedia.map((media) => media.id).slice(0, 1),
+            promoVideoUrl: promoVideoUrl.trim() || null,
         };
     };
 

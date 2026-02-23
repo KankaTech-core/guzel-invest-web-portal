@@ -110,6 +110,7 @@ const UpdateProjectSchema = z.object({
     documentMediaIds: z.array(z.string()).optional(),
     logoMediaIds: z.array(z.string()).optional(),
     homepageProjectSlot: z.number().int().nullable().optional(),
+    promoVideoUrl: z.string().nullable().optional(),
 });
 
 const isPropertyType = (value: unknown): value is PropertyType =>
@@ -505,8 +506,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             safeStatus !== ListingStatus.PUBLISHED
                 ? null
                 : payload.homepageProjectSlot !== undefined
-                  ? requestedHomepageProjectSlot
-                  : existing.homepageProjectSlot;
+                    ? requestedHomepageProjectSlot
+                    : existing.homepageProjectSlot;
 
         if (
             payload.homepageProjectSlot !== undefined &&
@@ -585,8 +586,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                     price:
                         payload.price !== undefined
                             ? new Prisma.Decimal(
-                                  Number.isFinite(payload.price) ? payload.price : 0
-                              )
+                                Number.isFinite(payload.price) ? payload.price : 0
+                            )
                             : undefined,
                     area:
                         payload.area !== undefined
@@ -598,6 +599,25 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                     showOnHomepageHero: nextHomepageProjectSlot !== null,
                 },
             });
+
+            if (payload.promoVideoUrl !== undefined) {
+                await tx.media.deleteMany({
+                    where: { listingId: id, type: "VIDEO", category: "PROMO" },
+                });
+
+                if (payload.promoVideoUrl) {
+                    await tx.media.create({
+                        data: {
+                            listingId: id,
+                            type: "VIDEO",
+                            category: "PROMO",
+                            url: payload.promoVideoUrl.trim(),
+                            order: 0,
+                            isCover: false,
+                        },
+                    });
+                }
+            }
 
             if (payload.translations) {
                 for (const translation of payload.translations) {

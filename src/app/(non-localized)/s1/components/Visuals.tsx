@@ -17,6 +17,7 @@ import {
     type ListingGalleryItem,
 } from "@/components/public/listing-detail-gallery";
 import { dispatchOpenConnectedProjectGallery } from "./project-gallery-events";
+import { hasSocialGalleryImages } from "./media-layout";
 
 interface VisualsProps {
     exteriorVisuals?: S1ExteriorVisualsData;
@@ -92,6 +93,7 @@ export const Visuals = ({
             ),
         [socialFacilities?.title, socialImages]
     );
+    const shouldShowSocialGallery = hasSocialGalleryImages(socialImages);
 
     const interiorGalleryItems = useMemo(
         () =>
@@ -129,54 +131,63 @@ export const Visuals = ({
 
             {visibility.socialFacilities && socialFacilities ? (
                 <section className="bg-white py-24">
-                    <div className="mx-auto grid max-w-7xl gap-16 px-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center">
-                        <div>
-                            <div className={`grid gap-7 ${pickSymmetricGridClass(
-                                socialFacilities.facilities.length
-                            )}`}>
+                    <div
+                        className={
+                            shouldShowSocialGallery
+                                ? "mx-auto grid max-w-7xl gap-16 px-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center"
+                                : "mx-auto max-w-7xl px-4"
+                        }
+                    >
+                        <div className={shouldShowSocialGallery ? "" : "mx-auto w-full max-w-5xl"}>
+                            {shouldShowSocialGallery ? null : (
+                                <h3 className="mb-10 text-center text-3xl font-black uppercase leading-[1.08] tracking-[-0.01em] text-gray-900">
+                                    {socialFacilities.title}
+                                </h3>
+                            )}
+
+                            <div
+                                className={`grid gap-7 ${pickSymmetricGridClass(socialFacilities.facilities.length)}`}
+                            >
                                 {socialFacilities.facilities.map((facility, idx) => (
-                                    <div
-                                        key={`${facility.name}-${idx}`}
-                                        className="group text-center"
-                                    >
+                                    <div key={`${facility.name}-${idx}`} className="group text-center">
                                         <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full border border-gray-100 bg-gray-50 shadow-sm transition-all group-hover:border-orange-500 group-hover:bg-orange-500 group-hover:text-white">
-                                            <ProjectIcon
-                                                name={facility.icon}
-                                                className="h-8 w-8"
-                                            />
+                                            <ProjectIcon name={facility.icon} className="h-8 w-8" />
                                         </div>
-                                        <p className="text-sm font-bold text-gray-700">
-                                            {facility.name}
-                                        </p>
+                                        <p className="text-sm font-bold text-gray-700">{facility.name}</p>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        <div className="flex items-stretch gap-4">
-                            <div className="min-w-0 flex-1">
-                                <ListingDetailGallery
-                                    items={socialGalleryItems}
-                                    title={socialFacilities.title}
-                                    layout="carousel"
-                                    galleryButtonLabel="Sosyal Galeri"
-                                    onRequestOpenGallery={() =>
-                                        dispatchOpenConnectedProjectGallery({ key: "social" })
-                                    }
-                                />
-                                <h3 className={`mt-4 md:hidden ${BIG_SECTION_TITLE_CLASS}`}>
-                                    {socialFacilities.title}
-                                </h3>
+                        {shouldShowSocialGallery ? (
+                            <div className="flex items-stretch gap-4">
+                                <div className="min-w-0 flex-1">
+                                    <ListingDetailGallery
+                                        items={socialGalleryItems}
+                                        title={socialFacilities.title}
+                                        layout="carousel"
+                                        galleryButtonLabel="Sosyal Galeri"
+                                        onRequestOpenGallery={() =>
+                                            dispatchOpenConnectedProjectGallery({ key: "social" })
+                                        }
+                                    />
+                                    <h3 className={`mt-4 md:hidden ${BIG_SECTION_TITLE_CLASS}`}>
+                                        {socialFacilities.title}
+                                    </h3>
+                                </div>
+                                <div className="hidden items-center md:flex">
+                                    <h3
+                                        className="text-[clamp(1.65rem,3.3vw,2.95rem)] font-black uppercase leading-[1.08] tracking-[-0.01em] text-gray-300"
+                                        style={{
+                                            writingMode: "vertical-rl",
+                                            textOrientation: "mixed",
+                                        }}
+                                    >
+                                        {socialFacilities.title}
+                                    </h3>
+                                </div>
                             </div>
-                            <div className="hidden items-center md:flex">
-                                <h3
-                                    className="text-[clamp(1.65rem,3.3vw,2.95rem)] font-black uppercase leading-[1.08] tracking-[-0.01em] text-gray-300"
-                                    style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
-                                >
-                                    {socialFacilities.title}
-                                </h3>
-                            </div>
-                        </div>
+                        ) : null}
                     </div>
                 </section>
             ) : null}

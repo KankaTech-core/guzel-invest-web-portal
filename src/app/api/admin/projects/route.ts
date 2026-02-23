@@ -109,6 +109,7 @@ const CreateProjectSchema = z.object({
     documentMediaIds: z.array(z.string()).optional(),
     logoMediaIds: z.array(z.string()).optional(),
     homepageProjectSlot: z.number().int().nullable().optional(),
+    promoVideoUrl: z.string().nullable().optional(),
 });
 
 const isPropertyType = (value: unknown): value is PropertyType =>
@@ -446,7 +447,7 @@ export async function POST(request: NextRequest) {
 
         const baseSlug =
             normalizeProjectText(payload.slug) &&
-            slugify(normalizeProjectText(payload.slug)!)
+                slugify(normalizeProjectText(payload.slug)!)
                 ? slugify(normalizeProjectText(payload.slug)!)
                 : getProjectSlugBase(projectTitle, city);
         const slug = await ensureUniqueSlug(baseSlug);
@@ -531,6 +532,19 @@ export async function POST(request: NextRequest) {
                     createdById: session.userId,
                 },
             });
+
+            if (payload.promoVideoUrl) {
+                await tx.media.create({
+                    data: {
+                        listingId: created.id,
+                        type: "VIDEO",
+                        category: "PROMO",
+                        url: payload.promoVideoUrl.trim(),
+                        order: 0,
+                        isCover: false,
+                    },
+                });
+            }
 
             for (const translation of payload.translations) {
                 const locale = translation.locale.trim().toLowerCase();

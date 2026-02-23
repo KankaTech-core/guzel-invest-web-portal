@@ -22,6 +22,7 @@ import {
     type ListingGalleryItem,
 } from "@/components/public/listing-detail-gallery";
 import { dispatchOpenConnectedProjectGallery } from "./project-gallery-events";
+import { getMapSectionLayout } from "./media-layout";
 
 interface MapAndCTAProps {
     documents: S1DocumentItem[];
@@ -47,8 +48,13 @@ export const MapAndCTA = ({
         src: item.image,
         alt: item.title || `Harita görseli ${index + 1}`,
     }));
+    const mapSectionLayout = getMapSectionLayout({
+        hasMapContent: visibility.map,
+        mapImageCount: mapGalleryItems.length,
+    });
     const shouldShowDocumentsAndCta = visibility.documents || Boolean(map?.mapsLink);
-    const shouldShowMapBlock = visibility.map || visibility.mapImages;
+    const shouldShowMapBlock = mapSectionLayout.showSection;
+    const mapEmbedHeightClass = mapSectionLayout.useSplitLayout ? "h-[420px]" : "h-[520px]";
     const actionCards = [
         {
             icon: Search,
@@ -182,70 +188,80 @@ export const MapAndCTA = ({
             {shouldShowMapBlock ? (
                 <section className="bg-white py-16">
                     <div className="mx-auto max-w-7xl px-4">
-                        <div className="grid items-start gap-8 lg:grid-cols-2">
-                            <div className="overflow-hidden rounded-[1.9rem] border border-gray-200 bg-white shadow-sm">
-                                <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5">
-                                    <h2 className="text-2xl font-semibold text-[#111828]">Harita</h2>
-                                    {map?.mapsLink ? (
-                                        <a
-                                            href={map.mapsLink}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-2 rounded-full bg-[#ff6900] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#e85f00]"
-                                        >
-                                            <MapPin className="h-4 w-4" />
-                                            Google Maps&apos;te Aç
-                                        </a>
-                                    ) : null}
-                                </div>
-
-                                {map?.embedSrc ? (
-                                    <div className="px-4 pb-4">
-                                        <div className="h-[420px] w-full overflow-hidden rounded-[1.8rem] bg-gray-100">
-                                            <iframe
-                                                src={map.embedSrc}
-                                                className="h-full w-full border-0"
-                                                loading="lazy"
-                                                referrerPolicy="no-referrer-when-downgrade"
-                                                title="Proje konumu"
-                                            />
-                                        </div>
+                        <div
+                            className={
+                                mapSectionLayout.useSplitLayout
+                                    ? "grid items-start gap-8 lg:grid-cols-2"
+                                    : "mx-auto w-full max-w-[1100px]"
+                            }
+                        >
+                            {mapSectionLayout.showMapCard ? (
+                                <div className="overflow-hidden rounded-[1.9rem] border border-gray-200 bg-white shadow-sm">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5">
+                                        <h2 className="text-2xl font-semibold text-[#111828]">
+                                            Harita
+                                        </h2>
+                                        {map?.mapsLink ? (
+                                            <a
+                                                href={map.mapsLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-2 rounded-full bg-[#ff6900] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#e85f00]"
+                                            >
+                                                <MapPin className="h-4 w-4" />
+                                                Google Maps&apos;te Aç
+                                            </a>
+                                        ) : null}
                                     </div>
-                                ) : (
-                                    <div className="px-4 pb-4">
-                                        <div className="flex h-[420px] w-full items-center justify-center rounded-[1.8rem] bg-gray-100 text-sm text-gray-500">
-                                            Harita konumu mevcut değil
+
+                                    {map?.embedSrc ? (
+                                        <div className="px-4 pb-4">
+                                            <div
+                                                className={`${mapEmbedHeightClass} w-full overflow-hidden rounded-[1.8rem] bg-gray-100`}
+                                            >
+                                                <iframe
+                                                    src={map.embedSrc}
+                                                    className="h-full w-full border-0"
+                                                    loading="lazy"
+                                                    referrerPolicy="no-referrer-when-downgrade"
+                                                    title="Proje konumu"
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="overflow-hidden rounded-[1.9rem] border border-gray-200 bg-white shadow-sm">
-                                <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5">
-                                    <h3 className="text-2xl font-semibold text-[#111828]">
-                                        Harita Görselleri
-                                    </h3>
+                                    ) : (
+                                        <div className="px-4 pb-4">
+                                            <div
+                                                className={`${mapEmbedHeightClass} flex w-full items-center justify-center rounded-[1.8rem] bg-gray-100 text-sm text-gray-500`}
+                                            >
+                                                Harita konumu mevcut değil
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
+                            ) : null}
 
-                                <div className="px-4 pb-4">
-                                    {mapGalleryItems.length > 0 ? (
+                            {mapSectionLayout.showMapGalleryCard ? (
+                                <div className="overflow-hidden rounded-[1.9rem] border border-gray-200 bg-white shadow-sm">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5">
+                                        <h3 className="text-2xl font-semibold text-[#111828]">
+                                            Harita Görselleri
+                                        </h3>
+                                    </div>
+
+                                    <div className="px-4 pb-4">
                                         <ListingDetailGallery
                                             items={mapGalleryItems}
                                             title="Harita Görselleri"
                                             layout="carousel"
                                             galleryButtonLabel="Harita Galerisi"
-                                            desktopHeightClass="h-[420px]"
+                                            desktopHeightClass={mapEmbedHeightClass}
                                             onRequestOpenGallery={() =>
                                                 dispatchOpenConnectedProjectGallery({ key: "map" })
                                             }
                                         />
-                                    ) : (
-                                        <div className="flex h-[420px] w-full items-center justify-center rounded-[1.8rem] border border-gray-200 bg-gray-100 text-sm text-gray-500">
-                                            Harita görseli bulunmuyor
-                                        </div>
-                                    )}
+                                    </div>
                                 </div>
-                            </div>
+                            ) : null}
                         </div>
                     </div>
                 </section>

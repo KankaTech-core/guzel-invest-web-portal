@@ -129,15 +129,53 @@ export const ProjectInfo = ({
             ) : null}
 
             {visibility.video && videoUrl ? (
-                <section className="bg-white py-16">
+                <section className="bg-white py-16 lg:py-24">
                     <div className="mx-auto max-w-5xl px-4">
-                        <div className="aspect-video overflow-hidden rounded-3xl border border-gray-100 bg-gray-100">
-                            <video
-                                controls
-                                preload="metadata"
-                                className="h-full w-full object-cover"
-                                src={videoUrl}
-                            />
+                        <div className="mb-10 text-center">
+                            <h2 className="text-3xl font-bold text-gray-900">
+                                Proje Tanıtım Videosu
+                            </h2>
+                        </div>
+                        <div className="aspect-video overflow-hidden rounded-3xl border border-gray-100 bg-gray-100 shadow-xl shadow-gray-200/50">
+                            {(() => {
+                                const url = videoUrl;
+                                let embedUrl = null;
+
+                                if (url.includes('youtube.com/embed/') || url.includes('player.vimeo.com/video/')) {
+                                    embedUrl = url;
+                                } else {
+                                    const ytMatch = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
+                                    if (ytMatch && ytMatch[2].length === 11) {
+                                        embedUrl = `https://www.youtube.com/embed/${ytMatch[2]}`;
+                                    } else {
+                                        const vimeoMatch = url.match(/vimeo\.com\/(?:.*#|.*\/videos\/)?([0-9]+)/);
+                                        if (vimeoMatch && vimeoMatch[1]) {
+                                            embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+                                        }
+                                    }
+                                }
+
+                                if (embedUrl) {
+                                    return (
+                                        <iframe
+                                            src={embedUrl}
+                                            title="Tanıtım Videosu"
+                                            className="h-full w-full border-0"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            allowFullScreen
+                                        />
+                                    );
+                                }
+
+                                return (
+                                    <video
+                                        controls
+                                        preload="metadata"
+                                        className="h-full w-full object-cover"
+                                        src={videoUrl}
+                                    />
+                                );
+                            })()}
                         </div>
                     </div>
                 </section>
