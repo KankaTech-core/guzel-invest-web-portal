@@ -349,7 +349,7 @@ export default function HomePage() {
         const loadHomepageProjects = async () => {
             try {
                 const response = await fetch(
-                    `/api/public/projects?locale=${locale}`,
+                    `/api/public/projects?locale=${locale}&homepage=1`,
                     {
                         signal: controller.signal,
                         cache: "no-store",
@@ -479,7 +479,7 @@ export default function HomePage() {
             ? getMediaUrl(project.images[index])
             : "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=700&h=900&fit=crop";
     const getProjectHref = (project: HomepageProject) =>
-        project.slug ? `/${locale}/ilan/${project.slug}` : null;
+        project.slug ? `/${locale}/proje/${project.slug}` : null;
     const canNavigateHero = safeHeroListings.length > 1;
     const canNavigateProject = safeHeroProjects.length > 1;
     const HERO_SWIPE_THRESHOLD_PX = 42;

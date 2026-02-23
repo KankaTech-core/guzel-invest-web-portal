@@ -12,7 +12,7 @@ export const HeroSection = ({ hero }: HeroSectionProps) => {
     const backgroundImage = hero.backgroundImage || FALLBACK_HERO_IMAGE;
 
     return (
-        <section className="relative h-[85vh] min-h-[520px] w-full overflow-hidden">
+        <section className="relative h-[100svh] min-h-[560px] w-full overflow-hidden">
             <div
                 className="absolute inset-0 bg-cover bg-center"
                 style={{

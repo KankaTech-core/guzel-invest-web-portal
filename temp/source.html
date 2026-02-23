@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Projeler - Güzel İnşaat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ec6804",
+                        "background-light": "#fcfaf8",
+                        "background-dark": "#23180f",
+                        "dark-gray": "#111827",
+                        "soft-gray": "#f9fafb"
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .soft-shadow {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
+<div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="text-primary">
+<svg class="w-8 h-8" fill="currentColor" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M4 4H17.3334V17.3334H30.6666V30.6666H44V44H4V4Z"></path>
+</svg>
+</div>
+<h1 class="text-xl font-bold tracking-tight text-dark-gray dark:text-slate-100">Güzel İnşaat</h1>
+</div>
+<nav class="hidden md:flex items-center gap-10">
+<a class="text-sm font-semibold hover:text-primary transition-colors" href="#">Anasayfa</a>
+<a class="text-sm font-semibold text-primary" href="#">Projeler</a>
+<a class="text-sm font-semibold hover:text-primary transition-colors" href="#">Hakkımızda</a>
+<a class="text-sm font-semibold hover:text-primary transition-colors" href="#">İletişim</a>
+</nav>
+<button class="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all shadow-md active:scale-95">
+                Bize Ulaşın
+            </button>
+</div>
+</header>
+<main>
+<!-- Hero Section -->
+<section class="py-20 bg-white dark:bg-background-dark overflow-hidden">
+<div class="max-w-7xl mx-auto px-6 text-center">
+<h2 class="text-5xl md:text-7xl font-black text-dark-gray dark:text-white tracking-tighter mb-6">
+                    Projelerimiz
+                </h2>
+<p class="text-slate-500 dark:text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
+                    Güzel İnşaat ile hayalinizdeki yaşama ve güvenli yatırıma bir adım daha yaklaşın. Alanya'nın en seçkin noktalarında modern mimariyi keşfedin.
+                </p>
+</div>
+</section>
+<!-- Stats Section -->
+<section class="pb-20 bg-white dark:bg-background-dark">
+<div class="max-w-7xl mx-auto px-6">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+<div class="flex flex-col items-center p-8 rounded-xl border border-slate-100 dark:border-slate-800 soft-shadow bg-background-light dark:bg-slate-900/50">
+<span class="material-symbols-outlined text-primary mb-3 text-3xl">verified_user</span>
+<p class="text-3xl font-bold text-dark-gray dark:text-white mb-1">25+</p>
+<p class="text-sm text-slate-500 font-medium">Yıllık Tecrübe</p>
+</div>
+<div class="flex flex-col items-center p-8 rounded-xl border border-slate-100 dark:border-slate-800 soft-shadow bg-background-light dark:bg-slate-900/50">
+<span class="material-symbols-outlined text-primary mb-3 text-3xl">home_work</span>
+<p class="text-3xl font-bold text-dark-gray dark:text-white mb-1">500+</p>
+<p class="text-sm text-slate-500 font-medium">Tamamlanan Konut</p>
+</div>
+<div class="flex flex-col items-center p-8 rounded-xl border border-slate-100 dark:border-slate-800 soft-shadow bg-background-light dark:bg-slate-900/50">
+<span class="material-symbols-outlined text-primary mb-3 text-3xl">family_restroom</span>
+<p class="text-3xl font-bold text-dark-gray dark:text-white mb-1">1000+</p>
+<p class="text-sm text-slate-500 font-medium">Mutlu Aile</p>
+</div>
+<div class="flex flex-col items-center p-8 rounded-xl border border-slate-100 dark:border-slate-800 soft-shadow bg-background-light dark:bg-slate-900/50">
+<span class="material-symbols-outlined text-primary mb-3 text-3xl">construction</span>
+<p class="text-3xl font-bold text-dark-gray dark:text-white mb-1">15+</p>
+<p class="text-sm text-slate-500 font-medium">Aktif Proje</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Why Choose Us -->
+<section class="py-24 bg-soft-gray dark:bg-slate-900/30">
+<div class="max-w-7xl mx-auto px-6">
+<div class="grid md:grid-cols-2 gap-12 items-start">
+<div class="space-y-4">
+<div class="flex items-center gap-3 text-primary mb-2">
+<span class="h-px w-8 bg-primary"></span>
+<span class="uppercase tracking-widest text-xs font-bold">Güven ve Kalite</span>
+</div>
+<h3 class="text-3xl font-bold text-dark-gray dark:text-white">Neden Güzel İnşaat?</h3>
+<p class="text-slate-600 dark:text-slate-400 leading-relaxed text-lg">
+                            Yüksek inşaat kalitesi, modern mimari ve zamanında teslimat prensibiyle güven inşa ediyoruz. Her projemizde deprem yönetmeliğine uygun, sürdürülebilir ve estetik çözümler sunarak yaşam alanlarınızı değerli kılıyoruz.
+                        </p>
+</div>
+<div class="space-y-4">
+<div class="flex items-center gap-3 text-primary mb-2">
+<span class="h-px w-8 bg-primary"></span>
+<span class="uppercase tracking-widest text-xs font-bold">Lokasyon Avantajı</span>
+</div>
+<h3 class="text-3xl font-bold text-dark-gray dark:text-white">Neden Alanya?</h3>
+<p class="text-slate-600 dark:text-slate-400 leading-relaxed text-lg">
+                            Akdeniz'in incisi Alanya, hem yaşam kalitesi hem de yüksek yatırım potansiyeli ile eşsiz bir lokasyon sunar. Yılın 300 günü güneşli havası, eşsiz plajları ve gelişmiş altyapısıyla küresel bir çekim merkezidir.
+                        </p>
+</div>
+</div>
+</div>
+</section>
+<!-- Projects List (Alternating) -->
+<section class="py-24 bg-white dark:bg-background-dark">
+<div class="max-w-7xl mx-auto px-6 space-y-32">
+<!-- Project 1: Left Image -->
+<div class="flex flex-col md:flex-row items-center gap-12">
+<div class="w-full md:w-1/2 aspect-[4/3] rounded-xl overflow-hidden soft-shadow relative group">
+<img alt="Güzel Deluxe Project" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Modern luxury residential complex with pool" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCM9hnL_jnrZ-NfRX4vCtIqJR6jGmN_DQaHHVcXU7zP6Zp4-EUMQqUbDkWgu1x-6SfRLIMGqtaGZHweGbKOGHBv7J55X87pC9ENNFxM_KRTGikRGRc9RmLVe8snGfkbG6tM0JlX3zN506P7RC3bFUGDo0zE3-mD8n4D7jncFYdTv2QGdIUaLD_vH_Mh_M7zVcFhaWsoI6Q1Pef3FgSqJUHLGo_YKfvTe3kdoCXUgfQgh2o1ye44cKmEOL6-FMDub8bTPADbO7c1po"/>
+<div class="absolute inset-0 bg-gradient-to-t from-dark-gray/40 to-transparent"></div>
+</div>
+<div class="w-full md:w-1/2 space-y-6">
+<h4 class="text-4xl font-bold text-dark-gray dark:text-white">Güzel Deluxe</h4>
+<p class="text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
+                            Alanya'nın merkezinde, lüks ve konforun buluştuğu Güzel Deluxe, panoramik deniz manzarası ve 5 yıldızlı otel konforundaki sosyal alanlarıyla sizi bekliyor. Modern iç mimarisi ve geniş balkonları ile ferah bir yaşam alanı sunuyor.
+                        </p>
+<ul class="space-y-3 text-slate-600 dark:text-slate-400">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Akıllı Ev Sistemleri</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Yüzme Havuzu ve Fitness</li>
+</ul>
+<button class="bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-lg text-sm font-bold shadow-lg transition-all active:scale-95">
+                            Detayları İncele
+                        </button>
+</div>
+</div>
+<!-- Project 2: Right Image -->
+<div class="flex flex-col md:flex-row-reverse items-center gap-12">
+<div class="w-full md:w-1/2 aspect-[4/3] rounded-xl overflow-hidden soft-shadow relative group">
+<img alt="Alanya Marina Homes" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Luxury beachfront villa complex at sunset" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYJ63KNo_W4205Mh716B_qTSg94iEQq9iad2PNCEaAxmKnOPfaw4qBY-fsBHLshX8e8V-YBgFSr5X41pxls3H1j4zPKVy9OWYCtVESpnCCfizKH9yBCfbnKcWxF4fy1IP3NG4z_OTkjRrls9H7dLO4fi9laLkADDU2YnjP2vpGQtJlgJveSjWohwUTuZslQCT8RtlkjvxjifegMe9fC0YO2uyqwAzMAIPwy21drnMadpSZ5XEejz2mhs5QsHqhWE5v7Bymcz8V0_c"/>
+<div class="absolute inset-0 bg-gradient-to-t from-dark-gray/40 to-transparent"></div>
+</div>
+<div class="w-full md:w-1/2 space-y-6">
+<h4 class="text-4xl font-bold text-dark-gray dark:text-white">Alanya Marina Homes</h4>
+<p class="text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
+                            Marina'ya sadece yürüme mesafesinde olan bu proje, deniz severler için tasarlandı. Özel yat iskelesi erişimi ve butik yaşam konseptiyle Alanya Marina Homes, prestijli bir yaşamın kapılarını aralıyor.
+                        </p>
+<ul class="space-y-3 text-slate-600 dark:text-slate-400">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Özel Marina Erişimi</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Butik Site Konsepti</li>
+</ul>
+<button class="bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-lg text-sm font-bold shadow-lg transition-all active:scale-95">
+                            Detayları İncele
+                        </button>
+</div>
+</div>
+<!-- Project 3: Left Image -->
+<div class="flex flex-col md:flex-row items-center gap-12">
+<div class="w-full md:w-1/2 aspect-[4/3] rounded-xl overflow-hidden soft-shadow relative group">
+<img alt="Sunset Residences" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Modern glass high-rise apartments reflecting sunset" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwJ4MmoYwKWXLrWOaCqozqxCiqNFDad_FVdXznSsPgrB2hMtsnG5wLTypijX8DbKjm9eTZG2aiDjg6Lvc1AOOdB7ggEn4g1cPeVoPnvffisMXSYFKKiMHTRvxrHWRY-3IcxNEC7J1dZbmfxwmwNn4Y5IQtxlhhtCaZK_p5M8WZubXE3-IxMStq56WiFYEMy6musB4q9__kmIYuBGpqmWzvt-8ROqIa1x08Vt5rov7nrd7L2kShEtQEpDZIdr_FvSBigZ6eZTE7e5Q"/>
+<div class="absolute inset-0 bg-gradient-to-t from-dark-gray/40 to-transparent"></div>
+</div>
+<div class="w-full md:w-1/2 space-y-6">
+<h4 class="text-4xl font-bold text-dark-gray dark:text-white">Sunset Residences</h4>
+<p class="text-slate-600 dark:text-slate-400 text-lg leading-relaxed">
+                            Toros Dağları'nın yamacında, şehrin gürültüsünden uzak ama merkeze çok yakın. Sunset Residences, doğa ile iç içe, sürdürülebilir enerji çözümleriyle donatılmış modern bir yerleşim yeri.
+                        </p>
+<ul class="space-y-3 text-slate-600 dark:text-slate-400">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Doğa Dostu Mimari</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-sm">check_circle</span> Panoramik Dağ Manzarası</li>
+</ul>
+<button class="bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-lg text-sm font-bold shadow-lg transition-all active:scale-95">
+                            Detayları İncele
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- FAQ Section -->
+<section class="py-24 bg-soft-gray dark:bg-slate-900/30">
+<div class="max-w-3xl mx-auto px-6">
+<div class="text-center mb-16">
+<h3 class="text-3xl font-bold text-dark-gray dark:text-white mb-4">Sıkça Sorulan Sorular</h3>
+<p class="text-slate-500">Alanya'da gayrimenkul yatırımı hakkında merak ettikleriniz.</p>
+</div>
+<div class="space-y-4">
+<div class="bg-white dark:bg-slate-900 rounded-lg p-6 soft-shadow border border-slate-100 dark:border-slate-800">
+<details class="group">
+<summary class="flex items-center justify-between cursor-pointer list-none">
+<span class="font-bold text-dark-gray dark:text-slate-100">Yabancılar Alanya'da nasıl mülk edinebilir?</span>
+<span class="material-symbols-outlined transition-transform group-open:rotate-180 text-primary">expand_more</span>
+</summary>
+<p class="mt-4 text-slate-600 dark:text-slate-400 leading-relaxed">
+                                Yabancı uyruklu kişiler, Türkiye'de karşılıklı anlaşmalar çerçevesinde mülk edinebilirler. Güzel İnşaat olarak, tapu işlemlerinden ikamet iznine kadar tüm süreçlerde danışmanlık sağlıyoruz.
+                            </p>
+</details>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-lg p-6 soft-shadow border border-slate-100 dark:border-slate-800">
+<details class="group">
+<summary class="flex items-center justify-between cursor-pointer list-none">
+<span class="font-bold text-dark-gray dark:text-slate-100">İnşaat garantileriniz nelerdir?</span>
+<span class="material-symbols-outlined transition-transform group-open:rotate-180 text-primary">expand_more</span>
+</summary>
+<p class="mt-4 text-slate-600 dark:text-slate-400 leading-relaxed">
+                                Tüm projelerimiz yapı denetim firmaları tarafından kontrol edilmektedir. Ayrıca Güzel İnşaat olarak yapısal unsurlarda 5 yıl, ince işçilikte 2 yıl firma garantisi sunuyoruz.
+                            </p>
+</details>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-lg p-6 soft-shadow border border-slate-100 dark:border-slate-800">
+<details class="group">
+<summary class="flex items-center justify-between cursor-pointer list-none">
+<span class="font-bold text-dark-gray dark:text-slate-100">Ödeme planları nasıl yapılıyor?</span>
+<span class="material-symbols-outlined transition-transform group-open:rotate-180 text-primary">expand_more</span>
+</summary>
+<p class="mt-4 text-slate-600 dark:text-slate-400 leading-relaxed">
+                                İnşaatı devam eden projelerimizde %30-%50 peşinat ve kalanı için vade farksız taksit imkanları sunuyoruz. Nakit alımlarda ise özel indirimlerimiz mevcuttur.
+                            </p>
+</details>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-lg p-6 soft-shadow border border-slate-100 dark:border-slate-800">
+<details class="group">
+<summary class="flex items-center justify-between cursor-pointer list-none">
+<span class="font-bold text-dark-gray dark:text-slate-100">Vatandaşlık süreci nasıl işliyor?</span>
+<span class="material-symbols-outlined transition-transform group-open:rotate-180 text-primary">expand_more</span>
+</summary>
+<p class="mt-4 text-slate-600 dark:text-slate-400 leading-relaxed">
+                                400.000 USD ve üzeri gayrimenkul yatırımı yapan yabancı yatırımcılar, Türk vatandaşlığına başvuru hakkı kazanmaktadır. Hukuk departmanımız bu süreçte yanınızdadır.
+                            </p>
+</details>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="py-24 bg-white dark:bg-background-dark">
+<div class="max-w-7xl mx-auto px-6">
+<div class="bg-dark-gray dark:bg-slate-900 rounded-3xl p-12 md:p-20 text-center relative overflow-hidden">
+<div class="absolute inset-0 opacity-10">
+<div class="absolute inset-0 bg-primary/20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary/40 via-transparent to-transparent"></div>
+</div>
+<div class="relative z-10">
+<h2 class="text-4xl md:text-5xl font-bold text-white mb-6">
+                            Hayalinizdeki Eve Bir Adım Uzaktasınız
+                        </h2>
+<p class="text-slate-300 text-lg mb-10 max-w-2xl mx-auto">
+                            Size en uygun projeyi bulmak ve özel tekliflerimizden yararlanmak için ekibimizle hemen iletişime geçin.
+                        </p>
+<button class="bg-primary hover:bg-primary/90 text-white px-10 py-4 rounded-lg text-lg font-bold shadow-xl transition-all hover:scale-105 active:scale-95">
+                            Hemen Randevu Alın
+                        </button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-background-light dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 py-12">
+<div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="flex items-center gap-3">
+<div class="text-primary/60">
+<svg class="w-6 h-6" fill="currentColor" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M4 4H17.3334V17.3334H30.6666V30.6666H44V44H4V4Z"></path>
+</svg>
+</div>
+<h2 class="text-lg font-bold text-dark-gray dark:text-slate-100">Güzel İnşaat</h2>
+</div>
+<p class="text-slate-500 text-sm">© 2024 Güzel İnşaat. Tüm hakları saklıdır.</p>
+<div class="flex gap-6">
+<a class="text-slate-400 hover:text-primary transition-colors" href="#">Instagram</a>
+<a class="text-slate-400 hover:text-primary transition-colors" href="#">LinkedIn</a>
+<a class="text-slate-400 hover:text-primary transition-colors" href="#">Facebook</a>
+</div>
+</div>
+</footer>
+</body></html>

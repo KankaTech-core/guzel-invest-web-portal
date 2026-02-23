@@ -4,6 +4,7 @@ import { Prisma, PropertyType, SaleType, ListingStatus } from "@/generated/prism
 import { getSession } from "@/lib/auth";
 import { replaceProjectMediaAssignments } from "@/lib/project-media-assignments";
 import { prisma } from "@/lib/prisma";
+import { parseHomepageProjectSlot } from "@/lib/homepage-project-carousel";
 import {
     getProjectSlugBase,
     normalizeProjectIcon,
@@ -106,6 +107,8 @@ const CreateProjectSchema = z.object({
     interiorMediaIds: z.array(z.string()).optional(),
     mapMediaIds: z.array(z.string()).optional(),
     documentMediaIds: z.array(z.string()).optional(),
+    logoMediaIds: z.array(z.string()).optional(),
+    homepageProjectSlot: z.number().int().nullable().optional(),
 });
 
 const isPropertyType = (value: unknown): value is PropertyType =>
@@ -451,6 +454,28 @@ export async function POST(request: NextRequest) {
         const status = normalizeProjectStatus(payload.status, ListingStatus.DRAFT);
         const safeStatus =
             status === ListingStatus.REMOVED ? ListingStatus.DRAFT : status;
+        const requestedHomepageProjectSlot = parseHomepageProjectSlot(
+            payload.homepageProjectSlot
+        );
+
+        if (requestedHomepageProjectSlot === "invalid") {
+            return NextResponse.json(
+                { error: "Homepage project slot must be 1, 2, or 3." },
+                { status: 400 }
+            );
+        }
+
+        if (
+            requestedHomepageProjectSlot !== null &&
+            safeStatus !== ListingStatus.PUBLISHED
+        ) {
+            return NextResponse.json(
+                {
+                    error: "Ana sayfada göstermek için proje yayında olmalıdır.",
+                },
+                { status: 400 }
+            );
+        }
         const propertyType = isPropertyType(payload.type)
             ? payload.type
             : PropertyType.APARTMENT;
@@ -459,6 +484,19 @@ export async function POST(request: NextRequest) {
             : SaleType.SALE;
 
         const listing = await prisma.$transaction(async (tx) => {
+            if (requestedHomepageProjectSlot !== null) {
+                await tx.listing.updateMany({
+                    where: {
+                        isProject: true,
+                        homepageProjectSlot: requestedHomepageProjectSlot,
+                    },
+                    data: {
+                        homepageProjectSlot: null,
+                        showOnHomepageHero: false,
+                    },
+                });
+            }
+
             const created = await tx.listing.create({
                 data: {
                     slug,
@@ -486,6 +524,8 @@ export async function POST(request: NextRequest) {
                             ? Math.max(0, Math.trunc(payload.area))
                             : 0,
                     isProject: true,
+                    showOnHomepageHero: requestedHomepageProjectSlot !== null,
+                    homepageProjectSlot: requestedHomepageProjectSlot,
                     projectType: normalizeProjectText(payload.projectType || ""),
                     deliveryDate: normalizeProjectText(payload.deliveryDate || ""),
                     createdById: session.userId,
@@ -529,6 +569,7 @@ export async function POST(request: NextRequest) {
                 interiorMediaIds: payload.interiorMediaIds,
                 mapMediaIds: payload.mapMediaIds,
                 documentMediaIds: payload.documentMediaIds,
+                logoMediaIds: payload.logoMediaIds,
             });
 
             return created;

@@ -266,8 +266,8 @@ function InlineDropdown({
                 disabled={disabled}
                 onClick={() => setIsOpen((previous) => !previous)}
                 className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm outline-none transition ring-orange-500 focus:ring-2 ${disabled
-                        ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                        : "cursor-pointer border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300"
+                    ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
+                    : "cursor-pointer border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300"
                     }`}
             >
                 <span className={selectedOption ? "" : "text-gray-400"}>
@@ -294,8 +294,8 @@ function InlineDropdown({
                                             setIsOpen(false);
                                         }}
                                         className={`flex w-full cursor-pointer items-center justify-between px-3 py-2 text-left text-sm transition ${isActive
-                                                ? "bg-orange-50 text-orange-600"
-                                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                            ? "bg-orange-50 text-orange-600"
+                                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                                             }`}
                                     >
                                         <span>{option.label}</span>
@@ -1421,8 +1421,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 }))
                             }
                             className={`w-full cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${filters.saleType === saleType.value
-                                    ? "border-orange-500 bg-orange-500 text-white"
-                                    : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                                ? "border-orange-500 bg-orange-500 text-white"
+                                : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
                                 }`}
                         >
                             {saleType.label}
@@ -1456,8 +1456,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                     <div className="flex items-center gap-2">
                         <span
                             className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${filters.types.length > 0
-                                    ? "bg-orange-100 text-orange-700"
-                                    : "bg-gray-100 text-gray-500"
+                                ? "bg-orange-100 text-orange-700"
+                                : "bg-gray-100 text-gray-500"
                                 }`}
                         >
                             {filters.types.length}
@@ -1487,8 +1487,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                         <span
                                             aria-hidden="true"
                                             className={`inline-flex h-4 w-4 items-center justify-center rounded border transition ${isSelected
-                                                    ? "border-orange-500 bg-orange-500 text-white"
-                                                    : "border-gray-300 bg-white text-transparent"
+                                                ? "border-orange-500 bg-orange-500 text-white"
+                                                : "border-gray-300 bg-white text-transparent"
                                                 }`}
                                         >
                                             <Check className="h-3 w-3" />
@@ -1968,8 +1968,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 }))
                             }
                             className={`w-full cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${filters.hasWaterSource === true
-                                    ? "border-orange-500 bg-orange-500 text-white"
-                                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                                ? "border-orange-500 bg-orange-500 text-white"
+                                : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                                 }`}
                         >
                             Su Kaynağı Olanlar
@@ -1984,8 +1984,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 }))
                             }
                             className={`w-full cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${filters.hasFruitTrees === true
-                                    ? "border-orange-500 bg-orange-500 text-white"
-                                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                                ? "border-orange-500 bg-orange-500 text-white"
+                                : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                                 }`}
                         >
                             Meyve Ağacı Olanlar
@@ -2006,8 +2006,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 type="button"
                                 onClick={() => toggleRoom(room)}
                                 className={`cursor-pointer rounded-md px-2 py-1.5 text-xs font-medium transition ${filters.rooms.includes(room)
-                                        ? "bg-orange-500 text-white"
-                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                    ? "bg-orange-500 text-white"
+                                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                     }`}
                             >
                                 {room}
@@ -2040,8 +2040,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 closeMobilePanel();
                             }}
                             className={`flex w-full cursor-pointer items-center justify-between rounded-lg border px-3 py-2.5 text-left text-sm transition ${isActive
-                                    ? "border-orange-500 bg-orange-50 text-orange-700"
-                                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"
+                                ? "border-orange-500 bg-orange-50 text-orange-700"
+                                : "border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50"
                                 }`}
                         >
                             <span>{option.label}</span>
@@ -2223,8 +2223,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 <article
                                     key={listing.id}
                                     className={`group overflow-hidden rounded-xl border bg-white transition-all hover:shadow-lg ${listing.isProject
-                                            ? "border-orange-300 hover:border-orange-500"
-                                            : "border-gray-200 hover:border-orange-200"
+                                        ? "border-orange-300 hover:border-orange-500"
+                                        : "border-gray-200 hover:border-orange-200"
                                         }`}
                                 >
                                     <div className="grid grid-cols-1 md:grid-cols-[300px_1fr_200px]">
@@ -2342,7 +2342,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                         </div>
 
                                         <Link
-                                            href={`/${locale}/ilan/${listing.slug}`}
+                                            href={listing.isProject ? `/${locale}/proje/${listing.slug}` : `/${locale}/ilan/${listing.slug}`}
                                             className="contents"
                                         >
                                             <div className="flex cursor-pointer flex-col justify-between border-r border-gray-100 p-5">
@@ -2391,8 +2391,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                     </p>
                                                     <span
                                                         className={`mt-1 inline-flex h-6 items-center text-xs font-semibold transition ${hasDescriptionOverflow
-                                                                ? "text-orange-600 hover:text-orange-700"
-                                                                : "invisible"
+                                                            ? "text-orange-600 hover:text-orange-700"
+                                                            : "invisible"
                                                             }`}
                                                     >
                                                         Devamını oku
@@ -2447,8 +2447,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                 )}
 
                                                 <span className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-white transition md:mt-4 md:w-full md:gap-2 md:px-5 md:py-2.5 md:text-sm ${listing.isProject
-                                                        ? "bg-orange-500 hover:bg-orange-600"
-                                                        : "bg-gray-900 hover:bg-gray-800"
+                                                    ? "bg-orange-500 hover:bg-orange-600"
+                                                    : "bg-gray-900 hover:bg-gray-800"
                                                     }`}>
                                                     İncele
                                                     <span aria-hidden="true">{"->"}</span>
@@ -2521,8 +2521,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                             type="button"
                             onClick={() => toggleMobilePanel("filter")}
                             className={`inline-flex cursor-pointer items-center justify-center gap-1.5 border-y border-r border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold uppercase tracking-wide shadow-[0_3px_14px_rgba(15,23,42,0.08)] transition ${activeMobilePanel === "filter" && isMobileDrawerOpen
-                                    ? "bg-gray-900 text-white"
-                                    : "text-gray-700 hover:bg-gray-50"
+                                ? "bg-gray-900 text-white"
+                                : "text-gray-700 hover:bg-gray-50"
                                 }`}
                         >
                             <SlidersHorizontal className="h-3.5 w-3.5" />
@@ -2532,8 +2532,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                             type="button"
                             onClick={() => toggleMobilePanel("sort")}
                             className={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-r-xl border-y border-r border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold uppercase tracking-wide shadow-[0_3px_14px_rgba(15,23,42,0.08)] transition ${activeMobilePanel === "sort" && isMobileDrawerOpen
-                                    ? "bg-gray-900 text-white"
-                                    : "text-gray-700 hover:bg-gray-50"
+                                ? "bg-gray-900 text-white"
+                                : "text-gray-700 hover:bg-gray-50"
                                 }`}
                         >
                             <ArrowUpDown className="h-3.5 w-3.5" />

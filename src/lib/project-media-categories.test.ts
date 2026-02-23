@@ -10,9 +10,10 @@ test("getProvidedProjectMediaCategories returns only explicitly provided keys", 
     const categories = getProvidedProjectMediaCategories({
         interiorMediaIds: ["m1"],
         documentMediaIds: [],
+        logoMediaIds: ["m-logo"],
     });
 
-    assert.deepEqual(categories, ["INTERIOR", "DOCUMENT"]);
+    assert.deepEqual(categories, ["INTERIOR", "DOCUMENT", "LOGO"]);
 });
 
 test("getNormalizedProjectMediaAssignments trims and deduplicates ids", () => {
@@ -30,9 +31,10 @@ test("buildProjectMediaCategoryMap resolves duplicates with last category preced
         exteriorMediaIds: ["m1", "m2"],
         interiorMediaIds: ["m2", "m3"],
         documentMediaIds: ["m1"],
+        logoMediaIds: ["m3"],
     });
 
     assert.equal(map.get("m1"), "DOCUMENT");
     assert.equal(map.get("m2"), "INTERIOR");
-    assert.equal(map.get("m3"), "INTERIOR");
+    assert.equal(map.get("m3"), "LOGO");
 });

@@ -19,6 +19,7 @@ export interface Listing {
     area: number;
     district: string;
     city: string;
+    isProject?: boolean;
     translations?: { title?: string }[];
     media?: { url: string }[];
 }
@@ -37,7 +38,7 @@ export function ListingCard({ listing, locale }: ListingCardProps) {
         <div className="card card-interactive group bg-white">
             {/* Image Section */}
             <Link
-                href={`/${locale}/ilan/${listing.slug}`}
+                href={listing.isProject ? `/${locale}/proje/${listing.slug}` : `/${locale}/ilan/${listing.slug}`}
                 className="block relative aspect-[4/3] overflow-hidden bg-gray-100"
             >
                 {imageUrl ? (

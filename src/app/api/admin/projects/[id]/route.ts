@@ -4,6 +4,7 @@ import { Prisma, PropertyType, SaleType, ListingStatus } from "@/generated/prism
 import { getSession } from "@/lib/auth";
 import { replaceProjectMediaAssignments } from "@/lib/project-media-assignments";
 import { prisma } from "@/lib/prisma";
+import { parseHomepageProjectSlot } from "@/lib/homepage-project-carousel";
 import {
     normalizeProjectIcon,
     normalizeProjectFeatureCategory,
@@ -107,6 +108,8 @@ const UpdateProjectSchema = z.object({
     interiorMediaIds: z.array(z.string()).optional(),
     mapMediaIds: z.array(z.string()).optional(),
     documentMediaIds: z.array(z.string()).optional(),
+    logoMediaIds: z.array(z.string()).optional(),
+    homepageProjectSlot: z.number().int().nullable().optional(),
 });
 
 const isPropertyType = (value: unknown): value is PropertyType =>
@@ -458,7 +461,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
         const existing = await prisma.listing.findFirst({
             where: { id, isProject: true },
-            select: { id: true, status: true, city: true, district: true },
+            select: {
+                id: true,
+                status: true,
+                city: true,
+                district: true,
+                homepageProjectSlot: true,
+            },
         });
 
         if (!existing) {
@@ -481,8 +490,52 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         const status = normalizeProjectStatus(payload.status, existing.status);
         const safeStatus =
             status === ListingStatus.REMOVED ? existing.status : status;
+        const requestedHomepageProjectSlot = parseHomepageProjectSlot(
+            payload.homepageProjectSlot
+        );
+
+        if (requestedHomepageProjectSlot === "invalid") {
+            return NextResponse.json(
+                { error: "Homepage project slot must be 1, 2, or 3." },
+                { status: 400 }
+            );
+        }
+
+        const nextHomepageProjectSlot =
+            safeStatus !== ListingStatus.PUBLISHED
+                ? null
+                : payload.homepageProjectSlot !== undefined
+                  ? requestedHomepageProjectSlot
+                  : existing.homepageProjectSlot;
+
+        if (
+            payload.homepageProjectSlot !== undefined &&
+            requestedHomepageProjectSlot !== null &&
+            safeStatus !== ListingStatus.PUBLISHED
+        ) {
+            return NextResponse.json(
+                {
+                    error: "Ana sayfada göstermek için proje yayında olmalıdır.",
+                },
+                { status: 400 }
+            );
+        }
 
         await prisma.$transaction(async (tx) => {
+            if (nextHomepageProjectSlot !== null) {
+                await tx.listing.updateMany({
+                    where: {
+                        isProject: true,
+                        homepageProjectSlot: nextHomepageProjectSlot,
+                        id: { not: id },
+                    },
+                    data: {
+                        homepageProjectSlot: null,
+                        showOnHomepageHero: false,
+                    },
+                });
+            }
+
             await tx.listing.update({
                 where: { id },
                 data: {
@@ -541,6 +594,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                                 ? Math.max(0, Math.trunc(payload.area))
                                 : 0
                             : undefined,
+                    homepageProjectSlot: nextHomepageProjectSlot,
+                    showOnHomepageHero: nextHomepageProjectSlot !== null,
                 },
             });
 
@@ -601,6 +656,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 interiorMediaIds: payload.interiorMediaIds,
                 mapMediaIds: payload.mapMediaIds,
                 documentMediaIds: payload.documentMediaIds,
+                logoMediaIds: payload.logoMediaIds,
             });
         });
 

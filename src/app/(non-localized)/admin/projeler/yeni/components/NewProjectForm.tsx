@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
     DndContext,
     DragOverlay,
@@ -32,6 +32,7 @@ import {
     Home,
     Image as ImageIcon,
     ImagePlus,
+    ExternalLink,
     Loader2,
     Languages,
     MapPin,
@@ -43,6 +44,7 @@ import {
     Send,
     Settings,
     Sparkles,
+    Star,
     Trash2,
     Upload,
     X,
@@ -51,6 +53,7 @@ import { Select } from "@/components/ui";
 import { CompanyOptionSelect } from "@/components/admin/company-option-select";
 import { AiFillModal, ParsedData } from "@/components/admin/ai-fill-modal";
 import { MediaOptimizationModal } from "@/components/admin/media-optimization-modal";
+import { UnsavedChangesModal } from "@/components/admin/unsaved-changes-modal";
 import { ProjectIcon } from "@/components/single-project/ProjectIcon";
 import {
     isCustomProjectIconDataUri,
@@ -70,7 +73,17 @@ import { splitFeaturesByCategory } from "@/lib/feature-category";
 import { cn, getMediaUrl } from "@/lib/utils";
 
 type ProjectStatusValue = "DRAFT" | "PUBLISHED" | "ARCHIVED";
+type HomepageProjectSlotValue = 1 | 2 | 3;
 type MediaOptimizationState = "hidden" | "optimizing" | "completed";
+type LeaveIntent =
+    | {
+        type: "href";
+        href: string;
+        external: boolean;
+    }
+    | {
+        type: "back";
+    };
 
 interface UploadedMedia {
     id: string;
@@ -192,6 +205,7 @@ interface FaqRecord {
 
 interface ProjectDetailResponse {
     id: string;
+    slug?: string;
     status: string;
     type: string;
     company: string;
@@ -204,6 +218,7 @@ interface ProjectDetailResponse {
     longitude?: number | null;
     projectType?: string | null;
     deliveryDate?: string | null;
+    homepageProjectSlot?: number | null;
     translations?: ProjectTranslationRecord[];
     projectFeatures?: ProjectFeatureRecord[];
     customGalleries?: CustomGalleryRecord[];
@@ -211,6 +226,19 @@ interface ProjectDetailResponse {
     faqs?: FaqRecord[];
     media?: ProjectMediaRecord[];
 }
+
+const HOMEPAGE_PROJECT_SLOT_OPTIONS: HomepageProjectSlotValue[] = [1, 2, 3];
+
+const normalizeHomepageProjectSlot = (
+    value: unknown
+): HomepageProjectSlotValue | null => {
+    const parsed = Number(value);
+    if (!Number.isInteger(parsed)) return null;
+    if (!HOMEPAGE_PROJECT_SLOT_OPTIONS.includes(parsed as HomepageProjectSlotValue)) {
+        return null;
+    }
+    return parsed as HomepageProjectSlotValue;
+};
 
 const TABS = [
     { id: "details", label: "Temel Bilgiler", icon: FileText },
@@ -603,12 +631,14 @@ export default function NewProjectForm({
     initialProjectId,
 }: NewProjectFormProps = {}) {
     const router = useRouter();
+    const pathname = usePathname();
     const isEditMode = Boolean(initialProjectId);
 
     const [activeTab, setActiveTab] = useState("details");
     const [projectId, setProjectId] = useState<string | null>(
         initialProjectId ?? null
     );
+    const [projectSlug, setProjectSlug] = useState<string | null>(null);
     const [isHydrating, setIsHydrating] = useState(Boolean(initialProjectId));
 
     const [status, setStatus] = useState<ProjectStatusValue>("DRAFT");
@@ -622,6 +652,8 @@ export default function NewProjectForm({
     const [translationsLocked, setTranslationsLocked] = useState(false);
     const [isAiFillModalOpen, setIsAiFillModalOpen] = useState(false);
     const [deliveryDate, setDeliveryDate] = useState("");
+    const [homepageProjectSlot, setHomepageProjectSlot] =
+        useState<HomepageProjectSlotValue | null>(null);
     const [promoVideoUrl, setPromoVideoUrl] = useState("");
 
     const [city, setCity] = useState("");
@@ -643,6 +675,7 @@ export default function NewProjectForm({
     ]);
 
     const [coverMedia, setCoverMedia] = useState<UploadedMedia[]>([]);
+    const [logoMedia, setLogoMedia] = useState<UploadedMedia[]>([]);
     const [mapMedia, setMapMedia] = useState<UploadedMedia[]>([]);
     const [exteriorMedia, setExteriorMedia] = useState<UploadedMedia[]>([]);
     const [socialMedia, setSocialMedia] = useState<UploadedMedia[]>([]);
@@ -675,6 +708,9 @@ export default function NewProjectForm({
     const [isUploading, setIsUploading] = useState(false);
     const [mediaOptimizationState, setMediaOptimizationState] =
         useState<MediaOptimizationState>("hidden");
+    const [isLeavePromptOpen, setIsLeavePromptOpen] = useState(false);
+    const [leaveIntent, setLeaveIntent] = useState<LeaveIntent | null>(null);
+    const [leaveAction, setLeaveAction] = useState<null | "draft" | "publish">(null);
 
     const [iconPickerTarget, setIconPickerTarget] = useState<{
         category: FeatureCategory;
@@ -687,6 +723,9 @@ export default function NewProjectForm({
     const [isFeatureDndReady, setIsFeatureDndReady] = useState(false);
     const customSvgInputRef = useRef<HTMLInputElement | null>(null);
     const autoMapsLinkRef = useRef("");
+    const bypassUnsavedCheckRef = useRef(false);
+    const initialSnapshotRef = useRef<string>("");
+    const currentUrlRef = useRef<string>("");
     const featureSensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -754,6 +793,271 @@ export default function NewProjectForm({
         if (manual) return manual;
         return toGoogleMapsEmbedLink(autoMapsLink);
     }, [googleMapsLink, autoMapsLink]);
+
+    const runWithNavigationBypass = useCallback((callback: () => void) => {
+        bypassUnsavedCheckRef.current = true;
+        callback();
+        setTimeout(() => {
+            bypassUnsavedCheckRef.current = false;
+        }, 0);
+    }, []);
+
+    const safePush = useCallback(
+        (href: string) => {
+            runWithNavigationBypass(() => router.push(href));
+        },
+        [router, runWithNavigationBypass]
+    );
+
+    const safeReplace = useCallback(
+        (href: string) => {
+            runWithNavigationBypass(() => router.replace(href));
+        },
+        [router, runWithNavigationBypass]
+    );
+
+    const safeBack = useCallback(() => {
+        runWithNavigationBypass(() => router.back());
+    }, [router, runWithNavigationBypass]);
+
+    const buildUnsavedSnapshot = useCallback(
+        (overrides?: {
+            projectId?: string | null;
+            status?: ProjectStatusValue;
+        }) => ({
+            projectId: overrides?.projectId ?? projectId,
+            status: overrides?.status ?? status,
+            company,
+            type,
+            projectType,
+            translations: translations.map((translation) => ({
+                locale: translation.locale,
+                title: translation.title,
+                description: translation.description,
+                features: translation.features,
+            })),
+            deliveryDate,
+            homepageProjectSlot,
+            promoVideoUrl,
+            city,
+            district,
+            neighborhood,
+            address,
+            latitude,
+            longitude,
+            googleMapsLink,
+            generalFeatures: generalFeatures.map((item) => ({
+                id: item.id,
+                title: item.title,
+                icon: item.icon,
+            })),
+            socialFeatures: socialFeatures.map((item) => ({
+                id: item.id,
+                title: item.title,
+                icon: item.icon,
+            })),
+            coverMedia: coverMedia.map((item) => ({
+                id: item.id,
+                url: item.url,
+                thumbnailUrl: item.thumbnailUrl,
+                order: item.order,
+                isCover: item.isCover,
+            })),
+            logoMedia: logoMedia.map((item) => ({
+                id: item.id,
+                url: item.url,
+                thumbnailUrl: item.thumbnailUrl,
+                order: item.order,
+                isCover: item.isCover,
+            })),
+            mapMedia: mapMedia.map((item) => ({
+                id: item.id,
+                url: item.url,
+                thumbnailUrl: item.thumbnailUrl,
+                order: item.order,
+                isCover: item.isCover,
+            })),
+            exteriorMedia: exteriorMedia.map((item) => ({
+                id: item.id,
+                url: item.url,
+                thumbnailUrl: item.thumbnailUrl,
+                order: item.order,
+                isCover: item.isCover,
+            })),
+            socialMedia: socialMedia.map((item) => ({
+                id: item.id,
+                url: item.url,
+                thumbnailUrl: item.thumbnailUrl,
+                order: item.order,
+                isCover: item.isCover,
+            })),
+            interiorMedia: interiorMedia.map((item) => ({
+                id: item.id,
+                url: item.url,
+                thumbnailUrl: item.thumbnailUrl,
+                order: item.order,
+                isCover: item.isCover,
+            })),
+            documents: documents.map((item) => ({
+                id: item.id,
+                url: item.url,
+                category: item.category,
+                type: item.type,
+                order: item.order,
+            })),
+            floorPlans: floorPlans.map((item) => ({
+                id: item.id,
+                title: item.title,
+                area: item.area,
+                imageUrl: item.imageUrl,
+                mediaId: item.mediaId,
+            })),
+            faqs: faqs.map((item) => ({
+                id: item.id,
+                question: item.question,
+                answer: item.answer,
+            })),
+        }),
+        [
+            projectId,
+            status,
+            company,
+            type,
+            projectType,
+            translations,
+            deliveryDate,
+            homepageProjectSlot,
+            promoVideoUrl,
+            city,
+            district,
+            neighborhood,
+            address,
+            latitude,
+            longitude,
+            googleMapsLink,
+            generalFeatures,
+            socialFeatures,
+            coverMedia,
+            logoMedia,
+            mapMedia,
+            exteriorMedia,
+            socialMedia,
+            interiorMedia,
+            documents,
+            floorPlans,
+            faqs,
+        ]
+    );
+
+    const currentSnapshot = useMemo(
+        () => JSON.stringify(buildUnsavedSnapshot()),
+        [buildUnsavedSnapshot]
+    );
+
+    useEffect(() => {
+        if (isHydrating || initialSnapshotRef.current) return;
+        initialSnapshotRef.current = currentSnapshot;
+    }, [currentSnapshot, isHydrating]);
+
+    const hasUnsavedChanges = useMemo(() => {
+        if (isHydrating || !initialSnapshotRef.current) return false;
+        return initialSnapshotRef.current !== currentSnapshot;
+    }, [currentSnapshot, isHydrating]);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            currentUrlRef.current = window.location.href;
+        }
+    }, [pathname]);
+
+    const openLeavePrompt = useCallback(
+        (intent: LeaveIntent) => {
+            if (isLeavePromptOpen) return;
+            setLeaveIntent(intent);
+            setIsLeavePromptOpen(true);
+        },
+        [isLeavePromptOpen]
+    );
+
+    const closeLeavePrompt = useCallback(() => {
+        setIsLeavePromptOpen(false);
+        setLeaveIntent(null);
+        setLeaveAction(null);
+    }, []);
+
+    useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (!hasUnsavedChanges || bypassUnsavedCheckRef.current) return;
+            event.preventDefault();
+            event.returnValue = "";
+        };
+
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => {
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+        };
+    }, [hasUnsavedChanges]);
+
+    useEffect(() => {
+        const handleLinkClick = (event: MouseEvent) => {
+            if (!hasUnsavedChanges || bypassUnsavedCheckRef.current) return;
+
+            const target = event.target as HTMLElement | null;
+            const anchor = target?.closest("a") as HTMLAnchorElement | null;
+            if (!anchor) return;
+
+            const href = anchor.getAttribute("href");
+            if (!href || href.startsWith("#")) return;
+            if (anchor.target && anchor.target !== "_self") return;
+            if (anchor.hasAttribute("download")) return;
+            if (anchor.getAttribute("data-skip-unsaved") === "true") return;
+
+            const url = new URL(href, window.location.href);
+            event.preventDefault();
+            event.stopPropagation();
+            if ("stopImmediatePropagation" in event) {
+                (
+                    event as unknown as {
+                        stopImmediatePropagation: () => void;
+                    }
+                ).stopImmediatePropagation();
+            }
+
+            openLeavePrompt({
+                type: "href",
+                href: url.href,
+                external: url.origin !== window.location.origin,
+            });
+        };
+
+        document.addEventListener("click", handleLinkClick, true);
+        return () => {
+            document.removeEventListener("click", handleLinkClick, true);
+        };
+    }, [hasUnsavedChanges, openLeavePrompt]);
+
+    useEffect(() => {
+        const handlePopState = () => {
+            if (!hasUnsavedChanges || bypassUnsavedCheckRef.current) {
+                currentUrlRef.current = window.location.href;
+                return;
+            }
+
+            const destination = window.location.href;
+            const fallbackUrl = currentUrlRef.current || "/admin/projeler";
+            runWithNavigationBypass(() => router.push(fallbackUrl));
+            openLeavePrompt({
+                type: "href",
+                href: destination,
+                external: new URL(destination).origin !== window.location.origin,
+            });
+        };
+
+        window.addEventListener("popstate", handlePopState);
+        return () => {
+            window.removeEventListener("popstate", handlePopState);
+        };
+    }, [hasUnsavedChanges, openLeavePrompt, router, runWithNavigationBypass]);
 
     useEffect(() => {
         setIsFeatureDndReady(true);
@@ -969,15 +1273,15 @@ export default function NewProjectForm({
                 prev.map((translation) =>
                     translation.locale === "tr"
                         ? {
-                              ...translation,
-                              title: normalizedTitle || translation.title,
-                              description:
-                                  normalizedDescription || translation.description,
-                              features:
-                                  normalizedFeatures.length > 0
-                                      ? normalizedFeatures
-                                      : translation.features,
-                          }
+                            ...translation,
+                            title: normalizedTitle || translation.title,
+                            description:
+                                normalizedDescription || translation.description,
+                            features:
+                                normalizedFeatures.length > 0
+                                    ? normalizedFeatures
+                                    : translation.features,
+                        }
                         : translation
                 )
             );
@@ -1070,10 +1374,10 @@ export default function NewProjectForm({
             const getTagFeatures = (value: { name?: string }[] | undefined) =>
                 Array.isArray(value)
                     ? value
-                          .map((tag) =>
-                              typeof tag?.name === "string" ? tag.name.trim() : ""
-                          )
-                          .filter(Boolean)
+                        .map((tag) =>
+                            typeof tag?.name === "string" ? tag.name.trim() : ""
+                        )
+                        .filter(Boolean)
                     : [];
 
             setTranslations((prev) =>
@@ -1150,6 +1454,8 @@ export default function NewProjectForm({
                 const project = (await response.json()) as ProjectDetailResponse;
                 if (!active) return;
 
+                setProjectSlug(project.slug || null);
+
                 const media = Array.isArray(project.media) ? project.media : [];
                 const exterior = media.filter(
                     (item) => item.category === "EXTERIOR" && item.type !== "DOCUMENT"
@@ -1160,6 +1466,9 @@ export default function NewProjectForm({
                 );
                 const map = media.filter(
                     (item) => item.category === "MAP" && item.type !== "DOCUMENT"
+                );
+                const logo = media.filter(
+                    (item) => item.category === "LOGO" && item.type !== "DOCUMENT"
                 );
                 const documentItems = media.filter(
                     (item) => item.category === "DOCUMENT" || item.type === "DOCUMENT"
@@ -1175,10 +1484,10 @@ export default function NewProjectForm({
                         description: source?.description?.trim() || "",
                         features: Array.isArray(source?.features)
                             ? source.features
-                                  .map((feature) =>
-                                      typeof feature === "string" ? feature.trim() : ""
-                                  )
-                                  .filter(Boolean)
+                                .map((feature) =>
+                                    typeof feature === "string" ? feature.trim() : ""
+                                )
+                                .filter(Boolean)
                             : [],
                     };
                 });
@@ -1266,6 +1575,9 @@ export default function NewProjectForm({
                 setTranslationsLocked(hasNonTurkishTranslations(initialTranslations));
                 setActiveLocale("tr");
                 setDeliveryDate(project.deliveryDate || "");
+                setHomepageProjectSlot(
+                    normalizeHomepageProjectSlot(project.homepageProjectSlot)
+                );
                 setCity(project.city || "");
                 setDistrict(project.district || "");
                 setNeighborhood(project.neighborhood || "");
@@ -1284,6 +1596,7 @@ export default function NewProjectForm({
                 setGeneralFeatures(generalRows);
                 setSocialFeatures(socialRows);
                 setCoverMedia(cover ? [toUploadedMedia(cover)] : []);
+                setLogoMedia(logo[0] ? [toUploadedMedia(logo[0])] : []);
                 setExteriorMedia(
                     exterior
                         .filter((item) => item.id !== cover?.id)
@@ -1305,14 +1618,14 @@ export default function NewProjectForm({
                     floorPlanRows.length > 0
                         ? floorPlanRows
                         : [
-                              {
-                                  id: createRowId(),
-                                  title: "",
-                                  area: "",
-                                  imageUrl: "",
-                                  mediaId: null,
-                              },
-                          ]
+                            {
+                                id: createRowId(),
+                                title: "",
+                                area: "",
+                                imageUrl: "",
+                                mediaId: null,
+                            },
+                        ]
                 );
                 setFaqs(faqRows);
             } catch (errorValue) {
@@ -1523,6 +1836,7 @@ export default function NewProjectForm({
             options?.bootstrapDraft && !normalizedDistrict
                 ? "Alanya"
                 : normalizedDistrict;
+        const resolvedStatus = statusOverride ?? status;
 
         const projectFeaturesPayload = [
             ...generalFeatures.map((item, index) => ({
@@ -1542,18 +1856,18 @@ export default function NewProjectForm({
         const customGalleryPayload =
             socialMedia.length > 0
                 ? [
-                      {
-                          order: 0,
-                          mediaIds: socialMedia.map((media) => media.id),
-                          translations: [
-                              {
-                                  locale: "tr",
-                                  title: "Sosyal İmkanlar",
-                                  subtitle: null,
-                              },
-                          ],
-                      },
-                  ]
+                    {
+                        order: 0,
+                        mediaIds: socialMedia.map((media) => media.id),
+                        translations: [
+                            {
+                                locale: "tr",
+                                title: "Sosyal İmkanlar",
+                                subtitle: null,
+                            },
+                        ],
+                    },
+                ]
                 : [];
 
         const floorPlanPayload = floorPlans
@@ -1603,9 +1917,9 @@ export default function NewProjectForm({
                     locale === "tr"
                         ? trFeatureList
                         : translation.features
-                              .map((item) => item.trim())
-                              .filter(Boolean)
-                              .slice(0, 40);
+                            .map((item) => item.trim())
+                            .filter(Boolean)
+                            .slice(0, 40);
 
                 return {
                     locale,
@@ -1623,7 +1937,7 @@ export default function NewProjectForm({
             );
 
         return {
-            status: statusOverride ?? status,
+            status: resolvedStatus,
             type,
             saleType: "SALE",
             company: company.trim() || "Güzel Invest",
@@ -1636,6 +1950,8 @@ export default function NewProjectForm({
             longitude: parsedLongitude,
             projectType: projectType.trim() || null,
             deliveryDate: deliveryDate.trim() || null,
+            homepageProjectSlot:
+                resolvedStatus === "PUBLISHED" ? homepageProjectSlot : null,
             translations: translationsPayload,
             projectFeatures: projectFeaturesPayload,
             customGalleries: customGalleryPayload,
@@ -1645,6 +1961,7 @@ export default function NewProjectForm({
             interiorMediaIds: interiorMedia.map((media) => media.id),
             mapMediaIds: mapMedia.map((media) => media.id),
             documentMediaIds: documents.map((document) => document.id),
+            logoMediaIds: logoMedia.map((media) => media.id).slice(0, 1),
         };
     };
 
@@ -1841,10 +2158,10 @@ export default function NewProjectForm({
                     prev.map((plan) =>
                         plan.id === floorPlanId
                             ? {
-                                  ...plan,
-                                  imageUrl: item.url,
-                                  mediaId: item.id,
-                              }
+                                ...plan,
+                                imageUrl: item.url,
+                                mediaId: item.id,
+                            }
                             : plan
                     )
                 );
@@ -1853,27 +2170,91 @@ export default function NewProjectForm({
         );
     };
 
-    const handleSaveAction = async (nextStatus: ProjectStatusValue) => {
+    const handleSaveAction = async (
+        nextStatus: ProjectStatusValue,
+        options: { skipRedirect?: boolean } = {}
+    ): Promise<boolean> => {
         setError("");
         setSuccess("");
         setIsSaving(true);
 
         try {
             const savedId = await persistProject(nextStatus);
+            initialSnapshotRef.current = JSON.stringify(
+                buildUnsavedSnapshot({
+                    projectId: savedId,
+                    status: nextStatus,
+                })
+            );
 
-            if (nextStatus === "PUBLISHED") {
-                router.push(`/admin/projeler/${savedId}`);
+            if (!options.skipRedirect) {
+                if (nextStatus === "PUBLISHED") {
+                    safePush(`/admin/projeler/${savedId}`);
+                    router.refresh();
+                    return true;
+                }
+
+                safeReplace(`/admin/projeler/${savedId}`);
                 router.refresh();
-                return;
             }
 
-            router.replace(`/admin/projeler/${savedId}`);
-            router.refresh();
+            return true;
         } catch (errorValue) {
             setError(getFriendlyFetchErrorMessage(errorValue, "Kaydetme hatası."));
+            return false;
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const handleLeaveSave = async (statusOverride: ProjectStatusValue) => {
+        if (!leaveIntent) return;
+        setLeaveAction(statusOverride === "DRAFT" ? "draft" : "publish");
+
+        const success = await handleSaveAction(statusOverride, {
+            skipRedirect: true,
+        });
+
+        if (!success) {
+            setLeaveAction(null);
+            return;
+        }
+
+        const intent = leaveIntent;
+        closeLeavePrompt();
+
+        if (intent.type === "back") {
+            safeBack();
+            return;
+        }
+
+        if (intent.external) {
+            bypassUnsavedCheckRef.current = true;
+            window.location.assign(intent.href);
+            return;
+        }
+
+        safePush(intent.href);
+    };
+
+    const handleLeaveDiscard = () => {
+        if (!leaveIntent) return;
+
+        const intent = leaveIntent;
+        closeLeavePrompt();
+
+        if (intent.type === "back") {
+            safeBack();
+            return;
+        }
+
+        if (intent.external) {
+            bypassUnsavedCheckRef.current = true;
+            window.location.assign(intent.href);
+            return;
+        }
+
+        safePush(intent.href);
     };
 
     const activeIconRow = getIconPickerRow();
@@ -1900,25 +2281,93 @@ export default function NewProjectForm({
                             </p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={() => void handleSaveAction("DRAFT")}
-                            disabled={isSaving || isUploading || isHydrating}
-                            className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed text-slate-700 font-medium text-sm rounded-lg flex items-center gap-2 transition-colors shadow-sm"
-                        >
-                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            Taslak Kaydet
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => void handleSaveAction("PUBLISHED")}
-                            disabled={isSaving || isUploading || isHydrating}
-                            className="px-6 py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium text-sm rounded-lg flex items-center gap-2 transition-all shadow-sm"
-                        >
-                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                            {isEditMode ? "Güncelle & Yayınla" : "Yayınla"}
-                        </button>
+                    <div className="flex flex-col items-end gap-2">
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => void handleSaveAction("DRAFT")}
+                                disabled={isSaving || isUploading || isHydrating}
+                                className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed text-slate-700 font-medium text-sm rounded-lg flex items-center gap-2 transition-colors shadow-sm"
+                            >
+                                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                Taslak Kaydet
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void handleSaveAction("PUBLISHED")}
+                                disabled={isSaving || isUploading || isHydrating}
+                                className="px-6 py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium text-sm rounded-lg flex items-center gap-2 transition-all shadow-sm"
+                            >
+                                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                {isEditMode ? "Güncelle & Yayınla" : "Yayınla"}
+                            </button>
+                            {status === "PUBLISHED" && projectSlug && (
+                                <Link
+                                    href={`/tr/proje/${projectSlug}`}
+                                    target="_blank"
+                                    className="flex items-center gap-2 px-4 py-1.5 bg-green-50 text-green-700 border border-green-200 text-sm font-semibold rounded-lg hover:bg-green-100 hover:border-green-300 hover:text-green-800 transition-all shadow-sm group"
+                                    title="Projeyi Gör"
+                                >
+                                    <span>Projeyi Gör</span>
+                                    <ExternalLink className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                                </Link>
+                            )}
+                        </div>
+                        <div className="flex flex-wrap justify-end gap-2">
+                            {HOMEPAGE_PROJECT_SLOT_OPTIONS.map((slot) => {
+                                const isSelected = homepageProjectSlot === slot;
+                                return (
+                                    <button
+                                        key={slot}
+                                        type="button"
+                                        onClick={() => setHomepageProjectSlot(slot)}
+                                        disabled={isSaving || isUploading || isHydrating}
+                                        className={cn(
+                                            "inline-flex items-center gap-2 px-4 py-1.5 border text-sm font-semibold rounded-lg transition-all shadow-sm",
+                                            isSelected
+                                                ? "bg-orange-50 text-orange-700 border-orange-200"
+                                                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50",
+                                            (isSaving || isUploading || isHydrating) &&
+                                            "opacity-60 cursor-not-allowed"
+                                        )}
+                                        title={`Projeyi Ana Sayfa ${slot} slotuna ata`}
+                                    >
+                                        <Star className="w-3.5 h-3.5" />
+                                        <span>
+                                            {isSelected
+                                                ? `Ana Sayfa ${slot} (Seçili)`
+                                                : `Ana Sayfa ${slot}`}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                            <button
+                                type="button"
+                                onClick={() => setHomepageProjectSlot(null)}
+                                disabled={
+                                    isSaving ||
+                                    isUploading ||
+                                    isHydrating ||
+                                    homepageProjectSlot === null
+                                }
+                                className={cn(
+                                    "inline-flex items-center gap-2 px-4 py-1.5 border text-sm font-semibold rounded-lg transition-all shadow-sm",
+                                    "bg-white text-slate-700 border-slate-200 hover:bg-slate-50",
+                                    (isSaving ||
+                                        isUploading ||
+                                        isHydrating ||
+                                        homepageProjectSlot === null) &&
+                                    "opacity-60 cursor-not-allowed"
+                                )}
+                                title={
+                                    homepageProjectSlot === null
+                                        ? "Bu proje için ana sayfa slot seçimi yapılmadı."
+                                        : "Projeyi ana sayfa slotundan kaldır"
+                                }
+                            >
+                                Ana Sayfadan Kaldır
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -2165,6 +2614,40 @@ export default function NewProjectForm({
                                                 emptyMessage="Henüz kapak görseli yok"
                                             />
                                         </div>
+
+                                        <div className="pt-6 border-t border-slate-200 space-y-4">
+                                            <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900">
+                                                <ImagePlus className="w-4 h-4 text-orange-500" />
+                                                Proje Logosu
+                                            </h3>
+                                            <UploadPanel
+                                                title="Logo yüklemek için tıklayın"
+                                                subtitle="PNG, JPG, WebP, GIF, AVIF (Max 30MB)"
+                                                onFilesSelected={(files) =>
+                                                    void handleImageUpload(
+                                                        files,
+                                                        (uploaded) => {
+                                                            const first = uploaded[0];
+                                                            if (!first) return;
+                                                            setLogoMedia([first]);
+                                                        },
+                                                        { useFirstOnly: true }
+                                                    )
+                                                }
+                                                multiple={false}
+                                                disabled={isSaving || isUploading}
+                                                compact
+                                            />
+                                            <MediaGrid
+                                                items={logoMedia}
+                                                onRemove={(id) =>
+                                                    setLogoMedia((prev) =>
+                                                        prev.filter((item) => item.id !== id)
+                                                    )
+                                                }
+                                                emptyMessage="Henüz logo eklenmedi"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2281,7 +2764,7 @@ export default function NewProjectForm({
                                                         </SortableContext>
                                                         <DragOverlay adjustScale>
                                                             {activeFeatureDrag &&
-                                                            activeFeatureDrag.category ===
+                                                                activeFeatureDrag.category ===
                                                                 section.category ? (
                                                                 <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-orange-300 shadow-xl ring-2 ring-orange-200">
                                                                     <GripVertical className="w-5 h-5 text-slate-400 shrink-0" />
@@ -2808,9 +3291,9 @@ export default function NewProjectForm({
                                                         prev.map((item) =>
                                                             item.id === plan.id
                                                                 ? {
-                                                                      ...item,
-                                                                      title: event.target.value,
-                                                                  }
+                                                                    ...item,
+                                                                    title: event.target.value,
+                                                                }
                                                                 : item
                                                         )
                                                     )
@@ -2826,9 +3309,9 @@ export default function NewProjectForm({
                                                         prev.map((item) =>
                                                             item.id === plan.id
                                                                 ? {
-                                                                      ...item,
-                                                                      area: event.target.value,
-                                                                  }
+                                                                    ...item,
+                                                                    area: event.target.value,
+                                                                }
                                                                 : item
                                                         )
                                                     )
@@ -2943,10 +3426,10 @@ export default function NewProjectForm({
                                                         prev.map((faq) =>
                                                             faq.id === item.id
                                                                 ? {
-                                                                      ...faq,
-                                                                      question:
-                                                                          event.target.value,
-                                                                  }
+                                                                    ...faq,
+                                                                    question:
+                                                                        event.target.value,
+                                                                }
                                                                 : faq
                                                         )
                                                     )
@@ -2967,10 +3450,10 @@ export default function NewProjectForm({
                                                         prev.map((faq) =>
                                                             faq.id === item.id
                                                                 ? {
-                                                                      ...faq,
-                                                                      answer:
-                                                                          event.target.value,
-                                                                  }
+                                                                    ...faq,
+                                                                    answer:
+                                                                        event.target.value,
+                                                                }
                                                                 : faq
                                                         )
                                                     )
@@ -3022,6 +3505,17 @@ export default function NewProjectForm({
                                 )}
                                 {isEditMode ? "Güncelle & Yayınla" : "Tamamla & Yayınla"}
                             </button>
+                            {status === "PUBLISHED" && projectSlug && (
+                                <Link
+                                    href={`/tr/proje/${projectSlug}`}
+                                    target="_blank"
+                                    className="px-6 py-2.5 flex items-center gap-2 bg-green-50 text-green-700 border border-green-200 text-sm font-semibold rounded-lg hover:bg-green-100 hover:border-green-300 hover:text-green-800 transition-all shadow-sm group"
+                                    title="Projeyi Gör"
+                                >
+                                    <span>Projeyi Gör</span>
+                                    <ExternalLink className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                                </Link>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -3062,7 +3556,7 @@ export default function NewProjectForm({
                                     </p>
                                     <p className="text-xs text-slate-500">
                                         {activeIconRow &&
-                                        isCustomProjectIconDataUri(activeIconRow.icon)
+                                            isCustomProjectIconDataUri(activeIconRow.icon)
                                             ? "Özel SVG"
                                             : activeIconRow?.icon || "Building2"}
                                     </p>
@@ -3140,6 +3634,16 @@ export default function NewProjectForm({
                         ? "completed"
                         : "optimizing"
                 }
+            />
+
+            <UnsavedChangesModal
+                isOpen={isLeavePromptOpen}
+                isLoading={isSaving || isUploading}
+                loadingAction={leaveAction}
+                onCancel={closeLeavePrompt}
+                onDiscard={handleLeaveDiscard}
+                onSaveDraft={() => void handleLeaveSave("DRAFT")}
+                onPublish={() => void handleLeaveSave("PUBLISHED")}
             />
         </>
     );

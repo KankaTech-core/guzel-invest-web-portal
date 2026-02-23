@@ -26,13 +26,30 @@ export interface ListingGalleryItem {
     alt: string;
 }
 
+export type ListingDetailGalleryLayout = "collage" | "carousel" | "hidden";
+
+export interface ListingDetailGalleryHandle {
+    openGallery: () => void;
+    openAt: (index: number) => void;
+}
+
 interface ListingDetailGalleryProps {
     items: ListingGalleryItem[];
     title: string;
     isRemoved?: boolean;
+    layout?: ListingDetailGalleryLayout;
+    showInlineThumbnails?: boolean;
+    desktopHeightClass?: string;
+    className?: string;
+    galleryButtonLabel?: string;
+    onRequestOpenGallery?: () => void;
+    galleryTabs?: Array<{ key: string; label: string }>;
+    activeGalleryTabKey?: string;
+    onGalleryTabChange?: (key: string) => void;
+    onApiReady?: (api: ListingDetailGalleryHandle | null) => void;
 }
 
-const subscribeNoop = () => () => { };
+const subscribeNoop = () => () => {};
 const IMAGE_SWIPE_THRESHOLD_PX = 48;
 const OVERLAY_STATE_KEY = "__listingOverlay";
 const isMobileViewport = () =>
@@ -43,13 +60,23 @@ export function ListingDetailGallery({
     items,
     title,
     isRemoved = false,
+    layout = "collage",
+    showInlineThumbnails = false,
+    desktopHeightClass = "h-[clamp(330px,42vw,510px)]",
+    className,
+    galleryButtonLabel = "Galeri",
+    onRequestOpenGallery,
+    galleryTabs,
+    activeGalleryTabKey,
+    onGalleryTabChange,
+    onApiReady,
 }: ListingDetailGalleryProps) {
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [isReelOpen, setIsReelOpen] = useState(false);
     const [desktopCarouselIndex, setDesktopCarouselIndex] = useState<number | null>(
         null
     );
-    const [mobileCarouselIndex, setMobileCarouselIndex] = useState(0);
+    const [inlineCarouselIndex, setInlineCarouselIndex] = useState(0);
     const [activeReelIndex, setActiveReelIndex] = useState(0);
 
     const reelScrollerRef = useRef<HTMLDivElement | null>(null);
@@ -58,12 +85,12 @@ export function ListingDetailGallery({
     const didSwipeRef = useRef(false);
 
     const total = items.length;
+    const carouselItems = useMemo(() => items.slice(0, 4), [items]);
+    const carouselTotal = carouselItems.length;
     const hasItems = total > 0;
     const canNavigate = total > 1;
-
-    const coverImage = items[0];
-    const secondImage = items[1] ?? items[0];
-    const thirdImage = items[2] ?? items[1] ?? items[0];
+    const canNavigateCarousel = carouselTotal > 1;
+    const useExternalGallery = Boolean(onRequestOpenGallery);
 
     const activeReelCounter = useMemo(() => {
         if (!hasItems) {
@@ -83,6 +110,23 @@ export function ListingDetailGallery({
         subscribeNoop,
         () => true,
         () => false
+    );
+
+    const normalizeIndex = useCallback(
+        (index: number) => {
+            if (!hasItems) {
+                return 0;
+            }
+            return Math.max(0, Math.min(total - 1, index));
+        },
+        [hasItems, total]
+    );
+    const coverImage = items[0];
+    const secondImage = items[1] ?? items[0];
+    const thirdImage = items[2] ?? items[1] ?? items[0];
+    const currentCarouselInlineIndex = Math.max(
+        0,
+        Math.min(carouselTotal - 1, inlineCarouselIndex)
     );
 
     const pushOverlayState = useCallback((overlay: "gallery" | "reel") => {
@@ -113,7 +157,11 @@ export function ListingDetailGallery({
         return true;
     }, []);
 
-    const openGallery = () => {
+    const openGallery = useCallback(() => {
+        if (!hasItems) {
+            return;
+        }
+
         setIsGalleryOpen(true);
 
         if (!isMobileViewport()) {
@@ -126,28 +174,45 @@ export function ListingDetailGallery({
         }
 
         pushOverlayState("gallery");
-    };
+    }, [hasItems, pushOverlayState]);
 
-    const openReels = (index: number) => {
+    const openGalleryFromPreview = useCallback(() => {
         if (!hasItems) {
             return;
         }
-        initialReelIndexRef.current = index;
-        setActiveReelIndex(index);
 
-        if (isMobileViewport()) {
-            const currentOverlay = window.history.state?.[OVERLAY_STATE_KEY];
-            if (currentOverlay !== "gallery" && currentOverlay !== "reel") {
-                pushOverlayState("gallery");
-            }
-            if (window.history.state?.[OVERLAY_STATE_KEY] !== "reel") {
-                pushOverlayState("reel");
-            }
-            setIsGalleryOpen(true);
+        if (onRequestOpenGallery) {
+            onRequestOpenGallery();
+            return;
         }
 
-        setIsReelOpen(true);
-    };
+        openGallery();
+    }, [hasItems, onRequestOpenGallery, openGallery]);
+
+    const openReels = useCallback(
+        (index: number) => {
+            if (!hasItems) {
+                return;
+            }
+            const nextIndex = normalizeIndex(index);
+            initialReelIndexRef.current = nextIndex;
+            setActiveReelIndex(nextIndex);
+
+            if (isMobileViewport()) {
+                const currentOverlay = window.history.state?.[OVERLAY_STATE_KEY];
+                if (currentOverlay !== "gallery" && currentOverlay !== "reel") {
+                    pushOverlayState("gallery");
+                }
+                if (window.history.state?.[OVERLAY_STATE_KEY] !== "reel") {
+                    pushOverlayState("reel");
+                }
+                setIsGalleryOpen(true);
+            }
+
+            setIsReelOpen(true);
+        },
+        [hasItems, normalizeIndex, pushOverlayState]
+    );
 
     const closeReels = useCallback(() => {
         if (consumeMobileOverlayBack("reel")) {
@@ -165,14 +230,34 @@ export function ListingDetailGallery({
 
     const closeDesktopCarousel = () => setDesktopCarouselIndex(null);
 
-    const openFromHero = () => openGallery();
+    const openDesktopCarousel = useCallback(
+        (index: number) => {
+            if (!hasItems) {
+                return;
+            }
+            setDesktopCarouselIndex(normalizeIndex(index));
+        },
+        [hasItems, normalizeIndex]
+    );
 
-    const openDesktopCarousel = (index: number) => {
-        if (!hasItems) {
-            return;
-        }
-        setDesktopCarouselIndex(Math.max(0, Math.min(total - 1, index)));
-    };
+    const openAt = useCallback(
+        (index: number) => {
+            if (!hasItems) {
+                return;
+            }
+
+            const nextIndex = normalizeIndex(index);
+            setInlineCarouselIndex(nextIndex);
+
+            if (isMobileViewport()) {
+                openReels(nextIndex);
+                return;
+            }
+
+            openDesktopCarousel(nextIndex);
+        },
+        [hasItems, normalizeIndex, openDesktopCarousel, openReels]
+    );
 
     const goToDesktopPrevious = useCallback(() => {
         if (!canNavigate) {
@@ -197,6 +282,21 @@ export function ListingDetailGallery({
             return (previous + 1) % total;
         });
     }, [canNavigate, total]);
+
+    const updateInlineImageIndex = useCallback((direction: "prev" | "next") => {
+        if (!canNavigateCarousel) {
+            return;
+        }
+
+        setInlineCarouselIndex((previous) => {
+            const maxIndex = Math.max(0, carouselTotal - 1);
+            const clamped = Math.max(0, Math.min(previous, maxIndex));
+            if (direction === "next") {
+                return clamped >= maxIndex ? 0 : clamped + 1;
+            }
+            return clamped <= 0 ? maxIndex : clamped - 1;
+        });
+    }, [canNavigateCarousel, carouselTotal]);
 
     const goToReel = useCallback((index: number) => {
         const container = reelScrollerRef.current;
@@ -225,20 +325,6 @@ export function ListingDetailGallery({
     const scrollReels = useCallback((direction: -1 | 1) => {
         goToReel(activeReelIndex + direction);
     }, [activeReelIndex, goToReel]);
-
-    const updateMobileImageIndex = (direction: "prev" | "next") => {
-        if (!canNavigate) {
-            return;
-        }
-
-        setMobileCarouselIndex((previous) => {
-            const maxIndex = Math.max(0, total - 1);
-            if (direction === "next") {
-                return previous >= maxIndex ? 0 : previous + 1;
-            }
-            return previous <= 0 ? maxIndex : previous - 1;
-        });
-    };
 
     const handleMobileTouchStart = (
         event: React.TouchEvent<HTMLDivElement>
@@ -271,7 +357,7 @@ export function ListingDetailGallery({
         }
 
         didSwipeRef.current = true;
-        updateMobileImageIndex(deltaX < 0 ? "next" : "prev");
+        updateInlineImageIndex(deltaX < 0 ? "next" : "prev");
     };
 
     const handleMobileTouchCancel = () => {
@@ -429,16 +515,20 @@ export function ListingDetailGallery({
         scrollReels,
     ]);
 
-    if (!hasItems) {
-        return (
-            <div className="relative overflow-hidden rounded-[2rem] border border-gray-200 bg-gray-100">
-                <div className="aspect-[16/10] flex flex-col items-center justify-center gap-3 text-gray-400">
-                    <ImageOff className="h-10 w-10" />
-                    <p className="text-sm font-medium">Bu ilan için görsel yüklenmemiş</p>
-                </div>
-            </div>
-        );
-    }
+    useEffect(() => {
+        if (!onApiReady) {
+            return;
+        }
+
+        onApiReady({
+            openGallery,
+            openAt,
+        });
+
+        return () => {
+            onApiReady(null);
+        };
+    }, [onApiReady, openAt, openGallery]);
 
     const renderRemovedBadge = () => {
         if (!isRemoved) return null;
@@ -452,149 +542,274 @@ export function ListingDetailGallery({
         );
     };
 
+    if (!hasItems) {
+        if (layout === "hidden") {
+            return null;
+        }
+
+        return (
+            <div className={className}>
+                <div className="relative overflow-hidden rounded-[2rem] border border-gray-200 bg-gray-100">
+                    <div className="aspect-[16/10] flex flex-col items-center justify-center gap-3 text-gray-400">
+                        <ImageOff className="h-10 w-10" />
+                        <p className="text-sm font-medium">Bu ilan için görsel yüklenmemiş</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <>
-            <div className="md:hidden">
-                <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
-                    <div
-                        className="absolute inset-0 overflow-hidden"
-                        style={{ touchAction: "pan-y" }}
-                        onTouchStart={handleMobileTouchStart}
-                        onTouchEnd={handleMobileTouchEnd}
-                        onTouchCancel={handleMobileTouchCancel}
-                        onClick={() => {
-                            if (didSwipeRef.current) {
-                                didSwipeRef.current = false;
-                                return;
-                            }
-                            openGallery();
-                        }}
-                    >
-                        <div
-                            className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                            style={{
-                                transform: `translateX(-${mobileCarouselIndex * 100}%)`,
-                            }}
-                        >
-                            {items.map((item, index) => (
+            {layout !== "hidden" ? (
+                <div className={className}>
+                    <div className="md:hidden">
+                        <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
+                            <div
+                                className="absolute inset-0 overflow-hidden"
+                                style={{ touchAction: "pan-y" }}
+                                onTouchStart={handleMobileTouchStart}
+                                onTouchEnd={handleMobileTouchEnd}
+                                onTouchCancel={handleMobileTouchCancel}
+                                onClick={() => {
+                                    if (didSwipeRef.current) {
+                                        didSwipeRef.current = false;
+                                        return;
+                                    }
+                                    openGalleryFromPreview();
+                                }}
+                            >
                                 <div
-                                    key={item.id}
-                                    className="relative h-full w-full shrink-0"
+                                    className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                                    style={{
+                                        transform: `translateX(-${currentCarouselInlineIndex * 100}%)`,
+                                    }}
                                 >
+                                    {carouselItems.map((item, index) => (
+                                        <div
+                                            key={item.id}
+                                            className="relative h-full w-full shrink-0"
+                                        >
+                                            <Image
+                                                src={item.src}
+                                                alt={item.alt || `${title} ${index + 1}`}
+                                                fill
+                                                priority={index === 0}
+                                                className="object-cover"
+                                                sizes="100vw"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            {renderRemovedBadge()}
+
+                            {canNavigateCarousel ? (
+                                <div className="absolute bottom-3 right-3 z-20 flex items-center overflow-hidden rounded-lg border border-slate-200/90 bg-white/95 shadow-[0_4px_14px_rgba(15,23,42,0.18)] backdrop-blur-[2px]">
+                                    <button
+                                        type="button"
+                                        onClick={(event) => {
+                                            event.preventDefault();
+                                            event.stopPropagation();
+                                            updateInlineImageIndex("prev");
+                                        }}
+                                        className="inline-flex h-8 w-8 items-center justify-center text-slate-700 transition hover:bg-slate-100"
+                                        aria-label="Önceki görsel"
+                                    >
+                                        <ChevronLeft className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={(event) => {
+                                            event.preventDefault();
+                                            event.stopPropagation();
+                                            updateInlineImageIndex("next");
+                                        }}
+                                        className="inline-flex h-8 w-8 items-center justify-center text-slate-700 transition hover:bg-slate-100"
+                                        aria-label="Sonraki görsel"
+                                    >
+                                        <ChevronRight className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            ) : null}
+                        </div>
+                    </div>
+
+                    {layout === "collage" ? (
+                        <div className="hidden gap-3 md:grid md:h-[clamp(330px,45vw,520px)] md:grid-cols-4">
+                            <button
+                                type="button"
+                                onClick={openGalleryFromPreview}
+                                className="relative overflow-hidden rounded-[1.8rem] border border-gray-200 bg-gray-100 text-left md:col-span-3 md:h-full"
+                                aria-label="Fotoğraf galerisini aç"
+                            >
+                                <div className="relative aspect-[16/10] md:h-full md:aspect-auto">
                                     <Image
-                                        src={item.src}
-                                        alt={item.alt || `${title} ${index + 1}`}
+                                        src={coverImage.src}
+                                        alt={coverImage.alt || title}
                                         fill
-                                        priority={index === 0}
+                                        priority
                                         className="object-cover"
-                                        sizes="100vw"
+                                        sizes="(min-width: 768px) 75vw, 100vw"
                                     />
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                    {renderRemovedBadge()}
-
-                    {canNavigate ? (
-                        <div className="absolute bottom-3 right-3 z-20 flex items-center overflow-hidden rounded-lg border border-slate-200/90 bg-white/95 shadow-[0_4px_14px_rgba(15,23,42,0.18)] backdrop-blur-[2px]">
-                            <button
-                                type="button"
-                                onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    updateMobileImageIndex("prev");
-                                }}
-                                className="inline-flex h-8 w-8 items-center justify-center text-slate-700 transition hover:bg-slate-100"
-                                aria-label="Önceki görsel"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
+                                {renderRemovedBadge()}
                             </button>
-                            <button
-                                type="button"
-                                onClick={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    updateMobileImageIndex("next");
-                                }}
-                                className="inline-flex h-8 w-8 items-center justify-center text-slate-700 transition hover:bg-slate-100"
-                                aria-label="Sonraki görsel"
-                            >
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
-                        </div>
-                    ) : null}
-                </div>
-            </div>
 
-            <div className="hidden gap-3 md:grid md:h-[clamp(330px,45vw,520px)] md:grid-cols-4">
-                <button
-                    type="button"
-                    onClick={openFromHero}
-                    className="group relative overflow-hidden rounded-[1.8rem] border border-gray-200 bg-gray-100 text-left md:col-span-3 md:h-full"
-                    aria-label="Fotoğraf galerisini aç"
-                >
-                    <div className="relative aspect-[16/10] md:h-full md:aspect-auto">
-                        <Image
-                            src={coverImage.src}
-                            alt={coverImage.alt || title}
-                            fill
-                            priority
-                            className="object-cover transition duration-500 group-hover:scale-[1.015]"
-                            sizes="(min-width: 768px) 75vw, 100vw"
-                        />
-                    </div>
-                    {renderRemovedBadge()}
-                </button>
+                            <div className="grid gap-3 md:h-full md:grid-rows-2">
+                                <button
+                                    type="button"
+                                    onClick={openGalleryFromPreview}
+                                    className="relative overflow-hidden rounded-[1.4rem] border border-gray-200 bg-gray-100 md:h-full"
+                                    aria-label="Fotoğraf galerisini aç"
+                                >
+                                    <div className="relative aspect-[16/9] md:h-full md:aspect-auto">
+                                        <Image
+                                            src={secondImage.src}
+                                            alt={secondImage.alt || `${title} ikinci görsel`}
+                                            fill
+                                            className="object-cover"
+                                            sizes="(min-width: 768px) 25vw, 100vw"
+                                        />
+                                    </div>
+                                </button>
 
-                <div className="grid gap-3 md:h-full md:grid-rows-2">
-                    <button
-                        type="button"
-                        onClick={openGallery}
-                        className="relative overflow-hidden rounded-[1.4rem] border border-gray-200 bg-gray-100 md:h-full"
-                        aria-label="Fotoğraf galerisini aç"
-                    >
-                        <div className="relative aspect-[16/9] md:h-full md:aspect-auto">
-                            <Image
-                                src={secondImage.src}
-                                alt={secondImage.alt || `${title} ikinci görsel`}
-                                fill
-                                className="object-cover"
-                                sizes="(min-width: 768px) 25vw, 100vw"
-                            />
-                        </div>
-                    </button>
+                                <div className="relative overflow-hidden rounded-[1.4rem] border border-gray-200 bg-gray-100 md:h-full">
+                                    <button
+                                        type="button"
+                                        onClick={openGalleryFromPreview}
+                                        className="relative h-full w-full text-left"
+                                        aria-label="Fotoğraf galerisini aç"
+                                    >
+                                        <div className="relative aspect-[16/9] md:h-full md:aspect-auto">
+                                            <Image
+                                                src={thirdImage.src}
+                                                alt={thirdImage.alt || `${title} üçüncü görsel`}
+                                                fill
+                                                className="object-cover"
+                                                sizes="(min-width: 768px) 25vw, 100vw"
+                                            />
+                                        </div>
+                                    </button>
 
-                    <div className="relative overflow-hidden rounded-[1.4rem] border border-gray-200 bg-gray-100 md:h-full">
-                        <button
-                            type="button"
-                            onClick={openGallery}
-                            className="relative h-full w-full text-left"
-                            aria-label="Fotoğraf galerisini aç"
-                        >
-                            <div className="relative aspect-[16/9] md:h-full md:aspect-auto">
-                                <Image
-                                    src={thirdImage.src}
-                                    alt={thirdImage.alt || `${title} üçüncü görsel`}
-                                    fill
-                                    className="object-cover"
-                                    sizes="(min-width: 768px) 25vw, 100vw"
-                                />
+                                    <button
+                                        type="button"
+                                        onClick={openGalleryFromPreview}
+                                        className="absolute bottom-3 right-3 flex items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3.5 py-2 text-xs font-semibold text-[#111828] transition hover:bg-white"
+                                    >
+                                        <Images className="h-3.5 w-3.5" />
+                                        {galleryButtonLabel}
+                                    </button>
+                                </div>
                             </div>
-                        </button>
+                        </div>
+                    ) : (
+                        <div className="hidden md:block">
+                            <div className="relative overflow-hidden rounded-[1.8rem] border border-gray-200 bg-gray-100">
+                                <button
+                                    type="button"
+                                    onClick={openGalleryFromPreview}
+                                    className={`relative block w-full overflow-hidden text-left ${desktopHeightClass}`}
+                                    aria-label="Fotoğraf galerisini aç"
+                                >
+                                    <div className="absolute inset-0">
+                                        <div
+                                            className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                                            style={{
+                                                transform: `translateX(-${currentCarouselInlineIndex * 100}%)`,
+                                            }}
+                                        >
+                                            {carouselItems.map((item, index) => (
+                                                <div
+                                                    key={`${item.id}-desktop-slide`}
+                                                    className="relative h-full w-full shrink-0"
+                                                >
+                                                    <Image
+                                                        src={item.src}
+                                                        alt={item.alt || `${title} ${index + 1}`}
+                                                        fill
+                                                        priority={index === 0}
+                                                        className="object-cover"
+                                                        sizes="(min-width: 1280px) 54vw, (min-width: 768px) 70vw, 100vw"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </button>
 
-                        <button
-                            type="button"
-                            onClick={openGallery}
-                            className="absolute bottom-3 right-3 flex items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3.5 py-2 text-xs font-semibold text-[#111828] transition hover:bg-white"
-                        >
-                            <Images className="h-3.5 w-3.5" />
-                            Galeri
-                        </button>
-                    </div>
+                                {renderRemovedBadge()}
+
+                                {canNavigateCarousel ? (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={(event) => {
+                                                event.preventDefault();
+                                                event.stopPropagation();
+                                                updateInlineImageIndex("prev");
+                                            }}
+                                            className="absolute left-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition hover:border-white/55"
+                                            aria-label="Önceki görsel"
+                                        >
+                                            <ChevronLeft className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={(event) => {
+                                                event.preventDefault();
+                                                event.stopPropagation();
+                                                updateInlineImageIndex("next");
+                                            }}
+                                            className="absolute right-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition hover:border-white/55"
+                                            aria-label="Sonraki görsel"
+                                        >
+                                            <ChevronRight className="h-4 w-4" />
+                                        </button>
+                                    </>
+                                ) : null}
+
+                                <button
+                                    type="button"
+                                    onClick={openGalleryFromPreview}
+                                    className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3.5 py-2 text-xs font-semibold text-[#111828] transition hover:bg-white"
+                                >
+                                    <Images className="h-3.5 w-3.5" />
+                                    {galleryButtonLabel}
+                                </button>
+                            </div>
+
+                            {showInlineThumbnails && carouselTotal > 1 ? (
+                                <div className="mt-3 grid grid-cols-4 gap-3">
+                                    {carouselItems.map((item, index) => (
+                                        <button
+                                            key={`${item.id}-thumb`}
+                                            type="button"
+                                            onClick={() => setInlineCarouselIndex(index)}
+                                            className={`relative aspect-[4/3] overflow-hidden rounded-xl border ${
+                                                index === currentCarouselInlineIndex
+                                                    ? "border-orange-500"
+                                                    : "border-gray-200"
+                                            } bg-gray-100`}
+                                            aria-label={`Fotoğraf ${index + 1} seç`}
+                                        >
+                                            <Image
+                                                src={item.src}
+                                                alt={item.alt || `${title} ${index + 1}`}
+                                                fill
+                                                className="object-cover"
+                                                sizes="(min-width: 1024px) 12vw, 25vw"
+                                            />
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : null}
+                        </div>
+                    )}
                 </div>
-            </div>
+            ) : null}
 
-            {isHydrated
+            {isHydrated && !useExternalGallery
                 ? createPortal(
                     <>
                         {isGalleryOpen ? (
@@ -621,6 +836,27 @@ export function ListingDetailGallery({
                                         </button>
                                     </div>
 
+                                    {galleryTabs && galleryTabs.length > 1 ? (
+                                        <div className="border-b border-gray-200 px-4 py-3 sm:px-5">
+                                            <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                                                {galleryTabs.map((tab) => (
+                                                    <button
+                                                        key={tab.key}
+                                                        type="button"
+                                                        onClick={() => onGalleryTabChange?.(tab.key)}
+                                                        className={`shrink-0 rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
+                                                            activeGalleryTabKey === tab.key
+                                                                ? "border-[#111828] bg-[#111828] text-white"
+                                                                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                                                        }`}
+                                                    >
+                                                        {tab.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : null}
+
                                     <div className="overflow-y-auto px-4 pb-5 pt-4 sm:px-5">
                                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                                             {items.map((item, index) => (
@@ -628,11 +864,7 @@ export function ListingDetailGallery({
                                                     key={item.id}
                                                     type="button"
                                                     onClick={() => {
-                                                        const isMobileViewport =
-                                                            typeof window !== "undefined" &&
-                                                            window.matchMedia("(max-width: 767px)")
-                                                                .matches;
-                                                        if (isMobileViewport) {
+                                                        if (isMobileViewport()) {
                                                             openReels(index);
                                                             return;
                                                         }
@@ -646,7 +878,7 @@ export function ListingDetailGallery({
                                                         src={item.src}
                                                         alt={item.alt || `${title} ${index + 1}`}
                                                         fill
-                                                        className="object-cover transition duration-300 hover:scale-[1.03]"
+                                                        className="object-cover"
                                                         sizes="(min-width: 1024px) 22vw, (min-width: 640px) 33vw, 50vw"
                                                     />
                                                 </button>

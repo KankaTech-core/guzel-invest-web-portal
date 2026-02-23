@@ -15,8 +15,9 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "db:setup": "prisma db push --accept-data-loss && npx tsx scripts/create-admin.ts admin@guzelinvest.com admin123",
-    "db:reset": "prisma migrate reset --force",
+    "db:setup": "node scripts/destructive-db-guard.mjs db:setup && prisma db push --accept-data-loss && npx tsx scripts/create-admin.ts admin@guzelinvest.com admin123",
+    "db:reset": "node scripts/destructive-db-guard.mjs db:reset && prisma migrate reset --force",
+    "test:db-guard": "node --test scripts/destructive-db-guard.test.mjs",
     "data:locations:generate": "tsx scripts/generate-tr-location-data.ts",
     "data:sku:backfill": "tsx scripts/backfill-listing-sku.ts",
     "dev:turbo": "next dev --turbopack"

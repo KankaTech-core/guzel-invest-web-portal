@@ -85,6 +85,7 @@ model Listing {
   publishToSahibinden Boolean              @default(false)
   showOnHomepageHero  Boolean              @default(false)
   homepageHeroSlot    Int?                 @unique
+  homepageProjectSlot Int?
   aiTags              String[]
   aiProcessedAt       DateTime?
   createdAt           DateTime             @default(now())
@@ -113,6 +114,7 @@ model Listing {
   @@index([price])
   @@index([showOnHomepageHero, status])
   @@index([homepageHeroSlot, status])
+  @@index([homepageProjectSlot, status])
   @@map("listings")
 }
 

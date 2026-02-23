@@ -5,6 +5,10 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { BookOpenText, Building2, EyeOff, FileText, PencilLine, Plus, X } from "lucide-react";
+import {
+    buildAdminQuickActionDefinitions,
+    parseAdminQuickActionRoute,
+} from "@/lib/admin-quick-actions";
 
 interface QuickAction {
     id: string;
@@ -26,16 +30,24 @@ interface PublicArticleDetailResponse {
     };
 }
 
+interface PublicProjectDetailResponse {
+    project?: {
+        id?: string;
+    };
+}
+
 interface AdminQuickActionsProps {
     onHideAll?: () => void;
 }
 
-const decodePathSegment = (segment: string): string => {
-    try {
-        return decodeURIComponent(segment);
-    } catch {
-        return segment;
-    }
+const ACTION_ICON_MAP: Record<string, LucideIcon> = {
+    listing: PencilLine,
+    listings: FileText,
+    project: PencilLine,
+    projects: Building2,
+    article: PencilLine,
+    articles: BookOpenText,
+    portal: Building2,
 };
 
 export function AdminQuickActions({ onHideAll }: AdminQuickActionsProps) {
@@ -45,67 +57,45 @@ export function AdminQuickActions({ onHideAll }: AdminQuickActionsProps) {
     const [isListingLoading, setIsListingLoading] = useState(false);
     const [articleId, setArticleId] = useState<string | null>(null);
     const [isArticleLoading, setIsArticleLoading] = useState(false);
+    const [projectId, setProjectId] = useState<string | null>(null);
+    const [isProjectLoading, setIsProjectLoading] = useState(false);
 
-    const pathSegments = useMemo(
-        () => pathname.split("/").filter(Boolean),
-        [pathname]
-    );
-    const locale = pathSegments[0] ?? "tr";
-    const listingSlug =
-        pathSegments[1] === "ilan" && pathSegments[2]
-            ? decodePathSegment(pathSegments[2])
-            : null;
-    const articleSlug =
-        pathSegments[1] === "blog" && pathSegments[2]
-            ? decodePathSegment(pathSegments[2])
-            : null;
-    const isListingPage = Boolean(listingSlug);
-    const isArticlePage = Boolean(articleSlug);
+    const {
+        locale,
+        listingSlug,
+        articleSlug,
+        projectSlug,
+        isListingPage,
+        isArticlePage,
+        isProjectPage,
+    } = useMemo(() => parseAdminQuickActionRoute(pathname), [pathname]);
 
     const actions = useMemo<QuickAction[]>(() => {
-        const nextActions: QuickAction[] = [
-            {
-                id: "listings",
-                label: "İlanlara git",
-                href: "/admin/ilanlar",
-                icon: FileText,
-            },
-            {
-                id: "articles",
-                label: "Makalelere git",
-                href: "/admin/makaleler",
-                icon: BookOpenText,
-            },
-            {
-                id: "portal",
-                label: "Portala git",
-                href: "/admin",
-                icon: Building2,
-            },
-        ];
-
-        if (isListingPage) {
-            nextActions.unshift({
-                id: "listing",
-                label: "İlana git",
-                href: listingId ? `/admin/ilanlar/${listingId}` : "#",
-                icon: PencilLine,
-                disabled: !listingId || isListingLoading,
-            });
-        }
-
-        if (isArticlePage) {
-            nextActions.unshift({
-                id: "article",
-                label: "Makaleye git",
-                href: articleId ? `/admin/makaleler/${articleId}` : "#",
-                icon: PencilLine,
-                disabled: !articleId || isArticleLoading,
-            });
-        }
-
-        return nextActions;
-    }, [articleId, isArticleLoading, isArticlePage, isListingPage, isListingLoading, listingId]);
+        return buildAdminQuickActionDefinitions({
+            isListingPage,
+            isArticlePage,
+            isProjectPage,
+            listingId,
+            articleId,
+            projectId,
+            isListingLoading,
+            isArticleLoading,
+            isProjectLoading,
+        }).map((action) => ({
+            ...action,
+            icon: ACTION_ICON_MAP[action.id] ?? Building2,
+        }));
+    }, [
+        articleId,
+        isArticleLoading,
+        isArticlePage,
+        isListingPage,
+        isListingLoading,
+        isProjectLoading,
+        isProjectPage,
+        listingId,
+        projectId,
+    ]);
 
     useEffect(() => {
         setIsOpen(false);
@@ -227,6 +217,57 @@ export function AdminQuickActions({ onHideAll }: AdminQuickActionsProps) {
             controller.abort();
         };
     }, [articleSlug, locale]);
+
+    useEffect(() => {
+        if (!projectSlug) {
+            setProjectId(null);
+            setIsProjectLoading(false);
+            return;
+        }
+
+        const controller = new AbortController();
+        let isActive = true;
+
+        const loadProjectId = async () => {
+            setIsProjectLoading(true);
+            try {
+                const response = await fetch(
+                    `/api/public/projects/${encodeURIComponent(projectSlug)}?locale=${encodeURIComponent(locale)}`,
+                    {
+                        cache: "no-store",
+                        signal: controller.signal,
+                    }
+                );
+
+                if (!response.ok) {
+                    if (isActive) {
+                        setProjectId(null);
+                    }
+                    return;
+                }
+
+                const data = (await response.json()) as PublicProjectDetailResponse;
+                if (isActive) {
+                    setProjectId(typeof data.project?.id === "string" ? data.project.id : null);
+                }
+            } catch {
+                if (isActive && !controller.signal.aborted) {
+                    setProjectId(null);
+                }
+            } finally {
+                if (isActive) {
+                    setIsProjectLoading(false);
+                }
+            }
+        };
+
+        void loadProjectId();
+
+        return () => {
+            isActive = false;
+            controller.abort();
+        };
+    }, [projectSlug, locale]);
 
     return (
         <div className="fixed bottom-6 left-6 z-[70] hidden md:flex flex-col items-start gap-3">

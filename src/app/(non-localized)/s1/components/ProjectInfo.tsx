@@ -1,14 +1,18 @@
+"use client";
+
 import Link from "next/link";
-import { Download, ImageIcon, Phone } from "lucide-react";
+import { Download, Images, Phone } from "lucide-react";
 import { S1SectionVisibility } from "../section-visibility";
 import { S1RibbonItem, S1SummaryData } from "../types";
 import { ProjectIcon } from "@/components/single-project/ProjectIcon";
+import { dispatchOpenConnectedProjectGallery } from "./project-gallery-events";
 
 interface ProjectInfoProps {
     propertiesRibbon: S1RibbonItem[];
     summary?: S1SummaryData;
     videoUrl?: string;
     firstDocumentUrl?: string;
+    showProjectGalleryButton?: boolean;
     visibility: S1SectionVisibility;
 }
 
@@ -17,6 +21,7 @@ export const ProjectInfo = ({
     summary,
     videoUrl,
     firstDocumentUrl,
+    showProjectGalleryButton = false,
     visibility,
 }: ProjectInfoProps) => {
     return (
@@ -57,9 +62,17 @@ export const ProjectInfo = ({
                 <section className="bg-gray-50 py-16">
                     <div className="mx-auto max-w-7xl px-4">
                         <div className="flex flex-col items-center gap-12 rounded-[24px] border border-gray-100 bg-white p-8 shadow-[0_1px_3px_rgba(0,0,0,0.05)] lg:flex-row">
-                            <div className="flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-50">
-                                <ImageIcon className="h-14 w-14 text-gray-300" />
-                            </div>
+                            {summary.logoUrl ? (
+                                <div className="flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-50">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={summary.logoUrl}
+                                        alt={`${summary.title} logosu`}
+                                        className="h-full w-full object-contain"
+                                        loading="lazy"
+                                    />
+                                </div>
+                            ) : null}
                             <div className="flex-1">
                                 <h2 className="mb-4 text-3xl font-bold text-gray-900">
                                     {summary.title}
@@ -98,6 +111,16 @@ export const ProjectInfo = ({
                                         <Download className="h-5 w-5" />
                                         Sunum İndir
                                     </Link>
+                                ) : null}
+                                {showProjectGalleryButton ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => dispatchOpenConnectedProjectGallery({ key: "all" })}
+                                        className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-[#111828] py-3.5 font-bold text-[#111828] transition-all hover:bg-gray-100"
+                                    >
+                                        <Images className="h-5 w-5" />
+                                        Galeriye Bak
+                                    </button>
                                 ) : null}
                             </div>
                         </div>

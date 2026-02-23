@@ -33,6 +33,7 @@ const socialLinks = [
 
 const navigation = [
     { name: "nav.home", href: "/" },
+    { label: "Projeler", href: "/projeler" },
     { name: "nav.portfolio", href: "/portfoy" },
     { label: "Makaleler", href: "/blog" },
     { name: "nav.about", href: "/hakkimizda" },
@@ -190,7 +191,7 @@ export function Navbar({ locale }: { locale: string }) {
                                         : "text-gray-600 hover:text-gray-900"
                                 )}
                             >
-                                {item.label ?? t(item.name!)}
+                                {item.label ?? t(item.name as any)}
                             </Link>
                         );
                     })}
@@ -274,7 +275,7 @@ export function Navbar({ locale }: { locale: string }) {
                                         : "text-gray-700 hover:bg-gray-50"
                                 )}
                             >
-                                {item.label ?? t(item.name!)}
+                                {item.label ?? t(item.name as any)}
                             </Link>
                         );
                     })}

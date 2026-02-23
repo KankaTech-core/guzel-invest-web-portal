@@ -3,6 +3,7 @@ export const PROJECT_MEDIA_CATEGORY_VALUES = [
     "INTERIOR",
     "MAP",
     "DOCUMENT",
+    "LOGO",
 ] as const;
 
 export type ProjectMediaCategory = (typeof PROJECT_MEDIA_CATEGORY_VALUES)[number];
@@ -12,6 +13,7 @@ export interface ProjectMediaAssignmentInput {
     interiorMediaIds?: string[] | null;
     mapMediaIds?: string[] | null;
     documentMediaIds?: string[] | null;
+    logoMediaIds?: string[] | null;
 }
 
 const CATEGORY_BY_FIELD = [
@@ -19,6 +21,7 @@ const CATEGORY_BY_FIELD = [
     { field: "interiorMediaIds", category: "INTERIOR" },
     { field: "mapMediaIds", category: "MAP" },
     { field: "documentMediaIds", category: "DOCUMENT" },
+    { field: "logoMediaIds", category: "LOGO" },
 ] as const;
 
 type ProjectMediaField = (typeof CATEGORY_BY_FIELD)[number]["field"];
@@ -53,6 +56,7 @@ export function getNormalizedProjectMediaAssignments(
         INTERIOR: normalizeMediaIds(input.interiorMediaIds),
         MAP: normalizeMediaIds(input.mapMediaIds),
         DOCUMENT: normalizeMediaIds(input.documentMediaIds),
+        LOGO: normalizeMediaIds(input.logoMediaIds),
     };
 }
 

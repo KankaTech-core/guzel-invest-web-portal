@@ -20,6 +20,7 @@ interface GetS1ProjectDataOptions {
 }
 
 const DEFAULT_LOCALE = "tr";
+const SOCIAL_GALLERY_TITLE = "sosyal imkanlar";
 
 const isNonEmptyString = (value: string | null | undefined): value is string =>
     typeof value === "string" && value.trim().length > 0;
@@ -237,6 +238,10 @@ export async function getS1ProjectPageData({
             image: getMediaUrl(media.url),
         }))
         .filter((item) => isNonEmptyString(item.image));
+    const logoImage = imageMedia
+        .filter((media) => media.category === "LOGO")
+        .map((media) => getMediaUrl(media.url))
+        .find(isNonEmptyString);
 
     const documentMedia = project.media.filter(
         (media) => media.type === "DOCUMENT" || media.category === "DOCUMENT"
@@ -287,6 +292,7 @@ export async function getS1ProjectPageData({
                   description: projectDescription,
                   tags: summaryTags,
                   deliveryDate: project.deliveryDate,
+                  logoUrl: logoImage,
               }
             : undefined;
 
@@ -301,26 +307,34 @@ export async function getS1ProjectPageData({
         })
         .filter((item) => item.name);
 
-    const customGalleries: S1CustomGalleryData[] = project.customGalleries
-        .map((gallery) => {
-            const galleryTranslation = pickLocalized(gallery.translations, locale);
-            const images = gallery.media
-                .filter((media) => media.type === "IMAGE")
-                .map((media) => getMediaUrl(media.url))
-                .filter(isNonEmptyString);
+    let socialGalleryImages: string[] = [];
+    const customGalleries: S1CustomGalleryData[] = [];
+    project.customGalleries.forEach((gallery) => {
+        const galleryTranslation = pickLocalized(gallery.translations, locale);
+        const galleryTitle = galleryTranslation?.title?.trim() || "";
+        const images = gallery.media
+            .filter((media) => media.type === "IMAGE")
+            .map((media) => getMediaUrl(media.url))
+            .filter(isNonEmptyString);
 
-            if (!galleryTranslation?.title?.trim() || images.length === 0) {
-                return null;
-            }
+        if (!galleryTitle || images.length === 0) {
+            return;
+        }
 
-            return {
-                id: gallery.id,
-                title: galleryTranslation.title.trim(),
-                subtitle: galleryTranslation.subtitle?.trim() || null,
-                images,
-            };
-        })
-        .filter(isPresent);
+        if (
+            galleryTitle.toLocaleLowerCase("tr-TR").trim() === SOCIAL_GALLERY_TITLE
+        ) {
+            socialGalleryImages = images;
+            return;
+        }
+
+        customGalleries.push({
+            id: gallery.id,
+            title: galleryTitle,
+            subtitle: galleryTranslation?.subtitle?.trim() || null,
+            images,
+        });
+    });
 
     const unitGalleries: S1CustomGalleryData[] = project.projectUnits
         .map((unit) => {
@@ -350,6 +364,10 @@ export async function getS1ProjectPageData({
         .filter(isPresent);
 
     const allCustomGalleries = [...customGalleries, ...unitGalleries];
+    const socialGalleryFallback = [interiorImages[0], exteriorImages[0], heroImage]
+        .filter(isNonEmptyString);
+    const resolvedSocialImages =
+        socialGalleryImages.length > 0 ? socialGalleryImages : socialGalleryFallback;
 
     const floorPlanItems: S1FloorPlanItem[] = project.floorPlans
         .map((plan) => {
@@ -474,6 +492,7 @@ export async function getS1ProjectPageData({
                       title: "Sosyal İmkanlar",
                       description: "Projeye ait sosyal yaşam alanları ve olanaklar.",
                       image: interiorImages[0] || exteriorImages[0] || heroImage,
+                      images: resolvedSocialImages,
                       facilities: socialFacilities,
                   }
                 : undefined,

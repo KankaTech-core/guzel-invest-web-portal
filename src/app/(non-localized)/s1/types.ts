@@ -20,6 +20,7 @@ export interface S1SummaryData {
     description: string;
     tags: string[];
     deliveryDate?: string | null;
+    logoUrl?: string;
 }
 
 export interface S1ExteriorVisualsData {
@@ -36,6 +37,7 @@ export interface S1SocialFacilitiesData {
     title: string;
     description: string;
     image?: string;
+    images?: string[];
     facilities: S1SocialFacilityItem[];
 }
 

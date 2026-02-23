@@ -2,6 +2,7 @@ import { HeroSection } from "./components/HeroSection";
 import { ProjectInfo } from "./components/ProjectInfo";
 import { Visuals } from "./components/Visuals";
 import { MapAndCTA } from "./components/MapAndCTA";
+import { ProjectGalleryHub } from "./components/ProjectGalleryHub";
 import SPRouteNavigator from "@/components/single-project/SPRouteNavigator";
 import SPLayout from "@/components/single-project/SPLayout";
 import { getS1ProjectPageData } from "./data";
@@ -70,6 +71,15 @@ export default async function SingleProjectPageS1({ searchParams }: PageProps) {
                     map={projectData.map}
                     faqs={projectData.faqs}
                     otherProjects={projectData.otherProjects}
+                    visibility={visibility}
+                />
+                <ProjectGalleryHub
+                    exteriorVisuals={projectData.exteriorVisuals}
+                    socialFacilities={projectData.socialFacilities}
+                    interiorVisuals={projectData.interiorVisuals}
+                    customGalleries={projectData.customGalleries}
+                    floorPlans={projectData.floorPlans}
+                    mapImages={projectData.mapImages}
                     visibility={visibility}
                 />
                 <SPRouteNavigator />

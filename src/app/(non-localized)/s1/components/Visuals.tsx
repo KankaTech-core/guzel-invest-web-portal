@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
-import { ArrowRight, ZoomIn } from "lucide-react";
+import { ZoomIn } from "lucide-react";
+import { useMemo } from "react";
 import { S1SectionVisibility } from "../section-visibility";
 import {
     S1CustomGalleryData,
@@ -9,6 +12,11 @@ import {
     S1SocialFacilitiesData,
 } from "../types";
 import { ProjectIcon } from "@/components/single-project/ProjectIcon";
+import {
+    ListingDetailGallery,
+    type ListingGalleryItem,
+} from "@/components/public/listing-detail-gallery";
+import { dispatchOpenConnectedProjectGallery } from "./project-gallery-events";
 
 interface VisualsProps {
     exteriorVisuals?: S1ExteriorVisualsData;
@@ -19,6 +27,32 @@ interface VisualsProps {
     visibility: S1SectionVisibility;
 }
 
+const BIG_SECTION_TITLE_CLASS =
+    "text-[clamp(1.9rem,4.2vw,3.65rem)] font-black uppercase leading-[1.1] tracking-[-0.01em] text-gray-900";
+
+const buildGalleryItems = (
+    images: string[],
+    title: string,
+    section: string
+): ListingGalleryItem[] =>
+    images.map((src, index) => ({
+        id: `${section}-${index + 1}`,
+        src,
+        alt: `${title} - Görsel ${index + 1}`,
+    }));
+
+const pickSymmetricGridClass = (itemCount: number) => {
+    if (itemCount <= 4) {
+        return "grid-cols-2 sm:grid-cols-2";
+    }
+
+    if (itemCount <= 6) {
+        return "grid-cols-2 sm:grid-cols-3";
+    }
+
+    return "grid-cols-2 sm:grid-cols-4";
+};
+
 export const Visuals = ({
     exteriorVisuals,
     socialFacilities,
@@ -27,78 +61,120 @@ export const Visuals = ({
     floorPlans,
     visibility,
 }: VisualsProps) => {
+    const socialImages = useMemo(() => {
+        if (!socialFacilities) {
+            return [];
+        }
+
+        if (socialFacilities.images?.length) {
+            return socialFacilities.images;
+        }
+
+        return socialFacilities.image ? [socialFacilities.image] : [];
+    }, [socialFacilities]);
+
+    const exteriorGalleryItems = useMemo(
+        () =>
+            buildGalleryItems(
+                exteriorVisuals?.images || [],
+                "Dış Görseller",
+                "project-exterior"
+            ),
+        [exteriorVisuals?.images]
+    );
+
+    const socialGalleryItems = useMemo(
+        () =>
+            buildGalleryItems(
+                socialImages,
+                socialFacilities?.title || "Sosyal İmkanlar",
+                "project-social"
+            ),
+        [socialFacilities?.title, socialImages]
+    );
+
+    const interiorGalleryItems = useMemo(
+        () =>
+            buildGalleryItems(
+                interiorVisuals?.images || [],
+                "İç Görseller",
+                "project-interior"
+            ),
+        [interiorVisuals?.images]
+    );
+
     return (
         <>
             {visibility.exteriorVisuals && exteriorVisuals ? (
                 <section className="bg-gray-50 py-16">
                     <div className="mx-auto max-w-7xl px-4">
-                        <h2 className="mb-8 text-3xl font-bold text-gray-900">
-                            {exteriorVisuals.title}
-                        </h2>
-                        <div className="grid auto-rows-[200px] grid-cols-2 gap-4">
-                            {exteriorVisuals.images.map((image, idx) => (
-                                <div
-                                    key={`${image}-${idx}`}
-                                    className={`relative overflow-hidden rounded-2xl bg-gray-200 ${
-                                        idx === 0 ? "row-span-2" : ""
-                                    }`}
-                                >
-                                    <Image
-                                        quality={100}
-                                        unoptimized
-                                        src={image}
-                                        alt="Proje dış görseli"
-                                        fill
-                                        className="object-cover"
-                                    />
-                                </div>
-                            ))}
+                        <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(240px,360px)]">
+                            <ListingDetailGallery
+                                items={exteriorGalleryItems}
+                                title="Dış Görseller"
+                                layout="carousel"
+                                galleryButtonLabel="Dış Galeri"
+                                onRequestOpenGallery={() =>
+                                    dispatchOpenConnectedProjectGallery({ key: "exterior" })
+                                }
+                            />
+
+                            <div className="space-y-5">
+                                <h2 className={BIG_SECTION_TITLE_CLASS}>Dış Görseller</h2>
+                            </div>
                         </div>
                     </div>
                 </section>
             ) : null}
 
             {visibility.socialFacilities && socialFacilities ? (
-                <section className="overflow-hidden bg-white py-24">
-                    <div className="mx-auto flex max-w-7xl flex-col items-center gap-16 px-4 lg:flex-row">
-                        <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:w-1/2">
-                            {socialFacilities.facilities.map((facility, idx) => (
-                                <div
-                                    key={`${facility.name}-${idx}`}
-                                    className="group text-center"
-                                >
-                                    <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full border border-gray-100 bg-gray-50 shadow-sm transition-all group-hover:border-orange-500 group-hover:bg-orange-500 group-hover:text-white">
-                                        <ProjectIcon
-                                            name={facility.icon}
-                                            className="h-8 w-8"
-                                        />
+                <section className="bg-white py-24">
+                    <div className="mx-auto grid max-w-7xl gap-16 px-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center">
+                        <div>
+                            <div className={`grid gap-7 ${pickSymmetricGridClass(
+                                socialFacilities.facilities.length
+                            )}`}>
+                                {socialFacilities.facilities.map((facility, idx) => (
+                                    <div
+                                        key={`${facility.name}-${idx}`}
+                                        className="group text-center"
+                                    >
+                                        <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full border border-gray-100 bg-gray-50 shadow-sm transition-all group-hover:border-orange-500 group-hover:bg-orange-500 group-hover:text-white">
+                                            <ProjectIcon
+                                                name={facility.icon}
+                                                className="h-8 w-8"
+                                            />
+                                        </div>
+                                        <p className="text-sm font-bold text-gray-700">
+                                            {facility.name}
+                                        </p>
                                     </div>
-                                    <p className="text-sm font-bold text-gray-700">
-                                        {facility.name}
-                                    </p>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                        <div className="relative lg:w-1/2">
-                            {socialFacilities.image ? (
-                                <div className="relative aspect-[4/3] overflow-hidden rounded-[2.5rem]">
-                                    <Image
-                                        quality={100}
-                                        unoptimized
-                                        src={socialFacilities.image}
-                                        alt={socialFacilities.title}
-                                        fill
-                                        className="object-cover"
-                                    />
-                                </div>
-                            ) : null}
-                            <div className="left-4 mt-6 max-w-xs rounded-3xl bg-orange-500 p-8 text-white shadow-lg sm:absolute sm:-bottom-6 sm:left-6 sm:mt-0">
-                                <h3 className="mb-2 text-2xl font-black">
+
+                        <div className="flex items-stretch gap-4">
+                            <div className="min-w-0 flex-1">
+                                <ListingDetailGallery
+                                    items={socialGalleryItems}
+                                    title={socialFacilities.title}
+                                    layout="carousel"
+                                    galleryButtonLabel="Sosyal Galeri"
+                                    onRequestOpenGallery={() =>
+                                        dispatchOpenConnectedProjectGallery({ key: "social" })
+                                    }
+                                />
+                                <h3 className={`mt-4 md:hidden ${BIG_SECTION_TITLE_CLASS}`}>
                                     {socialFacilities.title}
                                 </h3>
-                                <p className="text-sm text-white/90">
-                                    {socialFacilities.description}
-                                </p>
+                            </div>
+                            <div className="hidden items-center md:flex">
+                                <h3
+                                    className="text-[clamp(1.65rem,3.3vw,2.95rem)] font-black uppercase leading-[1.08] tracking-[-0.01em] text-gray-300"
+                                    style={{ writingMode: "vertical-rl", textOrientation: "mixed" }}
+                                >
+                                    {socialFacilities.title}
+                                </h3>
                             </div>
                         </div>
                     </div>
@@ -108,38 +184,20 @@ export const Visuals = ({
             {visibility.interiorVisuals && interiorVisuals ? (
                 <section className="bg-gray-50 py-16">
                     <div className="mx-auto max-w-7xl px-4">
-                        <div className="mb-8 flex items-end justify-between gap-4">
-                            <h2 className="text-3xl font-bold text-gray-900">
-                                {interiorVisuals.title}
-                            </h2>
-                            {interiorVisuals.images.length > 3 ? (
-                                <p className="flex items-center gap-2 font-bold text-orange-500">
-                                    Tümünü Gör <ArrowRight className="h-5 w-5" />
-                                </p>
-                            ) : null}
-                        </div>
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                            {interiorVisuals.images.map((image, idx) => (
-                                <div
-                                    key={`${image}-${idx}`}
-                                    className={`relative aspect-[4/5] overflow-hidden rounded-3xl ${
-                                        idx === 1
-                                            ? "md:mt-12"
-                                            : idx === 2
-                                              ? "md:mt-24"
-                                              : ""
-                                    }`}
-                                >
-                                    <Image
-                                        quality={100}
-                                        unoptimized
-                                        src={image}
-                                        alt="Proje iç görseli"
-                                        fill
-                                        className="object-cover"
-                                    />
-                                </div>
-                            ))}
+                        <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(240px,360px)]">
+                            <ListingDetailGallery
+                                items={interiorGalleryItems}
+                                title="İç Görseller"
+                                layout="carousel"
+                                galleryButtonLabel="İç Galeri"
+                                onRequestOpenGallery={() =>
+                                    dispatchOpenConnectedProjectGallery({ key: "interior" })
+                                }
+                            />
+
+                            <div className="space-y-5">
+                                <h2 className={BIG_SECTION_TITLE_CLASS}>İç Görseller</h2>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -159,23 +217,21 @@ export const Visuals = ({
                                       </p>
                                   ) : null}
                               </div>
-                              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                                  {gallery.images.map((image, idx) => (
-                                      <div
-                                          key={`${gallery.id}-${image}-${idx}`}
-                                          className="relative aspect-[4/3] overflow-hidden rounded-2xl"
-                                      >
-                                          <Image
-                                              quality={100}
-                                              unoptimized
-                                              src={image}
-                                              alt={gallery.title}
-                                              fill
-                                              className="object-cover"
-                                          />
-                                      </div>
-                                  ))}
-                              </div>
+
+                              <ListingDetailGallery
+                                  items={buildGalleryItems(
+                                      gallery.images,
+                                      gallery.title,
+                                      `custom-${gallery.id}`
+                                  )}
+                                  title={gallery.title}
+                                  layout="carousel"
+                                  onRequestOpenGallery={() =>
+                                      dispatchOpenConnectedProjectGallery({
+                                          key: `custom-${gallery.id}`,
+                                      })
+                                  }
+                              />
                           </div>
                       </section>
                   ))
@@ -218,7 +274,13 @@ export const Visuals = ({
                             <p className="mb-8 leading-relaxed text-gray-600">
                                 {floorPlans.description}
                             </p>
-                            <button className="flex items-center justify-center gap-3 rounded-xl bg-gray-900 py-4 font-bold text-white transition-colors hover:bg-gray-800">
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    dispatchOpenConnectedProjectGallery({ key: "floor" })
+                                }
+                                className="flex items-center justify-center gap-3 rounded-xl bg-gray-900 py-4 font-bold text-white transition-colors hover:bg-gray-800"
+                            >
                                 <ZoomIn className="h-5 w-5" />
                                 Tüm Planları İncele
                             </button>
