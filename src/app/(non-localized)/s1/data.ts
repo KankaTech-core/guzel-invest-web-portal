@@ -96,8 +96,8 @@ const buildMapData = ({
         ? `https://www.google.com/maps?q=${latitude},${longitude}&z=15&output=embed`
         : locationLabel
             ? `https://www.google.com/maps?q=${encodeURIComponent(
-                  locationLabel
-              )}&z=15&output=embed`
+                locationLabel
+            )}&z=15&output=embed`
             : undefined;
 
     const mapsLink = googleMapsLink?.trim()
@@ -106,8 +106,8 @@ const buildMapData = ({
             ? `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
             : locationLabel
                 ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                      locationLabel
-                  )}`
+                    locationLabel
+                )}`
                 : undefined;
 
     if (!embedSrc && !mapsLink) {
@@ -273,10 +273,10 @@ export async function getS1ProjectPageData({
     const metaRibbon: S1RibbonItem[] = [
         project.projectType
             ? {
-                  icon: "Building2",
-                  label: "Proje Tipi",
-                  value: project.projectType,
-              }
+                icon: "Building2",
+                label: "Proje Tipi",
+                value: project.projectType,
+            }
             : null,
     ].filter(isPresent);
 
@@ -288,12 +288,12 @@ export async function getS1ProjectPageData({
     const summary: S1SummaryData | undefined =
         projectDescription || summaryTags.length > 0 || project.deliveryDate
             ? {
-                  title: "Proje Özeti",
-                  description: projectDescription,
-                  tags: summaryTags,
-                  deliveryDate: project.deliveryDate,
-                  logoUrl: logoImage,
-              }
+                title: "Proje Özeti",
+                description: projectDescription,
+                tags: summaryTags,
+                deliveryDate: project.deliveryDate,
+                logoUrl: logoImage,
+            }
             : undefined;
 
     const socialFacilities: S1SocialFacilityItem[] = project.projectFeatures
@@ -479,39 +479,40 @@ export async function getS1ProjectPageData({
         propertiesRibbon,
         summary,
         videoUrl,
+        videoTitle: translation?.promoVideoTitle || undefined,
         exteriorVisuals:
             exteriorImages.length > 0
                 ? {
-                      title: "Projenin Vaziyet Planı ve Dış Görselleri",
-                      images: exteriorImages,
-                  }
+                    title: "Projenin Vaziyet Planı ve Dış Görselleri",
+                    images: exteriorImages,
+                }
                 : undefined,
         socialFacilities:
             socialFacilities.length > 0
                 ? {
-                      title: "Sosyal İmkanlar",
-                      description: "Projeye ait sosyal yaşam alanları ve olanaklar.",
-                      image: interiorImages[0] || exteriorImages[0] || heroImage,
-                      images: resolvedSocialImages,
-                      facilities: socialFacilities,
-                  }
+                    title: "Sosyal İmkanlar",
+                    description: "Projeye ait sosyal yaşam alanları ve olanaklar.",
+                    image: interiorImages[0] || exteriorImages[0] || heroImage,
+                    images: resolvedSocialImages,
+                    facilities: socialFacilities,
+                }
                 : undefined,
         interiorVisuals:
             interiorImages.length > 0
                 ? {
-                      title: "Projenin İç Görselleri",
-                      images: interiorImages,
-                  }
+                    title: "Projenin İç Görselleri",
+                    images: interiorImages,
+                }
                 : undefined,
         customGalleries: allCustomGalleries,
         floorPlans:
             floorPlanItems.length > 0
                 ? {
-                      title: "Kat Planları",
-                      description:
-                          "Farklı ihtiyaçlara göre tasarlanmış plan tiplerini inceleyin.",
-                      plans: floorPlanItems,
-                  }
+                    title: "Kat Planları",
+                    description:
+                        "Farklı ihtiyaçlara göre tasarlanmış plan tiplerini inceleyin.",
+                    plans: floorPlanItems,
+                }
                 : undefined,
         documents,
         mapImages,

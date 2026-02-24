@@ -105,6 +105,7 @@ export interface S1ProjectPageData {
     propertiesRibbon: S1RibbonItem[];
     summary?: S1SummaryData;
     videoUrl?: string;
+    videoTitle?: string;
     exteriorVisuals?: S1ExteriorVisualsData;
     socialFacilities?: S1SocialFacilitiesData;
     interiorVisuals?: S1InteriorVisualsData;

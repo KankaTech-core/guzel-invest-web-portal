@@ -6,14 +6,17 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
     LayoutDashboard,
+    House,
     FileText,
     Download,
     Newspaper,
     Users,
+    MessagesSquare,
     LogOut,
     ChevronLeft,
     ChevronRight,
     ExternalLink,
+    Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "@/lib/context/sidebar-context";
@@ -32,8 +35,10 @@ const roleLabels: Record<string, string> = {
 
 const navigation = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+    { name: "Ana Sayfa", href: "/admin/ana-sayfa", icon: House },
     { name: "İlanlar", href: "/admin/ilanlar", icon: FileText },
-    { name: "Projeler", href: "/admin/projeler", icon: FileText },
+    { name: "Projeler", href: "/admin/projeler", icon: Building2 },
+    { name: "Formlar", href: "/admin/formlar", icon: MessagesSquare },
     { name: "Export", href: "/admin/export", icon: Download },
     { name: "Makaleler", href: "/admin/makaleler", icon: Newspaper },
     { name: "Kullanıcılar", href: "/admin/kullanicilar", icon: Users },

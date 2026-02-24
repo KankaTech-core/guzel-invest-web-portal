@@ -75,6 +75,7 @@ export function AdminQuickActions({ onHideAll }: AdminQuickActionsProps) {
             isListingPage,
             isArticlePage,
             isProjectPage,
+            projectSlug,
             listingId,
             articleId,
             projectId,
@@ -93,6 +94,7 @@ export function AdminQuickActions({ onHideAll }: AdminQuickActionsProps) {
         isListingLoading,
         isProjectLoading,
         isProjectPage,
+        projectSlug,
         listingId,
         projectId,
     ]);

@@ -19,6 +19,7 @@ export interface BuildAdminQuickActionDefinitionsInput {
     isListingPage: boolean;
     isArticlePage: boolean;
     isProjectPage: boolean;
+    projectSlug: string | null;
     listingId: string | null;
     articleId: string | null;
     projectId: string | null;
@@ -68,6 +69,7 @@ export const buildAdminQuickActionDefinitions = ({
     isListingPage,
     isArticlePage,
     isProjectPage,
+    projectSlug,
     listingId,
     articleId,
     projectId,
@@ -108,11 +110,15 @@ export const buildAdminQuickActionDefinitions = ({
     }
 
     if (isProjectPage) {
+        const slugFallbackHref = projectSlug
+            ? `/admin/projeler/slug/${encodeURIComponent(projectSlug)}`
+            : "#";
+        const projectHref = projectId ? `/admin/projeler/${projectId}` : slugFallbackHref;
         actions.unshift({
             id: "project",
             label: "Projeye git",
-            href: projectId ? `/admin/projeler/${projectId}` : "#",
-            disabled: !projectId || isProjectLoading,
+            href: projectHref,
+            disabled: projectHref === "#" || isProjectLoading,
         });
     }
 

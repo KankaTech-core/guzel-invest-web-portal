@@ -11,6 +11,7 @@ interface ProjectInfoProps {
     propertiesRibbon: S1RibbonItem[];
     summary?: S1SummaryData;
     videoUrl?: string;
+    videoTitle?: string;
     firstDocumentUrl?: string;
     showProjectGalleryButton?: boolean;
     visibility: S1SectionVisibility;
@@ -20,6 +21,7 @@ export const ProjectInfo = ({
     propertiesRibbon,
     summary,
     videoUrl,
+    videoTitle,
     firstDocumentUrl,
     showProjectGalleryButton = false,
     visibility,
@@ -133,7 +135,7 @@ export const ProjectInfo = ({
                     <div className="mx-auto max-w-5xl px-4">
                         <div className="mb-10 text-center">
                             <h2 className="text-3xl font-bold text-gray-900">
-                                Proje Tanıtım Videosu
+                                {videoTitle || "Proje Tanıtım Videosu"}
                             </h2>
                         </div>
                         <div className="aspect-video overflow-hidden rounded-3xl border border-gray-100 bg-gray-100 shadow-xl shadow-gray-200/50">

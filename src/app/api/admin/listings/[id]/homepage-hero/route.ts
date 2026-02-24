@@ -1,32 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import {
+    getHomepageHeroListingRemovalError,
+    parseHomepageHeroSlot,
+} from "@/lib/homepage-hero-listings";
 
 interface RouteParams {
     params: Promise<{ id: string }>;
 }
-
-const HOMEPAGE_HERO_SLOTS = [1, 2, 3] as const;
-type HomepageHeroSlot = (typeof HOMEPAGE_HERO_SLOTS)[number];
-
-const parseHomepageHeroSlot = (
-    value: unknown
-): HomepageHeroSlot | null | "invalid" => {
-    if (value === undefined || value === null || value === "") {
-        return null;
-    }
-
-    const parsed = Number(value);
-    if (!Number.isInteger(parsed)) {
-        return "invalid";
-    }
-
-    if (!HOMEPAGE_HERO_SLOTS.includes(parsed as HomepageHeroSlot)) {
-        return "invalid";
-    }
-
-    return parsed as HomepageHeroSlot;
-};
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
     try {
@@ -61,6 +43,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             select: {
                 id: true,
                 status: true,
+                homepageHeroSlot: true,
             },
         });
 
@@ -73,6 +56,24 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 { error: "Only published listings can be shown on homepage hero" },
                 { status: 400 }
             );
+        }
+
+        const selectedCount = await prisma.listing.count({
+            where: {
+                status: "PUBLISHED",
+                isProject: false,
+                homepageHeroSlot: { not: null },
+            },
+        });
+
+        const removalError = getHomepageHeroListingRemovalError({
+            requestedSlot,
+            selectedCount,
+            isCurrentlySelected: existing.homepageHeroSlot !== null,
+        });
+
+        if (removalError) {
+            return NextResponse.json({ error: removalError }, { status: 409 });
         }
 
         const listing = await prisma.$transaction(async (tx) => {

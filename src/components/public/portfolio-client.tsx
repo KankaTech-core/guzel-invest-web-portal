@@ -53,12 +53,14 @@ interface ListingTranslation {
     locale: string;
     title: string;
     description: string;
+    features: string[];
 }
 
 interface ListingMedia {
     id?: string;
     url: string;
     isCover: boolean;
+    type?: string;
     category?: string | null;
 }
 
@@ -572,15 +574,24 @@ function buildLocationLabel(listing: Listing) {
         .join(", ");
 }
 
+function isDisplayMedia(item: ListingMedia) {
+    const category = (item.category || "").trim().toUpperCase();
+    const type = (item.type || "").trim().toUpperCase();
+    return category !== "DOCUMENT" && type !== "DOCUMENT" && type !== "VIDEO";
+}
+
 function getListingGalleryMedia(listing: Listing): ListingMedia[] {
-    const media = listing.media || [];
+    const media = (listing.media || []).filter(isDisplayMedia);
     if (media.length === 0) return [];
     if (!listing.isProject) return media.slice(0, 4);
 
     const coverMedia = media.find((item) => item.isCover) || media[0];
-    const exteriorMedia = media.filter((item) =>
-        (item.category || "").trim().toUpperCase() === "EXTERIOR"
-    );
+    const exteriorMedia = media
+        .filter((item) => (item.category || "").trim().toUpperCase() === "EXTERIOR")
+        .filter((item) => {
+            if (!coverMedia) return true;
+            return item.id !== coverMedia.id && item.url !== coverMedia.url;
+        });
 
     const uniqueByUrl = new Set<string>();
     const ordered: ListingMedia[] = [];
@@ -593,8 +604,7 @@ function getListingGalleryMedia(listing: Listing): ListingMedia[] {
     };
 
     pushIfUnique(coverMedia);
-    exteriorMedia.forEach((item) => pushIfUnique(item));
-    media.forEach((item) => pushIfUnique(item));
+    exteriorMedia.slice(0, 3).forEach((item) => pushIfUnique(item));
 
     return ordered.slice(0, 4);
 }
@@ -619,6 +629,23 @@ function getListingDescription(listing: Listing, locale: string) {
     );
 
     return requested?.description || fallback?.description || "Açıklama bulunamadı.";
+}
+
+function getListingFeatureHighlights(listing: Listing, locale: string) {
+    const requested = listing.translations.find(
+        (translation) => translation.locale === locale
+    );
+    const fallback = listing.translations.find(
+        (translation) => translation.locale === "tr"
+    );
+    const features = requested?.features?.length
+        ? requested.features
+        : fallback?.features || [];
+
+    return features
+        .map((feature) => feature.trim())
+        .filter(Boolean)
+        .slice(0, 2);
 }
 
 function getListingNumericPrice(listing: Listing) {
@@ -1075,6 +1102,25 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
                 if (nextSnapshot !== snapshotRef.current) {
                     setListings(nextListings);
+                    setActiveImageIndexes((previous) => {
+                        const nextIndexes: Record<string, number> = {};
+                        for (const listing of nextListings) {
+                            const mediaLength = getListingGalleryMedia(listing).length;
+                            if (mediaLength <= 1) {
+                                nextIndexes[listing.id] = 0;
+                                continue;
+                            }
+
+                            if (listing.isProject) {
+                                nextIndexes[listing.id] = 0;
+                                continue;
+                            }
+
+                            const prior = previous[listing.id] ?? 0;
+                            nextIndexes[listing.id] = Math.min(prior, mediaLength - 1);
+                        }
+                        return nextIndexes;
+                    });
                     if (nextPriceHistogramValues.length > 0) {
                         setPriceHistogramValues(nextPriceHistogramValues);
                     }
@@ -2198,6 +2244,12 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         listings.map((listing) => {
                             const title = getListingTitle(listing, locale);
                             const description = getListingDescription(listing, locale);
+                            const featureHighlights = getListingFeatureHighlights(listing, locale);
+                            const listingNumericPrice = getListingNumericPrice(listing);
+                            const hasDisplayPrice =
+                                !listing.isProject &&
+                                listingNumericPrice !== null &&
+                                listingNumericPrice > 0;
                             const hasDescriptionOverflow = Boolean(descriptionOverflowMap[listing.id]);
                             const locationLabel = buildLocationLabel(listing);
                             const galleryMedia = getListingGalleryMedia(listing);
@@ -2399,38 +2451,58 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                     </span>
                                                 </div>
 
-                                                <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-gray-100 pt-4">
-                                                    <div className="flex items-baseline gap-1.5">
-                                                        <span className="text-sm font-semibold text-gray-900" style={monoStyle}>
-                                                            {formatArea(listing.area).replace(" m²", "")}
-                                                        </span>
-                                                        <span className="text-xs text-gray-400">
-                                                            m<sup>2</sup>
-                                                        </span>
+                                                {listing.isProject ? (
+                                                    <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
+                                                        {featureHighlights.length > 0 ? (
+                                                            featureHighlights.map((feature, featureIndex) => (
+                                                                <span
+                                                                    key={`${listing.id}-${featureIndex}-${feature}`}
+                                                                    className="inline-flex max-w-full items-center rounded-full border border-orange-100 bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700"
+                                                                    title={feature}
+                                                                >
+                                                                    <span className="truncate">{feature}</span>
+                                                                </span>
+                                                            ))
+                                                        ) : (
+                                                            <span className="text-xs text-gray-400">
+                                                                Özellik bilgisi yok
+                                                            </span>
+                                                        )}
                                                     </div>
-
-                                                    {(listing.rooms || listing.bedrooms) && (
+                                                ) : (
+                                                    <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-gray-100 pt-4">
                                                         <div className="flex items-baseline gap-1.5">
                                                             <span className="text-sm font-semibold text-gray-900" style={monoStyle}>
-                                                                {listing.rooms || listing.bedrooms}
+                                                                {formatArea(listing.area).replace(" m²", "")}
                                                             </span>
-                                                            <span className="text-xs text-gray-400">oda</span>
+                                                            <span className="text-xs text-gray-400">
+                                                                m<sup>2</sup>
+                                                            </span>
                                                         </div>
-                                                    )}
 
-                                                    {listing.bathrooms && (
-                                                        <div className="flex items-baseline gap-1.5">
-                                                            <span className="text-sm font-semibold text-gray-900" style={monoStyle}>
-                                                                {listing.bathrooms}
-                                                            </span>
-                                                            <span className="text-xs text-gray-400">banyo</span>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                        {(listing.rooms || listing.bedrooms) && (
+                                                            <div className="flex items-baseline gap-1.5">
+                                                                <span className="text-sm font-semibold text-gray-900" style={monoStyle}>
+                                                                    {listing.rooms || listing.bedrooms}
+                                                                </span>
+                                                                <span className="text-xs text-gray-400">oda</span>
+                                                            </div>
+                                                        )}
+
+                                                        {listing.bathrooms && (
+                                                            <div className="flex items-baseline gap-1.5">
+                                                                <span className="text-sm font-semibold text-gray-900" style={monoStyle}>
+                                                                    {listing.bathrooms}
+                                                                </span>
+                                                                <span className="text-xs text-gray-400">banyo</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <div className="flex cursor-pointer items-center justify-between gap-3 bg-gray-50 p-5 md:flex-col md:items-stretch md:justify-between">
-                                                {!listing.isProject ? (
+                                                {hasDisplayPrice ? (
                                                     <div className="min-w-0 text-left md:text-right">
                                                         <p className="text-xl font-bold text-gray-900 sm:text-2xl" style={monoStyle}>
                                                             {(() => {

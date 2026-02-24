@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
     findFirstAvailableHomepageProjectSlot,
+    getHomepageProjectRemovalError,
     getHomepageProjectSelectionError,
 } from "@/lib/homepage-project-carousel";
 
@@ -79,6 +80,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                             : 400,
                 }
             );
+        }
+
+        const removalError = getHomepageProjectRemovalError({
+            shouldSelect,
+            selectedCount,
+            isAlreadySelected: existing.homepageProjectSlot !== null,
+        });
+
+        if (removalError) {
+            return NextResponse.json({ error: removalError }, { status: 409 });
         }
 
         if (shouldSelect && existing.homepageProjectSlot === null) {

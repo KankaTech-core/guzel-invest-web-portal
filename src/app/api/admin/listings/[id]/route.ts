@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteImage } from "@/lib/minio";
 import { ListingStatus } from "@/generated/prisma";
+import { getHomepageHeroListingRemovalError } from "@/lib/homepage-hero-listings";
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -181,6 +182,25 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 ? requestedHomepageHeroSlot
                 : null;
         const showOnHomepageHero = homepageHeroSlot !== null;
+
+        const homepageHeroRemovalError = getHomepageHeroListingRemovalError({
+            requestedSlot: homepageHeroSlot,
+            selectedCount: await prisma.listing.count({
+                where: {
+                    status: ListingStatus.PUBLISHED,
+                    isProject: false,
+                    homepageHeroSlot: { not: null },
+                },
+            }),
+            isCurrentlySelected: existing.homepageHeroSlot !== null,
+        });
+
+        if (homepageHeroRemovalError) {
+            return NextResponse.json(
+                { error: homepageHeroRemovalError },
+                { status: 409 }
+            );
+        }
 
         // Update listing
         await prisma.$transaction(async (tx) => {
@@ -398,6 +418,25 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
         if (!existing) {
             return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+        }
+
+        const homepageHeroRemovalError = getHomepageHeroListingRemovalError({
+            requestedSlot: null,
+            selectedCount: await prisma.listing.count({
+                where: {
+                    status: ListingStatus.PUBLISHED,
+                    isProject: false,
+                    homepageHeroSlot: { not: null },
+                },
+            }),
+            isCurrentlySelected: existing.homepageHeroSlot !== null,
+        });
+
+        if (homepageHeroRemovalError) {
+            return NextResponse.json(
+                { error: homepageHeroRemovalError },
+                { status: 409 }
+            );
         }
 
         // Delete listing (cascade will delete translations, media, sync logs)

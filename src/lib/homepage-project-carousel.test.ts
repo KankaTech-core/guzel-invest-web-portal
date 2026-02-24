@@ -6,6 +6,7 @@ import {
     HOMEPAGE_PROJECT_SLOTS,
     canSelectProjectForHomepageCarousel,
     findFirstAvailableHomepageProjectSlot,
+    getHomepageProjectRemovalError,
     getHomepageProjectSelectionError,
     parseHomepageProjectSlot,
     pickHomepageProjectsForCarousel,
@@ -102,4 +103,33 @@ test("findFirstAvailableHomepageProjectSlot picks first free slot", () => {
     assert.equal(findFirstAvailableHomepageProjectSlot([2]), 1);
     assert.equal(findFirstAvailableHomepageProjectSlot([1, 3]), 2);
     assert.equal(findFirstAvailableHomepageProjectSlot([1, 2, 3]), null);
+});
+
+test("getHomepageProjectRemovalError prevents removing the last selected project", () => {
+    assert.equal(
+        getHomepageProjectRemovalError({
+            shouldSelect: false,
+            selectedCount: 1,
+            isAlreadySelected: true,
+        }),
+        "Ana sayfada en az 1 proje kalmalıdır."
+    );
+
+    assert.equal(
+        getHomepageProjectRemovalError({
+            shouldSelect: false,
+            selectedCount: 2,
+            isAlreadySelected: true,
+        }),
+        null
+    );
+
+    assert.equal(
+        getHomepageProjectRemovalError({
+            shouldSelect: true,
+            selectedCount: 1,
+            isAlreadySelected: true,
+        }),
+        null
+    );
 });

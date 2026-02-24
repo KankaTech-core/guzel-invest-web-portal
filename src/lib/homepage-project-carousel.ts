@@ -51,6 +51,32 @@ export function getHomepageProjectSelectionError({
     return null;
 }
 
+interface HomepageProjectRemovalErrorInput {
+    shouldSelect: boolean;
+    selectedCount: number;
+    isAlreadySelected: boolean;
+}
+
+export function getHomepageProjectRemovalError({
+    shouldSelect,
+    selectedCount,
+    isAlreadySelected,
+}: HomepageProjectRemovalErrorInput): string | null {
+    if (shouldSelect) {
+        return null;
+    }
+
+    if (!isAlreadySelected) {
+        return null;
+    }
+
+    if (selectedCount <= 1) {
+        return "Ana sayfada en az 1 proje kalmalıdır.";
+    }
+
+    return null;
+}
+
 export function pickHomepageProjectsForCarousel<T>(
     selectedProjects: T[],
     fallbackProjects: T[]

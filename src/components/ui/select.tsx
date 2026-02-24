@@ -20,6 +20,7 @@ interface SelectProps<T extends string | number = string> {
     searchable?: boolean;
     searchPlaceholder?: string;
     searchMatchMode?: "startsWith" | "includes";
+    placement?: "top" | "bottom";
 }
 
 export function Select<T extends string | number = string>({
@@ -33,6 +34,7 @@ export function Select<T extends string | number = string>({
     searchable = false,
     searchPlaceholder = "Ara",
     searchMatchMode = "includes",
+    placement = "bottom",
 }: SelectProps<T>) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -153,7 +155,10 @@ export function Select<T extends string | number = string>({
                 )}
 
                 {isOpen && (
-                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-100 rounded-lg shadow-xl max-h-60 overflow-auto py-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className={cn(
+                        "absolute z-50 w-full bg-white border border-gray-100 rounded-lg shadow-xl max-h-60 overflow-auto py-1 animate-in fade-in duration-200",
+                        placement === "top" ? "bottom-full mb-1 slide-in-from-bottom-1" : "mt-1 slide-in-from-top-1"
+                    )}>
                         {filteredOptions.map((option) => (
                             <button
                                 key={option.value}

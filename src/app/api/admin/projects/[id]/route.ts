@@ -4,7 +4,10 @@ import { Prisma, PropertyType, SaleType, ListingStatus } from "@/generated/prism
 import { getSession } from "@/lib/auth";
 import { replaceProjectMediaAssignments } from "@/lib/project-media-assignments";
 import { prisma } from "@/lib/prisma";
-import { parseHomepageProjectSlot } from "@/lib/homepage-project-carousel";
+import {
+    getHomepageProjectRemovalError,
+    parseHomepageProjectSlot,
+} from "@/lib/homepage-project-carousel";
 import {
     normalizeProjectIcon,
     normalizeProjectFeatureCategory,
@@ -21,6 +24,7 @@ const LocaleTextSchema = z.object({
     title: z.string().optional(),
     description: z.string().optional(),
     features: z.array(z.string()).optional(),
+    promoVideoTitle: z.string().optional(),
 });
 
 const ProjectFeatureSchema = z.object({
@@ -522,6 +526,25 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             );
         }
 
+        const homepageProjectRemovalError = getHomepageProjectRemovalError({
+            shouldSelect: nextHomepageProjectSlot !== null,
+            selectedCount: await prisma.listing.count({
+                where: {
+                    isProject: true,
+                    status: ListingStatus.PUBLISHED,
+                    homepageProjectSlot: { not: null },
+                },
+            }),
+            isAlreadySelected: existing.homepageProjectSlot !== null,
+        });
+
+        if (homepageProjectRemovalError) {
+            return NextResponse.json(
+                { error: homepageProjectRemovalError },
+                { status: 409 }
+            );
+        }
+
         await prisma.$transaction(async (tx) => {
             if (nextHomepageProjectSlot !== null) {
                 await tx.listing.updateMany({
@@ -636,6 +659,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                             title,
                             description:
                                 normalizeProjectText(translation.description || "") || "",
+                            promoVideoTitle: normalizeProjectText(translation.promoVideoTitle || "") || null,
                             features: (translation.features || [])
                                 .map((item) => normalizeProjectText(item))
                                 .filter((item): item is string => Boolean(item))
@@ -647,6 +671,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                             title,
                             description:
                                 normalizeProjectText(translation.description || "") || "",
+                            promoVideoTitle: normalizeProjectText(translation.promoVideoTitle || "") || null,
                             features: (translation.features || [])
                                 .map((item) => normalizeProjectText(item))
                                 .filter((item): item is string => Boolean(item))
@@ -704,11 +729,33 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
         const existing = await prisma.listing.findFirst({
             where: { id, isProject: true },
-            select: { id: true },
+            select: {
+                id: true,
+                homepageProjectSlot: true,
+            },
         });
 
         if (!existing) {
             return NextResponse.json({ error: "Project not found" }, { status: 404 });
+        }
+
+        const homepageProjectRemovalError = getHomepageProjectRemovalError({
+            shouldSelect: false,
+            selectedCount: await prisma.listing.count({
+                where: {
+                    isProject: true,
+                    status: ListingStatus.PUBLISHED,
+                    homepageProjectSlot: { not: null },
+                },
+            }),
+            isAlreadySelected: existing.homepageProjectSlot !== null,
+        });
+
+        if (homepageProjectRemovalError) {
+            return NextResponse.json(
+                { error: homepageProjectRemovalError },
+                { status: 409 }
+            );
         }
 
         await prisma.listing.delete({ where: { id } });

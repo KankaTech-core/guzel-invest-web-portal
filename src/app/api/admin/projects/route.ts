@@ -19,6 +19,7 @@ const LocaleTextSchema = z.object({
     title: z.string().optional(),
     description: z.string().optional(),
     features: z.array(z.string()).optional(),
+    promoVideoTitle: z.string().optional(),
 });
 
 const ProjectFeatureSchema = z.object({
@@ -557,6 +558,7 @@ export async function POST(request: NextRequest) {
                         locale,
                         title,
                         description: normalizeProjectText(translation.description || "") || "",
+                        promoVideoTitle: normalizeProjectText(translation.promoVideoTitle || "") || null,
                         features: (translation.features || [])
                             .map((item) => normalizeProjectText(item))
                             .filter((item): item is string => Boolean(item))

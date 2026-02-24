@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState, type ChangeEvent } from "react";
-import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, ChevronDown, Loader2, Plus, Trash2 } from "lucide-react";
 import { PROJECT_ICON_OPTIONS } from "@/lib/project-icon-catalog";
 import { getMediaUrl } from "@/lib/utils";
 
@@ -89,6 +89,7 @@ interface ExistingProjectData {
     interiorMediaIds: string[];
     mapMediaIds: string[];
     documentMediaIds: string[];
+    promoVideoUrl?: string | null;
     documents?: ExistingProjectDocument[];
 }
 
@@ -277,6 +278,9 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
     );
     const [mapMediaIdsRaw, setMapMediaIdsRaw] = useState(
         (project?.mapMediaIds || []).join(", ")
+    );
+    const [promoVideoUrl, setPromoVideoUrl] = useState(
+        project?.promoVideoUrl || ""
     );
     const [documentMediaIdsRaw, setDocumentMediaIdsRaw] = useState(
         (project?.documentMediaIds || []).join(", ")
@@ -538,6 +542,7 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
             interiorMediaIds: parseMediaIds(interiorMediaIdsRaw),
             mapMediaIds: parseMediaIds(mapMediaIdsRaw),
             documentMediaIds: parseMediaIds(documentMediaIdsRaw),
+            promoVideoUrl: promoVideoUrl.trim() || null,
         };
 
         try {
@@ -663,8 +668,18 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                 </div>
             )}
 
-            <section className="rounded-xl border border-gray-200 bg-white p-5">
-                <h2 className="text-base font-semibold text-gray-900">Temel Bilgiler</h2>
+            <details className="group rounded-xl border border-gray-200 bg-white" open>
+    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+        <div className="flex w-full flex-1 items-center justify-between pr-4">
+            <h2 className="text-base font-semibold text-gray-900">Temel Bilgiler</h2>
+            
+        </div>
+        <span className="transition-transform group-open:rotate-180">
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+        </span>
+    </summary>
+    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+        
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                     <label className="text-sm">
                         <span className="mb-1 block text-gray-600">Durum</span>
@@ -742,10 +757,21 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                         />
                     </label>
                 </div>
-            </section>
+    </div>
+</details>
 
-            <section className="rounded-xl border border-gray-200 bg-white p-5">
-                <h2 className="text-base font-semibold text-gray-900">Konum ve Metrikler</h2>
+<details className="group rounded-xl border border-gray-200 bg-white" open>
+    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+        <div className="flex w-full flex-1 items-center justify-between pr-4">
+            <h2 className="text-base font-semibold text-gray-900">Konum ve Metrikler</h2>
+            
+        </div>
+        <span className="transition-transform group-open:rotate-180">
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+        </span>
+    </summary>
+    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+        
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                     <label className="text-sm">
                         <span className="mb-1 block text-gray-600">Şehir</span>
@@ -831,21 +857,27 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                         />
                     </label>
                 </div>
-            </section>
+    </div>
+</details>
 
-            <section className="rounded-xl border border-gray-200 bg-white p-5">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-base font-semibold text-gray-900">
-                        Proje Özellikleri (Genel + Sosyal)
-                    </h2>
-                    <button
+<details className="group rounded-xl border border-gray-200 bg-white">
+    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+        <div className="flex w-full flex-1 items-center justify-between pr-4">
+            <h2 className="text-base font-semibold text-gray-900">Proje Özellikleri (Genel + Sosyal)</h2>
+            <button
                         type="button"
                         onClick={addProjectFeature}
                         className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
                     >
                         <Plus className="h-4 w-4" /> Ekle
                     </button>
-                </div>
+        </div>
+        <span className="transition-transform group-open:rotate-180">
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+        </span>
+    </summary>
+    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+        
                 <div className="mt-4 space-y-3">
                     {projectFeatures.length === 0 && (
                         <p className="text-sm text-gray-500">Henüz özellik eklenmedi.</p>
@@ -922,26 +954,67 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                         </div>
                     ))}
                 </div>
-            </section>
+    </div>
+</details>
 
-            <section className="rounded-xl border border-gray-200 bg-white p-5">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-base font-semibold text-gray-900">Özel Galeriler</h2>
-                    <button
+<details className="group rounded-xl border border-gray-200 bg-white">
+    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+        <div className="flex w-full flex-1 items-center justify-between pr-4">
+            <h2 className="text-base font-semibold text-gray-900">Dış Görseller</h2>
+            
+        </div>
+        <span className="transition-transform group-open:rotate-180">
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+        </span>
+    </summary>
+    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+        <label className="text-sm">
+    <span className="mb-1 block text-gray-600">Virgülle ayrılmış Media ID listesi girin:</span>
+    <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="mediaId1, mediaId2" value={exteriorMediaIdsRaw} onChange={(event) => setExteriorMediaIdsRaw(event.target.value)} />
+</label>
+    </div>
+</details>
+
+<details className="group rounded-xl border border-gray-200 bg-white">
+    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+        <div className="flex w-full flex-1 items-center justify-between pr-4">
+            <h2 className="text-base font-semibold text-gray-900">İç Görseller</h2>
+            
+        </div>
+        <span className="transition-transform group-open:rotate-180">
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+        </span>
+    </summary>
+    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+        <label className="text-sm">
+    <span className="mb-1 block text-gray-600">Virgülle ayrılmış Media ID listesi girin:</span>
+    <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="mediaId1, mediaId2" value={interiorMediaIdsRaw} onChange={(event) => setInteriorMediaIdsRaw(event.target.value)} />
+</label>
+    </div>
+</details>
+
+<details className="group rounded-xl border border-gray-200 bg-white">
+    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+        <div className="flex w-full flex-1 items-center justify-between pr-4">
+            <h2 className="text-base font-semibold text-gray-900">Kat Planları</h2>
+            <button
                         type="button"
-                        onClick={addCustomGallery}
+                        onClick={addFloorPlan}
                         className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
                     >
                         <Plus className="h-4 w-4" /> Ekle
                     </button>
-                </div>
-                <p className="mt-2 text-xs text-gray-500">
-                    Media ID alanına virgülle ayırarak mevcut media kayıtlarını bağlayabilirsiniz.
-                </p>
+        </div>
+        <span className="transition-transform group-open:rotate-180">
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+        </span>
+    </summary>
+    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+        
                 <div className="mt-4 space-y-3">
-                    {customGalleries.map((item, index) => (
+                    {floorPlans.map((item, index) => (
                         <div
-                            key={`gallery-${index}`}
+                            key={`floor-${index}`}
                             className="grid gap-3 rounded-lg border border-gray-200 p-3 md:grid-cols-2"
                         >
                             <input
@@ -949,7 +1022,7 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                                 placeholder="Başlık (TR)"
                                 value={item.title}
                                 onChange={(event) =>
-                                    setCustomGalleries((prev) =>
+                                    setFloorPlans((prev) =>
                                         prev.map((entry, entryIndex) =>
                                             entryIndex === index
                                                 ? { ...entry, title: event.target.value }
@@ -960,13 +1033,13 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                             />
                             <input
                                 className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Alt başlık"
-                                value={item.subtitle}
+                                placeholder="Alan (örn. 110 m²)"
+                                value={item.area}
                                 onChange={(event) =>
-                                    setCustomGalleries((prev) =>
+                                    setFloorPlans((prev) =>
                                         prev.map((entry, entryIndex) =>
                                             entryIndex === index
-                                                ? { ...entry, subtitle: event.target.value }
+                                                ? { ...entry, area: event.target.value }
                                                 : entry
                                         )
                                     )
@@ -974,13 +1047,13 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                             />
                             <input
                                 className="rounded-lg border border-gray-300 px-3 py-2 text-sm md:col-span-2"
-                                placeholder="mediaId1, mediaId2"
-                                value={item.mediaIdsRaw}
+                                placeholder="Görsel URL"
+                                value={item.imageUrl}
                                 onChange={(event) =>
-                                    setCustomGalleries((prev) =>
+                                    setFloorPlans((prev) =>
                                         prev.map((entry, entryIndex) =>
                                             entryIndex === index
-                                                ? { ...entry, mediaIdsRaw: event.target.value }
+                                                ? { ...entry, imageUrl: event.target.value }
                                                 : entry
                                         )
                                     )
@@ -989,7 +1062,7 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                             <button
                                 type="button"
                                 onClick={() =>
-                                    setCustomGalleries((prev) =>
+                                    setFloorPlans((prev) =>
                                         prev.filter((_, entryIndex) => entryIndex !== index)
                                     )
                                 }
@@ -999,139 +1072,139 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                             </button>
                         </div>
                     ))}
-                    {customGalleries.length === 0 && (
-                        <p className="text-sm text-gray-500">Henüz özel galeri eklenmedi.</p>
+                    {floorPlans.length === 0 && (
+                        <p className="text-sm text-gray-500">Henüz kat planı eklenmedi.</p>
                     )}
                 </div>
-            </section>
+    </div>
+</details>
 
-            <section className="rounded-xl border border-gray-200 bg-white p-5">
-                <h2 className="text-base font-semibold text-gray-900">
-                    Proje Medya Kategorileri
-                </h2>
-                <p className="mt-2 text-xs text-gray-500">
-                    Bu alanlar ana section galerilerini belirler. Her satıra ilgili media ID
-                    listesini virgülle girin.
-                </p>
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">
-                            Dış Görseller (EXTERIOR)
-                        </span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            placeholder="mediaId1, mediaId2"
-                            value={exteriorMediaIdsRaw}
-                            onChange={(event) => setExteriorMediaIdsRaw(event.target.value)}
-                        />
-                    </label>
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">
-                            İç Görseller (INTERIOR)
-                        </span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            placeholder="mediaId1, mediaId2"
-                            value={interiorMediaIdsRaw}
-                            onChange={(event) => setInteriorMediaIdsRaw(event.target.value)}
-                        />
-                    </label>
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">
-                            Harita Görselleri (MAP)
-                        </span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            placeholder="mediaId1, mediaId2"
-                            value={mapMediaIdsRaw}
-                            onChange={(event) => setMapMediaIdsRaw(event.target.value)}
-                        />
-                    </label>
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">
-                            Belgeler (DOCUMENT)
-                        </span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            placeholder="mediaId1, mediaId2"
-                            value={documentMediaIdsRaw}
-                            onChange={(event) => setDocumentMediaIdsRaw(event.target.value)}
-                        />
-                    </label>
-                </div>
-                <div className="mt-5 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <p className="text-sm font-semibold text-gray-900">
-                                Belge Yükleme
-                            </p>
-                            <p className="text-xs text-gray-500">
-                                PDF, DOC, DOCX, PPT, PPTX dosyalarını yükleyebilirsiniz.
-                            </p>
-                        </div>
-                        <label
-                            className={`inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium ${
-                                !project?.id || isUploadingDocuments
-                                    ? "cursor-not-allowed bg-gray-200 text-gray-500"
-                                    : "cursor-pointer bg-orange-500 text-white hover:bg-orange-600"
-                            }`}
+<details className="group rounded-xl border border-gray-200 bg-white">
+    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+        <div className="flex w-full flex-1 items-center justify-between pr-4">
+            <h2 className="text-base font-semibold text-gray-900">Harita Görselleri</h2>
+            
+        </div>
+        <span className="transition-transform group-open:rotate-180">
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+        </span>
+    </summary>
+    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+        <label className="text-sm">
+    <span className="mb-1 block text-gray-600">Virgülle ayrılmış Media ID listesi girin:</span>
+    <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="mediaId1, mediaId2" value={mapMediaIdsRaw} onChange={(event) => setMapMediaIdsRaw(event.target.value)} />
+</label>
+    </div>
+</details>
+
+<details className="group rounded-xl border border-gray-200 bg-white">
+    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+        <div className="flex w-full flex-1 items-center justify-between pr-4">
+            <h2 className="text-base font-semibold text-gray-900">Promosyon Videosu</h2>
+            
+        </div>
+        <span className="transition-transform group-open:rotate-180">
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+        </span>
+    </summary>
+    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+        <label className="text-sm">
+    <span className="mb-1 block text-gray-600">Youtube Video ID'si veya Linki</span>
+    <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="Örn: https://www.youtube.com/watch?v=..." value={promoVideoUrl} onChange={(event) => setPromoVideoUrl(event.target.value)} />
+</label>
+    </div>
+</details>
+
+<details className="group rounded-xl border border-gray-200 bg-white">
+    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+        <div className="flex w-full flex-1 items-center justify-between pr-4">
+            <h2 className="text-base font-semibold text-gray-900">Sıkça Sorulan Sorular</h2>
+            <button
+                        type="button"
+                        onClick={addFaq}
+                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                        <Plus className="h-4 w-4" /> Ekle
+                    </button>
+        </div>
+        <span className="transition-transform group-open:rotate-180">
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+        </span>
+    </summary>
+    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+        
+                <div className="mt-4 space-y-3">
+                    {faqs.map((item, index) => (
+                        <div
+                            key={`faq-${index}`}
+                            className="grid gap-3 rounded-lg border border-gray-200 p-3"
                         >
-                            {isUploadingDocuments ? "Yükleniyor..." : "Belge Yükle"}
                             <input
-                                type="file"
-                                className="hidden"
-                                multiple
-                                accept=".pdf,.doc,.docx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                                disabled={!project?.id || isUploadingDocuments}
-                                onChange={handleDocumentUpload}
+                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                placeholder="Soru"
+                                value={item.question}
+                                onChange={(event) =>
+                                    setFaqs((prev) =>
+                                        prev.map((entry, entryIndex) =>
+                                            entryIndex === index
+                                                ? { ...entry, question: event.target.value }
+                                                : entry
+                                        )
+                                    )
+                                }
                             />
-                        </label>
-                    </div>
-                    {!project?.id && (
-                        <p className="mt-2 text-xs text-amber-700">
-                            Önce projeyi oluşturun, sonra belge yükleyebilirsiniz.
-                        </p>
-                    )}
-                    {documentUploadError && (
-                        <p className="mt-2 text-xs text-red-600">{documentUploadError}</p>
-                    )}
-                    {documentUploadSuccess && (
-                        <p className="mt-2 text-xs text-emerald-600">{documentUploadSuccess}</p>
-                    )}
-                    {documents.length > 0 && (
-                        <div className="mt-3 space-y-2">
-                            {documents.map((document) => (
-                                <div
-                                    key={document.id}
-                                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-xs"
-                                >
-                                    <span className="font-mono text-gray-500">{document.id}</span>
-                                    <a
-                                        href={getMediaUrl(document.url)}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-orange-600 hover:text-orange-700"
-                                    >
-                                        Dosyayı Aç
-                                    </a>
-                                </div>
-                            ))}
+                            <textarea
+                                className="h-24 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                placeholder="Cevap"
+                                value={item.answer}
+                                onChange={(event) =>
+                                    setFaqs((prev) =>
+                                        prev.map((entry, entryIndex) =>
+                                            entryIndex === index
+                                                ? { ...entry, answer: event.target.value }
+                                                : entry
+                                        )
+                                    )
+                                }
+                            />
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setFaqs((prev) =>
+                                        prev.filter((_, entryIndex) => entryIndex !== index)
+                                    )
+                                }
+                                className="inline-flex w-max items-center gap-1 text-sm text-red-600 hover:text-red-700"
+                            >
+                                <Trash2 className="h-4 w-4" /> Sil
+                            </button>
                         </div>
+                    ))}
+                    {faqs.length === 0 && (
+                        <p className="text-sm text-gray-500">Henüz SSS eklenmedi.</p>
                     )}
                 </div>
-            </section>
+    </div>
+</details>
 
-            <section className="rounded-xl border border-gray-200 bg-white p-5">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-base font-semibold text-gray-900">Proje İçi Daireler</h2>
-                    <button
+<details className="group rounded-xl border border-gray-200 bg-white">
+    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+        <div className="flex w-full flex-1 items-center justify-between pr-4">
+            <h2 className="text-base font-semibold text-gray-900">Proje İçi Daireler</h2>
+            <button
                         type="button"
                         onClick={addProjectUnit}
                         className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
                     >
                         <Plus className="h-4 w-4" /> Ekle
                     </button>
-                </div>
+        </div>
+        <span className="transition-transform group-open:rotate-180">
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+        </span>
+    </summary>
+    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+        
                 <div className="mt-4 space-y-3">
                     {projectUnits.map((item, index) => (
                         <div
@@ -1225,23 +1298,34 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                         <p className="text-sm text-gray-500">Henüz proje içi daire eklenmedi.</p>
                     )}
                 </div>
-            </section>
+    </div>
+</details>
 
-            <section className="rounded-xl border border-gray-200 bg-white p-5">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-base font-semibold text-gray-900">Kat Planları</h2>
-                    <button
+<details className="group rounded-xl border border-gray-200 bg-white">
+    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+        <div className="flex w-full flex-1 items-center justify-between pr-4">
+            <h2 className="text-base font-semibold text-gray-900">Özel Galeriler</h2>
+            <button
                         type="button"
-                        onClick={addFloorPlan}
+                        onClick={addCustomGallery}
                         className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
                     >
                         <Plus className="h-4 w-4" /> Ekle
                     </button>
-                </div>
+        </div>
+        <span className="transition-transform group-open:rotate-180">
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+        </span>
+    </summary>
+    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+        
+                <p className="mt-2 text-xs text-gray-500">
+                    Media ID alanına virgülle ayırarak mevcut media kayıtlarını bağlayabilirsiniz.
+                </p>
                 <div className="mt-4 space-y-3">
-                    {floorPlans.map((item, index) => (
+                    {customGalleries.map((item, index) => (
                         <div
-                            key={`floor-${index}`}
+                            key={`gallery-${index}`}
                             className="grid gap-3 rounded-lg border border-gray-200 p-3 md:grid-cols-2"
                         >
                             <input
@@ -1249,7 +1333,7 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                                 placeholder="Başlık (TR)"
                                 value={item.title}
                                 onChange={(event) =>
-                                    setFloorPlans((prev) =>
+                                    setCustomGalleries((prev) =>
                                         prev.map((entry, entryIndex) =>
                                             entryIndex === index
                                                 ? { ...entry, title: event.target.value }
@@ -1260,13 +1344,13 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                             />
                             <input
                                 className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Alan (örn. 110 m²)"
-                                value={item.area}
+                                placeholder="Alt başlık"
+                                value={item.subtitle}
                                 onChange={(event) =>
-                                    setFloorPlans((prev) =>
+                                    setCustomGalleries((prev) =>
                                         prev.map((entry, entryIndex) =>
                                             entryIndex === index
-                                                ? { ...entry, area: event.target.value }
+                                                ? { ...entry, subtitle: event.target.value }
                                                 : entry
                                         )
                                     )
@@ -1274,13 +1358,13 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                             />
                             <input
                                 className="rounded-lg border border-gray-300 px-3 py-2 text-sm md:col-span-2"
-                                placeholder="Görsel URL"
-                                value={item.imageUrl}
+                                placeholder="mediaId1, mediaId2"
+                                value={item.mediaIdsRaw}
                                 onChange={(event) =>
-                                    setFloorPlans((prev) =>
+                                    setCustomGalleries((prev) =>
                                         prev.map((entry, entryIndex) =>
                                             entryIndex === index
-                                                ? { ...entry, imageUrl: event.target.value }
+                                                ? { ...entry, mediaIdsRaw: event.target.value }
                                                 : entry
                                         )
                                     )
@@ -1289,7 +1373,7 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                             <button
                                 type="button"
                                 onClick={() =>
-                                    setFloorPlans((prev) =>
+                                    setCustomGalleries((prev) =>
                                         prev.filter((_, entryIndex) => entryIndex !== index)
                                     )
                                 }
@@ -1299,75 +1383,90 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                             </button>
                         </div>
                     ))}
-                    {floorPlans.length === 0 && (
-                        <p className="text-sm text-gray-500">Henüz kat planı eklenmedi.</p>
+                    {customGalleries.length === 0 && (
+                        <p className="text-sm text-gray-500">Henüz özel galeri eklenmedi.</p>
                     )}
                 </div>
-            </section>
+    </div>
+</details>
 
-            <section className="rounded-xl border border-gray-200 bg-white p-5">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-base font-semibold text-gray-900">Sıkça Sorulan Sorular</h2>
-                    <button
-                        type="button"
-                        onClick={addFaq}
-                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                        <Plus className="h-4 w-4" /> Ekle
-                    </button>
-                </div>
-                <div className="mt-4 space-y-3">
-                    {faqs.map((item, index) => (
-                        <div
-                            key={`faq-${index}`}
-                            className="grid gap-3 rounded-lg border border-gray-200 p-3"
-                        >
-                            <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Soru"
-                                value={item.question}
-                                onChange={(event) =>
-                                    setFaqs((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, question: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
-                            />
-                            <textarea
-                                className="h-24 rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Cevap"
-                                value={item.answer}
-                                onChange={(event) =>
-                                    setFaqs((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, answer: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
-                            />
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setFaqs((prev) =>
-                                        prev.filter((_, entryIndex) => entryIndex !== index)
-                                    )
-                                }
-                                className="inline-flex w-max items-center gap-1 text-sm text-red-600 hover:text-red-700"
-                            >
-                                <Trash2 className="h-4 w-4" /> Sil
-                            </button>
+<details className="group rounded-xl border border-gray-200 bg-white">
+    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+        <div className="flex w-full flex-1 items-center justify-between pr-4">
+            <h2 className="text-base font-semibold text-gray-900">Belgeler</h2>
+            
+        </div>
+        <span className="transition-transform group-open:rotate-180">
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+        </span>
+    </summary>
+    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+        <div className="mb-4"><label className="text-sm">
+    <span className="mb-1 block text-gray-600">Belge Media ID'leri (Virgülle ayrılmış):</span>
+    <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="mediaId1, mediaId2" value={documentMediaIdsRaw} onChange={(event) => setDocumentMediaIdsRaw(event.target.value)} />
+</label></div>
+<div className="mt-5 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p className="text-sm font-semibold text-gray-900">
+                                Belge Yükleme
+                            </p>
+                            <p className="text-xs text-gray-500">
+                                PDF, DOC, DOCX, PPT, PPTX dosyalarını yükleyebilirsiniz.
+                            </p>
                         </div>
-                    ))}
-                    {faqs.length === 0 && (
-                        <p className="text-sm text-gray-500">Henüz SSS eklenmedi.</p>
+                        <label
+                            className={`inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium ${
+                                !project?.id || isUploadingDocuments
+                                    ? "cursor-not-allowed bg-gray-200 text-gray-500"
+                                    : "cursor-pointer bg-orange-500 text-white hover:bg-orange-600"
+                            }`}
+                        >
+                            {isUploadingDocuments ? "Yükleniyor..." : "Belge Yükle"}
+                            <input
+                                type="file"
+                                className="hidden"
+                                multiple
+                                accept=".pdf,.doc,.docx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                                disabled={!project?.id || isUploadingDocuments}
+                                onChange={handleDocumentUpload}
+                            />
+                        </label>
+                    </div>
+                    {!project?.id && (
+                        <p className="mt-2 text-xs text-amber-700">
+                            Önce projeyi oluşturun, sonra belge yükleyebilirsiniz.
+                        </p>
+                    )}
+                    {documentUploadError && (
+                        <p className="mt-2 text-xs text-red-600">{documentUploadError}</p>
+                    )}
+                    {documentUploadSuccess && (
+                        <p className="mt-2 text-xs text-emerald-600">{documentUploadSuccess}</p>
+                    )}
+                    {documents.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                            {documents.map((document) => (
+                                <div
+                                    key={document.id}
+                                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-xs"
+                                >
+                                    <span className="font-mono text-gray-500">{document.id}</span>
+                                    <a
+                                        href={getMediaUrl(document.url)}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-orange-600 hover:text-orange-700"
+                                    >
+                                        Dosyayı Aç
+                                    </a>
+                                </div>
+                            ))}
+                        </div>
                     )}
                 </div>
-            </section>
+    </div>
+</details>
         </form>
     );
 }

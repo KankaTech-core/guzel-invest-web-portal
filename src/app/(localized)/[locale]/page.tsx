@@ -13,6 +13,7 @@ import {
     getSaleTypeLabel,
     cn,
 } from "@/lib/utils";
+import { resolveHomepageHeroVideo } from "@/lib/homepage-video";
 import {
     Building2,
     Handshake,
@@ -32,6 +33,8 @@ import {
     Minus,
     ToggleLeft,
     ToggleRight,
+    Play,
+    X,
 } from "lucide-react";
 
 /* ─── data ─── */
@@ -224,6 +227,8 @@ interface HomepageProject {
     images: string[];
 }
 
+type HomepageHeroVideo = ReturnType<typeof resolveHomepageHeroVideo>;
+
 const HERO_FALLBACK: HomepageHeroListing = {
     id: "fallback",
     slug: "",
@@ -249,6 +254,8 @@ const PROJECT_FALLBACK: HomepageProject = {
     images: [],
 };
 
+const HERO_VIDEO_FALLBACK = resolveHomepageHeroVideo(null);
+
 /* ─── page ─── */
 export default function HomePage() {
     const t = useTranslations();
@@ -267,6 +274,8 @@ export default function HomePage() {
     const [heroSlideIndex, setHeroSlideIndex] = useState(0);
     const [heroProjects, setHeroProjects] = useState<HomepageProject[]>([PROJECT_FALLBACK]);
     const [projectSlideIndex, setProjectSlideIndex] = useState(0);
+    const [heroVideo, setHeroVideo] = useState<HomepageHeroVideo>(HERO_VIDEO_FALLBACK);
+    const [isHeroVideoModalOpen, setIsHeroVideoModalOpen] = useState(false);
     const { version: searchVersion } = useVersion();
     const bannerRef = useRef<HTMLFormElement>(null);
     const testimonialRef = useRef<HTMLDivElement>(null);
@@ -341,6 +350,63 @@ export default function HomePage() {
             controller.abort();
         };
     }, [locale]);
+
+    useEffect(() => {
+        let isMounted = true;
+        const controller = new AbortController();
+
+        const loadHomepageVideo = async () => {
+            try {
+                const response = await fetch("/api/public/homepage/settings", {
+                    signal: controller.signal,
+                    cache: "no-store",
+                });
+                if (!response.ok) return;
+
+                const data = (await response.json()) as {
+                    video?: {
+                        rawInput?: string;
+                    };
+                };
+                if (!isMounted) return;
+
+                const rawInput = data?.video?.rawInput || null;
+                setHeroVideo(resolveHomepageHeroVideo(rawInput));
+            } catch {
+                if (isMounted) {
+                    setHeroVideo(HERO_VIDEO_FALLBACK);
+                }
+            }
+        };
+
+        loadHomepageVideo();
+
+        return () => {
+            isMounted = false;
+            controller.abort();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!isHeroVideoModalOpen) {
+            return;
+        }
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                setIsHeroVideoModalOpen(false);
+            }
+        };
+
+        document.addEventListener("keydown", handleEscape);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            document.removeEventListener("keydown", handleEscape);
+        };
+    }, [isHeroVideoModalOpen]);
 
     useEffect(() => {
         let isMounted = true;
@@ -984,21 +1050,66 @@ export default function HomePage() {
                                 </div>
 
                                 <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-gray-300/40 bg-black min-h-0">
-                                    <iframe
-                                        className="absolute inset-0 w-full h-full"
-                                        src="https://www.youtube.com/embed/E5uhQjs6xTk?si=qs85vA_X0AxPvCHj&mute=1"
-                                        title="YouTube short video player"
-                                        frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                        referrerPolicy="strict-origin-when-cross-origin"
-                                        allowFullScreen
-                                    ></iframe>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsHeroVideoModalOpen(true)}
+                                        className="group absolute inset-0 block h-full w-full cursor-pointer overflow-hidden"
+                                    >
+                                        <iframe
+                                            className="pointer-events-none absolute inset-0 h-full w-full"
+                                            src={heroVideo.autoplayEmbedUrl}
+                                            title="Hero video player"
+                                            frameBorder="0"
+                                            allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                            referrerPolicy="strict-origin-when-cross-origin"
+                                            allowFullScreen
+                                        ></iframe>
+                                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                                        <div className="pointer-events-none absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/45 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition-colors group-hover:bg-black/60">
+                                            <Play className="h-3.5 w-3.5" />
+                                            Videoyu Büyüt
+                                        </div>
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
+
+            {isHeroVideoModalOpen ? (
+                <div
+                    className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-4"
+                    onClick={() => setIsHeroVideoModalOpen(false)}
+                >
+                    <div
+                        className="relative w-full max-w-5xl"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => setIsHeroVideoModalOpen(false)}
+                            className="absolute -top-12 right-0 inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/60 text-white transition-colors hover:bg-black/80"
+                            aria-label="Videoyu kapat"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                        <div className="overflow-hidden rounded-2xl border border-white/15 bg-black shadow-2xl">
+                            <div className="aspect-video w-full">
+                                <iframe
+                                    className="h-full w-full"
+                                    src={heroVideo.popupEmbedUrl}
+                                    title="Hero expanded video player"
+                                    frameBorder="0"
+                                    allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    referrerPolicy="strict-origin-when-cross-origin"
+                                    allowFullScreen
+                                ></iframe>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
 
             {/* Search Banner - Below Hero (Desktop) */}
             <div ref={searchBannerRevealRef} className="hidden lg:block relative z-30 mt-8 px-4 mb-20">

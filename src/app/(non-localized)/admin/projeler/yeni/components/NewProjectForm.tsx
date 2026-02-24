@@ -21,10 +21,12 @@ import {
     sortableKeyboardCoordinates,
     useSortable,
     verticalListSortingStrategy,
+    rectSortingStrategy,
+    arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
-    ArrowLeft,
+    ArrowLeft, ChevronDown,
     Building2,
     Check as CheckIcon,
     FileText,
@@ -142,6 +144,7 @@ interface UploadPanelProps {
 interface MediaGridProps {
     items: UploadedMedia[];
     onRemove: (id: string) => void;
+    onReorder?: (items: UploadedMedia[]) => void;
     emptyMessage: string;
 }
 
@@ -154,6 +157,7 @@ interface ProjectTranslationRecord {
     title: string;
     description: string;
     features?: string[];
+    promoVideoTitle?: string | null;
 }
 
 interface ProjectFeatureTranslationRecord {
@@ -283,6 +287,7 @@ interface TranslationFormRow {
     title: string;
     description: string;
     features: string[];
+    promoVideoTitle: string;
 }
 
 const ALLOWED_MEDIA_TYPES = new Set([
@@ -421,6 +426,7 @@ const buildDefaultTranslations = (): TranslationFormRow[] =>
         title: "",
         description: "",
         features: [],
+        promoVideoTitle: "",
     }));
 
 const hasNonTurkishTranslations = (translations: TranslationFormRow[]) =>
@@ -506,7 +512,77 @@ function UploadPanel({
     );
 }
 
-function MediaGrid({ items, onRemove, emptyMessage }: MediaGridProps) {
+function SortableMediaGridItem({
+    item,
+    onRemove,
+}: { item: UploadedMedia; onRemove: (id: string) => void }) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: item.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : undefined,
+        opacity: isDragging ? 0.4 : undefined,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
+            className={cn(
+                "relative group rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm cursor-grab active:cursor-grabbing hover:border-orange-200 transition-all",
+                isDragging && "ring-2 ring-orange-500 shadow-xl scale-105 opacity-80 z-50"
+            )}
+        >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+                src={getMediaUrl(item.thumbnailUrl || item.url)}
+                alt=""
+                className="w-full aspect-square object-cover"
+                draggable={false}
+            />
+            {/* Action overlay */}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-start justify-end p-2 pointer-events-none">
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove(item.id);
+                    }}
+                    className="p-1.5 w-8 h-8 rounded-full bg-white text-red-600 hover:bg-red-50 transition-colors shadow-lg cursor-pointer pointer-events-auto flex items-center justify-center"
+                    title="Sil"
+                >
+                    <Trash2 className="w-4 h-4 mx-auto" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function MediaGrid({ items, onRemove, onReorder, emptyMessage }: MediaGridProps) {
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id || !onReorder) return;
+
+        const oldIndex = items.findIndex((i) => i.id === active.id);
+        const newIndex = items.findIndex((i) => i.id === over.id);
+        onReorder(arrayMove(items, oldIndex, newIndex));
+    };
+
     if (items.length === 0) {
         return (
             <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500 text-center">
@@ -515,26 +591,113 @@ function MediaGrid({ items, onRemove, emptyMessage }: MediaGridProps) {
         );
     }
 
+    if (!onReorder) {
+        return (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {items.map((item) => (
+                    <div key={item.id} className="relative group rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src={getMediaUrl(item.thumbnailUrl || item.url)}
+                            alt=""
+                            className="w-full aspect-square object-cover"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => onRemove(item.id)}
+                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/95 border border-slate-200 text-slate-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Sil"
+                        >
+                            <Trash2 className="w-4 h-4 mx-auto" />
+                        </button>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
     return (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {items.map((item) => (
-                <div key={item.id} className="relative group rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                        src={getMediaUrl(item.thumbnailUrl || item.url)}
-                        alt=""
-                        className="w-full aspect-square object-cover"
-                    />
-                    <button
-                        type="button"
-                        onClick={() => onRemove(item.id)}
-                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/95 border border-slate-200 text-slate-500 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                        title="Sil"
-                    >
-                        <Trash2 className="w-4 h-4 mx-auto" />
-                    </button>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {items.map((item) => (
+                        <SortableMediaGridItem key={item.id} item={item} onRemove={onRemove} />
+                    ))}
                 </div>
-            ))}
+            </SortableContext>
+        </DndContext>
+    );
+}
+
+function SortableDocumentItem({
+    document,
+    onRemove,
+}: {
+    document: UploadedDocument;
+    onRemove: (id: string) => void;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: document.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 50 : undefined,
+        opacity: isDragging ? 0.4 : undefined,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className={cn(
+                "flex items-center justify-between rounded-lg border border-slate-100 bg-white shadow-sm p-4 transition-all group cursor-grab active:cursor-grabbing hover:border-orange-200",
+                isDragging && "ring-2 ring-orange-500 shadow-xl scale-[1.02] opacity-90 z-50 bg-orange-50/30"
+            )}
+        >
+            <div className="flex items-center gap-3">
+                <button
+                    type="button"
+                    {...attributes}
+                    {...listeners}
+                    className="text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing touch-none p-1 -ml-2 rounded"
+                    title="Sürükleyerek sırala"
+                >
+                    <GripVertical className="w-5 h-5 shrink-0" />
+                </button>
+                <div>
+                    <p className="text-sm font-medium text-slate-900">
+                        {document.id}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                        {document.type}
+                    </p>
+                </div>
+            </div>
+            <div className="flex items-center gap-2">
+                <a
+                    href={getMediaUrl(document.url)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                >
+                    Aç
+                </a>
+                <button
+                    type="button"
+                    onClick={() => onRemove(document.id)}
+                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-500 transition-colors pointer-events-auto"
+                    title="Sil"
+                >
+                    <Trash2 className="w-5 h-5" />
+                </button>
+            </div>
         </div>
     );
 }
@@ -1488,6 +1651,7 @@ export default function NewProjectForm({
                         ...row,
                         title: source?.title?.trim() || "",
                         description: source?.description?.trim() || "",
+                        promoVideoTitle: source?.promoVideoTitle?.trim() || "",
                         features: Array.isArray(source?.features)
                             ? source.features
                                 .map((feature) =>
@@ -1932,6 +2096,7 @@ export default function NewProjectForm({
                     title,
                     description,
                     features,
+                    promoVideoTitle: translation.promoVideoTitle?.trim() || "",
                 };
             })
             .filter(
@@ -2175,6 +2340,17 @@ export default function NewProjectForm({
             },
             { useFirstOnly: true }
         );
+    };
+
+    const handleDocumentDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        setDocuments((prev) => {
+            const oldIndex = prev.findIndex((i) => i.id === active.id);
+            const newIndex = prev.findIndex((i) => i.id === over.id);
+            return arrayMove(prev, oldIndex, newIndex);
+        });
     };
 
     const handleSaveAction = async (
@@ -2476,667 +2652,412 @@ export default function NewProjectForm({
                     </div>
 
                     <div className="p-6 lg:p-8 space-y-12">
-                        <section id="section-details" className="scroll-mt-28 space-y-6">
-                            <div className="border-b border-slate-100 pb-4">
-                                <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                                    <FileText className="w-5 h-5 text-orange-500" />
-                                    Temel Bilgiler
-                                </h2>
-                            </div>
-
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium">
-                                            Proje Başlığı ({activeLocale.toUpperCase()})
-                                        </label>
-                                        <input
-                                            value={currentTranslation?.title || ""}
-                                            onChange={(event) =>
-                                                handleTranslationFieldChange(
-                                                    activeLocale,
-                                                    "title",
-                                                    event.target.value
-                                                )
-                                            }
-                                            className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
-                                            placeholder="örn. Sunset Residency"
-                                            type="text"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <details id="section-details" className="group rounded-xl border border-slate-200 bg-white scroll-mt-28" open>
+                            <summary className="flex cursor-pointer list-none items-center justify-between p-6 marker:hidden">
+                                <div className="flex w-full flex-1 items-center justify-between pr-4">
+                                    <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                                        <FileText className="w-5 h-5 text-orange-500" />
+                                        Temel Bilgiler
+                                    </h2>
+                                </div>
+                                <span className="transition-transform group-open:rotate-180 shrink-0 ml-4">
+                                    <ChevronDown className="h-5 w-5 text-slate-400" />
+                                </span>
+                            </summary>
+                            <div className="border-t border-slate-100 p-6 pt-2">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    <div className="space-y-6">
                                         <div className="space-y-2">
                                             <label className="block text-sm font-medium">
-                                                Teslim Tarihi
+                                                Proje Başlığı ({activeLocale.toUpperCase()})
                                             </label>
                                             <input
-                                                value={deliveryDate}
+                                                value={currentTranslation?.title || ""}
                                                 onChange={(event) =>
-                                                    setDeliveryDate(event.target.value)
+                                                    handleTranslationFieldChange(
+                                                        activeLocale,
+                                                        "title",
+                                                        event.target.value
+                                                    )
                                                 }
-                                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
-                                                type="date"
+                                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
+                                                placeholder="örn. Sunset Residency"
+                                                type="text"
                                             />
                                         </div>
-                                        <Select
-                                            label="Mülk Tipi"
-                                            value={type}
-                                            onChange={(value) => setType(value)}
-                                            options={PROPERTY_TYPES.map((item) => ({
-                                                value: item.value,
-                                                label: item.label,
-                                            }))}
-                                        />
-                                    </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                        <Select
-                                            label="Proje Kategorisi"
-                                            value={projectType}
-                                            onChange={(value) => setProjectType(value)}
-                                            options={projectCategoryOptions}
-                                            searchable
-                                            searchPlaceholder="Kategori yazın"
-                                            searchMatchMode="startsWith"
-                                        />
-                                        <CompanyOptionSelect
-                                            value={company}
-                                            onChange={setCompany}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium">
-                                            Açıklama ({activeLocale.toUpperCase()})
-                                        </label>
-                                        <textarea
-                                            value={currentTranslation?.description || ""}
-                                            onChange={(event) =>
-                                                handleTranslationFieldChange(
-                                                    activeLocale,
-                                                    "description",
-                                                    event.target.value
-                                                )
-                                            }
-                                            className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all resize-none placeholder:text-slate-400"
-                                            placeholder="Proje özelliklerini, konum avantajlarını ve satış noktalarını açıklayın..."
-                                            rows={6}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-6">
-                                    <div className="p-6 bg-slate-50 rounded-xl border border-slate-200 space-y-6">
-                                        <div className="space-y-4">
-                                            <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900">
-                                                <PlayCircle className="w-4 h-4 text-orange-500" />
-                                                Tanıtım Videosu
-                                            </h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                             <div className="space-y-2">
-                                                <label className="block text-sm font-medium text-slate-700">
-                                                    Video URLsi
+                                                <label className="block text-sm font-medium">
+                                                    Teslim Tarihi
                                                 </label>
                                                 <input
-                                                    value={promoVideoUrl}
+                                                    value={deliveryDate}
                                                     onChange={(event) =>
-                                                        setPromoVideoUrl(event.target.value)
+                                                        setDeliveryDate(event.target.value)
                                                     }
-                                                    className="w-full rounded-lg border border-slate-200 bg-white py-3 px-3 text-sm text-slate-900 outline-none transition-all focus:border-orange-500 focus:ring-1 focus:ring-orange-500 placeholder:text-slate-400"
-                                                    placeholder="https://youtube.com/..."
-                                                    type="text"
+                                                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                                                    type="date"
                                                 />
-                                                <p className="text-xs text-slate-500">
-                                                    YouTube veya Vimeo bağlantılarını destekler.
-                                                </p>
                                             </div>
+                                            <Select
+                                                label="Mülk Tipi"
+                                                value={type}
+                                                onChange={(value) => setType(value)}
+                                                options={PROPERTY_TYPES.map((item) => ({
+                                                    value: item.value,
+                                                    label: item.label,
+                                                }))}
+                                            />
                                         </div>
 
-                                        <div className="pt-6 border-t border-slate-200 space-y-4">
-                                            <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900">
-                                                <ImagePlus className="w-4 h-4 text-orange-500" />
-                                                Kapak Fotoğrafı
-                                            </h3>
-                                            <UploadPanel
-                                                title="Görsel yüklemek için tıklayın"
-                                                subtitle="PNG, JPG, WebP, GIF, AVIF (Max 30MB)"
-                                                onFilesSelected={(files) =>
-                                                    void handleImageUpload(files, (uploaded) => {
-                                                        const first = uploaded[0];
-                                                        if (!first) return;
-                                                        setCoverMedia([first]);
-                                                    }, { useFirstOnly: true })
-                                                }
-                                                multiple={false}
-                                                disabled={isSaving || isUploading}
-                                                compact
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                            <Select
+                                                label="Proje Kategorisi"
+                                                value={projectType}
+                                                onChange={(value) => setProjectType(value)}
+                                                options={projectCategoryOptions}
+                                                searchable
+                                                searchPlaceholder="Kategori yazın"
+                                                searchMatchMode="startsWith"
                                             />
-                                            <MediaGrid
-                                                items={coverMedia}
-                                                onRemove={(id) =>
-                                                    setCoverMedia((prev) =>
-                                                        prev.filter((item) => item.id !== id)
+                                            <CompanyOptionSelect
+                                                value={company}
+                                                onChange={setCompany}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="block text-sm font-medium">
+                                                Açıklama ({activeLocale.toUpperCase()})
+                                            </label>
+                                            <textarea
+                                                value={currentTranslation?.description || ""}
+                                                onChange={(event) =>
+                                                    handleTranslationFieldChange(
+                                                        activeLocale,
+                                                        "description",
+                                                        event.target.value
                                                     )
                                                 }
-                                                emptyMessage="Henüz kapak görseli yok"
+                                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all resize-none placeholder:text-slate-400"
+                                                placeholder="Proje özelliklerini, konum avantajlarını ve satış noktalarını açıklayın..."
+                                                rows={6}
                                             />
                                         </div>
+                                    </div>
 
-                                        <div className="pt-6 border-t border-slate-200 space-y-4">
-                                            <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900">
-                                                <ImagePlus className="w-4 h-4 text-orange-500" />
-                                                Proje Logosu
-                                            </h3>
-                                            <UploadPanel
-                                                title="Logo yüklemek için tıklayın"
-                                                subtitle="PNG, JPG, WebP, GIF, AVIF (Max 30MB)"
-                                                onFilesSelected={(files) =>
-                                                    void handleImageUpload(
-                                                        files,
-                                                        (uploaded) => {
+                                    <div className="space-y-6">
+                                        <div className="p-6 bg-slate-50 rounded-xl border border-slate-200 space-y-6">
+
+
+                                            <div className="pt-6 border-t border-slate-200 space-y-4">
+                                                <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900">
+                                                    <ImagePlus className="w-4 h-4 text-orange-500" />
+                                                    Kapak Fotoğrafı
+                                                </h3>
+                                                <UploadPanel
+                                                    title="Görsel yüklemek için tıklayın"
+                                                    subtitle="PNG, JPG, WebP, GIF, AVIF (Max 30MB)"
+                                                    onFilesSelected={(files) =>
+                                                        void handleImageUpload(files, (uploaded) => {
                                                             const first = uploaded[0];
                                                             if (!first) return;
-                                                            setLogoMedia([first]);
-                                                        },
-                                                        { useFirstOnly: true }
-                                                    )
-                                                }
-                                                multiple={false}
-                                                disabled={isSaving || isUploading}
-                                                compact
-                                            />
-                                            <MediaGrid
-                                                items={logoMedia}
-                                                onRemove={(id) =>
-                                                    setLogoMedia((prev) =>
-                                                        prev.filter((item) => item.id !== id)
-                                                    )
-                                                }
-                                                emptyMessage="Henüz logo eklenmedi"
-                                            />
+                                                            setCoverMedia([first]);
+                                                        }, { useFirstOnly: true })
+                                                    }
+                                                    multiple={false}
+                                                    disabled={isSaving || isUploading}
+                                                    compact
+                                                />
+                                                <MediaGrid
+                                                    items={coverMedia}
+                                                    onRemove={(id) =>
+                                                        setCoverMedia((prev) =>
+                                                            prev.filter((item) => item.id !== id)
+                                                        )
+                                                    }
+                                                    emptyMessage="Henüz kapak görseli yok"
+                                                />
+                                            </div>
+
+                                            <div className="pt-6 border-t border-slate-200 space-y-4">
+                                                <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900">
+                                                    <ImagePlus className="w-4 h-4 text-orange-500" />
+                                                    Proje Logosu
+                                                </h3>
+                                                <UploadPanel
+                                                    title="Logo yüklemek için tıklayın"
+                                                    subtitle="PNG, JPG, WebP, GIF, AVIF (Max 30MB)"
+                                                    onFilesSelected={(files) =>
+                                                        void handleImageUpload(
+                                                            files,
+                                                            (uploaded) => {
+                                                                const first = uploaded[0];
+                                                                if (!first) return;
+                                                                setLogoMedia([first]);
+                                                            },
+                                                            { useFirstOnly: true }
+                                                        )
+                                                    }
+                                                    multiple={false}
+                                                    disabled={isSaving || isUploading}
+                                                    compact
+                                                />
+                                                <MediaGrid
+                                                    items={logoMedia}
+                                                    onRemove={(id) =>
+                                                        setLogoMedia((prev) =>
+                                                            prev.filter((item) => item.id !== id)
+                                                        )
+                                                    }
+                                                    emptyMessage="Henüz logo eklenmedi"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </section>
+                        </details>
 
-                        <section id="section-features" className="scroll-mt-28 space-y-6">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                {(
-                                    [
-                                        {
-                                            category: "GENERAL" as const,
-                                            title: "Genel Özellikler",
-                                            icon: Settings,
-                                            rows: generalFeatures,
-                                        },
-                                        {
-                                            category: "SOCIAL" as const,
-                                            title: "Sosyal İmkanlar",
-                                            icon: Sparkles,
-                                            rows: socialFeatures,
-                                        },
-                                    ] as const
-                                ).map((section) => (
-                                    <div
-                                        key={section.category}
-                                        className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden"
-                                    >
-                                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                                            <h3 className="font-semibold text-lg flex items-center gap-2">
-                                                <section.icon className="w-5 h-5 text-orange-500" />
-                                                {section.title}
-                                            </h3>
-                                            <button
-                                                type="button"
-                                                onClick={() => addFeatureRow(section.category)}
-                                                className="text-orange-500 hover:bg-orange-500/5 px-3 py-1 rounded text-xs font-semibold flex items-center gap-1 transition-colors"
-                                            >
-                                                <Plus className="w-4 h-4" /> Satır Ekle
-                                            </button>
-                                        </div>
+                        <details id="section-features" className="group rounded-xl border border-slate-200 bg-white scroll-mt-28">
+                            <summary className="flex cursor-pointer list-none items-center justify-between p-6 marker:hidden">
+                                <div className="flex w-full flex-1 items-center justify-between pr-4">
+                                    <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2"><Sparkles className="w-5 h-5 text-orange-500" />Proje Özellikleri</h2>
+                                </div>
+                                <span className="transition-transform group-open:rotate-180 shrink-0 ml-4">
+                                    <ChevronDown className="h-5 w-5 text-slate-400" />
+                                </span>
+                            </summary>
+                            <div className="border-t border-slate-100 p-6 pt-2">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    {(
+                                        [
+                                            {
+                                                category: "GENERAL" as const,
+                                                title: "Genel Özellikler",
+                                                icon: Settings,
+                                                rows: generalFeatures,
+                                            },
+                                            {
+                                                category: "SOCIAL" as const,
+                                                title: "Sosyal İmkanlar",
+                                                icon: Sparkles,
+                                                rows: socialFeatures,
+                                            },
+                                        ] as const
+                                    ).map((section) => (
+                                        <div
+                                            key={section.category}
+                                            className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden"
+                                        >
+                                            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                                <h3 className="font-semibold text-lg flex items-center gap-2">
+                                                    <section.icon className="w-5 h-5 text-orange-500" />
+                                                    {section.title}
+                                                </h3>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => addFeatureRow(section.category)}
+                                                    className="text-orange-500 hover:bg-orange-500/5 px-3 py-1 rounded text-xs font-semibold flex items-center gap-1 transition-colors"
+                                                >
+                                                    <Plus className="w-4 h-4" /> Satır Ekle
+                                                </button>
+                                            </div>
 
-                                        <div className="p-6">
-                                            {section.rows.length === 0 && (
-                                                <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-                                                    Henüz özellik yok.
-                                                </div>
-                                            )}
+                                            <div className="p-6">
+                                                {section.rows.length === 0 && (
+                                                    <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                                                        Henüz özellik yok.
+                                                    </div>
+                                                )}
 
-                                            {section.rows.length > 0 && (
-                                                isFeatureDndReady ? (
-                                                    <DndContext
-                                                        id={`project-feature-sort-${section.category.toLowerCase()}`}
-                                                        sensors={featureSensors}
-                                                        collisionDetection={closestCenter}
-                                                        onDragStart={(event) =>
-                                                            handleFeatureSortStart(
-                                                                section.category,
-                                                                event
-                                                            )
-                                                        }
-                                                        onDragOver={(event) =>
-                                                            handleFeatureSortOver(
-                                                                section.category,
-                                                                event
-                                                            )
-                                                        }
-                                                        onDragEnd={(event) =>
-                                                            handleFeatureSortEnd(
-                                                                section.category,
-                                                                event
-                                                            )
-                                                        }
-                                                        onDragCancel={handleFeatureSortCancel}
-                                                    >
-                                                        <SortableContext
-                                                            items={section.rows.map((row) =>
-                                                                toFeatureSortableId(
+                                                {section.rows.length > 0 && (
+                                                    isFeatureDndReady ? (
+                                                        <DndContext
+                                                            id={`project-feature-sort-${section.category.toLowerCase()}`}
+                                                            sensors={featureSensors}
+                                                            collisionDetection={closestCenter}
+                                                            onDragStart={(event) =>
+                                                                handleFeatureSortStart(
                                                                     section.category,
-                                                                    row.id
+                                                                    event
                                                                 )
-                                                            )}
-                                                            strategy={verticalListSortingStrategy}
+                                                            }
+                                                            onDragOver={(event) =>
+                                                                handleFeatureSortOver(
+                                                                    section.category,
+                                                                    event
+                                                                )
+                                                            }
+                                                            onDragEnd={(event) =>
+                                                                handleFeatureSortEnd(
+                                                                    section.category,
+                                                                    event
+                                                                )
+                                                            }
+                                                            onDragCancel={handleFeatureSortCancel}
                                                         >
-                                                            <div className="space-y-3">
-                                                                {section.rows.map((row) => (
-                                                                    <SortableFeatureRow
-                                                                        key={row.id}
-                                                                        category={section.category}
-                                                                        row={row}
-                                                                        onOpenIconPicker={() =>
+                                                            <SortableContext
+                                                                items={section.rows.map((row) =>
+                                                                    toFeatureSortableId(
+                                                                        section.category,
+                                                                        row.id
+                                                                    )
+                                                                )}
+                                                                strategy={verticalListSortingStrategy}
+                                                            >
+                                                                <div className="space-y-3">
+                                                                    {section.rows.map((row) => (
+                                                                        <SortableFeatureRow
+                                                                            key={row.id}
+                                                                            category={section.category}
+                                                                            row={row}
+                                                                            onOpenIconPicker={() =>
+                                                                                setIconPickerTarget({
+                                                                                    category: section.category,
+                                                                                    id: row.id,
+                                                                                })
+                                                                            }
+                                                                            onTitleChange={(value) =>
+                                                                                updateFeatureRow(
+                                                                                    section.category,
+                                                                                    row.id,
+                                                                                    {
+                                                                                        title: value,
+                                                                                    }
+                                                                                )
+                                                                            }
+                                                                            onRemove={() =>
+                                                                                removeFeatureRow(
+                                                                                    section.category,
+                                                                                    row.id
+                                                                                )
+                                                                            }
+                                                                        />
+                                                                    ))}
+                                                                </div>
+                                                            </SortableContext>
+                                                            <DragOverlay adjustScale>
+                                                                {activeFeatureDrag &&
+                                                                    activeFeatureDrag.category ===
+                                                                    section.category ? (
+                                                                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-orange-300 shadow-xl ring-2 ring-orange-200">
+                                                                        <GripVertical className="w-5 h-5 text-slate-400 shrink-0" />
+                                                                        <div className="w-10 h-10 rounded border border-slate-200 bg-white flex items-center justify-center text-orange-500 shadow-sm shrink-0">
+                                                                            <ProjectIcon
+                                                                                name={
+                                                                                    section.rows.find(
+                                                                                        (row) =>
+                                                                                            row.id ===
+                                                                                            activeFeatureDrag.id
+                                                                                    )?.icon ||
+                                                                                    "Building2"
+                                                                                }
+                                                                                className="w-5 h-5"
+                                                                            />
+                                                                        </div>
+                                                                        <span className="text-sm font-medium text-slate-800">
+                                                                            {section.rows.find(
+                                                                                (row) =>
+                                                                                    row.id ===
+                                                                                    activeFeatureDrag.id
+                                                                            )?.title ||
+                                                                                "Özellik"}
+                                                                        </span>
+                                                                    </div>
+                                                                ) : null}
+                                                            </DragOverlay>
+                                                        </DndContext>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            {section.rows.map((row) => (
+                                                                <div
+                                                                    key={row.id}
+                                                                    className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 group"
+                                                                >
+                                                                    <button
+                                                                        type="button"
+                                                                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-400 hover:text-slate-600 hover:bg-white cursor-grab active:cursor-grabbing touch-none"
+                                                                        aria-label="Özelliği sürükleyerek sırala"
+                                                                        title="Sürükleyerek sırala"
+                                                                    >
+                                                                        <GripVertical className="w-5 h-5 shrink-0" />
+                                                                    </button>
+
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
                                                                             setIconPickerTarget({
                                                                                 category: section.category,
                                                                                 id: row.id,
                                                                             })
                                                                         }
-                                                                        onTitleChange={(value) =>
+                                                                        className="w-10 h-10 rounded border border-slate-200 bg-white flex items-center justify-center text-orange-500 cursor-pointer hover:border-orange-500 transition-all shadow-sm shrink-0"
+                                                                        title="İkon seç"
+                                                                    >
+                                                                        <ProjectIcon
+                                                                            name={row.icon}
+                                                                            className="w-5 h-5"
+                                                                        />
+                                                                    </button>
+
+                                                                    <input
+                                                                        className="flex-1 bg-transparent border-none outline-none focus:ring-0 text-sm font-medium"
+                                                                        placeholder="Özellik adı girin..."
+                                                                        type="text"
+                                                                        value={row.title}
+                                                                        onChange={(event) =>
                                                                             updateFeatureRow(
                                                                                 section.category,
                                                                                 row.id,
                                                                                 {
-                                                                                    title: value,
+                                                                                    title:
+                                                                                        event.target
+                                                                                            .value,
                                                                                 }
                                                                             )
                                                                         }
-                                                                        onRemove={() =>
+                                                                    />
+
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() =>
                                                                             removeFeatureRow(
                                                                                 section.category,
                                                                                 row.id
                                                                             )
                                                                         }
-                                                                    />
-                                                                ))}
-                                                            </div>
-                                                        </SortableContext>
-                                                        <DragOverlay adjustScale>
-                                                            {activeFeatureDrag &&
-                                                                activeFeatureDrag.category ===
-                                                                section.category ? (
-                                                                <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-orange-300 shadow-xl ring-2 ring-orange-200">
-                                                                    <GripVertical className="w-5 h-5 text-slate-400 shrink-0" />
-                                                                    <div className="w-10 h-10 rounded border border-slate-200 bg-white flex items-center justify-center text-orange-500 shadow-sm shrink-0">
-                                                                        <ProjectIcon
-                                                                            name={
-                                                                                section.rows.find(
-                                                                                    (row) =>
-                                                                                        row.id ===
-                                                                                        activeFeatureDrag.id
-                                                                                )?.icon ||
-                                                                                "Building2"
-                                                                            }
-                                                                            className="w-5 h-5"
-                                                                        />
-                                                                    </div>
-                                                                    <span className="text-sm font-medium text-slate-800">
-                                                                        {section.rows.find(
-                                                                            (row) =>
-                                                                                row.id ===
-                                                                                activeFeatureDrag.id
-                                                                        )?.title ||
-                                                                            "Özellik"}
-                                                                    </span>
+                                                                        className="text-slate-400 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100"
+                                                                        title="Özelliği sil"
+                                                                    >
+                                                                        <Trash2 className="w-5 h-5" />
+                                                                    </button>
                                                                 </div>
-                                                            ) : null}
-                                                        </DragOverlay>
-                                                    </DndContext>
-                                                ) : (
-                                                    <div className="space-y-3">
-                                                        {section.rows.map((row) => (
-                                                            <div
-                                                                key={row.id}
-                                                                className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100 group"
-                                                            >
-                                                                <button
-                                                                    type="button"
-                                                                    className="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-400 hover:text-slate-600 hover:bg-white cursor-grab active:cursor-grabbing touch-none"
-                                                                    aria-label="Özelliği sürükleyerek sırala"
-                                                                    title="Sürükleyerek sırala"
-                                                                >
-                                                                    <GripVertical className="w-5 h-5 shrink-0" />
-                                                                </button>
-
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        setIconPickerTarget({
-                                                                            category: section.category,
-                                                                            id: row.id,
-                                                                        })
-                                                                    }
-                                                                    className="w-10 h-10 rounded border border-slate-200 bg-white flex items-center justify-center text-orange-500 cursor-pointer hover:border-orange-500 transition-all shadow-sm shrink-0"
-                                                                    title="İkon seç"
-                                                                >
-                                                                    <ProjectIcon
-                                                                        name={row.icon}
-                                                                        className="w-5 h-5"
-                                                                    />
-                                                                </button>
-
-                                                                <input
-                                                                    className="flex-1 bg-transparent border-none outline-none focus:ring-0 text-sm font-medium"
-                                                                    placeholder="Özellik adı girin..."
-                                                                    type="text"
-                                                                    value={row.title}
-                                                                    onChange={(event) =>
-                                                                        updateFeatureRow(
-                                                                            section.category,
-                                                                            row.id,
-                                                                            {
-                                                                                title:
-                                                                                    event.target
-                                                                                        .value,
-                                                                            }
-                                                                        )
-                                                                    }
-                                                                />
-
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() =>
-                                                                        removeFeatureRow(
-                                                                            section.category,
-                                                                            row.id
-                                                                        )
-                                                                    }
-                                                                    className="text-slate-400 hover:text-red-500 transition-colors p-1 opacity-0 group-hover:opacity-100"
-                                                                    title="Özelliği sil"
-                                                                >
-                                                                    <Trash2 className="w-5 h-5" />
-                                                                </button>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </section>
-
-                        <section id="section-location" className="scroll-mt-28 space-y-6">
-                            <div className="border-t border-slate-100 pt-8 border-b pb-4">
-                                <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                                    <MapPin className="w-5 h-5 text-orange-500" />
-                                    Konum
-                                </h2>
-                            </div>
-
-                            <div className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <Select
-                                        label="Şehir"
-                                        value={city}
-                                        onChange={(value) => {
-                                            setCity(value);
-                                            setDistrict("");
-                                            setNeighborhood("");
-                                        }}
-                                        options={[
-                                            { value: "", label: "Seçiniz" },
-                                            ...cityOptions.map((option) => ({
-                                                value: option,
-                                                label: option,
-                                            })),
-                                        ]}
-                                        searchable
-                                        searchPlaceholder="Şehir yazın"
-                                        searchMatchMode="startsWith"
-                                    />
-                                    <Select
-                                        label="İlçe"
-                                        value={district}
-                                        onChange={(value) => {
-                                            setDistrict(value);
-                                            setNeighborhood("");
-                                        }}
-                                        options={[
-                                            { value: "", label: "Seçiniz" },
-                                            ...districtOptions.map((option) => ({
-                                                value: option,
-                                                label: option,
-                                            })),
-                                        ]}
-                                        searchable
-                                        searchPlaceholder="İlçe yazın"
-                                        searchMatchMode="startsWith"
-                                    />
-                                    <Select
-                                        label="Mahalle"
-                                        value={neighborhood}
-                                        onChange={(value) => setNeighborhood(value)}
-                                        options={[
-                                            { value: "", label: "Seçiniz" },
-                                            ...neighborhoodOptions.map((option) => ({
-                                                value: option,
-                                                label: option,
-                                            })),
-                                        ]}
-                                        searchable
-                                        searchPlaceholder="Mahalle yazın"
-                                        searchMatchMode="startsWith"
-                                    />
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-2">
-                                            Adres
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={address}
-                                            onChange={(event) => setAddress(event.target.value)}
-                                            className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
-                                            placeholder="Açık adres"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-6">
-                                        <div className="space-y-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                        Enlem
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        step="any"
-                                                        value={latitude}
-                                                        onChange={(event) =>
-                                                            setLatitude(event.target.value)
-                                                        }
-                                                        className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
-                                                        placeholder="36.5489"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                        Boylam
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        step="any"
-                                                        value={longitude}
-                                                        onChange={(event) =>
-                                                            setLongitude(event.target.value)
-                                                        }
-                                                        className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
-                                                        placeholder="32.0489"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                        Google Maps Linki
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={googleMapsLink}
-                                                        onChange={(event) =>
-                                                            setGoogleMapsLink(event.target.value)
-                                                        }
-                                                        className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
-                                                        placeholder="https://www.google.com/maps?q=36.5489,32.0489"
-                                                    />
-                                                </div>
-                                                <div className="flex flex-col justify-end">
-                                                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 border border-dashed border-slate-200 bg-slate-50 rounded-lg px-3 py-2">
-                                                        <span>
-                                                            Koordinat veya adres girince Google Maps linki otomatik dolabilir.
-                                                        </span>
-                                                        <button
-                                                            type="button"
-                                                            className="text-orange-600 hover:text-orange-700 font-medium"
-                                                            onClick={() => {
-                                                                if (autoMapsLink) {
-                                                                    setGoogleMapsLink(autoMapsLink);
-                                                                }
-                                                            }}
-                                                            disabled={!autoMapsLink}
-                                                        >
-                                                            Otomatik Doldur
-                                                        </button>
-                                                    </div>
-                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )
+                                                )}
                                             </div>
                                         </div>
-
-                                        <div className="min-h-[200px] h-full">
-                                            {mapSrc ? (
-                                                <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50 h-full flex flex-col">
-                                                    <div className="flex items-center justify-between px-4 py-2.5 bg-white border-b border-slate-100 shrink-0">
-                                                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                                                            <MapPin className="w-4 h-4 text-orange-500" />
-                                                            Harita Önizleme
-                                                        </div>
-                                                        <span className="text-xs text-slate-400">Google Maps</span>
-                                                    </div>
-                                                    <div className="flex-1 w-full relative min-h-[150px]">
-                                                        <iframe
-                                                            title="Proje konumu"
-                                                            src={mapSrc}
-                                                            className="absolute inset-0 w-full h-full"
-                                                            loading="lazy"
-                                                            referrerPolicy="no-referrer-when-downgrade"
-                                                        />
-                                                    </div>
-                                                    {locationLabel && (
-                                                        <div className="px-4 py-2.5 bg-white border-t border-slate-100 text-xs text-slate-500 shrink-0">
-                                                            {locationLabel}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500 h-full flex items-center justify-center text-center">
-                                                    Harita önizlemesi için adres veya koordinat bilgisi girin.
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="pt-6 border-t border-slate-100 space-y-4 mt-8">
-                                    <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900">
-                                        <ImagePlus className="w-4 h-4 text-orange-500" />
-                                        Konum & Çevre Görselleri
-                                    </h3>
-                                    <p className="text-xs text-slate-500">
-                                        Projenin çevresini veya harita üzerindeki konumunu gösteren özel krokiler/görseller.
-                                    </p>
-                                    <UploadPanel
-                                        title="Konum görsellerini buraya sürükleyin veya seçin"
-                                        subtitle="PNG, JPG, WebP, GIF, AVIF (Max 30MB)"
-                                        onFilesSelected={(files) =>
-                                            void handleImageUpload(files, (uploaded) =>
-                                                setMapMedia((prev) =>
-                                                    toUniqueMedia([...prev, ...uploaded])
-                                                )
-                                            )
-                                        }
-                                        disabled={isSaving || isUploading}
-                                        compact
-                                    />
-                                    <MediaGrid
-                                        items={mapMedia}
-                                        onRemove={(id) =>
-                                            setMapMedia((prev) =>
-                                                prev.filter((item) => item.id !== id)
-                                            )
-                                        }
-                                        emptyMessage="Henüz konum görseli yok"
-                                    />
+                                    ))}
                                 </div>
                             </div>
-                        </section>
+                        </details>
 
-                        <section id="section-media" className="scroll-mt-28 space-y-12">
-                            <div className="space-y-6">
-                                <div className="border-t border-slate-100 pt-8 border-b pb-4">
-                                    <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                                        <ImageIcon className="w-5 h-5 text-orange-500" />
-                                        Dış Görseller
-                                    </h2>
-                                    <p className="text-sm text-slate-500 mt-1">
-                                        Projenin dış cephe, peyzaj ve genel vaziyet planı görselleri.
-                                    </p>
-                                </div>
-                                <UploadPanel
-                                    title="Dış görselleri buraya sürükleyin veya seçin"
-                                    subtitle="Yüklenen görseller WebP olarak optimize edilir."
-                                    onFilesSelected={(files) =>
-                                        void handleImageUpload(files, (uploaded) =>
-                                            setExteriorMedia((prev) =>
-                                                toUniqueMedia([...prev, ...uploaded])
-                                            )
-                                        )
-                                    }
-                                    disabled={isSaving || isUploading}
-                                />
-                                <MediaGrid
-                                    items={exteriorMedia}
-                                    onRemove={(id) =>
-                                        setExteriorMedia((prev) =>
-                                            prev.filter((item) => item.id !== id)
-                                        )
-                                    }
-                                    emptyMessage="Henüz dış görsel yok"
-                                />
-                            </div>
-
-                            <div className="space-y-6">
-                                <div className="border-t border-slate-100 pt-8 border-b pb-4">
+                        <details id="section-media-social" className="group rounded-xl border border-slate-200 bg-white scroll-mt-28">
+                            <summary className="flex cursor-pointer list-none items-center justify-between p-6 marker:hidden">
+                                <div className="flex w-full flex-1 items-center justify-between pr-4">
                                     <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                                         <Sparkles className="w-5 h-5 text-orange-500" />
                                         Sosyal İmkan Görselleri
                                     </h2>
-                                    <p className="text-sm text-slate-500 mt-1">
-                                        Havuz, fitness, lobi ve diğer ortak alan görselleri.
-                                    </p>
                                 </div>
+                                <span className="transition-transform group-open:rotate-180 shrink-0 ml-4">
+                                    <ChevronDown className="h-5 w-5 text-slate-400" />
+                                </span>
+                            </summary>
+                            <div className="border-t border-slate-100 p-6 pt-2">
                                 <UploadPanel
                                     title="Sosyal alan görsellerini buraya sürükleyin veya seçin"
                                     subtitle="Yüklenen görseller WebP olarak optimize edilir."
@@ -3151,6 +3072,7 @@ export default function NewProjectForm({
                                 />
                                 <MediaGrid
                                     items={socialMedia}
+                                    onReorder={setSocialMedia}
                                     onRemove={(id) =>
                                         setSocialMedia((prev) =>
                                             prev.filter((item) => item.id !== id)
@@ -3159,17 +3081,59 @@ export default function NewProjectForm({
                                     emptyMessage="Henüz sosyal alan görseli yok"
                                 />
                             </div>
+                        </details>
 
-                            <div className="space-y-6">
-                                <div className="border-t border-slate-100 pt-8 border-b pb-4">
+                        <details id="section-media-exterior" className="group rounded-xl border border-slate-200 bg-white scroll-mt-28">
+                            <summary className="flex cursor-pointer list-none items-center justify-between p-6 marker:hidden">
+                                <div className="flex w-full flex-1 items-center justify-between pr-4">
+                                    <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                                        <ImageIcon className="w-5 h-5 text-orange-500" />
+                                        Dış Görseller
+                                    </h2>
+                                </div>
+                                <span className="transition-transform group-open:rotate-180 shrink-0 ml-4">
+                                    <ChevronDown className="h-5 w-5 text-slate-400" />
+                                </span>
+                            </summary>
+                            <div className="border-t border-slate-100 p-6 pt-2">
+                                <UploadPanel
+                                    title="Dış görselleri buraya sürükleyin veya seçin"
+                                    subtitle="Yüklenen görseller WebP olarak optimize edilir."
+                                    onFilesSelected={(files) =>
+                                        void handleImageUpload(files, (uploaded) =>
+                                            setExteriorMedia((prev) =>
+                                                toUniqueMedia([...prev, ...uploaded])
+                                            )
+                                        )
+                                    }
+                                    disabled={isSaving || isUploading}
+                                />
+                                <MediaGrid
+                                    items={exteriorMedia}
+                                    onReorder={setExteriorMedia}
+                                    onRemove={(id) =>
+                                        setExteriorMedia((prev) =>
+                                            prev.filter((item) => item.id !== id)
+                                        )
+                                    }
+                                    emptyMessage="Henüz dış görsel yok"
+                                />
+                            </div>
+                        </details>
+
+                        <details id="section-media-interior" className="group rounded-xl border border-slate-200 bg-white scroll-mt-28">
+                            <summary className="flex cursor-pointer list-none items-center justify-between p-6 marker:hidden">
+                                <div className="flex w-full flex-1 items-center justify-between pr-4">
                                     <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                                         <Home className="w-5 h-5 text-orange-500" />
                                         İç Görseller
                                     </h2>
-                                    <p className="text-sm text-slate-500 mt-1">
-                                        Örnek daire iç mekan, mutfak ve banyo görselleri.
-                                    </p>
                                 </div>
+                                <span className="transition-transform group-open:rotate-180 shrink-0 ml-4">
+                                    <ChevronDown className="h-5 w-5 text-slate-400" />
+                                </span>
+                            </summary>
+                            <div className="border-t border-slate-100 p-6 pt-2">
                                 <UploadPanel
                                     title="İç mekan görsellerini buraya sürükleyin veya seçin"
                                     subtitle="Yüklenen görseller WebP olarak optimize edilir."
@@ -3184,6 +3148,7 @@ export default function NewProjectForm({
                                 />
                                 <MediaGrid
                                     items={interiorMedia}
+                                    onReorder={setInteriorMedia}
                                     onRemove={(id) =>
                                         setInteriorMedia((prev) =>
                                             prev.filter((item) => item.id !== id)
@@ -3192,14 +3157,434 @@ export default function NewProjectForm({
                                     emptyMessage="Henüz iç görsel yok"
                                 />
                             </div>
+                        </details>
 
-                            <section className="space-y-6">
-                                <div className="border-t border-slate-100 pt-8 border-b pb-4">
+                        <details id="section-units" className="group rounded-xl border border-slate-200 bg-white scroll-mt-28">
+                            <summary className="flex cursor-pointer list-none items-center justify-between p-6 marker:hidden">
+                                <div className="flex w-full flex-1 items-center justify-between pr-4">
+                                    <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                                        <Building2 className="w-5 h-5 text-orange-500" />
+                                        Kat Planları
+                                    </h2>
+                                </div>
+                                <span className="transition-transform group-open:rotate-180 shrink-0 ml-4">
+                                    <ChevronDown className="h-5 w-5 text-slate-400" />
+                                </span>
+                            </summary>
+                            <div className="border-t border-slate-100 p-6 pt-2">
+                                <div className="space-y-4">
+                                    {floorPlans.map((plan, index) => (
+                                        <div
+                                            key={plan.id}
+                                            className="rounded-xl border border-slate-200 bg-white p-5 space-y-4"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-sm font-semibold text-slate-800">
+                                                    Kat Planı #{index + 1}
+                                                </h3>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setFloorPlans((prev) =>
+                                                            prev.filter((item) => item.id !== plan.id)
+                                                        )
+                                                    }
+                                                    className="text-slate-400 hover:text-red-500 transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <input
+                                                    type="text"
+                                                    value={plan.title}
+                                                    onChange={(event) =>
+                                                        setFloorPlans((prev) =>
+                                                            prev.map((item) =>
+                                                                item.id === plan.id
+                                                                    ? {
+                                                                        ...item,
+                                                                        title: event.target.value,
+                                                                    }
+                                                                    : item
+                                                            )
+                                                        )
+                                                    }
+                                                    placeholder="Kat planı başlığı"
+                                                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={plan.area}
+                                                    onChange={(event) =>
+                                                        setFloorPlans((prev) =>
+                                                            prev.map((item) =>
+                                                                item.id === plan.id
+                                                                    ? {
+                                                                        ...item,
+                                                                        area: event.target.value,
+                                                                    }
+                                                                    : item
+                                                            )
+                                                        )
+                                                    }
+                                                    placeholder="Alan (örn. 95 m²)"
+                                                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
+                                                />
+                                            </div>
+
+                                            <UploadPanel
+                                                title="Kat planı görseli seçin"
+                                                subtitle="Tek görsel yükleyin"
+                                                onFilesSelected={(files) =>
+                                                    void handleFloorPlanImageUpload(plan.id, files)
+                                                }
+                                                multiple={false}
+                                                disabled={isSaving || isUploading}
+                                                compact
+                                            />
+
+                                            {plan.imageUrl ? (
+                                                <div className="rounded-xl border border-slate-200 overflow-hidden max-w-sm">
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img
+                                                        src={getMediaUrl(plan.imageUrl)}
+                                                        alt=""
+                                                        className="w-full h-56 object-cover"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                                                    Bu kat planı için henüz görsel yüklenmedi.
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="mt-8">
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setFloorPlans((prev) => [
+                                                ...prev,
+                                                {
+                                                    id: createRowId(),
+                                                    title: "",
+                                                    area: "",
+                                                    imageUrl: "",
+                                                    mediaId: null,
+                                                },
+                                            ])
+                                        }
+                                        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 py-6 text-sm font-medium text-slate-600 transition-all hover:border-orange-500 hover:bg-orange-50/50 hover:text-orange-600 cursor-pointer"
+                                    >
+                                        <PlusCircle className="w-5 h-5" />
+                                        Yeni Kat Planı Ekle
+                                    </button>
+                                </div>
+                            </div>
+                        </details>
+
+                        <details id="section-location" className="group rounded-xl border border-slate-200 bg-white scroll-mt-28">
+                            <summary className="flex cursor-pointer list-none items-center justify-between p-6 marker:hidden">
+                                <div className="flex w-full flex-1 items-center justify-between pr-4">
+                                    <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                                        <MapPin className="w-5 h-5 text-orange-500" />
+                                        Konum
+                                    </h2>
+                                </div>
+                                <span className="transition-transform group-open:rotate-180 shrink-0 ml-4">
+                                    <ChevronDown className="h-5 w-5 text-slate-400" />
+                                </span>
+                            </summary>
+                            <div className="border-t border-slate-100 p-6 pt-2">
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <Select
+                                            label="Şehir"
+                                            value={city}
+                                            onChange={(value) => {
+                                                setCity(value);
+                                                setDistrict("");
+                                                setNeighborhood("");
+                                            }}
+                                            options={[
+                                                { value: "", label: "Seçiniz" },
+                                                ...cityOptions.map((option) => ({
+                                                    value: option,
+                                                    label: option,
+                                                })),
+                                            ]}
+                                            searchable
+                                            searchPlaceholder="Şehir yazın"
+                                            searchMatchMode="startsWith"
+                                        />
+                                        <Select
+                                            label="İlçe"
+                                            value={district}
+                                            onChange={(value) => {
+                                                setDistrict(value);
+                                                setNeighborhood("");
+                                            }}
+                                            options={[
+                                                { value: "", label: "Seçiniz" },
+                                                ...districtOptions.map((option) => ({
+                                                    value: option,
+                                                    label: option,
+                                                })),
+                                            ]}
+                                            searchable
+                                            searchPlaceholder="İlçe yazın"
+                                            searchMatchMode="startsWith"
+                                        />
+                                        <Select
+                                            label="Mahalle"
+                                            value={neighborhood}
+                                            onChange={(value) => setNeighborhood(value)}
+                                            options={[
+                                                { value: "", label: "Seçiniz" },
+                                                ...neighborhoodOptions.map((option) => ({
+                                                    value: option,
+                                                    label: option,
+                                                })),
+                                            ]}
+                                            searchable
+                                            searchPlaceholder="Mahalle yazın"
+                                            searchMatchMode="startsWith"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                                                Adres
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={address}
+                                                onChange={(event) => setAddress(event.target.value)}
+                                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                                                placeholder="Açık adres"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-6">
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                                                            Enlem
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            step="any"
+                                                            value={latitude}
+                                                            onChange={(event) =>
+                                                                setLatitude(event.target.value)
+                                                            }
+                                                            className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                                                            placeholder="36.5489"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                                                            Boylam
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            step="any"
+                                                            value={longitude}
+                                                            onChange={(event) =>
+                                                                setLongitude(event.target.value)
+                                                            }
+                                                            className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                                                            placeholder="32.0489"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                                                            Google Maps Linki
+                                                        </label>
+                                                        <input
+                                                            type="text"
+                                                            value={googleMapsLink}
+                                                            onChange={(event) =>
+                                                                setGoogleMapsLink(event.target.value)
+                                                            }
+                                                            className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                                                            placeholder="https://www.google.com/maps?q=36.5489,32.0489"
+                                                        />
+                                                    </div>
+                                                    <div className="flex flex-col justify-end">
+                                                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 border border-dashed border-slate-200 bg-slate-50 rounded-lg px-3 py-2">
+                                                            <span>
+                                                                Koordinat veya adres girince Google Maps linki otomatik dolabilir.
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                className="text-orange-600 hover:text-orange-700 font-medium"
+                                                                onClick={() => {
+                                                                    if (autoMapsLink) {
+                                                                        setGoogleMapsLink(autoMapsLink);
+                                                                    }
+                                                                }}
+                                                                disabled={!autoMapsLink}
+                                                            >
+                                                                Otomatik Doldur
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="min-h-[200px] h-full">
+                                                {mapSrc ? (
+                                                    <div className="rounded-xl border border-slate-200 overflow-hidden bg-slate-50 h-full flex flex-col">
+                                                        <div className="flex items-center justify-between px-4 py-2.5 bg-white border-b border-slate-100 shrink-0">
+                                                            <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                                                <MapPin className="w-4 h-4 text-orange-500" />
+                                                                Harita Önizleme
+                                                            </div>
+                                                            <span className="text-xs text-slate-400">Google Maps</span>
+                                                        </div>
+                                                        <div className="flex-1 w-full relative min-h-[150px]">
+                                                            <iframe
+                                                                title="Proje konumu"
+                                                                src={mapSrc}
+                                                                className="absolute inset-0 w-full h-full"
+                                                                loading="lazy"
+                                                                referrerPolicy="no-referrer-when-downgrade"
+                                                            />
+                                                        </div>
+                                                        {locationLabel && (
+                                                            <div className="px-4 py-2.5 bg-white border-t border-slate-100 text-xs text-slate-500 shrink-0">
+                                                                {locationLabel}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500 h-full flex items-center justify-center text-center">
+                                                        Harita önizlemesi için adres veya koordinat bilgisi girin.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-6 border-t border-slate-100 space-y-4 mt-8">
+                                        <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900">
+                                            <ImagePlus className="w-4 h-4 text-orange-500" />
+                                            Konum & Çevre Görselleri
+                                        </h3>
+                                        <p className="text-xs text-slate-500">
+                                            Projenin çevresini veya harita üzerindeki konumunu gösteren özel krokiler/görseller.
+                                        </p>
+                                        <UploadPanel
+                                            title="Konum görsellerini buraya sürükleyin veya seçin"
+                                            subtitle="PNG, JPG, WebP, GIF, AVIF (Max 30MB)"
+                                            onFilesSelected={(files) =>
+                                                void handleImageUpload(files, (uploaded) =>
+                                                    setMapMedia((prev) =>
+                                                        toUniqueMedia([...prev, ...uploaded])
+                                                    )
+                                                )
+                                            }
+                                            disabled={isSaving || isUploading}
+                                            compact
+                                        />
+                                        <MediaGrid
+                                            items={mapMedia}
+                                            onReorder={setMapMedia}
+                                            onRemove={(id) =>
+                                                setMapMedia((prev) =>
+                                                    prev.filter((item) => item.id !== id)
+                                                )
+                                            }
+                                            emptyMessage="Henüz konum görseli yok"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+
+                        <details id="section-promo-video" className="group rounded-xl border border-slate-200 bg-white scroll-mt-28">
+                            <summary className="flex cursor-pointer list-none items-center justify-between p-6 marker:hidden">
+                                <div className="flex w-full flex-1 items-center justify-between pr-4">
+                                    <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2"><PlayCircle className="w-5 h-5 text-orange-500" />Promosyon Videosu</h2>
+                                </div>
+                                <span className="transition-transform group-open:rotate-180 shrink-0 ml-4">
+                                    <ChevronDown className="h-5 w-5 text-slate-400" />
+                                </span>
+                            </summary>
+                            <div className="border-t border-slate-100 p-6 pt-2">
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium text-slate-700">
+                                            Video Başlığı {activeLocale !== "tr" ? `(${activeLocale.toUpperCase()})` : ""}
+                                        </label>
+                                        <input
+                                            value={
+                                                translations.find((t) => t.locale === activeLocale)
+                                                    ?.promoVideoTitle || ""
+                                            }
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                setTranslations((prev) =>
+                                                    prev.map((t) =>
+                                                        t.locale === activeLocale
+                                                            ? { ...t, promoVideoTitle: value }
+                                                            : t
+                                                    )
+                                                );
+                                            }}
+                                            className="w-full rounded-lg border border-slate-200 bg-white py-3 px-3 text-sm text-slate-900 outline-none transition-all focus:border-orange-500 focus:ring-1 focus:ring-orange-500 placeholder:text-slate-400"
+                                            placeholder="Örn: Proje Tanıtım Videosu"
+                                            type="text"
+                                        />
+                                        <p className="text-xs text-slate-500">
+                                            Videonun üzerinde görünecek özel başlık (Çoklu dil destekler, aktif dilde kaydedilir).
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-medium text-slate-700">
+                                            Video URL'si
+                                        </label>
+                                        <input
+                                            value={promoVideoUrl}
+                                            onChange={(event) =>
+                                                setPromoVideoUrl(event.target.value)
+                                            }
+                                            className="w-full rounded-lg border border-slate-200 bg-white py-3 px-3 text-sm text-slate-900 outline-none transition-all focus:border-orange-500 focus:ring-1 focus:ring-orange-500 placeholder:text-slate-400"
+                                            placeholder="https://youtube.com/..."
+                                            type="text"
+                                        />
+                                        <p className="text-xs text-slate-500">
+                                            YouTube veya Vimeo bağlantılarını destekler.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </details>
+
+                        <details id="section-media-doc" className="group rounded-xl border border-slate-200 bg-white scroll-mt-28">
+                            <summary className="flex cursor-pointer list-none items-center justify-between p-6 marker:hidden">
+                                <div className="flex w-full flex-1 items-center justify-between pr-4">
                                     <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
                                         <FileText className="w-5 h-5 text-orange-500" />
                                         Proje Dokümanları
                                     </h2>
                                 </div>
+                                <span className="transition-transform group-open:rotate-180 shrink-0 ml-4">
+                                    <ChevronDown className="h-5 w-5 text-slate-400" />
+                                </span>
+                            </summary>
+                            <div className="border-t border-slate-100 p-6 pt-2">
                                 <UploadPanel
                                     title="Belge yüklemek için tıklayın veya sürükleyin"
                                     subtitle="PDF, DOC, DOCX, PPT, PPTX (Max 30MB)"
@@ -3209,274 +3594,143 @@ export default function NewProjectForm({
                                     compact
                                 />
 
-                                <div className="space-y-2">
+                                <div className="space-y-4 max-w-4xl">
                                     {documents.length === 0 && (
                                         <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-sm text-slate-500 text-center">
                                             Henüz doküman yüklenmedi.
                                         </div>
                                     )}
-                                    {documents.map((document) => (
-                                        <div
-                                            key={document.id}
-                                            className="flex items-center justify-between rounded-lg border border-slate-100 bg-white shadow-sm p-4"
+                                    <DndContext
+                                        sensors={featureSensors}
+                                        collisionDetection={closestCenter}
+                                        onDragEnd={handleDocumentDragEnd}
+                                    >
+                                        <SortableContext
+                                            items={documents.map((d) => d.id)}
+                                            strategy={verticalListSortingStrategy}
                                         >
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-900">
-                                                    {document.id}
-                                                </p>
-                                                <p className="text-xs text-slate-500">
-                                                    {document.type}
-                                                </p>
+                                            <div className="space-y-2">
+                                                {documents.map((document) => (
+                                                    <SortableDocumentItem
+                                                        key={document.id}
+                                                        document={document}
+                                                        onRemove={(id) =>
+                                                            setDocuments((prev) =>
+                                                                prev.filter((item) => item.id !== id)
+                                                            )
+                                                        }
+                                                    />
+                                                ))}
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <a
-                                                    href={getMediaUrl(document.url)}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="text-sm text-orange-600 hover:text-orange-700"
-                                                >
-                                                    Aç
-                                                </a>
+                                        </SortableContext>
+                                    </DndContext>
+                                </div>
+                            </div>
+                        </details>
+
+                        <details id="section-faq" className="group rounded-xl border border-slate-200 bg-white scroll-mt-28">
+                            <summary className="flex cursor-pointer list-none items-center justify-between p-6 marker:hidden">
+                                <div className="flex w-full flex-1 items-center justify-between pr-4">
+                                    <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                                        <MessageSquare className="w-5 h-5 text-orange-500" />
+                                        Sıkça Sorulan Sorular
+                                    </h2> <button
+                                        type="button"
+                                        onClick={() =>
+                                            setFaqs((prev) => [
+                                                ...prev,
+                                                { id: createRowId(), question: "", answer: "" },
+                                            ])
+                                        }
+                                        className="text-orange-500 hover:bg-orange-500/5 px-3 py-1.5 rounded text-sm font-semibold flex items-center gap-1.5 transition-colors"
+                                    >
+                                        <Plus width={16} height={16} /> Soru Ekle
+                                    </button>
+                                </div>
+                                <span className="transition-transform group-open:rotate-180 shrink-0 ml-4">
+                                    <ChevronDown className="h-5 w-5 text-slate-400" />
+                                </span>
+                            </summary>
+                            <div className="border-t border-slate-100 p-6 pt-2">
+                                <div className="space-y-4">
+                                    {faqs.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="bg-white border border-slate-200 rounded-xl shadow-sm p-5 space-y-4 relative group"
+                                        >
+                                            <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     type="button"
                                                     onClick={() =>
-                                                        setDocuments((prev) =>
-                                                            prev.filter(
-                                                                (item) =>
-                                                                    item.id !== document.id
+                                                        setFaqs((prev) =>
+                                                            prev.filter((faq) => faq.id !== item.id)
+                                                        )
+                                                    }
+                                                    className="p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-md transition-colors"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-500 mb-1">
+                                                    Soru
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400 font-medium"
+                                                    placeholder="Örn: Proje ne zaman teslim edilecek?"
+                                                    value={item.question}
+                                                    onChange={(event) =>
+                                                        setFaqs((prev) =>
+                                                            prev.map((faq) =>
+                                                                faq.id === item.id
+                                                                    ? {
+                                                                        ...faq,
+                                                                        question:
+                                                                            event.target.value,
+                                                                    }
+                                                                    : faq
                                                             )
                                                         )
                                                     }
-                                                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-500 transition-colors"
-                                                >
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-500 mb-1">
+                                                    Cevap
+                                                </label>
+                                                <textarea
+                                                    className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all resize-none placeholder:text-slate-400 text-sm"
+                                                    placeholder="Cevabı buraya yazın..."
+                                                    rows={3}
+                                                    value={item.answer}
+                                                    onChange={(event) =>
+                                                        setFaqs((prev) =>
+                                                            prev.map((faq) =>
+                                                                faq.id === item.id
+                                                                    ? {
+                                                                        ...faq,
+                                                                        answer:
+                                                                            event.target.value,
+                                                                    }
+                                                                    : faq
+                                                            )
+                                                        )
+                                                    }
+                                                />
                                             </div>
                                         </div>
                                     ))}
+
+                                    {faqs.length === 0 && (
+                                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500 text-center">
+                                            Henüz soru eklenmedi.
+                                        </div>
+                                    )}
                                 </div>
-                            </section>
-                        </section>
-
-                        <section id="section-units" className="scroll-mt-28 space-y-8">
-                            <div className="border-t border-slate-100 pt-8 border-b pb-4">
-                                <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                                    <Building2 className="w-5 h-5 text-orange-500" />
-                                    Kat Planları
-                                </h2>
                             </div>
+                        </details>
 
-                            <div className="space-y-4">
-                                {floorPlans.map((plan, index) => (
-                                    <div
-                                        key={plan.id}
-                                        className="rounded-xl border border-slate-200 bg-white p-5 space-y-4"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-sm font-semibold text-slate-800">
-                                                Kat Planı #{index + 1}
-                                            </h3>
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    setFloorPlans((prev) =>
-                                                        prev.filter((item) => item.id !== plan.id)
-                                                    )
-                                                }
-                                                className="text-slate-400 hover:text-red-500 transition-colors"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <input
-                                                type="text"
-                                                value={plan.title}
-                                                onChange={(event) =>
-                                                    setFloorPlans((prev) =>
-                                                        prev.map((item) =>
-                                                            item.id === plan.id
-                                                                ? {
-                                                                    ...item,
-                                                                    title: event.target.value,
-                                                                }
-                                                                : item
-                                                        )
-                                                    )
-                                                }
-                                                placeholder="Kat planı başlığı"
-                                                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={plan.area}
-                                                onChange={(event) =>
-                                                    setFloorPlans((prev) =>
-                                                        prev.map((item) =>
-                                                            item.id === plan.id
-                                                                ? {
-                                                                    ...item,
-                                                                    area: event.target.value,
-                                                                }
-                                                                : item
-                                                        )
-                                                    )
-                                                }
-                                                placeholder="Alan (örn. 95 m²)"
-                                                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm"
-                                            />
-                                        </div>
-
-                                        <UploadPanel
-                                            title="Kat planı görseli seçin"
-                                            subtitle="Tek görsel yükleyin"
-                                            onFilesSelected={(files) =>
-                                                void handleFloorPlanImageUpload(plan.id, files)
-                                            }
-                                            multiple={false}
-                                            disabled={isSaving || isUploading}
-                                            compact
-                                        />
-
-                                        {plan.imageUrl ? (
-                                            <div className="rounded-xl border border-slate-200 overflow-hidden max-w-sm">
-                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                <img
-                                                    src={getMediaUrl(plan.imageUrl)}
-                                                    alt=""
-                                                    className="w-full h-56 object-cover"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-                                                Bu kat planı için henüz görsel yüklenmedi.
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className="mt-8">
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        setFloorPlans((prev) => [
-                                            ...prev,
-                                            {
-                                                id: createRowId(),
-                                                title: "",
-                                                area: "",
-                                                imageUrl: "",
-                                                mediaId: null,
-                                            },
-                                        ])
-                                    }
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 py-6 text-sm font-medium text-slate-600 transition-all hover:border-orange-500 hover:bg-orange-50/50 hover:text-orange-600 cursor-pointer"
-                                >
-                                    <PlusCircle className="w-5 h-5" />
-                                    Yeni Kat Planı Ekle
-                                </button>
-                            </div>
-                        </section>
-
-                        <section id="section-faq" className="scroll-mt-28 space-y-6">
-                            <div className="border-t border-slate-100 pt-8 border-b pb-4 flex items-center justify-between">
-                                <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                                    <MessageSquare className="w-5 h-5 text-orange-500" />
-                                    Sıkça Sorulan Sorular
-                                </h2>
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        setFaqs((prev) => [
-                                            ...prev,
-                                            { id: createRowId(), question: "", answer: "" },
-                                        ])
-                                    }
-                                    className="text-orange-500 hover:bg-orange-500/5 px-3 py-1.5 rounded text-sm font-semibold flex items-center gap-1.5 transition-colors"
-                                >
-                                    <Plus width={16} height={16} /> Soru Ekle
-                                </button>
-                            </div>
-
-                            <div className="space-y-4">
-                                {faqs.map((item) => (
-                                    <div
-                                        key={item.id}
-                                        className="bg-white border border-slate-200 rounded-xl shadow-sm p-5 space-y-4 relative group"
-                                    >
-                                        <div className="absolute right-4 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    setFaqs((prev) =>
-                                                        prev.filter((faq) => faq.id !== item.id)
-                                                    )
-                                                }
-                                                className="p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-md transition-colors"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-500 mb-1">
-                                                Soru
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400 font-medium"
-                                                placeholder="Örn: Proje ne zaman teslim edilecek?"
-                                                value={item.question}
-                                                onChange={(event) =>
-                                                    setFaqs((prev) =>
-                                                        prev.map((faq) =>
-                                                            faq.id === item.id
-                                                                ? {
-                                                                    ...faq,
-                                                                    question:
-                                                                        event.target.value,
-                                                                }
-                                                                : faq
-                                                        )
-                                                    )
-                                                }
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-500 mb-1">
-                                                Cevap
-                                            </label>
-                                            <textarea
-                                                className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all resize-none placeholder:text-slate-400 text-sm"
-                                                placeholder="Cevabı buraya yazın..."
-                                                rows={3}
-                                                value={item.answer}
-                                                onChange={(event) =>
-                                                    setFaqs((prev) =>
-                                                        prev.map((faq) =>
-                                                            faq.id === item.id
-                                                                ? {
-                                                                    ...faq,
-                                                                    answer:
-                                                                        event.target.value,
-                                                                }
-                                                                : faq
-                                                        )
-                                                    )
-                                                }
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
-
-                                {faqs.length === 0 && (
-                                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500 text-center">
-                                        Henüz soru eklenmedi.
-                                    </div>
-                                )}
-                            </div>
-                        </section>
                     </div>
                 </div>
 

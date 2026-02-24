@@ -21,6 +21,7 @@ test("buildAdminQuickActionDefinitions always includes projects list action", ()
         isListingPage: false,
         isArticlePage: false,
         isProjectPage: false,
+        projectSlug: null,
         listingId: null,
         articleId: null,
         projectId: null,
@@ -44,6 +45,7 @@ test("buildAdminQuickActionDefinitions prepends project action on project detail
         isListingPage: false,
         isArticlePage: false,
         isProjectPage: true,
+        projectSlug: "project-slug",
         listingId: null,
         articleId: null,
         projectId: "project-123",
@@ -58,20 +60,24 @@ test("buildAdminQuickActionDefinitions prepends project action on project detail
     assert.equal(actions[0]?.disabled, false);
 });
 
-test("buildAdminQuickActionDefinitions keeps project action disabled while loading", () => {
+test("buildAdminQuickActionDefinitions falls back to project slug route when id is not available", () => {
     const actions = buildAdminQuickActionDefinitions({
         isListingPage: false,
         isArticlePage: false,
         isProjectPage: true,
+        projectSlug: "yeni-proje-taslak-antalya-proje",
         listingId: null,
         articleId: null,
         projectId: null,
         isListingLoading: false,
         isArticleLoading: false,
-        isProjectLoading: true,
+        isProjectLoading: false,
     });
 
     assert.equal(actions[0]?.id, "project");
-    assert.equal(actions[0]?.href, "#");
-    assert.equal(actions[0]?.disabled, true);
+    assert.equal(
+        actions[0]?.href,
+        "/admin/projeler/slug/yeni-proje-taslak-antalya-proje"
+    );
+    assert.equal(actions[0]?.disabled, false);
 });
