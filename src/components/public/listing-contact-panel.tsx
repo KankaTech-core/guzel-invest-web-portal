@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import type { CountryCode } from "libphonenumber-js";
 import {
     Mail,
     MessageCircleMore,
@@ -10,79 +11,261 @@ import {
     User,
     X,
 } from "lucide-react";
+import { PhoneInput } from "@/components/ui/phone-input";
 
 interface ListingContactPanelProps {
     title: string;
+    listingSlug: string;
+    locale?: string;
     listingCode?: string | null;
     phoneNumber: string;
     phoneLabel: string;
 }
 
+interface ContactFormFieldsProps {
+    title: string;
+    listingSlug: string;
+    locale?: string;
+    listingCode?: string | null;
+}
+
+interface ListingContactFormState {
+    name: string;
+    surname: string;
+    email: string;
+    phone: string;
+    message: string;
+}
+
+const DEFAULT_COUNTRY_BY_LOCALE: Partial<Record<string, CountryCode>> = {
+    tr: "TR",
+    en: "AE",
+    de: "DE",
+    ru: "RU",
+    ar: "AE",
+};
+
 const subscribeNoop = () => () => { };
+
+function getDefaultCountryForLocale(locale?: string): CountryCode {
+    const baseLocale = locale?.toLowerCase().split("-")[0];
+    if (!baseLocale) {
+        return "AE";
+    }
+    return DEFAULT_COUNTRY_BY_LOCALE[baseLocale] ?? "AE";
+}
+
+function buildDefaultMessage(title: string, listingCode?: string | null) {
+    const codeLabel = listingCode?.trim();
+    return codeLabel
+        ? `Merhaba, "${title} (${codeLabel})" ilanı hakkında bilgi almak istiyorum.`
+        : `Merhaba, "${title}" ilanı hakkında bilgi almak istiyorum.`;
+}
 
 function ContactFormFields({
     title,
+    listingSlug,
+    locale,
     listingCode,
-}: {
-    title: string;
-    listingCode?: string | null;
-}) {
-    const codeLabel = listingCode?.trim();
-    const message = codeLabel
-        ? `Merhaba, "${title} (${codeLabel}) ilanı hakkında bilgi almak istiyorum."`
-        : `Merhaba, "${title} ilanı hakkında bilgi almak istiyorum."`;
+}: ContactFormFieldsProps) {
+    const defaultPhoneCountry = getDefaultCountryForLocale(locale);
+    const defaultMessage = useMemo(
+        () => buildDefaultMessage(title, listingCode),
+        [listingCode, title]
+    );
+
+    const [formData, setFormData] = useState<ListingContactFormState>({
+        name: "",
+        surname: "",
+        email: "",
+        phone: "",
+        message: defaultMessage,
+    });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const hasPhoneValue = formData.phone.trim().length > 0;
+    const phoneIsValid = /^\+\d{8,15}$/.test(formData.phone);
+    const phoneError = hasPhoneValue && !phoneIsValid
+        ? "Geçerli bir telefon numarası girin."
+        : undefined;
+
+    useEffect(() => {
+        setFormData({
+            name: "",
+            surname: "",
+            email: "",
+            phone: "",
+            message: defaultMessage,
+        });
+        setIsSuccess(false);
+        setSubmitError(null);
+    }, [defaultMessage]);
+
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setSubmitError(null);
+        setIsSuccess(false);
+
+        if (!phoneIsValid) {
+            setSubmitError("Lütfen geçerli bir telefon numarası girin.");
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            const response = await fetch("/api/public/listing-forms", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    listingSlug,
+                    locale: locale || "tr",
+                    name: formData.name,
+                    surname: formData.surname,
+                    email: formData.email,
+                    phone: formData.phone,
+                    message: formData.message,
+                }),
+            });
+
+            if (!response.ok) {
+                const body = (await response.json().catch(() => null)) as {
+                    error?: string;
+                } | null;
+                throw new Error(body?.error || "Form gönderimi sırasında bir hata oluştu.");
+            }
+
+            setIsSuccess(true);
+            setFormData({
+                name: "",
+                surname: "",
+                email: "",
+                phone: "",
+                message: defaultMessage,
+            });
+        } catch (error) {
+            setSubmitError(
+                error instanceof Error
+                    ? error.message
+                    : "Form gönderimi sırasında bir hata oluştu."
+            );
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
-        <form className="space-y-3">
+        <form className="listing-contact-form space-y-3" onSubmit={handleSubmit}>
             <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition focus-within:border-[#5099ff] focus-within:ring-2 focus-within:ring-[#dcebff]">
                 <User className="h-4 w-4 shrink-0 text-gray-400" />
                 <input
+                    data-contact-field="true"
                     type="text"
                     required
-                    placeholder="Adınız Soyadınız *"
-                    className="w-full border-0 bg-transparent p-0 text-base text-[#111828] placeholder:text-gray-400 focus:outline-none"
+                    placeholder="Adınız *"
+                    value={formData.name}
+                    onChange={(event) =>
+                        setFormData((current) => ({
+                            ...current,
+                            name: event.target.value,
+                        }))
+                    }
+                    className="w-full border-0 bg-transparent p-0 text-base text-[#111828] placeholder:text-gray-400 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
+                />
+            </div>
+            <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition focus-within:border-[#5099ff] focus-within:ring-2 focus-within:ring-[#dcebff]">
+                <User className="h-4 w-4 shrink-0 text-gray-400" />
+                <input
+                    data-contact-field="true"
+                    type="text"
+                    required
+                    placeholder="Soyadınız *"
+                    value={formData.surname}
+                    onChange={(event) =>
+                        setFormData((current) => ({
+                            ...current,
+                            surname: event.target.value,
+                        }))
+                    }
+                    className="w-full border-0 bg-transparent p-0 text-base text-[#111828] placeholder:text-gray-400 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
                 />
             </div>
             <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition focus-within:border-[#5099ff] focus-within:ring-2 focus-within:ring-[#dcebff]">
                 <Mail className="h-4 w-4 shrink-0 text-gray-400" />
                 <input
+                    data-contact-field="true"
                     type="email"
                     required
                     placeholder="E-posta Adresiniz *"
-                    className="w-full border-0 bg-transparent p-0 text-base text-[#111828] placeholder:text-gray-400 focus:outline-none"
+                    value={formData.email}
+                    onChange={(event) =>
+                        setFormData((current) => ({
+                            ...current,
+                            email: event.target.value,
+                        }))
+                    }
+                    className="w-full border-0 bg-transparent p-0 text-base text-[#111828] placeholder:text-gray-400 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
                 />
             </div>
-            <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition focus-within:border-[#5099ff] focus-within:ring-2 focus-within:ring-[#dcebff]">
-                <PhoneCall className="h-4 w-4 shrink-0 text-gray-400" />
-                <input
-                    type="tel"
-                    required
-                    placeholder="Telefon Numaranız *"
-                    className="w-full border-0 bg-transparent p-0 text-base text-[#111828] placeholder:text-gray-400 focus:outline-none"
+            <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                    Telefon Numaranız
+                </label>
+                <PhoneInput
+                    key={`phone-${defaultPhoneCountry}`}
+                    value={formData.phone}
+                    onChange={(value) =>
+                        setFormData((current) => ({
+                            ...current,
+                            phone: value,
+                        }))
+                    }
+                    placeholder=""
+                    defaultCountry={defaultPhoneCountry}
                 />
+                {phoneError && (
+                    <p className="mt-1.5 text-xs text-red-500">{phoneError}</p>
+                )}
             </div>
             <div className="flex items-start gap-3 rounded-xl border border-gray-200 bg-white px-3.5 py-3 transition focus-within:border-[#5099ff] focus-within:ring-2 focus-within:ring-[#dcebff]">
                 <MessageCircleMore className="mt-1 h-4 w-4 shrink-0 text-gray-400" />
                 <textarea
                     rows={5}
+                    required
                     placeholder="Mesajınız"
+                    value={formData.message}
+                    onChange={(event) =>
+                        setFormData((current) => ({
+                            ...current,
+                            message: event.target.value,
+                        }))
+                    }
                     className="w-full resize-none border-0 bg-transparent p-0 text-base leading-relaxed text-[#111828] placeholder:text-gray-400 focus:outline-none"
-                    defaultValue={message}
                 />
             </div>
             <button
                 type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#5099ff] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#3f86e4]"
+                disabled={isSubmitting}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#5099ff] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#3f86e4] disabled:cursor-not-allowed disabled:opacity-80"
             >
                 <Send className="h-4 w-4" />
-                Gönder
+                {isSubmitting ? "Gönderiliyor..." : isSuccess ? "Gönderildi" : "Gönder"}
             </button>
+
+            {submitError ? (
+                <p className="text-sm text-red-600">{submitError}</p>
+            ) : null}
         </form>
     );
 }
 
 export function ListingContactPanel({
     title,
+    listingSlug,
+    locale,
     listingCode,
     phoneNumber,
     phoneLabel,
@@ -125,7 +308,12 @@ export function ListingContactPanel({
                         sağlar.
                     </p>
                     <div className="mt-5">
-                        <ContactFormFields title={title} listingCode={listingCode} />
+                        <ContactFormFields
+                            title={title}
+                            listingSlug={listingSlug}
+                            locale={locale}
+                            listingCode={listingCode}
+                        />
                     </div>
                     <a
                         href={`tel:+${phoneNumber}`}
@@ -190,7 +378,12 @@ export function ListingContactPanel({
                                     </div>
 
                                     <div className="overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+1.1rem)] pt-4">
-                                        <ContactFormFields title={title} listingCode={listingCode} />
+                                        <ContactFormFields
+                                            title={title}
+                                            listingSlug={listingSlug}
+                                            locale={locale}
+                                            listingCode={listingCode}
+                                        />
                                         <a
                                             href={`tel:+${phoneNumber}`}
                                             className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-[#ff6900] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#e85f00]"

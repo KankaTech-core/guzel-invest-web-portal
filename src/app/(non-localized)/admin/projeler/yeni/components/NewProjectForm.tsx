@@ -26,6 +26,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+    AlertTriangle,
     ArrowLeft, ChevronDown,
     Building2,
     Check as CheckIcon,
@@ -53,6 +54,7 @@ import {
 } from "lucide-react";
 import { Select } from "@/components/ui";
 import { CompanyOptionSelect } from "@/components/admin/company-option-select";
+import { RoomOptionSelect } from "@/components/admin/room-option-select";
 import { AiFillModal, ParsedData } from "@/components/admin/ai-fill-modal";
 import { MediaOptimizationModal } from "@/components/admin/media-optimization-modal";
 import { UnsavedChangesModal } from "@/components/admin/unsaved-changes-modal";
@@ -72,11 +74,13 @@ import {
     type FeatureCategory,
 } from "@/lib/feature-reorder";
 import { splitFeaturesByCategory } from "@/lib/feature-category";
+import { normalizeGoogleMapsLink, toGoogleMapsEmbedLink } from "@/lib/google-maps";
 import { cn, getMediaUrl } from "@/lib/utils";
 
 type ProjectStatusValue = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 type HomepageProjectSlotValue = 1 | 2 | 3;
 type MediaOptimizationState = "hidden" | "optimizing" | "completed";
+type FeedbackPopupTone = "success" | "warning";
 type LeaveIntent =
     | {
         type: "href";
@@ -121,6 +125,11 @@ interface FloorPlanRow {
     area: string;
     imageUrl: string;
     mediaId: string | null;
+}
+
+interface ProjectUnitRow {
+    id: string;
+    rooms: string;
 }
 
 interface LocationsPayload {
@@ -184,6 +193,19 @@ interface CustomGalleryRecord {
     media?: ProjectMediaRecord[];
 }
 
+interface ProjectUnitTranslationRecord {
+    locale: string;
+    title?: string | null;
+}
+
+interface ProjectUnitRecord {
+    id: string;
+    rooms: string;
+    area?: number | null;
+    price?: number | null;
+    translations?: ProjectUnitTranslationRecord[];
+}
+
 interface FloorPlanTranslationRecord {
     locale: string;
     title: string;
@@ -223,13 +245,28 @@ interface ProjectDetailResponse {
     projectType?: string | null;
     deliveryDate?: string | null;
     homepageProjectSlot?: number | null;
+    hasLastUnitsBanner?: boolean | null;
     translations?: ProjectTranslationRecord[];
     projectFeatures?: ProjectFeatureRecord[];
     customGalleries?: CustomGalleryRecord[];
+    projectUnits?: ProjectUnitRecord[];
     floorPlans?: FloorPlanRecord[];
     faqs?: FaqRecord[];
     media?: ProjectMediaRecord[];
 }
+
+const DEFAULT_ROOM_OPTIONS = [
+    "1+0",
+    "1+1",
+    "2+1",
+    "3+1",
+    "4+1",
+    "5+1",
+    "6+1",
+    "7+1",
+    "8+1",
+    "8+",
+] as const;
 
 const HOMEPAGE_PROJECT_SLOT_OPTIONS: HomepageProjectSlotValue[] = [1, 2, 3];
 
@@ -304,6 +341,8 @@ const MEDIA_UPLOAD_CHUNK_SIZE = 4;
 const MEDIA_UPLOAD_CHUNK_MAX_MB = 30;
 const MEDIA_UPLOAD_CHUNK_MAX_BYTES = MEDIA_UPLOAD_CHUNK_MAX_MB * 1024 * 1024;
 const MEDIA_OPTIMIZATION_SUCCESS_DURATION_MS = 1100;
+const FEEDBACK_POPUP_AUTO_CLOSE_MS = 5000;
+const POST_SAVE_UNSAVED_GUARD_MS = 1800;
 
 const wait = (ms: number) =>
     new Promise<void>((resolve) => {
@@ -336,23 +375,6 @@ const buildGoogleMapsLink = (
         return `https://www.google.com/maps?q=${encodeURIComponent(locationLabel)}`;
     }
     return "";
-};
-
-const toGoogleMapsEmbedLink = (value: string | null): string | null => {
-    if (!value) return null;
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-
-    try {
-        const url = new URL(trimmed);
-        if (!url.hostname.includes("google")) {
-            return null;
-        }
-        url.searchParams.set("output", "embed");
-        return url.toString();
-    } catch {
-        return null;
-    }
 };
 
 const validateMediaFiles = (files: File[]): string | null => {
@@ -410,6 +432,27 @@ const toUniqueMedia = (items: UploadedMedia[]): UploadedMedia[] => {
 const getTurkishTranslation = <T extends { locale: string }>(items: T[] | undefined) => {
     const list = items || [];
     return list.find((item) => item.locale === "tr") || list[0] || null;
+};
+
+const normalizeRoomOption = (value: string) =>
+    value.trim().toLocaleLowerCase("tr-TR");
+
+const mergeRoomOptions = (base: string[], incoming: string[]) => {
+    const merged = [...base];
+    const seen = new Set(base.map((item) => normalizeRoomOption(item)));
+
+    incoming.forEach((item) => {
+        const trimmed = item.trim();
+        if (!trimmed) return;
+
+        const key = normalizeRoomOption(trimmed);
+        if (seen.has(key)) return;
+
+        seen.add(key);
+        merged.push(trimmed);
+    });
+
+    return merged;
 };
 
 const toUploadedMedia = (item: ProjectMediaRecord): UploadedMedia => ({
@@ -790,6 +833,58 @@ function SortableFeatureRow({
     );
 }
 
+interface FeedbackPopupProps {
+    tone: FeedbackPopupTone;
+    message: string;
+    onClose: () => void;
+}
+
+function FeedbackPopup({ tone, message, onClose }: FeedbackPopupProps) {
+    const isSuccess = tone === "success";
+
+    return (
+        <div className="fixed right-4 top-4 z-[140] w-[min(460px,calc(100vw-2rem))]">
+            <div
+                role={isSuccess ? "status" : "alert"}
+                aria-live={isSuccess ? "polite" : "assertive"}
+                className={cn(
+                    "flex items-start gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-sm",
+                    isSuccess
+                        ? "border-emerald-200 bg-emerald-50/95 text-emerald-900"
+                        : "border-amber-200 bg-amber-50/95 text-amber-900"
+                )}
+            >
+                <div
+                    className={cn(
+                        "mt-0.5 shrink-0 rounded-full p-1",
+                        isSuccess ? "bg-emerald-100" : "bg-amber-100"
+                    )}
+                >
+                    {isSuccess ? (
+                        <CheckIcon className="h-4 w-4" />
+                    ) : (
+                        <AlertTriangle className="h-4 w-4" />
+                    )}
+                </div>
+                <p className="flex-1 text-sm font-medium leading-5">{message}</p>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className={cn(
+                        "rounded p-1 transition-colors",
+                        isSuccess
+                            ? "text-emerald-700 hover:bg-emerald-100"
+                            : "text-amber-700 hover:bg-amber-100"
+                    )}
+                    aria-label="Bildirimi kapat"
+                >
+                    <X className="h-4 w-4" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export default function NewProjectForm({
     initialProjectId,
 }: NewProjectFormProps = {}) {
@@ -814,6 +909,7 @@ export default function NewProjectForm({
     const [isTranslating, setIsTranslating] = useState(false);
     const [translationsLocked, setTranslationsLocked] = useState(false);
     const [isAiFillModalOpen, setIsAiFillModalOpen] = useState(false);
+    const [hasLastUnitsBanner, setHasLastUnitsBanner] = useState(false);
     const [deliveryDate, setDeliveryDate] = useState("");
     const [homepageProjectSlot, setHomepageProjectSlot] =
         useState<HomepageProjectSlotValue | null>(null);
@@ -843,6 +939,10 @@ export default function NewProjectForm({
     const [exteriorMedia, setExteriorMedia] = useState<UploadedMedia[]>([]);
     const [socialMedia, setSocialMedia] = useState<UploadedMedia[]>([]);
     const [interiorMedia, setInteriorMedia] = useState<UploadedMedia[]>([]);
+    const [projectUnits, setProjectUnits] = useState<ProjectUnitRow[]>([]);
+    const [roomOptions, setRoomOptions] = useState<string[]>([
+        ...DEFAULT_ROOM_OPTIONS,
+    ]);
 
     const [documents, setDocuments] = useState<UploadedDocument[]>([]);
 
@@ -867,6 +967,12 @@ export default function NewProjectForm({
 
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [feedbackPopup, setFeedbackPopup] = useState<{
+        id: number;
+        tone: FeedbackPopupTone;
+        message: string;
+    } | null>(null);
+    const [postSaveGuardActive, setPostSaveGuardActive] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [mediaOptimizationState, setMediaOptimizationState] =
@@ -888,6 +994,7 @@ export default function NewProjectForm({
     const autoMapsLinkRef = useRef("");
     const bypassUnsavedCheckRef = useRef(false);
     const initialSnapshotRef = useRef<string>("");
+    const postSaveGuardTimeoutRef = useRef<number | null>(null);
     const currentUrlRef = useRef<string>("");
     const featureSensors = useSensors(
         useSensor(PointerSensor, {
@@ -957,6 +1064,122 @@ export default function NewProjectForm({
         return toGoogleMapsEmbedLink(autoMapsLink);
     }, [googleMapsLink, autoMapsLink]);
 
+    useEffect(() => {
+        if (!error) return;
+        setFeedbackPopup({
+            id: Date.now(),
+            tone: "warning",
+            message: error,
+        });
+    }, [error]);
+
+    useEffect(() => {
+        if (!success) return;
+        setFeedbackPopup({
+            id: Date.now(),
+            tone: "success",
+            message: success,
+        });
+    }, [success]);
+
+    useEffect(() => {
+        if (!feedbackPopup) return;
+
+        const timeoutId = window.setTimeout(() => {
+            setFeedbackPopup((current) =>
+                current?.id === feedbackPopup.id ? null : current
+            );
+        }, FEEDBACK_POPUP_AUTO_CLOSE_MS);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [feedbackPopup]);
+
+    const handleGoogleMapsLinkBlur = useCallback(async () => {
+        const raw = googleMapsLink.trim();
+        if (!normalizeGoogleMapsLink(raw)) return;
+
+        try {
+            const response = await fetch(
+                `/api/admin/maps/resolve?url=${encodeURIComponent(raw)}`
+            );
+            if (!response.ok) return;
+
+            const payload = (await response.json()) as {
+                link?: string | null;
+                latitude?: number | null;
+                longitude?: number | null;
+            };
+
+            setGoogleMapsLink((prev) => {
+                if (prev.trim() !== raw) return prev;
+                return payload.link || prev;
+            });
+
+            if (typeof payload.latitude === "number") {
+                setLatitude((prev) => {
+                    const next = String(payload.latitude);
+                    return next === prev.trim() ? prev : next;
+                });
+            }
+
+            if (typeof payload.longitude === "number") {
+                setLongitude((prev) => {
+                    const next = String(payload.longitude);
+                    return next === prev.trim() ? prev : next;
+                });
+            }
+        } catch {
+            // no-op
+        }
+    }, [googleMapsLink]);
+
+    useEffect(() => {
+        const raw = googleMapsLink.trim();
+        if (!normalizeGoogleMapsLink(raw)) return;
+
+        let active = true;
+        const timeoutId = window.setTimeout(async () => {
+            try {
+                const response = await fetch(
+                    `/api/admin/maps/resolve?url=${encodeURIComponent(raw)}`
+                );
+                if (!response.ok || !active) return;
+
+                const payload = (await response.json()) as {
+                    link?: string | null;
+                    latitude?: number | null;
+                    longitude?: number | null;
+                };
+
+                setGoogleMapsLink((prev) => {
+                    if (prev.trim() !== raw) return prev;
+                    return payload.link || prev;
+                });
+
+                if (typeof payload.latitude === "number") {
+                    setLatitude((prev) => {
+                        const next = String(payload.latitude);
+                        return next === prev.trim() ? prev : next;
+                    });
+                }
+
+                if (typeof payload.longitude === "number") {
+                    setLongitude((prev) => {
+                        const next = String(payload.longitude);
+                        return next === prev.trim() ? prev : next;
+                    });
+                }
+            } catch {
+                // no-op
+            }
+        }, 250);
+
+        return () => {
+            active = false;
+            window.clearTimeout(timeoutId);
+        };
+    }, [googleMapsLink]);
+
     const runWithNavigationBypass = useCallback((callback: () => void) => {
         bypassUnsavedCheckRef.current = true;
         callback();
@@ -983,139 +1206,15 @@ export default function NewProjectForm({
         runWithNavigationBypass(() => router.back());
     }, [router, runWithNavigationBypass]);
 
-    const buildUnsavedSnapshot = useCallback(
-        (overrides?: {
-            projectId?: string | null;
-            status?: ProjectStatusValue;
-        }) => ({
-            projectId: overrides?.projectId ?? projectId,
-            status: overrides?.status ?? status,
-            company,
-            type,
-            projectType,
-            translations: translations.map((translation) => ({
-                locale: translation.locale,
-                title: translation.title,
-                description: translation.description,
-                features: translation.features,
-            })),
-            deliveryDate,
-            homepageProjectSlot,
-            promoVideoUrl,
-            city,
-            district,
-            neighborhood,
-            address,
-            latitude,
-            longitude,
-            googleMapsLink,
-            generalFeatures: generalFeatures.map((item) => ({
-                id: item.id,
-                title: item.title,
-                icon: item.icon,
-            })),
-            socialFeatures: socialFeatures.map((item) => ({
-                id: item.id,
-                title: item.title,
-                icon: item.icon,
-            })),
-            coverMedia: coverMedia.map((item) => ({
-                id: item.id,
-                url: item.url,
-                thumbnailUrl: item.thumbnailUrl,
-                order: item.order,
-                isCover: item.isCover,
-            })),
-            logoMedia: logoMedia.map((item) => ({
-                id: item.id,
-                url: item.url,
-                thumbnailUrl: item.thumbnailUrl,
-                order: item.order,
-                isCover: item.isCover,
-            })),
-            mapMedia: mapMedia.map((item) => ({
-                id: item.id,
-                url: item.url,
-                thumbnailUrl: item.thumbnailUrl,
-                order: item.order,
-                isCover: item.isCover,
-            })),
-            exteriorMedia: exteriorMedia.map((item) => ({
-                id: item.id,
-                url: item.url,
-                thumbnailUrl: item.thumbnailUrl,
-                order: item.order,
-                isCover: item.isCover,
-            })),
-            socialMedia: socialMedia.map((item) => ({
-                id: item.id,
-                url: item.url,
-                thumbnailUrl: item.thumbnailUrl,
-                order: item.order,
-                isCover: item.isCover,
-            })),
-            interiorMedia: interiorMedia.map((item) => ({
-                id: item.id,
-                url: item.url,
-                thumbnailUrl: item.thumbnailUrl,
-                order: item.order,
-                isCover: item.isCover,
-            })),
-            documents: documents.map((item) => ({
-                id: item.id,
-                url: item.url,
-                category: item.category,
-                type: item.type,
-                order: item.order,
-            })),
-            floorPlans: floorPlans.map((item) => ({
-                id: item.id,
-                title: item.title,
-                area: item.area,
-                imageUrl: item.imageUrl,
-                mediaId: item.mediaId,
-            })),
-            faqs: faqs.map((item) => ({
-                id: item.id,
-                question: item.question,
-                answer: item.answer,
-            })),
-        }),
-        [
-            projectId,
-            status,
-            company,
-            type,
-            projectType,
-            translations,
-            deliveryDate,
-            homepageProjectSlot,
-            promoVideoUrl,
-            city,
-            district,
-            neighborhood,
-            address,
-            latitude,
-            longitude,
-            googleMapsLink,
-            generalFeatures,
-            socialFeatures,
-            coverMedia,
-            logoMedia,
-            mapMedia,
-            exteriorMedia,
-            socialMedia,
-            interiorMedia,
-            documents,
-            floorPlans,
-            faqs,
-        ]
-    );
+    const buildUnsavedSnapshot = (overrides?: {
+        projectId?: string | null;
+        status?: ProjectStatusValue;
+    }) => ({
+        projectId: overrides?.projectId ?? projectId,
+        payload: buildPayload(overrides?.status),
+    });
 
-    const currentSnapshot = useMemo(
-        () => JSON.stringify(buildUnsavedSnapshot()),
-        [buildUnsavedSnapshot]
-    );
+    const currentSnapshot = JSON.stringify(buildUnsavedSnapshot());
 
     useEffect(() => {
         if (isHydrating || initialSnapshotRef.current) return;
@@ -1123,9 +1222,18 @@ export default function NewProjectForm({
     }, [currentSnapshot, isHydrating]);
 
     const hasUnsavedChanges = useMemo(() => {
+        if (postSaveGuardActive) return false;
         if (isHydrating || !initialSnapshotRef.current) return false;
         return initialSnapshotRef.current !== currentSnapshot;
-    }, [currentSnapshot, isHydrating]);
+    }, [currentSnapshot, isHydrating, postSaveGuardActive]);
+
+    useEffect(() => {
+        return () => {
+            if (postSaveGuardTimeoutRef.current !== null) {
+                window.clearTimeout(postSaveGuardTimeoutRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -1713,6 +1821,12 @@ export default function NewProjectForm({
                         };
                     })
                     .filter((item) => item.imageUrl || item.title);
+                const projectUnitRows = (project.projectUnits || [])
+                    .map((unit) => ({
+                        id: createRowId(),
+                        rooms: unit.rooms?.trim() || "",
+                    }))
+                    .filter((item) => item.rooms.length > 0);
 
                 const faqRows = (project.faqs || [])
                     .map((faq) => {
@@ -1744,6 +1858,7 @@ export default function NewProjectForm({
                 setTranslations(initialTranslations);
                 setTranslationsLocked(hasNonTurkishTranslations(initialTranslations));
                 setActiveLocale("tr");
+                setHasLastUnitsBanner(Boolean(project.hasLastUnitsBanner));
                 setDeliveryDate(project.deliveryDate || "");
                 setHomepageProjectSlot(
                     normalizeHomepageProjectSlot(project.homepageProjectSlot)
@@ -1783,6 +1898,13 @@ export default function NewProjectForm({
                         type: item.type,
                         order: item.order,
                     }))
+                );
+                setProjectUnits(projectUnitRows);
+                setRoomOptions(
+                    mergeRoomOptions(
+                        [...DEFAULT_ROOM_OPTIONS],
+                        projectUnitRows.map((item) => item.rooms)
+                    )
                 );
                 setFloorPlans(
                     floorPlanRows.length > 0
@@ -1857,6 +1979,33 @@ export default function NewProjectForm({
                 icon: category === "GENERAL" ? "Building2" : "Sparkles",
             },
         ]);
+    };
+
+    const addProjectUnitRow = () => {
+        setProjectUnits((prev) => [
+            ...prev,
+            {
+                id: createRowId(),
+                rooms: "",
+            },
+        ]);
+    };
+
+    const updateProjectUnitRoom = (id: string, value: string | null) => {
+        setProjectUnits((prev) =>
+            prev.map((item) =>
+                item.id === id
+                    ? {
+                        ...item,
+                        rooms: value?.trim() || "",
+                    }
+                    : item
+            )
+        );
+    };
+
+    const removeProjectUnitRow = (id: string) => {
+        setProjectUnits((prev) => prev.filter((item) => item.id !== id));
     };
 
     const updateFeatureRow = (
@@ -1980,10 +2129,10 @@ export default function NewProjectForm({
         }
     };
 
-    const buildPayload = (
+    function buildPayload(
         statusOverride?: ProjectStatusValue,
         options?: { bootstrapDraft?: boolean }
-    ) => {
+    ) {
         const parsedLatitude = parseNumberValue(latitude);
         const parsedLongitude = parseNumberValue(longitude);
         const turkishRow =
@@ -2047,6 +2196,20 @@ export default function NewProjectForm({
                 translations: [{ locale: "tr", title: item.title.trim() }],
             }))
             .filter((item) => item.imageUrl && item.translations[0].title);
+        const projectUnitsPayload = projectUnits
+            .map((item) => ({
+                rooms: item.rooms.trim(),
+                area: null,
+                price: null,
+                mediaIds: [],
+                translations: [
+                    {
+                        locale: "tr",
+                        title: null,
+                    },
+                ],
+            }))
+            .filter((item) => item.rooms.length > 0);
 
         const faqPayload = faqs
             .map((item, index) => ({
@@ -2121,11 +2284,13 @@ export default function NewProjectForm({
             longitude: parsedLongitude,
             projectType: projectType.trim() || null,
             deliveryDate: deliveryDate.trim() || null,
+            hasLastUnitsBanner,
             homepageProjectSlot:
                 resolvedStatus === "PUBLISHED" ? homepageProjectSlot : null,
             translations: translationsPayload,
             projectFeatures: projectFeaturesPayload,
             customGalleries: customGalleryPayload,
+            projectUnits: projectUnitsPayload,
             floorPlans: floorPlanPayload,
             faqs: faqPayload,
             exteriorMediaIds,
@@ -2135,7 +2300,7 @@ export default function NewProjectForm({
             logoMediaIds: logoMedia.map((media) => media.id).slice(0, 1),
             promoVideoUrl: promoVideoUrl.trim() || null,
         };
-    };
+    }
 
     const persistProject = async (
         statusOverride?: ProjectStatusValue,
@@ -2369,6 +2534,20 @@ export default function NewProjectForm({
                     status: nextStatus,
                 })
             );
+            setPostSaveGuardActive(true);
+            if (postSaveGuardTimeoutRef.current !== null) {
+                window.clearTimeout(postSaveGuardTimeoutRef.current);
+            }
+            postSaveGuardTimeoutRef.current = window.setTimeout(() => {
+                initialSnapshotRef.current = JSON.stringify(
+                    buildUnsavedSnapshot({
+                        projectId: savedId,
+                        status: nextStatus,
+                    })
+                );
+                setPostSaveGuardActive(false);
+                postSaveGuardTimeoutRef.current = null;
+            }, POST_SAVE_UNSAVED_GUARD_MS);
 
             if (!options.skipRedirect) {
                 if (nextStatus === "PUBLISHED") {
@@ -2444,6 +2623,13 @@ export default function NewProjectForm({
 
     return (
         <>
+            {feedbackPopup ? (
+                <FeedbackPopup
+                    tone={feedbackPopup.tone}
+                    message={feedbackPopup.message}
+                    onClose={() => setFeedbackPopup(null)}
+                />
+            ) : null}
             <div className="w-full max-w-[1400px] mx-auto px-2 sm:px-4 lg:px-8 pb-12 font-sans text-slate-900">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div className="flex items-center gap-4">
@@ -2554,16 +2740,6 @@ export default function NewProjectForm({
                     </div>
                 </div>
 
-                {error && (
-                    <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                        {error}
-                    </div>
-                )}
-                {success && (
-                    <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                        {success}
-                    </div>
-                )}
                 {isHydrating && (
                     <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
@@ -2606,6 +2782,25 @@ export default function NewProjectForm({
                                 >
                                     <Sparkles className="w-4 h-4" />
                                     AI ile Doldur
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setHasLastUnitsBanner((previous) => !previous)
+                                    }
+                                    disabled={isHydrating || isSaving || isUploading}
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold border transition-colors",
+                                        isHydrating || isSaving || isUploading
+                                            ? "border-slate-200 text-slate-400 bg-slate-50"
+                                            : hasLastUnitsBanner
+                                                ? "border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100"
+                                                : "border-slate-200 text-slate-700 hover:bg-slate-50"
+                                    )}
+                                    title="Ana sayfa ve portföy kartında Son Daireler kurdelesini aç/kapat"
+                                >
+                                    <Star className="w-4 h-4" />
+                                    Son Daireler
                                 </button>
                                 {translationsLocked ? (
                                     LOCALES.map((locale) => (
@@ -2725,6 +2920,65 @@ export default function NewProjectForm({
                                                 value={company}
                                                 onChange={setCompany}
                                             />
+                                        </div>
+
+                                        <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div>
+                                                    <h3 className="text-sm font-semibold text-slate-900">
+                                                        Konut Detayları
+                                                    </h3>
+                                                    <p className="mt-1 text-xs text-slate-500">
+                                                        Daire seçenekleri portföy filtresi ve tekil proje genel özelliklerinde otomatik kullanılır.
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={addProjectUnitRow}
+                                                    className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100"
+                                                >
+                                                    <Plus className="h-3.5 w-3.5" />
+                                                    Seçenek Ekle
+                                                </button>
+                                            </div>
+
+                                            {projectUnits.length === 0 ? (
+                                                <p className="text-xs text-slate-500">
+                                                    Henüz daire seçeneği eklenmedi.
+                                                </p>
+                                            ) : (
+                                                <div className="space-y-3">
+                                                    {projectUnits.map((unit) => (
+                                                        <div
+                                                            key={unit.id}
+                                                            className="flex items-end gap-2"
+                                                        >
+                                                            <RoomOptionSelect
+                                                                className="flex-1"
+                                                                value={unit.rooms || null}
+                                                                onChange={(value) =>
+                                                                    updateProjectUnitRoom(
+                                                                        unit.id,
+                                                                        value
+                                                                    )
+                                                                }
+                                                                options={roomOptions}
+                                                                onOptionsChange={setRoomOptions}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    removeProjectUnitRow(unit.id)
+                                                                }
+                                                                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-red-200 hover:text-red-500"
+                                                                title="Daire seçeneğini sil"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="space-y-2">
@@ -3416,6 +3670,9 @@ export default function NewProjectForm({
                                                             onChange={(event) =>
                                                                 setGoogleMapsLink(event.target.value)
                                                             }
+                                                            onBlur={() => {
+                                                                void handleGoogleMapsLinkBlur();
+                                                            }}
                                                             className="w-full px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
                                                             placeholder="https://www.google.com/maps?q=36.5489,32.0489"
                                                         />
@@ -3553,7 +3810,7 @@ export default function NewProjectForm({
 
                                     <div className="space-y-2">
                                         <label className="block text-sm font-medium text-slate-700">
-                                            Video URL'si
+                                            Video URL&apos;si
                                         </label>
                                         <input
                                             value={promoVideoUrl}

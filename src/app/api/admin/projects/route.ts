@@ -13,6 +13,7 @@ import {
     normalizeProjectText,
 } from "@/lib/projects";
 import { slugify } from "@/lib/utils";
+import { resolveGoogleMapsLink } from "@/lib/google-maps";
 
 const LocaleTextSchema = z.object({
     locale: z.string().min(2),
@@ -110,6 +111,7 @@ const CreateProjectSchema = z.object({
     documentMediaIds: z.array(z.string()).optional(),
     logoMediaIds: z.array(z.string()).optional(),
     homepageProjectSlot: z.number().int().nullable().optional(),
+    hasLastUnitsBanner: z.boolean().optional(),
     promoVideoUrl: z.string().nullable().optional(),
 });
 
@@ -484,6 +486,19 @@ export async function POST(request: NextRequest) {
         const saleType = isSaleType(payload.saleType)
             ? payload.saleType
             : SaleType.SALE;
+        const rawGoogleMapsLink = normalizeProjectText(payload.googleMapsLink || "");
+        const resolvedGoogleMaps = rawGoogleMapsLink
+            ? await resolveGoogleMapsLink(rawGoogleMapsLink)
+            : null;
+        const latitude =
+            toNumberOrNull(payload.latitude) ??
+            resolvedGoogleMaps?.coordinates?.latitude ??
+            null;
+        const longitude =
+            toNumberOrNull(payload.longitude) ??
+            resolvedGoogleMaps?.coordinates?.longitude ??
+            null;
+        const googleMapsLink = resolvedGoogleMaps?.link ?? rawGoogleMapsLink;
 
         const listing = await prisma.$transaction(async (tx) => {
             if (requestedHomepageProjectSlot !== null) {
@@ -512,9 +527,9 @@ export async function POST(request: NextRequest) {
                     district,
                     neighborhood: normalizeProjectText(payload.neighborhood || ""),
                     address: normalizeProjectText(payload.address || ""),
-                    googleMapsLink: normalizeProjectText(payload.googleMapsLink || ""),
-                    latitude: toNumberOrNull(payload.latitude),
-                    longitude: toNumberOrNull(payload.longitude),
+                    googleMapsLink,
+                    latitude,
+                    longitude,
                     price: new Prisma.Decimal(
                         typeof payload.price === "number" && Number.isFinite(payload.price)
                             ? payload.price
@@ -526,6 +541,7 @@ export async function POST(request: NextRequest) {
                             ? Math.max(0, Math.trunc(payload.area))
                             : 0,
                     isProject: true,
+                    hasLastUnitsBanner: payload.hasLastUnitsBanner ?? false,
                     showOnHomepageHero: requestedHomepageProjectSlot !== null,
                     homepageProjectSlot: requestedHomepageProjectSlot,
                     projectType: normalizeProjectText(payload.projectType || ""),

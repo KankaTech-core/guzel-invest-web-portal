@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useVersion } from "@/contexts/VersionContext";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { LastUnitsCornerRibbon } from "@/components/public/last-units-corner-ribbon";
+import { shouldShowLastUnitsRibbon } from "@/lib/last-units-ribbon";
 import {
     formatPrice,
     getMediaUrl,
@@ -223,6 +225,7 @@ interface HomepageProject {
     district: string;
     projectType: string | null;
     deliveryDate: string | null;
+    hasLastUnitsBanner: boolean;
     title: string;
     images: string[];
 }
@@ -250,6 +253,7 @@ const PROJECT_FALLBACK: HomepageProject = {
     district: "Alanya",
     projectType: "Konut Projesi",
     deliveryDate: null,
+    hasLastUnitsBanner: false,
     title: "Alanya Yeni Yaşam Projesi",
     images: [],
 };
@@ -430,6 +434,7 @@ export default function HomePage() {
                         district?: string | null;
                         projectType?: string | null;
                         deliveryDate?: string | null;
+                        hasLastUnitsBanner?: boolean | null;
                         translations?: Array<{
                             locale?: string;
                             title?: string | null;
@@ -481,6 +486,7 @@ export default function HomePage() {
                             district: project.district || "Alanya",
                             projectType: project.projectType || null,
                             deliveryDate: project.deliveryDate || null,
+                            hasLastUnitsBanner: Boolean(project.hasLastUnitsBanner),
                             title: title || "Yeni Proje",
                             images: imageUrls,
                         } satisfies HomepageProject;
@@ -917,6 +923,12 @@ export default function HomePage() {
                                                     alt={project.title || "Featured Project"}
                                                     className="w-full h-full object-cover"
                                                 />
+                                                {shouldShowLastUnitsRibbon({
+                                                    isProject: true,
+                                                    hasLastUnitsBanner: project.hasLastUnitsBanner,
+                                                }) ? (
+                                                    <LastUnitsCornerRibbon />
+                                                ) : null}
                                                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900/70 via-transparent to-transparent" />
                                             </div>
                                         );
@@ -1056,7 +1068,7 @@ export default function HomePage() {
                                         className="group absolute inset-0 block h-full w-full cursor-pointer overflow-hidden"
                                     >
                                         <iframe
-                                            className="pointer-events-none absolute inset-0 h-full w-full"
+                                            className="pointer-events-none absolute inset-0 h-full w-full origin-center scale-[2.3] transform-gpu"
                                             src={heroVideo.autoplayEmbedUrl}
                                             title="Hero video player"
                                             frameBorder="0"
@@ -1097,7 +1109,7 @@ export default function HomePage() {
                         <div className="overflow-hidden rounded-2xl border border-white/15 bg-black shadow-2xl">
                             <div className="aspect-video w-full">
                                 <iframe
-                                    className="h-full w-full"
+                                    className="h-full w-full object-cover"
                                     src={heroVideo.popupEmbedUrl}
                                     title="Hero expanded video player"
                                     frameBorder="0"

@@ -255,6 +255,32 @@ export async function GET(req: NextRequest) {
                         },
                     },
                 },
+                projectUnits: {
+                    orderBy: { rooms: "asc" },
+                    select: {
+                        rooms: true,
+                    },
+                },
+                projectFeatures: {
+                    where: {
+                        category: "GENERAL",
+                    },
+                    orderBy: { order: "asc" },
+                    select: {
+                        icon: true,
+                        translations: {
+                            where: {
+                                locale: {
+                                    in: localeFallbacks,
+                                },
+                            },
+                            select: {
+                                locale: true,
+                                title: true,
+                            },
+                        },
+                    },
+                },
                 _count: {
                     select: {
                         media: true,

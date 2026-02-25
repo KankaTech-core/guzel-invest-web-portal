@@ -7,7 +7,7 @@ import { Agentation } from "agentation";
 import { locales, isRtl, type Locale } from "@/i18n/request";
 import "@/app/globals.css";
 import { Footer } from "@/components/public/footer";
-import { Navbar } from "@/components/public/navbar";
+import { NavbarHydrated } from "@/components/public/navbar-hydrated";
 import { AdminOverlayControls } from "@/components/public/admin-overlay-controls";
 import { VersionProvider } from "@/contexts/VersionContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
@@ -49,7 +49,7 @@ export default async function LocaleLayout({ children, params }: Props) {
                     <VersionProvider>
                         <CurrencyProvider>
                             <div className="flex flex-col min-h-screen">
-                                <Navbar locale={locale} />
+                                <NavbarHydrated locale={locale} />
                                 <main className="flex-1">{children}</main>
                                 <Footer locale={locale} />
                                 {isAdminUser ? <AdminOverlayControls /> : null}

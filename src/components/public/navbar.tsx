@@ -15,8 +15,8 @@ import {
     Loader2,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
-import { useVersion } from "@/contexts/VersionContext";
+import { mapPublicProjectsToMenuItems, type NavbarProjectMenuItem, type PublicProjectMenuSource } from "@/lib/navbar-project-menu";
+import { cn, getMediaUrl } from "@/lib/utils";
 import { CurrencyToggle } from "@/components/public/currency-toggle";
 
 type NavigationItem = {
@@ -48,12 +48,19 @@ const aboutSectionLinks = [
     { id: "vizyonumuz", label: "Vizyonumuz" },
 ] as const;
 
+const appendVersionParam = (url: string, version: string) => {
+    if (!url) return url;
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}v=${encodeURIComponent(version)}`;
+};
+
 export function Navbar({ locale }: { locale: string }) {
     const t = useTranslations();
     const pathname = usePathname();
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
-    const { version, toggleVersion } = useVersion();
+    const [projectMenuItems, setProjectMenuItems] = useState<NavbarProjectMenuItem[]>([]);
+    const [isProjectsMenuLoading, setIsProjectsMenuLoading] = useState(true);
     const aboutPath = `/${locale}/hakkimizda`;
 
     // Döviz butonu sadece portföy, tek ilan ve harita sayfalarında görünür
@@ -120,6 +127,51 @@ export function Navbar({ locale }: { locale: string }) {
         window.setTimeout(() => smoothScrollToSection(target), 80);
     }, [aboutPath, pathname, smoothScrollToSection]);
 
+    useEffect(() => {
+        let isMounted = true;
+        const controller = new AbortController();
+
+        const loadProjectMenuItems = async () => {
+            try {
+                const response = await fetch(
+                    `/api/public/projects?locale=${encodeURIComponent(locale)}`,
+                    {
+                        signal: controller.signal,
+                        cache: "no-store",
+                    }
+                );
+                if (!response.ok) {
+                    if (isMounted) setProjectMenuItems([]);
+                    return;
+                }
+
+                const data = (await response.json()) as {
+                    projects?: PublicProjectMenuSource[];
+                };
+
+                if (!isMounted) return;
+                const projects = Array.isArray(data?.projects) ? data.projects : [];
+                setProjectMenuItems(mapPublicProjectsToMenuItems(projects, locale));
+            } catch {
+                if (isMounted) {
+                    setProjectMenuItems([]);
+                }
+            } finally {
+                if (isMounted) {
+                    setIsProjectsMenuLoading(false);
+                }
+            }
+        };
+
+        setIsProjectsMenuLoading(true);
+        loadProjectMenuItems();
+
+        return () => {
+            isMounted = false;
+            controller.abort();
+        };
+    }, [locale]);
+
     return (
         <nav className="fixed top-0 w-full z-50 transition-all duration-300 bg-white shadow-sm border-b border-gray-100 py-3">
             <div className="container-custom flex items-center justify-between">
@@ -180,6 +232,67 @@ export function Navbar({ locale }: { locale: string }) {
                             );
                         }
 
+                        if (item.href === "/projeler") {
+                            return (
+                                <div key={item.href} className="relative group">
+                                    <Link
+                                        href={href}
+                                        className={cn(
+                                            "inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium transition-all",
+                                            isActive
+                                                ? "bg-white text-gray-900 shadow-sm"
+                                                : "text-gray-600 hover:text-gray-900"
+                                        )}
+                                    >
+                                        {item.label ?? t(item.name!)}
+                                        <ChevronDown className="h-4 w-4 opacity-70" />
+                                    </Link>
+
+                                    <div className="pointer-events-none invisible absolute left-1/2 top-full z-50 w-[32rem] -translate-x-1/2 pt-2 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
+                                        <div className="rounded-xl border border-gray-200 bg-white p-2 shadow-xl shadow-gray-200/60">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {isProjectsMenuLoading ? (
+                                                    <div className="col-span-2 flex items-center justify-center gap-2 rounded-lg px-3 py-6 text-sm text-gray-500">
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                        Projeler yükleniyor...
+                                                    </div>
+                                                ) : projectMenuItems.length > 0 ? (
+                                                    projectMenuItems.map((project) => (
+                                                        <Link
+                                                            key={project.href}
+                                                            href={`/${locale}${project.href}`}
+                                                            className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:bg-orange-50"
+                                                        >
+                                                            <div className="h-12 w-16 shrink-0 overflow-hidden rounded-md bg-gray-100">
+                                                                <Image
+                                                                    src={appendVersionParam(
+                                                                        getMediaUrl(project.image),
+                                                                        project.imageVersion
+                                                                    )}
+                                                                    alt={project.title}
+                                                                    width={64}
+                                                                    height={48}
+                                                                    unoptimized
+                                                                    className="h-full w-full object-cover"
+                                                                />
+                                                            </div>
+                                                            <span className="line-clamp-2 text-sm font-medium leading-snug text-gray-700">
+                                                                {project.title}
+                                                            </span>
+                                                        </Link>
+                                                    ))
+                                                ) : (
+                                                    <div className="col-span-2 rounded-lg px-3 py-6 text-center text-sm text-gray-500">
+                                                        Yayınlanmış proje bulunamadı.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        }
+
                         return (
                             <Link
                                 key={item.href}
@@ -191,7 +304,7 @@ export function Navbar({ locale }: { locale: string }) {
                                         : "text-gray-600 hover:text-gray-900"
                                 )}
                             >
-                                {item.label ?? t(item.name as any)}
+                                {item.label ?? (item.name ? t(item.name) : "")}
                             </Link>
                         );
                     })}
@@ -275,7 +388,7 @@ export function Navbar({ locale }: { locale: string }) {
                                         : "text-gray-700 hover:bg-gray-50"
                                 )}
                             >
-                                {item.label ?? t(item.name as any)}
+                                {item.label ?? (item.name ? t(item.name) : "")}
                             </Link>
                         );
                     })}

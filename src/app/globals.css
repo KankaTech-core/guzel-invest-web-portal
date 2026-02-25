@@ -102,6 +102,26 @@ select:disabled {
   outline-offset: 2px;
 }
 
+/* Listing contact form: disable the global orange focus outline on text fields */
+.listing-contact-form input:focus-visible,
+.listing-contact-form textarea:focus-visible {
+  outline: none !important;
+}
+
+.listing-contact-form input[data-contact-field="true"] {
+  border: 0 !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.listing-contact-form input[data-contact-field="true"]:focus,
+.listing-contact-form input[data-contact-field="true"]:focus-visible,
+.listing-contact-form input[data-contact-field="true"]:-moz-focusring {
+  outline: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

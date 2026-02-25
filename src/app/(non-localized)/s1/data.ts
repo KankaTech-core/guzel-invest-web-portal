@@ -28,10 +28,10 @@ const isNonEmptyString = (value: string | null | undefined): value is string =>
 const isPresent = <T>(value: T | null | undefined): value is T =>
     value !== null && value !== undefined;
 
-const toRoomSummary = (rooms: string[]) => {
-    const unique = Array.from(new Set(rooms.map((item) => item.trim()).filter(Boolean)));
-    return unique.join(" • ");
-};
+const toUniqueRooms = (rooms: string[]) =>
+    Array.from(new Set(rooms.map((item) => item.trim()).filter(Boolean)));
+
+const toRoomSummary = (rooms: string[]) => toUniqueRooms(rooms).join(" • ");
 
 const getStatusLabel = (status: ListingStatus) => {
     if (status === ListingStatus.PUBLISHED) return "SATIŞTA";
@@ -269,6 +269,13 @@ export async function getS1ProjectPageData({
             };
         })
         .filter((item) => item.label);
+    const projectRoomFeatures: S1RibbonItem[] = toUniqueRooms(
+        project.projectUnits.map((unit) => unit.rooms)
+    ).map((room) => ({
+        icon: "Building",
+        label: room,
+        value: null,
+    }));
 
     const metaRibbon: S1RibbonItem[] = [
         project.projectType
@@ -280,7 +287,7 @@ export async function getS1ProjectPageData({
             : null,
     ].filter(isPresent);
 
-    const propertiesRibbon = [...generalFeatures, ...metaRibbon].slice(0, 8);
+    const propertiesRibbon = [...generalFeatures, ...projectRoomFeatures, ...metaRibbon];
 
     const summaryTags = (translation?.features || [])
         .map((item) => item.trim())

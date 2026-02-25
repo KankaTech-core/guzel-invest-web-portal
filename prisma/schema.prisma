@@ -86,6 +86,7 @@ model Listing {
   showOnHomepageHero  Boolean              @default(false)
   homepageHeroSlot    Int?                 @unique
   homepageProjectSlot Int?
+  hasLastUnitsBanner  Boolean              @default(false)
   aiTags              String[]
   aiProcessedAt       DateTime?
   createdAt           DateTime             @default(now())

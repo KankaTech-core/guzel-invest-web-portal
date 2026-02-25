@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { deleteImage } from "@/lib/minio";
 import { ListingStatus } from "@/generated/prisma";
 import { getHomepageHeroListingRemovalError } from "@/lib/homepage-hero-listings";
+import { resolveGoogleMapsLink } from "@/lib/google-maps";
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -101,6 +102,28 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         if (!existing) {
             return NextResponse.json({ error: "Listing not found" }, { status: 404 });
         }
+
+        const mapLinkProvided = body.googleMapsLink !== undefined;
+        const mapLatitudeProvided = body.latitude !== undefined;
+        const mapLongitudeProvided = body.longitude !== undefined;
+        const rawGoogleMapsLink = mapLinkProvided
+            ? normalizeOptionalText(body.googleMapsLink)
+            : null;
+        const resolvedGoogleMaps =
+            mapLinkProvided && rawGoogleMapsLink
+                ? await resolveGoogleMapsLink(rawGoogleMapsLink)
+                : null;
+        const nextGoogleMapsLink = mapLinkProvided
+            ? resolvedGoogleMaps?.link ?? rawGoogleMapsLink
+            : existing.googleMapsLink;
+        const inferredLatitude = resolvedGoogleMaps?.coordinates?.latitude ?? null;
+        const inferredLongitude = resolvedGoogleMaps?.coordinates?.longitude ?? null;
+        const nextLatitude = mapLatitudeProvided
+            ? toNullableNumber(body.latitude)
+            : inferredLatitude ?? existing.latitude;
+        const nextLongitude = mapLongitudeProvided
+            ? toNullableNumber(body.longitude)
+            : inferredLongitude ?? existing.longitude;
 
         const requestedCompany = normalizeOptionalText(body.company);
         const company = requestedCompany || existing.company || "Güzel Invest";
@@ -235,9 +258,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                     district: body.district ?? existing.district,
                     neighborhood: body.neighborhood !== undefined ? body.neighborhood : existing.neighborhood,
                     address: body.address !== undefined ? body.address : existing.address,
-                    googleMapsLink: body.googleMapsLink !== undefined ? body.googleMapsLink : existing.googleMapsLink,
-                    latitude: body.latitude !== undefined ? toNullableNumber(body.latitude) : existing.latitude,
-                    longitude: body.longitude !== undefined ? toNullableNumber(body.longitude) : existing.longitude,
+                    googleMapsLink: nextGoogleMapsLink,
+                    latitude: nextLatitude,
+                    longitude: nextLongitude,
                     price: body.price !== undefined ? body.price.toString() : existing.price,
                     currency: body.currency ?? existing.currency,
                     area: body.area !== undefined ? Number(body.area) : existing.area,

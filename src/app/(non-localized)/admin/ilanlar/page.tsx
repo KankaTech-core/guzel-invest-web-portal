@@ -6,6 +6,7 @@ import { ListingRowActions } from "@/components/admin/listing-row-actions";
 import { ListingStatus } from "@/generated/prisma";
 import ListingsFilters from "@/components/admin/listings-filters";
 import ListingsMapView from "@/components/admin/listings-map-view";
+import { buildAdminListingsWhere } from "@/lib/admin-listings";
 
 const PROPERTY_TYPES = [
     "APARTMENT",
@@ -153,57 +154,14 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
 
     const statusFilterForQuery = isMapOpen ? undefined : statusFilter;
 
-    const where = {
-        ...(statusFilterForQuery
-            ? { status: statusFilterForQuery }
-            : { status: { not: "ARCHIVED" as ListingStatus } }),
-        ...(queryFilter
-            ? {
-                OR: [
-                    {
-                        sku: {
-                            contains: queryFilter,
-                            mode: "insensitive" as const,
-                        },
-                    },
-                    {
-                        translations: {
-                            some: {
-                                locale: "tr",
-                                title: {
-                                    contains: queryFilter,
-                                    mode: "insensitive" as const,
-                                },
-                            },
-                        },
-                    },
-                    {
-                        city: {
-                            contains: queryFilter,
-                            mode: "insensitive" as const,
-                        },
-                    },
-                    {
-                        district: {
-                            contains: queryFilter,
-                            mode: "insensitive" as const,
-                        },
-                    },
-                    {
-                        neighborhood: {
-                            contains: queryFilter,
-                            mode: "insensitive" as const,
-                        },
-                    },
-                ],
-            }
-            : {}),
-        ...(typeFilter ? { type: typeFilter } : {}),
-        ...(saleTypeFilter ? { saleType: saleTypeFilter } : {}),
-        ...(companyFilter ? { company: companyFilter } : {}),
-        ...(platformFilter === "HEPSIEMLAK" ? { publishToHepsiemlak: true } : {}),
-        ...(platformFilter === "SAHIBINDEN" ? { publishToSahibinden: true } : {}),
-    };
+    const where = buildAdminListingsWhere({
+        status: statusFilterForQuery,
+        query: queryFilter,
+        type: typeFilter,
+        saleType: saleTypeFilter,
+        company: companyFilter,
+        platform: platformFilter,
+    });
 
     const [listings, companyOptionsFromListings, companyOptionsFromConfig, homepageHeroListings] =
         await Promise.all([
@@ -224,6 +182,7 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                 select: { company: true },
                 distinct: ["company"],
                 where: {
+                    isProject: false,
                     company: {
                         not: "",
                     },
@@ -236,6 +195,7 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
             }),
             prisma.listing.findMany({
                 where: {
+                    isProject: false,
                     status: "PUBLISHED",
                     homepageHeroSlot: { in: [1, 2, 3] },
                 },

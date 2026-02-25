@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildListingSku, generateListingSlug } from "@/lib/utils";
 import { PropertyType, ListingStatus } from "@/generated/prisma";
+import { buildAdminListingsWhere } from "@/lib/admin-listings";
+import { resolveGoogleMapsLink } from "@/lib/google-maps";
 
 const normalizeOptionalText = (value: unknown): string | null => {
     if (typeof value !== "string") return null;
@@ -53,6 +55,19 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
+        const rawGoogleMapsLink = normalizeOptionalText(body.googleMapsLink);
+        const resolvedGoogleMaps = rawGoogleMapsLink
+            ? await resolveGoogleMapsLink(rawGoogleMapsLink)
+            : null;
+        const latitude =
+            toNullableNumber(body.latitude) ??
+            resolvedGoogleMaps?.coordinates?.latitude ??
+            null;
+        const longitude =
+            toNullableNumber(body.longitude) ??
+            resolvedGoogleMaps?.coordinates?.longitude ??
+            null;
+        const googleMapsLink = resolvedGoogleMaps?.link ?? rawGoogleMapsLink;
 
         // Validate required fields
         const requiredFields = ["type", "saleType", "city", "district", "price", "area"];
@@ -134,9 +149,9 @@ export async function POST(request: NextRequest) {
                     district: body.district,
                     neighborhood: body.neighborhood || null,
                     address: body.address || null,
-                    googleMapsLink: body.googleMapsLink || null,
-                    latitude: toNullableNumber(body.latitude),
-                    longitude: toNullableNumber(body.longitude),
+                    googleMapsLink,
+                    latitude,
+                    longitude,
                     price: body.price.toString(), // Convert to string for Decimal field
                     currency: body.currency || "EUR",
                     area: Number(body.area),
@@ -226,12 +241,10 @@ export async function GET(request: NextRequest) {
         const status = searchParams.get("status");
         const type = searchParams.get("type");
 
-        const where: {
-            status?: ListingStatus;
-            type?: PropertyType;
-        } = {};
-        if (status) where.status = status as ListingStatus;
-        if (type) where.type = type as PropertyType;
+        const where = buildAdminListingsWhere({
+            status: status ? (status as ListingStatus) : undefined,
+            type: type ? (type as PropertyType) : undefined,
+        });
 
         const listings = await prisma.listing.findMany({
             where,

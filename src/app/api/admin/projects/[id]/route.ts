@@ -14,6 +14,7 @@ import {
     normalizeProjectStatus,
     normalizeProjectText,
 } from "@/lib/projects";
+import { resolveGoogleMapsLink } from "@/lib/google-maps";
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -114,6 +115,7 @@ const UpdateProjectSchema = z.object({
     documentMediaIds: z.array(z.string()).optional(),
     logoMediaIds: z.array(z.string()).optional(),
     homepageProjectSlot: z.number().int().nullable().optional(),
+    hasLastUnitsBanner: z.boolean().optional(),
     promoVideoUrl: z.string().nullable().optional(),
 });
 
@@ -492,6 +494,27 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         }
 
         const payload = parsed.data;
+        const mapLinkProvided = payload.googleMapsLink !== undefined;
+        const mapLatitudeProvided = payload.latitude !== undefined;
+        const mapLongitudeProvided = payload.longitude !== undefined;
+        const rawGoogleMapsLink = mapLinkProvided
+            ? normalizeProjectText(payload.googleMapsLink || "")
+            : null;
+        const resolvedGoogleMaps =
+            mapLinkProvided && rawGoogleMapsLink
+                ? await resolveGoogleMapsLink(rawGoogleMapsLink)
+                : null;
+        const nextGoogleMapsLink = mapLinkProvided
+            ? resolvedGoogleMaps?.link ?? rawGoogleMapsLink
+            : undefined;
+        const inferredLatitude = resolvedGoogleMaps?.coordinates?.latitude;
+        const inferredLongitude = resolvedGoogleMaps?.coordinates?.longitude;
+        const nextLatitude = mapLatitudeProvided
+            ? toNumberOrNull(payload.latitude)
+            : inferredLatitude;
+        const nextLongitude = mapLongitudeProvided
+            ? toNumberOrNull(payload.longitude)
+            : inferredLongitude;
         const status = normalizeProjectStatus(payload.status, existing.status);
         const safeStatus =
             status === ListingStatus.REMOVED ? existing.status : status;
@@ -586,18 +609,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                         payload.address !== undefined
                             ? normalizeProjectText(payload.address || "")
                             : undefined,
-                    googleMapsLink:
-                        payload.googleMapsLink !== undefined
-                            ? normalizeProjectText(payload.googleMapsLink || "")
-                            : undefined,
-                    latitude:
-                        payload.latitude !== undefined
-                            ? toNumberOrNull(payload.latitude)
-                            : undefined,
-                    longitude:
-                        payload.longitude !== undefined
-                            ? toNumberOrNull(payload.longitude)
-                            : undefined,
+                    googleMapsLink: nextGoogleMapsLink,
+                    latitude: nextLatitude,
+                    longitude: nextLongitude,
                     projectType:
                         payload.projectType !== undefined
                             ? normalizeProjectText(payload.projectType || "")
@@ -617,6 +631,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                             ? Number.isFinite(payload.area)
                                 ? Math.max(0, Math.trunc(payload.area))
                                 : 0
+                            : undefined,
+                    hasLastUnitsBanner:
+                        payload.hasLastUnitsBanner !== undefined
+                            ? payload.hasLastUnitsBanner
                             : undefined,
                     homepageProjectSlot: nextHomepageProjectSlot,
                     showOnHomepageHero: nextHomepageProjectSlot !== null,

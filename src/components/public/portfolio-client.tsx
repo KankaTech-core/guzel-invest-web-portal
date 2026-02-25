@@ -32,11 +32,14 @@ import {
     getSaleTypeLabel,
 } from "@/lib/utils";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { ProjectIcon } from "@/components/single-project/ProjectIcon";
+import { LastUnitsCornerRibbon } from "@/components/public/last-units-corner-ribbon";
 import {
     getFriendlyFetchErrorMessage,
     isAbortFetchError,
     parseApiErrorMessage,
 } from "@/lib/fetch-error";
+import { shouldShowLastUnitsRibbon } from "@/lib/last-units-ribbon";
 import {
     isCategoryFieldVisibleForTypes,
     normalizeZoningStatus,
@@ -72,10 +75,25 @@ interface ListingTag {
     };
 }
 
+interface ListingProjectFeatureTranslation {
+    locale: string;
+    title: string;
+}
+
+interface ListingProjectFeature {
+    icon: string | null;
+    translations: ListingProjectFeatureTranslation[];
+}
+
+interface ListingProjectUnit {
+    rooms: string;
+}
+
 interface Listing {
     id: string;
     slug: string;
     isProject: boolean;
+    hasLastUnitsBanner?: boolean | null;
     type: string;
     saleType: string;
     price: number | string;
@@ -93,6 +111,8 @@ interface Listing {
     translations: ListingTranslation[];
     media: ListingMedia[];
     tags: ListingTag[];
+    projectFeatures?: ListingProjectFeature[];
+    projectUnits?: ListingProjectUnit[];
     _count?: {
         media: number;
     };
@@ -580,14 +600,31 @@ function isDisplayMedia(item: ListingMedia) {
     return category !== "DOCUMENT" && type !== "DOCUMENT" && type !== "VIDEO";
 }
 
+function isExteriorImage(item: ListingMedia) {
+    return (
+        (item.type || "").trim().toUpperCase() === "IMAGE" &&
+        (item.category || "").trim().toUpperCase() === "EXTERIOR"
+    );
+}
+
+function appendVersionParam(url: string, version: string) {
+    if (!url) return url;
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}v=${encodeURIComponent(version)}`;
+}
+
 function getListingGalleryMedia(listing: Listing): ListingMedia[] {
     const media = (listing.media || []).filter(isDisplayMedia);
     if (media.length === 0) return [];
     if (!listing.isProject) return media.slice(0, 4);
 
-    const coverMedia = media.find((item) => item.isCover) || media[0];
+    const coverMedia =
+        media.find((item) => item.isCover && isExteriorImage(item)) ||
+        media.find((item) => isExteriorImage(item)) ||
+        media.find((item) => item.isCover) ||
+        media[0];
     const exteriorMedia = media
-        .filter((item) => (item.category || "").trim().toUpperCase() === "EXTERIOR")
+        .filter((item) => isExteriorImage(item))
         .filter((item) => {
             if (!coverMedia) return true;
             return item.id !== coverMedia.id && item.url !== coverMedia.url;
@@ -631,21 +668,44 @@ function getListingDescription(listing: Listing, locale: string) {
     return requested?.description || fallback?.description || "Açıklama bulunamadı.";
 }
 
-function getListingFeatureHighlights(listing: Listing, locale: string) {
-    const requested = listing.translations.find(
-        (translation) => translation.locale === locale
-    );
-    const fallback = listing.translations.find(
-        (translation) => translation.locale === "tr"
-    );
-    const features = requested?.features?.length
-        ? requested.features
-        : fallback?.features || [];
+function getProjectRoomOptions(listing: Listing) {
+    const unique = new Set<string>();
+    const rooms = (listing.projectUnits || [])
+        .map((unit) => unit.rooms?.trim())
+        .filter((value): value is string => Boolean(value))
+        .filter((value) => {
+            const key = value.toLocaleLowerCase("tr-TR");
+            if (unique.has(key)) return false;
+            unique.add(key);
+            return true;
+        });
 
-    return features
-        .map((feature) => feature.trim())
-        .filter(Boolean)
-        .slice(0, 2);
+    return rooms;
+}
+
+function getProjectGeneralFeatures(listing: Listing, locale: string) {
+    const items = listing.projectFeatures || [];
+
+    return items
+        .map((feature) => {
+            const requested = feature.translations.find(
+                (translation) => translation.locale === locale
+            );
+            const fallback = feature.translations.find(
+                (translation) => translation.locale === "tr"
+            );
+            const label = (requested?.title || fallback?.title || "").trim();
+            if (!label) return null;
+
+            return {
+                icon: feature.icon || "Building2",
+                label,
+            };
+        })
+        .filter(
+            (item): item is { icon: string; label: string } => Boolean(item)
+        )
+        .slice(0, 4);
 }
 
 function getListingNumericPrice(listing: Listing) {
@@ -1023,19 +1083,6 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     useEffect(() => {
         const timer = setTimeout(() => {
             const current = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : searchParams.toString());
-            const next = new URLSearchParams(queryString);
-
-            // Remove locale from comparison as it's a path param, not query param usually, 
-            // but here we are constructing queryString with it.
-            // Let's ensure we are comparing relevant query params.
-
-            // We need to check if the *meaningful* query params have changed.
-            // The `queryString` includes `locale` which might not be in `searchParams` depending on how next-intl handles it.
-            // But `searchParams` from next/navigation usually strictly contains query params.
-
-            const currentString = current.toString();
-            // We need to exclude 'locale' from queryString if it's there but not in current search params (if it's a path param)
-            // effective next params
             const nextParams = new URLSearchParams(queryString);
             if (nextParams.has('locale')) nextParams.delete('locale');
 
@@ -2244,7 +2291,11 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         listings.map((listing) => {
                             const title = getListingTitle(listing, locale);
                             const description = getListingDescription(listing, locale);
-                            const featureHighlights = getListingFeatureHighlights(listing, locale);
+                            const projectRoomOptions = getProjectRoomOptions(listing);
+                            const projectGeneralFeatures = getProjectGeneralFeatures(
+                                listing,
+                                locale
+                            );
                             const listingNumericPrice = getListingNumericPrice(listing);
                             const hasDisplayPrice =
                                 !listing.isProject &&
@@ -2305,6 +2356,9 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                     )}
                                                 </div>
                                             )}
+                                            {shouldShowLastUnitsRibbon(listing) ? (
+                                                <LastUnitsCornerRibbon />
+                                            ) : null}
 
                                             {galleryMedia.length > 0 ? (
                                                 <div
@@ -2339,7 +2393,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                                 className="relative h-full w-full shrink-0"
                                                             >
                                                                 <Image
-                                                                    src={getMediaUrl(media.url)}
+                                                                    src={appendVersionParam(
+                                                                        getMediaUrl(media.url),
+                                                                        `${listing.updatedAt || "0"}-${media.id || mediaIndex}`
+                                                                    )}
                                                                     alt={`${title} - ${mediaIndex + 1}`}
                                                                     fill
                                                                     className="object-cover"
@@ -2449,24 +2506,20 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                     >
                                                         Devamını oku
                                                     </span>
+
                                                 </div>
 
                                                 {listing.isProject ? (
-                                                    <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
-                                                        {featureHighlights.length > 0 ? (
-                                                            featureHighlights.map((feature, featureIndex) => (
+                                                    <div className="mt-4 flex min-h-9 flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
+                                                        {projectRoomOptions.map(
+                                                            (roomOption, roomIndex) => (
                                                                 <span
-                                                                    key={`${listing.id}-${featureIndex}-${feature}`}
-                                                                    className="inline-flex max-w-full items-center rounded-full border border-orange-100 bg-orange-50 px-3 py-1 text-xs font-medium text-orange-700"
-                                                                    title={feature}
+                                                                    key={`${listing.id}-room-${roomIndex}-${roomOption}`}
+                                                                    className="inline-flex items-center rounded-full border border-orange-100 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700"
                                                                 >
-                                                                    <span className="truncate">{feature}</span>
+                                                                    {roomOption}
                                                                 </span>
-                                                            ))
-                                                        ) : (
-                                                            <span className="text-xs text-gray-400">
-                                                                Özellik bilgisi yok
-                                                            </span>
+                                                            )
                                                         )}
                                                     </div>
                                                 ) : (
@@ -2502,7 +2555,31 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                             </div>
 
                                             <div className="flex cursor-pointer items-center justify-between gap-3 bg-gray-50 p-5 md:flex-col md:items-stretch md:justify-between">
-                                                {hasDisplayPrice ? (
+                                                {listing.isProject ? (
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        {projectGeneralFeatures.map(
+                                                            (feature, featureIndex) => (
+                                                                <div
+                                                                    key={`${listing.id}-project-feature-side-${featureIndex}-${feature.label}`}
+                                                                    className="flex flex-col items-center justify-start gap-1 rounded-lg border border-slate-100 bg-white px-2 py-2 text-center"
+                                                                >
+                                                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-50 text-slate-600">
+                                                                        <ProjectIcon
+                                                                            name={feature.icon}
+                                                                            className="h-4 w-4"
+                                                                        />
+                                                                    </div>
+                                                                    <span
+                                                                        className="max-h-8 overflow-hidden text-[11px] font-semibold leading-4 text-slate-700"
+                                                                        title={feature.label}
+                                                                    >
+                                                                        {feature.label}
+                                                                    </span>
+                                                                </div>
+                                                            )
+                                                        )}
+                                                    </div>
+                                                ) : hasDisplayPrice ? (
                                                     <div className="min-w-0 text-left md:text-right">
                                                         <p className="text-xl font-bold text-gray-900 sm:text-2xl" style={monoStyle}>
                                                             {(() => {

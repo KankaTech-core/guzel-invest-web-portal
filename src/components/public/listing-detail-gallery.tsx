@@ -49,7 +49,7 @@ interface ListingDetailGalleryProps {
     onApiReady?: (api: ListingDetailGalleryHandle | null) => void;
 }
 
-const subscribeNoop = () => () => {};
+const subscribeNoop = () => () => { };
 const IMAGE_SWIPE_THRESHOLD_PX = 48;
 const OVERLAY_STATE_KEY = "__listingOverlay";
 const isMobileViewport = () =>
@@ -786,11 +786,10 @@ export function ListingDetailGallery({
                                             key={`${item.id}-thumb`}
                                             type="button"
                                             onClick={() => setInlineCarouselIndex(index)}
-                                            className={`relative aspect-[4/3] overflow-hidden rounded-xl border ${
-                                                index === currentCarouselInlineIndex
-                                                    ? "border-orange-500"
-                                                    : "border-gray-200"
-                                            } bg-gray-100`}
+                                            className={`relative aspect-[4/3] overflow-hidden rounded-xl border ${index === currentCarouselInlineIndex
+                                                ? "border-orange-500"
+                                                : "border-gray-200"
+                                                } bg-gray-100`}
                                             aria-label={`Fotoğraf ${index + 1} seç`}
                                         >
                                             <Image
@@ -844,11 +843,10 @@ export function ListingDetailGallery({
                                                         key={tab.key}
                                                         type="button"
                                                         onClick={() => onGalleryTabChange?.(tab.key)}
-                                                        className={`shrink-0 rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
-                                                            activeGalleryTabKey === tab.key
-                                                                ? "border-[#111828] bg-[#111828] text-white"
-                                                                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                                                        }`}
+                                                        className={`shrink-0 rounded-full border px-4 py-1.5 text-xs font-semibold transition ${activeGalleryTabKey === tab.key
+                                                            ? "border-[#111828] bg-[#111828] text-white"
+                                                            : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                                                            }`}
                                                     >
                                                         {tab.label}
                                                     </button>

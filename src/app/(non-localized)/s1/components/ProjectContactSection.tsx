@@ -177,7 +177,7 @@ export const ProjectContactSection = ({
                             </div>
                         </div>
 
-                        <div className="border-t border-gray-100 pt-4">
+                        <div className="border-t border-gray-100 pt-4 flex justify-center">
                             <Checkbox
                                 label="Kullanıcı metnini okudum, iletişim kurulmasını kabul ediyorum."
                                 checked={formData.acceptedTerms}
@@ -187,10 +187,10 @@ export const ProjectContactSection = ({
                             />
                         </div>
 
-                        <div className="pt-2">
+                        <div className="pt-2 flex justify-center">
                             <Button
                                 type="submit"
-                                className="w-full min-w-[200px] sm:w-auto"
+                                className="w-auto min-w-[200px] sm:w-auto"
                                 variant="primary"
                                 loading={isSubmitting}
                             >

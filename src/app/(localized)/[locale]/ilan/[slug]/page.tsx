@@ -756,6 +756,8 @@ export default async function ListingDetailPage({
 
                     <ListingContactPanel
                         title={title}
+                        listingSlug={slug}
+                        locale={locale}
                         listingCode={listing.sku}
                         phoneNumber={WHATSAPP_NUMBER}
                         phoneLabel="+90 242 123 45 67"

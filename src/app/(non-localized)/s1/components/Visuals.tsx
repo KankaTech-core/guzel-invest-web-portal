@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { ZoomIn } from "lucide-react";
-import { useMemo } from "react";
+import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { S1SectionVisibility } from "../section-visibility";
 import {
     S1CustomGalleryData,
@@ -53,6 +53,190 @@ const pickSymmetricGridClass = (itemCount: number) => {
 
     return "grid-cols-2 sm:grid-cols-4";
 };
+
+/* ─────────── Peeking Card Carousel ─────────── */
+
+
+function PeekingCarouselStrip({
+    items,
+    onImageClick,
+    cardWidthPercent,
+    gap,
+    currentIndex,
+    reverse = false,
+}: {
+    items: ListingGalleryItem[];
+    onImageClick?: () => void;
+    cardWidthPercent: number;
+    gap: number;
+    currentIndex: number;
+    reverse?: boolean;
+}) {
+    const translateValue = reverse
+        ? `translateX(calc(${currentIndex} * (${cardWidthPercent}% + ${gap}px)))`
+        : `translateX(calc(-${currentIndex} * (${cardWidthPercent}% + ${gap}px)))`;
+
+    return (
+        <div
+            className={`flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${reverse ? "flex-row-reverse" : ""}`}
+            style={{
+                transform: translateValue,
+                gap: `${gap}px`,
+            }}
+        >
+            {items.map((item, index) => (
+                <button
+                    key={item.id}
+                    type="button"
+                    onClick={onImageClick}
+                    className="relative shrink-0 cursor-pointer overflow-hidden rounded-[1.6rem] border border-gray-200 bg-gray-100"
+                    style={{ width: `${cardWidthPercent}%` }}
+                    aria-label={`Görsel ${index + 1}`}
+                >
+                    <div className="relative aspect-[16/9]">
+                        <Image
+                            src={item.src}
+                            alt={item.alt || `Görsel ${index + 1}`}
+                            fill
+                            priority={index === 0}
+                            className="object-cover"
+                            sizes="(min-width: 1280px) 50vw, (min-width: 768px) 65vw, 100vw"
+                        />
+                    </div>
+                </button>
+            ))}
+        </div>
+    );
+}
+
+/* ── Section wrapper for peeking visual sections ── */
+
+function PeekingVisualSection({
+    title,
+    items,
+    bgClass,
+    onImageClick,
+    reverse = false,
+}: {
+    title: string;
+    items: ListingGalleryItem[];
+    bgClass: string;
+    onImageClick: () => void;
+    reverse?: boolean;
+}) {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const total = items.length;
+    const canNavigate = total > 1;
+
+    const goToPrev = useCallback(() => {
+        setCurrentIndex((prev) => (prev <= 0 ? total - 1 : prev - 1));
+    }, [total]);
+
+    const goToNext = useCallback(() => {
+        setCurrentIndex((prev) => (prev >= total - 1 ? 0 : prev + 1));
+    }, [total]);
+
+    const cardWidthPercent = 75;
+    const gap = 20;
+
+    const navButtons = canNavigate ? (
+        <div className="flex items-center gap-3">
+            <button
+                type="button"
+                onClick={goToPrev}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
+                aria-label="Önceki görsel"
+            >
+                <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+                type="button"
+                onClick={goToNext}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
+                aria-label="Sonraki görsel"
+            >
+                <ChevronRight className="h-5 w-5" />
+            </button>
+            <span className="ml-1 text-sm text-gray-400">
+                {currentIndex + 1} / {total}
+            </span>
+        </div>
+    ) : null;
+
+    const titleColumn = (
+        <div className="hidden w-[300px] shrink-0 md:flex md:flex-col md:gap-6">
+            <h2 className={BIG_SECTION_TITLE_CLASS}>{title}</h2>
+            {navButtons}
+        </div>
+    );
+
+    const carouselWrapperClass = reverse
+        ? "-ml-4 min-w-0 flex-1 overflow-hidden md:-ml-[calc((100vw-80rem)/2+1rem)]"
+        : "-mr-4 min-w-0 flex-1 overflow-hidden md:-mr-[calc((100vw-80rem)/2+1rem)]";
+
+    const carouselColumn = (
+        <div className={carouselWrapperClass}>
+            <PeekingCarouselStrip
+                items={items}
+                onImageClick={onImageClick}
+                cardWidthPercent={cardWidthPercent}
+                gap={gap}
+                currentIndex={currentIndex}
+                reverse={reverse}
+            />
+        </div>
+    );
+
+    return (
+        <section className={`${bgClass} py-16`}>
+            {/* Mobile: title above */}
+            <div className="mx-auto max-w-7xl px-4 md:hidden">
+                <h2 className={`mb-6 ${BIG_SECTION_TITLE_CLASS}`}>{title}</h2>
+            </div>
+
+            <div className="mx-auto max-w-7xl px-4">
+                <div className="flex items-center gap-16">
+                    {reverse ? (
+                        <>
+                            {carouselColumn}
+                            {titleColumn}
+                        </>
+                    ) : (
+                        <>
+                            {titleColumn}
+                            {carouselColumn}
+                        </>
+                    )}
+                </div>
+            </div>
+
+            {/* Mobile arrows */}
+            {canNavigate ? (
+                <div className="mx-auto mt-4 flex max-w-7xl items-center gap-3 px-4 md:hidden">
+                    <button
+                        type="button"
+                        onClick={goToPrev}
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400"
+                        aria-label="Önceki görsel"
+                    >
+                        <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                        type="button"
+                        onClick={goToNext}
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400"
+                        aria-label="Sonraki görsel"
+                    >
+                        <ChevronRight className="h-5 w-5" />
+                    </button>
+                    <span className="ml-1 text-sm text-gray-400">
+                        {currentIndex + 1} / {total}
+                    </span>
+                </div>
+            ) : null}
+        </section>
+    );
+}
 
 export const Visuals = ({
     exteriorVisuals,
@@ -107,30 +291,8 @@ export const Visuals = ({
 
     return (
         <>
-            {visibility.exteriorVisuals && exteriorVisuals ? (
-                <section className="bg-gray-50 py-16">
-                    <div className="mx-auto max-w-7xl px-4">
-                        <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(240px,360px)]">
-                            <ListingDetailGallery
-                                items={exteriorGalleryItems}
-                                title="Dış Görseller"
-                                layout="carousel"
-                                galleryButtonLabel="Dış Galeri"
-                                onRequestOpenGallery={() =>
-                                    dispatchOpenConnectedProjectGallery({ key: "exterior" })
-                                }
-                            />
-
-                            <div className="space-y-5">
-                                <h2 className={BIG_SECTION_TITLE_CLASS}>Dış Görseller</h2>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            ) : null}
-
             {visibility.socialFacilities && socialFacilities ? (
-                <section className="bg-white py-24">
+                <section className="bg-gray-50 py-24">
                     <div
                         className={
                             shouldShowSocialGallery
@@ -192,60 +354,61 @@ export const Visuals = ({
                 </section>
             ) : null}
 
-            {visibility.interiorVisuals && interiorVisuals ? (
-                <section className="bg-gray-50 py-16">
-                    <div className="mx-auto max-w-7xl px-4">
-                        <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(240px,360px)]">
-                            <ListingDetailGallery
-                                items={interiorGalleryItems}
-                                title="İç Görseller"
-                                layout="carousel"
-                                galleryButtonLabel="İç Galeri"
-                                onRequestOpenGallery={() =>
-                                    dispatchOpenConnectedProjectGallery({ key: "interior" })
-                                }
-                            />
+            {visibility.exteriorVisuals && exteriorVisuals && exteriorGalleryItems.length > 0 ? (
+                <PeekingVisualSection
+                    title="Dış Görseller"
+                    items={exteriorGalleryItems}
+                    bgClass="bg-white"
+                    onImageClick={() =>
+                        dispatchOpenConnectedProjectGallery({ key: "exterior" })
+                    }
+                />
+            ) : null}
 
-                            <div className="space-y-5">
-                                <h2 className={BIG_SECTION_TITLE_CLASS}>İç Görseller</h2>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+            {visibility.interiorVisuals && interiorVisuals && interiorGalleryItems.length > 0 ? (
+                <PeekingVisualSection
+                    title="İç Görseller"
+                    items={interiorGalleryItems}
+                    bgClass="bg-gray-50"
+                    reverse
+                    onImageClick={() =>
+                        dispatchOpenConnectedProjectGallery({ key: "interior" })
+                    }
+                />
             ) : null}
 
             {visibility.customGalleries
                 ? customGalleries.map((gallery) => (
-                      <section key={gallery.id} className="bg-white py-16">
-                          <div className="mx-auto max-w-7xl px-4">
-                              <div className="mb-8">
-                                  <h2 className="text-3xl font-bold text-gray-900">
-                                      {gallery.title}
-                                  </h2>
-                                  {gallery.subtitle ? (
-                                      <p className="mt-2 text-sm text-gray-500">
-                                          {gallery.subtitle}
-                                      </p>
-                                  ) : null}
-                              </div>
+                    <section key={gallery.id} className="bg-white py-16">
+                        <div className="mx-auto max-w-7xl px-4">
+                            <div className="mb-8">
+                                <h2 className="text-3xl font-bold text-gray-900">
+                                    {gallery.title}
+                                </h2>
+                                {gallery.subtitle ? (
+                                    <p className="mt-2 text-sm text-gray-500">
+                                        {gallery.subtitle}
+                                    </p>
+                                ) : null}
+                            </div>
 
-                              <ListingDetailGallery
-                                  items={buildGalleryItems(
-                                      gallery.images,
-                                      gallery.title,
-                                      `custom-${gallery.id}`
-                                  )}
-                                  title={gallery.title}
-                                  layout="carousel"
-                                  onRequestOpenGallery={() =>
-                                      dispatchOpenConnectedProjectGallery({
-                                          key: `custom-${gallery.id}`,
-                                      })
-                                  }
-                              />
-                          </div>
-                      </section>
-                  ))
+                            <ListingDetailGallery
+                                items={buildGalleryItems(
+                                    gallery.images,
+                                    gallery.title,
+                                    `custom-${gallery.id}`
+                                )}
+                                title={gallery.title}
+                                layout="carousel"
+                                onRequestOpenGallery={() =>
+                                    dispatchOpenConnectedProjectGallery({
+                                        key: `custom-${gallery.id}`,
+                                    })
+                                }
+                            />
+                        </div>
+                    </section>
+                ))
                 : null}
 
             {visibility.floorPlans && floorPlans ? (
@@ -257,16 +420,26 @@ export const Visuals = ({
                                     key={plan.id}
                                     className="rounded-3xl border border-gray-100 bg-gray-50 p-6"
                                 >
-                                    <div className="relative mb-4 h-64 w-full overflow-hidden rounded-xl">
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            dispatchOpenConnectedProjectGallery({
+                                                key: "floor",
+                                            })
+                                        }
+                                        className="relative mb-4 block h-64 w-full cursor-pointer overflow-hidden rounded-xl group"
+                                        title={`${plan.title} planını aç`}
+                                        aria-label={`${plan.title} planını aç`}
+                                    >
                                         <Image
                                             quality={100}
                                             unoptimized
                                             src={plan.image}
                                             alt={plan.title}
                                             fill
-                                            className="object-cover"
+                                            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
                                         />
-                                    </div>
+                                    </button>
                                     <div className="flex items-center justify-between gap-4 text-gray-900">
                                         <span className="font-bold">{plan.title}</span>
                                         {plan.area ? (

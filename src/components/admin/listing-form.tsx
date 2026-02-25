@@ -47,6 +47,7 @@ import {
     getMediaUrl,
     cn,
 } from "@/lib/utils";
+import { normalizeGoogleMapsLink, toGoogleMapsEmbedLink } from "@/lib/google-maps";
 import {
     getFriendlyFetchErrorMessage,
     parseApiErrorMessage,
@@ -605,22 +606,6 @@ const buildGoogleMapsLink = (
         return `https://www.google.com/maps?q=${encodeURIComponent(locationLabel)}`;
     }
     return "";
-};
-
-const toGoogleMapsEmbedLink = (value: string | null): string | null => {
-    if (!value) return null;
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-    try {
-        const url = new URL(trimmed);
-        if (!url.hostname.includes("google")) {
-            return null;
-        }
-        url.searchParams.set("output", "embed");
-        return url.toString();
-    } catch {
-        return null;
-    }
 };
 
 const parseRoomsValue = (value: unknown): string | null => {
@@ -1535,6 +1520,114 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                         : value,
         }));
     };
+
+    const handleGoogleMapsLinkBlur = async () => {
+        const raw = formData.googleMapsLink?.trim() || "";
+        if (!normalizeGoogleMapsLink(raw)) return;
+
+        try {
+            const response = await fetch(
+                `/api/admin/maps/resolve?url=${encodeURIComponent(raw)}`
+            );
+            if (!response.ok) return;
+
+            const payload = (await response.json()) as {
+                link?: string | null;
+                latitude?: number | null;
+                longitude?: number | null;
+            };
+
+            setFormData((prev) => {
+                const current = prev.googleMapsLink?.trim() || "";
+                if (current !== raw) return prev;
+
+                const nextLink = payload.link || prev.googleMapsLink;
+                const nextLatitude =
+                    typeof payload.latitude === "number"
+                        ? payload.latitude
+                        : prev.latitude;
+                const nextLongitude =
+                    typeof payload.longitude === "number"
+                        ? payload.longitude
+                        : prev.longitude;
+
+                if (
+                    nextLink === prev.googleMapsLink &&
+                    nextLatitude === prev.latitude &&
+                    nextLongitude === prev.longitude
+                ) {
+                    return prev;
+                }
+
+                return {
+                    ...prev,
+                    googleMapsLink: nextLink,
+                    latitude: nextLatitude,
+                    longitude: nextLongitude,
+                };
+            });
+        } catch {
+            // no-op
+        }
+    };
+
+    useEffect(() => {
+        const raw = formData.googleMapsLink?.trim() || "";
+        if (!normalizeGoogleMapsLink(raw)) return;
+
+        let active = true;
+        const timeoutId = window.setTimeout(async () => {
+            try {
+                const response = await fetch(
+                    `/api/admin/maps/resolve?url=${encodeURIComponent(raw)}`
+                );
+                if (!response.ok || !active) return;
+
+                const payload = (await response.json()) as {
+                    link?: string | null;
+                    latitude?: number | null;
+                    longitude?: number | null;
+                };
+
+                setFormData((prev) => {
+                    const current = prev.googleMapsLink?.trim() || "";
+                    if (current !== raw) return prev;
+
+                    const nextLink = payload.link || prev.googleMapsLink;
+                    const nextLatitude =
+                        typeof payload.latitude === "number"
+                            ? payload.latitude
+                            : prev.latitude;
+                    const nextLongitude =
+                        typeof payload.longitude === "number"
+                            ? payload.longitude
+                            : prev.longitude;
+
+                    if (
+                        nextLink === prev.googleMapsLink &&
+                        nextLatitude === prev.latitude &&
+                        nextLongitude === prev.longitude
+                    ) {
+                        return prev;
+                    }
+
+                    return {
+                        ...prev,
+                        googleMapsLink: nextLink,
+                        latitude: nextLatitude,
+                        longitude: nextLongitude,
+                    };
+                });
+            } catch {
+                // no-op
+            }
+        }, 250);
+
+        return () => {
+            active = false;
+            window.clearTimeout(timeoutId);
+        };
+    }, [formData.googleMapsLink]);
 
     const handleTranslationChange = (
         locale: string,
@@ -3215,6 +3308,9 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                                                     name="googleMapsLink"
                                                     value={formData.googleMapsLink || ""}
                                                     onChange={handleInputChange}
+                                                    onBlur={() => {
+                                                        void handleGoogleMapsLinkBlur();
+                                                    }}
                                                     className="input"
                                                     placeholder="https://www.google.com/maps?q=36.5489,32.0489"
                                                 />
