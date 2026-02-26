@@ -131,7 +131,7 @@ function PeekingVisualSection({
     const [currentIndex, setCurrentIndex] = useState(0);
     const total = items.length;
     const canNavigate = total > 1;
-    const showViewAll = totalCount > 4;
+    const showViewAll = true;
 
     const goToPrev = useCallback(() => {
         setCurrentIndex((prev) => (prev <= 0 ? total - 1 : prev - 1));
@@ -145,33 +145,32 @@ function PeekingVisualSection({
     const gap = 20;
 
     const navButtons = canNavigate ? (
-        <div className="flex items-center gap-3">
-            <button
-                type="button"
-                onClick={goToPrev}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
-                aria-label="Önceki görsel"
-            >
-                <ChevronLeft className="h-5 w-5" />
-            </button>
-            <button
-                type="button"
-                onClick={goToNext}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
-                aria-label="Sonraki görsel"
-            >
-                <ChevronRight className="h-5 w-5" />
-            </button>
-            <span className="ml-1 text-sm text-gray-400">
-                {currentIndex + 1} / {total}
-            </span>
+        <div className="flex flex-col items-start gap-3">
+            <div className="flex items-center gap-3">
+                <button
+                    type="button"
+                    onClick={goToPrev}
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
+                    aria-label="Önceki görsel"
+                >
+                    <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                    type="button"
+                    onClick={goToNext}
+                    className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
+                    aria-label="Sonraki görsel"
+                >
+                    <ChevronRight className="h-5 w-5" />
+                </button>
+            </div>
             {showViewAll && (
                 <button
                     type="button"
                     onClick={onViewAllClick}
                     className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-gray-800"
                 >
-                    Galeriyi Gör (+{totalCount - 4} görsel)
+                    Galeriyi Gör
                 </button>
             )}
         </div>
@@ -226,33 +225,32 @@ function PeekingVisualSection({
 
             {/* Mobile arrows */}
             {canNavigate ? (
-                <div className="mx-auto mt-4 flex max-w-7xl items-center gap-3 px-4 md:hidden">
-                    <button
-                        type="button"
-                        onClick={goToPrev}
-                        className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400"
-                        aria-label="Önceki görsel"
-                    >
-                        <ChevronLeft className="h-5 w-5" />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={goToNext}
-                        className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400"
-                        aria-label="Sonraki görsel"
-                    >
-                        <ChevronRight className="h-5 w-5" />
-                    </button>
-                    <span className="ml-1 text-sm text-gray-400">
-                        {currentIndex + 1} / {total}
-                    </span>
+                <div className="mx-auto mt-4 flex max-w-7xl flex-col items-start gap-3 px-4 md:hidden">
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={goToPrev}
+                            className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400"
+                            aria-label="Önceki görsel"
+                        >
+                            <ChevronLeft className="h-5 w-5" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={goToNext}
+                            className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400"
+                            aria-label="Sonraki görsel"
+                        >
+                            <ChevronRight className="h-5 w-5" />
+                        </button>
+                    </div>
                     {showViewAll && (
                         <button
                             type="button"
                             onClick={onViewAllClick}
                             className="flex items-center gap-2 rounded-lg bg-gray-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-gray-800"
                         >
-                            Galeriyi Gör (+{totalCount - 4} görsel)
+                            Galeriyi Gör
                         </button>
                     )}
                 </div>
