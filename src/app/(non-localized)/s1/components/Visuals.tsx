@@ -117,16 +117,21 @@ function PeekingVisualSection({
     bgClass,
     onImageClick,
     reverse = false,
+    totalCount,
+    onViewAllClick,
 }: {
     title: string;
     items: ListingGalleryItem[];
     bgClass: string;
     onImageClick: () => void;
     reverse?: boolean;
+    totalCount: number;
+    onViewAllClick: () => void;
 }) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const total = items.length;
     const canNavigate = total > 1;
+    const showViewAll = totalCount > 4;
 
     const goToPrev = useCallback(() => {
         setCurrentIndex((prev) => (prev <= 0 ? total - 1 : prev - 1));
@@ -160,6 +165,15 @@ function PeekingVisualSection({
             <span className="ml-1 text-sm text-gray-400">
                 {currentIndex + 1} / {total}
             </span>
+            {showViewAll && (
+                <button
+                    type="button"
+                    onClick={onViewAllClick}
+                    className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-gray-800"
+                >
+                    Galeriyi Gör (+{totalCount - 4} görsel)
+                </button>
+            )}
         </div>
     ) : null;
 
@@ -232,6 +246,15 @@ function PeekingVisualSection({
                     <span className="ml-1 text-sm text-gray-400">
                         {currentIndex + 1} / {total}
                     </span>
+                    {showViewAll && (
+                        <button
+                            type="button"
+                            onClick={onViewAllClick}
+                            className="flex items-center gap-2 rounded-lg bg-gray-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-gray-800"
+                        >
+                            Galeriyi Gör (+{totalCount - 4} görsel)
+                        </button>
+                    )}
                 </div>
             ) : null}
         </section>
@@ -268,6 +291,13 @@ export const Visuals = ({
         [exteriorVisuals?.images]
     );
 
+    const exteriorDisplayItems = useMemo(
+        () => exteriorGalleryItems.slice(0, 4),
+        [exteriorGalleryItems]
+    );
+
+    const exteriorTotalCount = exteriorGalleryItems.length;
+
     const socialGalleryItems = useMemo(
         () =>
             buildGalleryItems(
@@ -288,6 +318,13 @@ export const Visuals = ({
             ),
         [interiorVisuals?.images]
     );
+
+    const interiorDisplayItems = useMemo(
+        () => interiorGalleryItems.slice(0, 4),
+        [interiorGalleryItems]
+    );
+
+    const interiorTotalCount = interiorGalleryItems.length;
 
     return (
         <>
@@ -357,8 +394,12 @@ export const Visuals = ({
             {visibility.exteriorVisuals && exteriorVisuals && exteriorGalleryItems.length > 0 ? (
                 <PeekingVisualSection
                     title="Dış Görseller"
-                    items={exteriorGalleryItems}
+                    items={exteriorDisplayItems}
                     bgClass="bg-white"
+                    totalCount={exteriorTotalCount}
+                    onViewAllClick={() =>
+                        dispatchOpenConnectedProjectGallery({ key: "exterior" })
+                    }
                     onImageClick={() =>
                         dispatchOpenConnectedProjectGallery({ key: "exterior" })
                     }
@@ -368,9 +409,13 @@ export const Visuals = ({
             {visibility.interiorVisuals && interiorVisuals && interiorGalleryItems.length > 0 ? (
                 <PeekingVisualSection
                     title="İç Görseller"
-                    items={interiorGalleryItems}
+                    items={interiorDisplayItems}
                     bgClass="bg-gray-50"
                     reverse
+                    totalCount={interiorTotalCount}
+                    onViewAllClick={() =>
+                        dispatchOpenConnectedProjectGallery({ key: "interior" })
+                    }
                     onImageClick={() =>
                         dispatchOpenConnectedProjectGallery({ key: "interior" })
                     }
