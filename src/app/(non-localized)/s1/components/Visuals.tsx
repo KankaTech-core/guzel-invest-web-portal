@@ -145,7 +145,7 @@ function PeekingVisualSection({
     const gap = 20;
 
     const navButtons = canNavigate ? (
-        <div className="flex flex-col items-start gap-3">
+        <div className="flex items-center justify-between gap-3 w-full">
             <div className="flex items-center gap-3">
                 <button
                     type="button"
@@ -225,7 +225,7 @@ function PeekingVisualSection({
 
             {/* Mobile arrows */}
             {canNavigate ? (
-                <div className="mx-auto mt-4 flex max-w-7xl flex-col items-start gap-3 px-4 md:hidden">
+                <div className="mx-auto mt-4 flex max-w-7xl items-center justify-between gap-3 px-4 md:hidden">
                     <div className="flex items-center gap-3">
                         <button
                             type="button"
