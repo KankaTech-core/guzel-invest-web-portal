@@ -42,6 +42,7 @@ export default function ListingsLeafletMap({
     className?: string;
 }) {
     const mapRef = useRef<L.Map | null>(null);
+    const visibleListings = listings.filter(hasValidCoordinates);
 
     useEffect(() => {
         return () => {
@@ -69,8 +70,9 @@ export default function ListingsLeafletMap({
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <MapBoundsController listings={listings} />
-            {listings.map((listing) => {
+            <MapSizeController />
+            <MapBoundsController listings={visibleListings} />
+            {visibleListings.map((listing) => {
                 const isActive = listing.id === activeId;
                 return (
                     <Marker
@@ -86,6 +88,64 @@ export default function ListingsLeafletMap({
             })}
         </MapContainer>
     );
+}
+
+function hasValidCoordinates(listing: MapListing) {
+    return (
+        isCoordinateInRange(listing.latitude, 90) &&
+        isCoordinateInRange(listing.longitude, 180)
+    );
+}
+
+function isCoordinateInRange(value: number | null, maxAbsValue: number) {
+    return (
+        typeof value === "number" &&
+        Number.isFinite(value) &&
+        Math.abs(value) <= maxAbsValue
+    );
+}
+
+function MapSizeController() {
+    const map = useMap();
+
+    useEffect(() => {
+        let frameId: number | null = null;
+
+        const scheduleInvalidate = () => {
+            if (frameId !== null) {
+                cancelAnimationFrame(frameId);
+            }
+
+            frameId = requestAnimationFrame(() => {
+                map.invalidateSize(false);
+                frameId = null;
+            });
+        };
+
+        scheduleInvalidate();
+        const settleTimeout = window.setTimeout(scheduleInvalidate, 120);
+
+        const resizeObserver =
+            typeof ResizeObserver !== "undefined"
+                ? new ResizeObserver(() => {
+                    scheduleInvalidate();
+                })
+                : null;
+
+        resizeObserver?.observe(map.getContainer());
+        window.addEventListener("resize", scheduleInvalidate);
+
+        return () => {
+            if (frameId !== null) {
+                cancelAnimationFrame(frameId);
+            }
+            window.clearTimeout(settleTimeout);
+            resizeObserver?.disconnect();
+            window.removeEventListener("resize", scheduleInvalidate);
+        };
+    }, [map]);
+
+    return null;
 }
 
 function MapBoundsController({ listings }: { listings: MapListing[] }) {
