@@ -359,6 +359,13 @@ const parseNumberValue = (value: string): number | null => {
     return Number.isFinite(parsed) ? parsed : null;
 };
 
+const parseCoordinate = (value: string): number | null => {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number.parseFloat(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
 const buildGoogleMapsLink = (
     latitude: number | null,
     longitude: number | null,
@@ -2133,8 +2140,8 @@ export default function NewProjectForm({
         statusOverride?: ProjectStatusValue,
         options?: { bootstrapDraft?: boolean }
     ) {
-        const parsedLatitude = parseNumberValue(latitude);
-        const parsedLongitude = parseNumberValue(longitude);
+        const parsedLatitude = parseCoordinate(latitude);
+        const parsedLongitude = parseCoordinate(longitude);
         const turkishRow =
             translations.find((translation) => translation.locale === "tr") ||
             buildDefaultTranslations()[0];
