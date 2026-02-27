@@ -5,7 +5,6 @@ import { MapAndCTA } from "@/app/(non-localized)/s1/components/MapAndCTA";
 import { ProjectGalleryHub } from "@/app/(non-localized)/s1/components/ProjectGalleryHub";
 import { ProjectContactSection } from "@/app/(non-localized)/s1/components/ProjectContactSection";
 import { ProjectFeaturesSection } from "@/app/(non-localized)/s1/components/ProjectFeaturesSection";
-import { ProjectVideoSection } from "@/app/(non-localized)/s1/components/ProjectVideoSection";
 import { getS1ProjectPageData } from "@/app/(non-localized)/s1/data";
 import { getS1SectionVisibility } from "@/app/(non-localized)/s1/section-visibility";
 
@@ -53,13 +52,9 @@ export default async function ProjectDetailPage({ params }: PageProps) {
                 otherProjects={projectData.otherProjects}
                 locale={resolvedLocale}
                 visibility={visibility}
+                videoUrl={projectData.videoUrl}
+                videoTitle={projectData.videoTitle}
             />
-            {visibility.video && projectData.videoUrl ? (
-                <ProjectVideoSection
-                    videoUrl={projectData.videoUrl}
-                    videoTitle={projectData.videoTitle}
-                />
-            ) : null}
             <ProjectGalleryHub
                 exteriorVisuals={projectData.exteriorVisuals}
                 socialFacilities={projectData.socialFacilities}

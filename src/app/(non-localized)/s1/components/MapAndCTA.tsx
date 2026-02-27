@@ -23,6 +23,7 @@ import {
 } from "@/components/public/listing-detail-gallery";
 import { dispatchOpenConnectedProjectGallery } from "./project-gallery-events";
 import { getMapSectionLayout } from "./media-layout";
+import { ProjectVideoSection } from "./ProjectVideoSection";
 
 interface MapAndCTAProps {
     documents: S1DocumentItem[];
@@ -32,6 +33,8 @@ interface MapAndCTAProps {
     otherProjects: S1OtherProjectItem[];
     locale?: string;
     visibility: S1SectionVisibility;
+    videoUrl?: string;
+    videoTitle?: string;
 }
 
 export const MapAndCTA = ({
@@ -42,6 +45,8 @@ export const MapAndCTA = ({
     otherProjects,
     locale = "tr",
     visibility,
+    videoUrl,
+    videoTitle,
 }: MapAndCTAProps) => {
     const mapGalleryItems: ListingGalleryItem[] = mapImages.map((item, index) => ({
         id: item.id,
@@ -70,19 +75,19 @@ export const MapAndCTA = ({
         },
         documents[0]
             ? {
-                  icon: Download,
-                  title: "Proje Sunumunu İndir",
-                  href: documents[0].url,
-                  external: true,
-              }
+                icon: Download,
+                title: "Proje Sunumunu İndir",
+                href: documents[0].url,
+                external: true,
+            }
             : map?.mapsLink
-              ? {
+                ? {
                     icon: MapPin,
                     title: "Projeyi Haritada Aç",
                     href: map.mapsLink,
                     external: true,
                 }
-              : null,
+                : null,
     ].filter(Boolean) as Array<{
         icon: typeof Search;
         title: string;
@@ -265,6 +270,10 @@ export const MapAndCTA = ({
                         </div>
                     </div>
                 </section>
+            ) : null}
+
+            {visibility.video && videoUrl ? (
+                <ProjectVideoSection videoUrl={videoUrl} videoTitle={videoTitle} />
             ) : null}
 
             {visibility.faqs ? (
