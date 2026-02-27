@@ -55,9 +55,25 @@ export async function replaceProjectMediaAssignments(
         });
     }
 
+    // Persist the user-defined order for each media category.
+    const normalizedAssignments = getNormalizedProjectMediaAssignments(input);
+    for (const category of providedCategories) {
+        const orderedIds = normalizedAssignments[category];
+        for (let index = 0; index < orderedIds.length; index++) {
+            await tx.media.updateMany({
+                where: {
+                    listingId,
+                    id: orderedIds[index],
+                },
+                data: {
+                    order: index,
+                },
+            });
+        }
+    }
+
     // Keep a single deterministic cover image aligned with project exterior order.
     if (input.exteriorMediaIds !== undefined) {
-        const normalizedAssignments = getNormalizedProjectMediaAssignments(input);
         const coverMediaId = normalizedAssignments.EXTERIOR[0];
 
         await tx.media.updateMany({
