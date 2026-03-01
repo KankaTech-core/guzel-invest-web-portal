@@ -31,8 +31,10 @@ export default async function ProjectDetailPage({ params }: PageProps) {
 
     return (
         <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-orange-500/30">
-            <HeroSection hero={projectData.hero} />
-            <ProjectContactSection locale={resolvedLocale} projectSlug={slug} />
+            <HeroSection hero={projectData.hero} projectSlug={slug} locale={resolvedLocale} />
+            <div className="block lg:hidden">
+                <ProjectContactSection locale={resolvedLocale} projectSlug={slug} />
+            </div>
             {visibility.propertiesRibbon ? (
                 <ProjectFeaturesSection items={projectData.propertiesRibbon} />
             ) : null}

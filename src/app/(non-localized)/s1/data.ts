@@ -287,7 +287,7 @@ export async function getS1ProjectPageData({
             : null,
     ].filter(isPresent);
 
-    const propertiesRibbon = [...generalFeatures, ...projectRoomFeatures, ...metaRibbon];
+    const propertiesRibbon = generalFeatures;
 
     const summaryTags = (translation?.features || [])
         .map((item) => item.trim())
