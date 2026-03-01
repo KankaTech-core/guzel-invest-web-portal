@@ -362,5 +362,24 @@
     "meta": {
         "title": "Güzel Invest | Alanya Real Estate",
         "description": "Villas, apartments and land for sale in Alanya. Trusted real estate advisory since 2001."
+    },
+    "homepagePopup": {
+        "title": "Want to Sell Your Property?",
+        "subtitle": "Let's value your real estate correctly with Güzel Invest assurance and our expert consultants.",
+        "name": "Your Name",
+        "surname": "Your Surname",
+        "email": "Email",
+        "phone": "Phone Number",
+        "message": "Your Message",
+        "namePlaceholder": "Enter your name",
+        "surnamePlaceholder": "Enter your surname",
+        "messagePlaceholder": "Provide details and location about your property...",
+        "termsCheckbox": "I have read the user agreement and consent to be contacted.",
+        "submit": "Submit",
+        "invalidPhone": "Please enter a valid phone number.",
+        "acceptTermsRequired": "Please confirm that you accept the terms.",
+        "generalError": "An error occurred. Please try again.",
+        "successTitle": "Information Received!",
+        "successMessage": "Our experts will contact you as soon as possible."
     }
 }

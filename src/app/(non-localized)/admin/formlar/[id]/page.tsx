@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { FormDetailManager } from "./components/FormDetailManager";
 
 const formatDateTime = (date: Date) =>
     new Intl.DateTimeFormat("tr-TR", {
@@ -12,6 +13,8 @@ const formatDateTime = (date: Date) =>
 const getSourceLabel = (source: string) => {
     if (source === "project-form") return "Proje Formu";
     if (source === "listing-form") return "İlan Formu";
+    if (source === "website") return "İletişim Formu";
+    if (source === "homepage-popup") return "Daireni Sat Formu";
     return source;
 };
 
@@ -41,9 +44,22 @@ export default async function AdminFormDetailPage({ params }: AdminFormDetailPag
             source: true,
             projectSlug: true,
             projectTitle: true,
+            status: true,
+            notes: true,
             createdAt: true,
             read: true,
             readAt: true,
+            tags: {
+                select: {
+                    tag: {
+                        select: {
+                            id: true,
+                            name: true,
+                            color: true,
+                        }
+                    }
+                }
+            },
         },
     });
 
@@ -120,6 +136,13 @@ export default async function AdminFormDetailPage({ params }: AdminFormDetailPag
                         {form.message}
                     </p>
                 </div>
+
+                <FormDetailManager
+                    id={form.id}
+                    initialStatus={form.status}
+                    initialNotes={form.notes || ""}
+                    initialTags={form.tags.map(t => t.tag)}
+                />
             </div>
         </div>
     );

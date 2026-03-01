@@ -2,8 +2,26 @@
 
 import { useState } from "react";
 import { Clock3, Instagram, Mail, MapPin, MessageCircle, Phone, Send } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useParams } from "next/navigation";
+import type { CountryCode } from "libphonenumber-js";
+import { Button, Checkbox, Input } from "@/components/ui";
+import { PhoneInput } from "@/components/ui/phone-input";
+
+const DEFAULT_COUNTRY_BY_LOCALE: Partial<Record<string, CountryCode>> = {
+    tr: "TR",
+    en: "AE",
+    de: "DE",
+    ru: "RU",
+    ar: "AE",
+};
+
+function getDefaultCountryForLocale(locale?: string): CountryCode {
+    const baseLocale = locale?.toLowerCase().split("-")[0];
+    if (!baseLocale) {
+        return "AE";
+    }
+    return DEFAULT_COUNTRY_BY_LOCALE[baseLocale] ?? "AE";
+}
 
 type ContactCard = {
     title: string;
@@ -43,16 +61,72 @@ const contactCards = [
 ] satisfies ReadonlyArray<ContactCard>;
 
 export default function ContactPage() {
+    const { locale } = useParams();
+    const localeStr = Array.isArray(locale) ? locale[0] : locale;
+    const defaultPhoneCountry = getDefaultCountryForLocale(localeStr);
+
     const [loading, setLoading] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [phone, setPhone] = useState("");
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+    const hasPhoneValue = phone.trim().length > 0;
+    const phoneIsValid = /^\+\d{8,15}$/.test(phone);
+    const phoneError = hasPhoneValue && !phoneIsValid
+        ? "Geçerli bir telefon numarası girin."
+        : undefined;
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        const formElement = event.currentTarget;
+
+        if (!acceptedTerms) {
+            setError("Lütfen koşulları kabul ettiğinizi onaylayın.");
+            return;
+        }
+
+        if (hasPhoneValue && !phoneIsValid) {
+            setError("Lütfen geçerli bir telefon numarası girin.");
+            return;
+        }
+
         setLoading(true);
         setSubmitted(false);
-        await new Promise((resolve) => setTimeout(resolve, 900));
-        setLoading(false);
-        setSubmitted(true);
+        setError(null);
+
+        try {
+            const formData = new FormData(formElement);
+            const data = {
+                name: formData.get("name"),
+                surname: formData.get("surname"),
+                email: formData.get("email"),
+                phone: phone, // Changed from formData.get("phone")
+                subject: formData.get("subject"),
+                message: formData.get("message"),
+                locale: localeStr || "tr",
+            };
+
+            const response = await fetch("/api/public/contact", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to submit form");
+            }
+
+            setSubmitted(true);
+            setAcceptedTerms(false);
+            setPhone("");
+            formElement.reset();
+        } catch (error) {
+            console.error("Error submitting form:", error);
+            setError("Mesajınız gönderilirken bir hata oluştu. Lütfen tekrar deneyin.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -188,11 +262,19 @@ export default function ContactPage() {
                             <form onSubmit={handleSubmit} className="space-y-6 px-6 py-6 sm:px-8 sm:py-8">
                                 <div className="grid gap-6 md:grid-cols-2">
                                     <Input
-                                        label="Adınız Soyadınız"
+                                        label="Adınız"
                                         name="name"
                                         placeholder="Adınızı girin"
                                         required
                                     />
+                                    <Input
+                                        label="Soyadınız"
+                                        name="surname"
+                                        placeholder="Soyadınızı girin"
+                                        required
+                                    />
+                                </div>
+                                <div className="grid gap-6 md:grid-cols-1">
                                     <Input
                                         label="E-posta Adresiniz"
                                         name="email"
@@ -203,12 +285,21 @@ export default function ContactPage() {
                                 </div>
 
                                 <div className="grid gap-6 md:grid-cols-2">
-                                    <Input
-                                        label="Telefon Numaranız"
-                                        name="phone"
-                                        type="tel"
-                                        placeholder="+90 5XX XXX XX XX"
-                                    />
+                                    <div>
+                                        <label className="mb-2 block text-sm font-medium text-gray-700">
+                                            Telefon Numaranız
+                                        </label>
+                                        <PhoneInput
+                                            key={`phone-${defaultPhoneCountry}`}
+                                            value={phone}
+                                            onChange={setPhone}
+                                            placeholder=""
+                                            defaultCountry={defaultPhoneCountry}
+                                        />
+                                        {phoneError && (
+                                            <p className="mt-1.5 text-xs text-red-500">{phoneError}</p>
+                                        )}
+                                    </div>
                                     <Input
                                         label="Konu"
                                         name="subject"
@@ -227,11 +318,20 @@ export default function ContactPage() {
                                     />
                                 </div>
 
+                                <div className="border-t border-gray-100 pt-4 flex justify-start pl-1">
+                                    <Checkbox
+                                        label={<span className="text-xs text-gray-500">Kullanıcı metnini okudum, iletişim kurulmasını kabul ediyorum.</span>}
+                                        checked={acceptedTerms}
+                                        onChange={setAcceptedTerms}
+                                    />
+                                </div>
+
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                                     <Button
                                         type="submit"
                                         variant="primary"
                                         size="lg"
+                                        disabled={!acceptedTerms || loading}
                                         loading={loading}
                                         icon={<Send className="h-4 w-4" />}
                                     >
@@ -242,6 +342,12 @@ export default function ContactPage() {
                                 {submitted ? (
                                     <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
                                         Mesajınız alındı. Ekibimiz en kısa sürede sizinle iletişime geçecektir.
+                                    </div>
+                                ) : null}
+
+                                {error ? (
+                                    <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                                        {error}
                                     </div>
                                 ) : null}
                             </form>

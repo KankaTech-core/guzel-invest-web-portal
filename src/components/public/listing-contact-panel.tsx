@@ -12,6 +12,7 @@ import {
     X,
 } from "lucide-react";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { Checkbox } from "@/components/ui";
 
 interface ListingContactPanelProps {
     title: string;
@@ -35,6 +36,7 @@ interface ListingContactFormState {
     email: string;
     phone: string;
     message: string;
+    acceptedTerms: boolean;
 }
 
 const DEFAULT_COUNTRY_BY_LOCALE: Partial<Record<string, CountryCode>> = {
@@ -80,6 +82,7 @@ function ContactFormFields({
         email: "",
         phone: "",
         message: defaultMessage,
+        acceptedTerms: false,
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -97,6 +100,7 @@ function ContactFormFields({
             email: "",
             phone: "",
             message: defaultMessage,
+            acceptedTerms: false,
         });
         setIsSuccess(false);
         setSubmitError(null);
@@ -106,6 +110,11 @@ function ContactFormFields({
         event.preventDefault();
         setSubmitError(null);
         setIsSuccess(false);
+
+        if (!formData.acceptedTerms) {
+            setSubmitError("Lütfen koşulları kabul ettiğinizi onaylayın.");
+            return;
+        }
 
         if (!phoneIsValid) {
             setSubmitError("Lütfen geçerli bir telefon numarası girin.");
@@ -145,6 +154,7 @@ function ContactFormFields({
                 email: "",
                 phone: "",
                 message: defaultMessage,
+                acceptedTerms: false,
             });
         } catch (error) {
             setSubmitError(
@@ -246,9 +256,21 @@ function ContactFormFields({
                     className="w-full resize-none border-0 bg-transparent p-0 text-base leading-relaxed text-[#111828] placeholder:text-gray-400 focus:outline-none"
                 />
             </div>
+            <div className="flex justify-center py-2 px-1">
+                <Checkbox
+                    label={<span className="text-xs text-gray-500">Kullanıcı metnini okudum, iletişim kurulmasını kabul ediyorum.</span>}
+                    checked={formData.acceptedTerms}
+                    onChange={(checked) =>
+                        setFormData((current) => ({
+                            ...current,
+                            acceptedTerms: checked,
+                        }))
+                    }
+                />
+            </div>
             <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={!formData.acceptedTerms || isSubmitting}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#5099ff] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#3f86e4] disabled:cursor-not-allowed disabled:opacity-80"
             >
                 <Send className="h-4 w-4" />

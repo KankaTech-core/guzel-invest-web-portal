@@ -192,6 +192,7 @@ export const ProjectContactSection = ({
                                 type="submit"
                                 className="w-auto min-w-[200px] sm:w-auto"
                                 variant="primary"
+                                disabled={!formData.acceptedTerms || isSubmitting}
                                 loading={isSubmitting}
                             >
                                 {isSuccess ? "Gönderildi!" : "Gönder"}

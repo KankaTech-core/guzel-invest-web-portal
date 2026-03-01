@@ -168,11 +168,12 @@ model ListingSerial {
 }
 
 model Tag {
-  id        String       @id @default(cuid())
-  name      String       @unique
-  color     String       @default("#EC6803")
-  createdAt DateTime     @default(now())
-  listings  ListingTag[]
+  id                 String                 @id @default(cuid())
+  name               String                 @unique
+  color              String                 @default("#EC6803")
+  createdAt          DateTime               @default(now())
+  listings           ListingTag[]
+  contactSubmissions ContactSubmissionTag[]
 
   @@map("tags")
 }
@@ -264,7 +265,7 @@ model ExportJob {
 }
 
 model ContactSubmission {
-  id           String    @id @default(cuid())
+  id           String                 @id @default(cuid())
   listingId    String?
   name         String
   surname      String?
@@ -273,16 +274,31 @@ model ContactSubmission {
   message      String
   projectSlug  String?
   projectTitle String?
-  locale       String    @default("tr")
-  source       String    @default("website")
-  createdAt    DateTime  @default(now())
-  read         Boolean   @default(false)
+  locale       String                 @default("tr")
+  source       String                 @default("website")
+  status       ContactStatus          @default(NEW)
+  notes        String?                @db.Text
+  createdAt    DateTime               @default(now())
+  read         Boolean                @default(false)
   readAt       DateTime?
+  tags         ContactSubmissionTag[]
 
   @@index([createdAt])
   @@index([read])
+  @@index([status])
   @@index([projectSlug])
   @@map("contact_submissions")
+}
+
+model ContactSubmissionTag {
+  id                  String            @id @default(cuid())
+  contactSubmissionId String
+  tagId               String
+  contactSubmission   ContactSubmission @relation(fields: [contactSubmissionId], references: [id], onDelete: Cascade)
+  tag                 Tag               @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([contactSubmissionId, tagId])
+  @@map("contact_submission_tags")
 }
 
 model SiteFeedbackThread {
@@ -485,4 +501,10 @@ enum ExportStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+enum ContactStatus {
+  NEW
+  IN_PROGRESS
+  CLOSED
 }

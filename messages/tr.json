@@ -362,5 +362,24 @@
     "meta": {
         "title": "Güzel Invest | Alanya Gayrimenkul",
         "description": "Alanya'da satılık villa, daire ve arsa. 2001'den beri güvenilir gayrimenkul danışmanlığı."
+    },
+    "homepagePopup": {
+        "title": "Dairenizi Satmak İster Misiniz?",
+        "subtitle": "Güzel Invest güvencesi ve uzman danışmanlarımızla gayrimenkulünüzü en doğru değerinde değerlendirelim.",
+        "name": "Adınız",
+        "surname": "Soyadınız",
+        "email": "E-posta",
+        "phone": "Telefon Numaranız",
+        "message": "Mesajınız",
+        "namePlaceholder": "Adınızı girin",
+        "surnamePlaceholder": "Soyadınızı girin",
+        "messagePlaceholder": "Dairenizin konumu ve detayları hakkında bize bilgi verin...",
+        "termsCheckbox": "Kullanıcı metnini okudum, iletişim kurulmasını kabul ediyorum.",
+        "submit": "Gönder",
+        "invalidPhone": "Geçerli bir telefon numarası girin.",
+        "acceptTermsRequired": "Lütfen koşulları kabul ettiğinizi onaylayın.",
+        "generalError": "Bir hata oluştu. Lütfen tekrar deneyin.",
+        "successTitle": "Bilgileriniz Alındı!",
+        "successMessage": "Uzmanlarımız en kısa sürede sizinle iletişime geçecektir."
     }
 }

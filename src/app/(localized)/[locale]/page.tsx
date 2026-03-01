@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useVersion } from "@/contexts/VersionContext";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { LastUnitsCornerRibbon } from "@/components/public/last-units-corner-ribbon";
+import { HomepagePopupForm } from "@/components/public/homepage-popup-form";
 import { shouldShowLastUnitsRibbon } from "@/lib/last-units-ribbon";
 import {
     formatPrice,
@@ -744,15 +745,15 @@ export default function HomePage() {
                                     {th("ctaPortfolio")}
                                     <ChevronRight className="w-4 h-4" />
                                 </Link>
-                                <Link
-                                    href={`/${locale}/iletisim`}
+                                <button
+                                    onClick={() => window.dispatchEvent(new Event("open-homepage-popup"))}
                                     className="inline-flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors text-sm"
                                 >
                                     <span className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 transition-colors">
                                         <Building2 className="w-4 h-4" />
                                     </span>
                                     {th("ctaMap")}
-                                </Link>
+                                </button>
                             </div>
 
                             {/* Mobile Image Slider - Taller Aspect Ratio */}
@@ -862,15 +863,15 @@ export default function HomePage() {
                                     {th("ctaPortfolio")}
                                     <ChevronRight className="w-4 h-4" />
                                 </Link>
-                                <Link
-                                    href={`/${locale}/iletisim`}
+                                <button
+                                    onClick={() => window.dispatchEvent(new Event("open-homepage-popup"))}
                                     className="inline-flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors text-sm"
                                 >
                                     <span className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 transition-colors">
                                         <Building2 className="w-4 h-4" />
                                     </span>
                                     {th("ctaMap")}
-                                </Link>
+                                </button>
                             </div>
 
                             {/* Stats */}
@@ -1911,6 +1912,7 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
+            <HomepagePopupForm locale={locale} />
         </main >
     );
 }

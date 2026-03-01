@@ -3,10 +3,12 @@
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 
+import React from "react";
+
 interface CheckboxProps {
     checked: boolean;
     onChange: (checked: boolean) => void;
-    label: string;
+    label: React.ReactNode;
     id?: string;
     disabled?: boolean;
 }

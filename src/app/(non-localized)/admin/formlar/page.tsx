@@ -12,6 +12,8 @@ const formatDateTime = (date: Date) =>
 const getSourceLabel = (source: string) => {
     if (source === "project-form") return "Proje Formu";
     if (source === "listing-form") return "İlan Formu";
+    if (source === "website") return "İletişim Formu";
+    if (source === "homepage-popup") return "Daireni Sat Formu";
     return source;
 };
 
@@ -31,11 +33,6 @@ export default async function AdminFormsPage() {
     }
 
     const forms = await prisma.contactSubmission.findMany({
-        where: {
-            source: {
-                in: ["project-form", "listing-form"],
-            },
-        },
         orderBy: {
             createdAt: "desc",
         },
@@ -50,6 +47,7 @@ export default async function AdminFormsPage() {
             projectSlug: true,
             projectTitle: true,
             source: true,
+            status: true,
             createdAt: true,
             read: true,
         },
@@ -61,7 +59,7 @@ export default async function AdminFormsPage() {
             <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <h1 className="text-2xl font-bold text-gray-900">Formlar</h1>
                 <p className="mt-1 text-gray-500">
-                    Proje ve ilan sayfalarından gelen iletişim kayıtları.
+                    Proje, ilan ve iletişim sayfalarından gelen kayıtlar.
                 </p>
             </div>
 
@@ -126,14 +124,26 @@ export default async function AdminFormsPage() {
                                         </td>
                                         <td className="px-4 py-3 text-gray-700">
                                             <Link href={`/admin/formlar/${form.id}`} className="block">
-                                                <span
-                                                    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${form.read
-                                                        ? "bg-gray-100 text-gray-700"
-                                                        : "bg-blue-100 text-blue-700"
-                                                        }`}
-                                                >
-                                                    {form.read ? "Okundu" : "Yeni"}
-                                                </span>
+                                                <div className="flex flex-col gap-1">
+                                                    <span
+                                                        className={`inline-flex w-max rounded-full px-2.5 py-1 text-xs font-medium ${form.read
+                                                            ? "bg-gray-100 text-gray-700"
+                                                            : "bg-blue-100 text-blue-700"
+                                                            }`}
+                                                    >
+                                                        {form.read ? "Okundu" : "Yeni Gönderi"}
+                                                    </span>
+                                                    <span
+                                                        className={`inline-flex w-max rounded-full px-2.5 py-1 text-xs font-medium ${form.status === "NEW"
+                                                            ? "bg-gray-100 text-gray-700"
+                                                            : form.status === "IN_PROGRESS"
+                                                                ? "bg-orange-100 text-orange-700"
+                                                                : "bg-green-100 text-green-700"
+                                                            }`}
+                                                    >
+                                                        {form.status === "NEW" ? "Bekliyor" : form.status === "IN_PROGRESS" ? "İşlemde" : "Kapandı"}
+                                                    </span>
+                                                </div>
                                             </Link>
                                         </td>
                                     </tr>

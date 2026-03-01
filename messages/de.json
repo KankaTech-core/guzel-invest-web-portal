@@ -362,5 +362,24 @@
     "meta": {
         "title": "Güzel Invest | Alanya Immobilien",
         "description": "Villen, Wohnungen und Grundstücke in Alanya zu verkaufen. Vertrauenswürdige Immobilienberatung seit 2001."
+    },
+    "homepagePopup": {
+        "title": "Möchten Sie Ihre Immobilie verkaufen?",
+        "subtitle": "Lassen Sie uns Ihre Immobilie mit der Sicherheit von Güzel Invest und unseren fachkundigen Beratern richtig bewerten.",
+        "name": "Vorname",
+        "surname": "Nachname",
+        "email": "E-Mail",
+        "phone": "Telefonnummer",
+        "message": "Ihre Nachricht",
+        "namePlaceholder": "Geben Sie Ihren Vornamen ein",
+        "surnamePlaceholder": "Geben Sie Ihren Nachnamen ein",
+        "messagePlaceholder": "Geben Sie Details und die Lage Ihrer Immobilie an...",
+        "termsCheckbox": "Ich habe die Nutzungsvereinbarung gelesen und stimme der Kontaktaufnahme zu.",
+        "submit": "Senden",
+        "invalidPhone": "Bitte geben Sie eine gültige Telefonnummer ein.",
+        "acceptTermsRequired": "Bitte bestätigen Sie, dass Sie die Bedingungen akzeptieren.",
+        "generalError": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+        "successTitle": "Informationen erhalten!",
+        "successMessage": "Unsere Experten werden Sie so schnell wie möglich kontaktieren."
     }
 }
