@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState } from "react";
 
 interface SidebarContextType {
     isCollapsed: boolean;
@@ -10,15 +10,11 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
-    const [isCollapsed, setIsCollapsed] = useState(false);
-
-    // Persist sidebar state in localStorage
-    useEffect(() => {
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        if (typeof window === "undefined") return false;
         const saved = localStorage.getItem("admin-sidebar-collapsed");
-        if (saved !== null) {
-            setIsCollapsed(saved === "true");
-        }
-    }, []);
+        return saved === "true";
+    });
 
     const toggleSidebar = () => {
         setIsCollapsed((prev) => {

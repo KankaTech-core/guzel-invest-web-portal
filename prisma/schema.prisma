@@ -383,6 +383,7 @@ model ProjectUnit {
   id           String                   @id @default(cuid())
   listingId    String
   rooms        String
+  detailType   String                   @default("ROOM")
   area         Int?
   price        Decimal?
   listing      Listing                  @relation(fields: [listingId], references: [id], onDelete: Cascade)

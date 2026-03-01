@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { ContactStatus } from "@/generated/prisma";
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
     try {
@@ -35,8 +36,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
                 }
             }
 
-            const dataToUpdate: any = {};
-            if (status !== undefined) dataToUpdate.status = status;
+            const dataToUpdate: { status?: ContactStatus; notes?: string } = {};
+            if (status !== undefined) dataToUpdate.status = status as ContactStatus;
             if (notes !== undefined) dataToUpdate.notes = notes;
 
             if (Object.keys(dataToUpdate).length > 0) {

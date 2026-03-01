@@ -84,7 +84,7 @@ export default function PortfolioPhotographyLedPage() {
                                 PORTFÖY
                             </h1>
                             <p className="text-gray-400 text-lg max-w-xl">
-                                Alanya'nın en fotojenik gayrimenkulleri, sizin için seçildi.
+                                Alanya&apos;nın en fotojenik gayrimenkulleri, sizin için seçildi.
                             </p>
                         </div>
 

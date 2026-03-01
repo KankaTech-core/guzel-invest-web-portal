@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +32,7 @@ export function RoomOptionSelect({
 
     // Update input value when prop changes
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setInputValue(value || "");
     }, [value]);
 

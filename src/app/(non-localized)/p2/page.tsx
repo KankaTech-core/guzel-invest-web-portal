@@ -33,7 +33,7 @@ export default function PortfolioMediterraneanCoastalPage() {
                                     Güzel Invest
                                 </span>
                                 <span className="text-xs text-orange-500/70 tracking-wide" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                                    Akdeniz'in Güzel Yüzü
+                                    Akdeniz&apos;in Güzel Yüzü
                                 </span>
                             </div>
                         </div>
@@ -95,11 +95,11 @@ export default function PortfolioMediterraneanCoastalPage() {
                                 className="text-4xl md:text-5xl lg:text-6xl font-medium text-gray-800 mb-6"
                                 style={{ fontFamily: "'Playfair Display', serif" }}
                             >
-                                Akdeniz'in En Güzel <br />
+                                Akdeniz&apos;in En Güzel <br />
                                 <span className="italic text-orange-500">Gayrimenkulleri</span>
                             </h1>
                             <p className="text-gray-500 max-w-2xl mx-auto text-lg" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-                                Güneşin, denizin ve doğanın buluştuğu Alanya'da hayalinizdeki yaşamı keşfedin.
+                                Güneşin, denizin ve doğanın buluştuğu Alanya&apos;da hayalinizdeki yaşamı keşfedin.
                             </p>
                         </div>
 

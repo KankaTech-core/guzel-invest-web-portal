@@ -737,7 +737,7 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
                     </label>
                     <label className="text-sm md:col-span-2">
                         <span className="mb-1 block text-gray-600">
-                            Etiketler / Bullet'lar (satır başına 1)
+                            Etiketler / Bullet&apos;lar (satır başına 1)
                         </span>
                         <textarea
                             className="h-24 w-full rounded-lg border border-gray-300 px-3 py-2"

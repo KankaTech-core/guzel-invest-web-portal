@@ -167,7 +167,7 @@ export default function PortfolioHeritageModernFreeformPage() {
                                     </h2>
                                 </div>
                                 <span className="text-sm text-gray-400 italic" style={{ fontFamily: "'Fraunces', serif" }}>
-                                    "Kaliteli yaşam, kaliteli yatırım"
+                                    &ldquo;Kaliteli yaşam, kaliteli yatırım&rdquo;
                                 </span>
                             </div>
 
@@ -259,7 +259,7 @@ export default function PortfolioHeritageModernFreeformPage() {
                             >
                                 Est. 2001
                             </span>
-                            <p className="text-gray-500 mt-4">20+ yıldır Alanya'da güvenilir gayrimenkul danışmanlığı</p>
+                            <p className="text-gray-500 mt-4">20+ yıldır Alanya&apos;da güvenilir gayrimenkul danışmanlığı</p>
                         </div>
                     </section>
                 </main>

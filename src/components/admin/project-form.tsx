@@ -669,804 +669,803 @@ export function ProjectForm({ project, isNew = false }: ProjectFormProps) {
             )}
 
             <details className="group rounded-xl border border-gray-200 bg-white" open>
-    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
-        <div className="flex w-full flex-1 items-center justify-between pr-4">
-            <h2 className="text-base font-semibold text-gray-900">Temel Bilgiler</h2>
-            
-        </div>
-        <span className="transition-transform group-open:rotate-180">
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-        </span>
-    </summary>
-    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
-        
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Durum</span>
-                        <select
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={status}
-                            onChange={(event) =>
-                                setStatus(event.target.value as ProjectStatusValue)
-                            }
-                        >
-                            {STATUS_OPTIONS.map((item) => (
-                                <option key={item.value} value={item.value}>
-                                    {item.label}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Proje Kategori Tipi</span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={projectType}
-                            onChange={(event) => setProjectType(event.target.value)}
-                            placeholder="Site, AVM, Residence..."
-                        />
-                    </label>
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Property Type</span>
-                        <select
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={type}
-                            onChange={(event) => setType(event.target.value)}
-                        >
-                            {PROPERTY_TYPES.map((item) => (
-                                <option key={item.value} value={item.value}>
-                                    {item.label}
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Firma</span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={company}
-                            onChange={(event) => setCompany(event.target.value)}
-                        />
-                    </label>
-                    <label className="text-sm md:col-span-2">
-                        <span className="mb-1 block text-gray-600">Başlık (TR)</span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={title}
-                            onChange={(event) => setTitle(event.target.value)}
-                            required
-                        />
-                    </label>
-                    <label className="text-sm md:col-span-2">
-                        <span className="mb-1 block text-gray-600">Açıklama (TR)</span>
-                        <textarea
-                            className="h-28 w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={description}
-                            onChange={(event) => setDescription(event.target.value)}
-                        />
-                    </label>
-                    <label className="text-sm md:col-span-2">
-                        <span className="mb-1 block text-gray-600">
-                            Etiketler / Bullet'lar (satır başına 1)
-                        </span>
-                        <textarea
-                            className="h-24 w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={featureBullets}
-                            onChange={(event) => setFeatureBullets(event.target.value)}
-                            placeholder="Öne Çıkan&#10;Lüks Konut"
-                        />
-                    </label>
-                </div>
-    </div>
-</details>
+                <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+                    <div className="flex w-full flex-1 items-center justify-between pr-4">
+                        <h2 className="text-base font-semibold text-gray-900">Temel Bilgiler</h2>
 
-<details className="group rounded-xl border border-gray-200 bg-white" open>
-    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
-        <div className="flex w-full flex-1 items-center justify-between pr-4">
-            <h2 className="text-base font-semibold text-gray-900">Konum ve Metrikler</h2>
-            
-        </div>
-        <span className="transition-transform group-open:rotate-180">
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-        </span>
-    </summary>
-    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
-        
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Şehir</span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={city}
-                            onChange={(event) => setCity(event.target.value)}
-                            required
-                        />
-                    </label>
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">İlçe</span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={district}
-                            onChange={(event) => setDistrict(event.target.value)}
-                            required
-                        />
-                    </label>
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Mahalle</span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={neighborhood}
-                            onChange={(event) => setNeighborhood(event.target.value)}
-                        />
-                    </label>
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Teslim Tarihi</span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={deliveryDate}
-                            onChange={(event) => setDeliveryDate(event.target.value)}
-                            placeholder="Aralık 2027"
-                        />
-                    </label>
-                    <label className="text-sm md:col-span-2">
-                        <span className="mb-1 block text-gray-600">Adres</span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={address}
-                            onChange={(event) => setAddress(event.target.value)}
-                        />
-                    </label>
-                    <label className="text-sm md:col-span-2">
-                        <span className="mb-1 block text-gray-600">Google Maps Link</span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={googleMapsLink}
-                            onChange={(event) => setGoogleMapsLink(event.target.value)}
-                        />
-                    </label>
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Latitude</span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={latitude}
-                            onChange={(event) => setLatitude(event.target.value)}
-                        />
-                    </label>
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Longitude</span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={longitude}
-                            onChange={(event) => setLongitude(event.target.value)}
-                        />
-                    </label>
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Kart Fiyatı (opsiyonel)</span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={price}
-                            onChange={(event) => setPrice(event.target.value)}
-                        />
-                    </label>
-                    <label className="text-sm">
-                        <span className="mb-1 block text-gray-600">Kart m² (opsiyonel)</span>
-                        <input
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2"
-                            value={area}
-                            onChange={(event) => setArea(event.target.value)}
-                        />
-                    </label>
-                </div>
-    </div>
-</details>
+                    </div>
+                    <span className="transition-transform group-open:rotate-180">
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                    </span>
+                </summary>
+                <div className="border-t border-gray-100 p-5 pt-0 mt-2">
 
-<details className="group rounded-xl border border-gray-200 bg-white">
-    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
-        <div className="flex w-full flex-1 items-center justify-between pr-4">
-            <h2 className="text-base font-semibold text-gray-900">Proje Özellikleri (Genel + Sosyal)</h2>
-            <button
-                        type="button"
-                        onClick={addProjectFeature}
-                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                        <Plus className="h-4 w-4" /> Ekle
-                    </button>
-        </div>
-        <span className="transition-transform group-open:rotate-180">
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-        </span>
-    </summary>
-    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
-        
-                <div className="mt-4 space-y-3">
-                    {projectFeatures.length === 0 && (
-                        <p className="text-sm text-gray-500">Henüz özellik eklenmedi.</p>
-                    )}
-                    {projectFeatures.map((item, index) => (
-                        <div
-                            key={`feature-${index}`}
-                            className="grid gap-3 rounded-lg border border-gray-200 p-3 md:grid-cols-4"
-                        >
-                            <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Icon adı"
-                                value={item.icon}
-                                onChange={(event) =>
-                                    setProjectFeatures((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, icon: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
-                                list={`project-icon-options-${index}`}
-                            />
-                            <datalist id={`project-icon-options-${index}`}>
-                                {PROJECT_ICON_OPTIONS.map((iconName) => (
-                                    <option key={iconName} value={iconName} />
-                                ))}
-                            </datalist>
+                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                        <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Durum</span>
                             <select
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                value={item.category}
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={status}
                                 onChange={(event) =>
-                                    setProjectFeatures((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? {
-                                                    ...entry,
-                                                    category: event.target.value as FeatureCategory,
-                                                }
-                                                : entry
-                                        )
-                                    )
+                                    setStatus(event.target.value as ProjectStatusValue)
                                 }
                             >
-                                <option value="GENERAL">GENERAL</option>
-                                <option value="SOCIAL">SOCIAL</option>
+                                {STATUS_OPTIONS.map((item) => (
+                                    <option key={item.value} value={item.value}>
+                                        {item.label}
+                                    </option>
+                                ))}
                             </select>
+                        </label>
+                        <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Proje Kategori Tipi</span>
                             <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm md:col-span-2"
-                                placeholder="Metin (TR)"
-                                value={item.title}
-                                onChange={(event) =>
-                                    setProjectFeatures((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, title: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={projectType}
+                                onChange={(event) => setProjectType(event.target.value)}
+                                placeholder="Site, AVM, Residence..."
                             />
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setProjectFeatures((prev) =>
-                                        prev.filter((_, entryIndex) => entryIndex !== index)
-                                    )
-                                }
-                                className="inline-flex w-max items-center gap-1 text-sm text-red-600 hover:text-red-700"
+                        </label>
+                        <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Property Type</span>
+                            <select
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={type}
+                                onChange={(event) => setType(event.target.value)}
                             >
-                                <Trash2 className="h-4 w-4" /> Sil
-                            </button>
-                        </div>
-                    ))}
-                </div>
-    </div>
-</details>
-
-<details className="group rounded-xl border border-gray-200 bg-white">
-    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
-        <div className="flex w-full flex-1 items-center justify-between pr-4">
-            <h2 className="text-base font-semibold text-gray-900">Dış Görseller</h2>
-            
-        </div>
-        <span className="transition-transform group-open:rotate-180">
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-        </span>
-    </summary>
-    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
-        <label className="text-sm">
-    <span className="mb-1 block text-gray-600">Virgülle ayrılmış Media ID listesi girin:</span>
-    <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="mediaId1, mediaId2" value={exteriorMediaIdsRaw} onChange={(event) => setExteriorMediaIdsRaw(event.target.value)} />
-</label>
-    </div>
-</details>
-
-<details className="group rounded-xl border border-gray-200 bg-white">
-    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
-        <div className="flex w-full flex-1 items-center justify-between pr-4">
-            <h2 className="text-base font-semibold text-gray-900">İç Görseller</h2>
-            
-        </div>
-        <span className="transition-transform group-open:rotate-180">
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-        </span>
-    </summary>
-    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
-        <label className="text-sm">
-    <span className="mb-1 block text-gray-600">Virgülle ayrılmış Media ID listesi girin:</span>
-    <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="mediaId1, mediaId2" value={interiorMediaIdsRaw} onChange={(event) => setInteriorMediaIdsRaw(event.target.value)} />
-</label>
-    </div>
-</details>
-
-<details className="group rounded-xl border border-gray-200 bg-white">
-    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
-        <div className="flex w-full flex-1 items-center justify-between pr-4">
-            <h2 className="text-base font-semibold text-gray-900">Kat Planları</h2>
-            <button
-                        type="button"
-                        onClick={addFloorPlan}
-                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                        <Plus className="h-4 w-4" /> Ekle
-                    </button>
-        </div>
-        <span className="transition-transform group-open:rotate-180">
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-        </span>
-    </summary>
-    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
-        
-                <div className="mt-4 space-y-3">
-                    {floorPlans.map((item, index) => (
-                        <div
-                            key={`floor-${index}`}
-                            className="grid gap-3 rounded-lg border border-gray-200 p-3 md:grid-cols-2"
-                        >
+                                {PROPERTY_TYPES.map((item) => (
+                                    <option key={item.value} value={item.value}>
+                                        {item.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Firma</span>
                             <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Başlık (TR)"
-                                value={item.title}
-                                onChange={(event) =>
-                                    setFloorPlans((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, title: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={company}
+                                onChange={(event) => setCompany(event.target.value)}
                             />
+                        </label>
+                        <label className="text-sm md:col-span-2">
+                            <span className="mb-1 block text-gray-600">Başlık (TR)</span>
                             <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Alan (örn. 110 m²)"
-                                value={item.area}
-                                onChange={(event) =>
-                                    setFloorPlans((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, area: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={title}
+                                onChange={(event) => setTitle(event.target.value)}
+                                required
                             />
-                            <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm md:col-span-2"
-                                placeholder="Görsel URL"
-                                value={item.imageUrl}
-                                onChange={(event) =>
-                                    setFloorPlans((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, imageUrl: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
-                            />
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setFloorPlans((prev) =>
-                                        prev.filter((_, entryIndex) => entryIndex !== index)
-                                    )
-                                }
-                                className="inline-flex w-max items-center gap-1 text-sm text-red-600 hover:text-red-700"
-                            >
-                                <Trash2 className="h-4 w-4" /> Sil
-                            </button>
-                        </div>
-                    ))}
-                    {floorPlans.length === 0 && (
-                        <p className="text-sm text-gray-500">Henüz kat planı eklenmedi.</p>
-                    )}
-                </div>
-    </div>
-</details>
-
-<details className="group rounded-xl border border-gray-200 bg-white">
-    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
-        <div className="flex w-full flex-1 items-center justify-between pr-4">
-            <h2 className="text-base font-semibold text-gray-900">Harita Görselleri</h2>
-            
-        </div>
-        <span className="transition-transform group-open:rotate-180">
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-        </span>
-    </summary>
-    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
-        <label className="text-sm">
-    <span className="mb-1 block text-gray-600">Virgülle ayrılmış Media ID listesi girin:</span>
-    <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="mediaId1, mediaId2" value={mapMediaIdsRaw} onChange={(event) => setMapMediaIdsRaw(event.target.value)} />
-</label>
-    </div>
-</details>
-
-<details className="group rounded-xl border border-gray-200 bg-white">
-    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
-        <div className="flex w-full flex-1 items-center justify-between pr-4">
-            <h2 className="text-base font-semibold text-gray-900">Promosyon Videosu</h2>
-            
-        </div>
-        <span className="transition-transform group-open:rotate-180">
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-        </span>
-    </summary>
-    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
-        <label className="text-sm">
-    <span className="mb-1 block text-gray-600">Youtube Video ID'si veya Linki</span>
-    <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="Örn: https://www.youtube.com/watch?v=..." value={promoVideoUrl} onChange={(event) => setPromoVideoUrl(event.target.value)} />
-</label>
-    </div>
-</details>
-
-<details className="group rounded-xl border border-gray-200 bg-white">
-    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
-        <div className="flex w-full flex-1 items-center justify-between pr-4">
-            <h2 className="text-base font-semibold text-gray-900">Sıkça Sorulan Sorular</h2>
-            <button
-                        type="button"
-                        onClick={addFaq}
-                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                        <Plus className="h-4 w-4" /> Ekle
-                    </button>
-        </div>
-        <span className="transition-transform group-open:rotate-180">
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-        </span>
-    </summary>
-    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
-        
-                <div className="mt-4 space-y-3">
-                    {faqs.map((item, index) => (
-                        <div
-                            key={`faq-${index}`}
-                            className="grid gap-3 rounded-lg border border-gray-200 p-3"
-                        >
-                            <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Soru"
-                                value={item.question}
-                                onChange={(event) =>
-                                    setFaqs((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, question: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
-                            />
+                        </label>
+                        <label className="text-sm md:col-span-2">
+                            <span className="mb-1 block text-gray-600">Açıklama (TR)</span>
                             <textarea
-                                className="h-24 rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Cevap"
-                                value={item.answer}
-                                onChange={(event) =>
-                                    setFaqs((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, answer: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
+                                className="h-28 w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={description}
+                                onChange={(event) => setDescription(event.target.value)}
                             />
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setFaqs((prev) =>
-                                        prev.filter((_, entryIndex) => entryIndex !== index)
-                                    )
-                                }
-                                className="inline-flex w-max items-center gap-1 text-sm text-red-600 hover:text-red-700"
-                            >
-                                <Trash2 className="h-4 w-4" /> Sil
-                            </button>
-                        </div>
-                    ))}
-                    {faqs.length === 0 && (
-                        <p className="text-sm text-gray-500">Henüz SSS eklenmedi.</p>
-                    )}
-                </div>
-    </div>
-</details>
-
-<details className="group rounded-xl border border-gray-200 bg-white">
-    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
-        <div className="flex w-full flex-1 items-center justify-between pr-4">
-            <h2 className="text-base font-semibold text-gray-900">Proje İçi Daireler</h2>
-            <button
-                        type="button"
-                        onClick={addProjectUnit}
-                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                        <Plus className="h-4 w-4" /> Ekle
-                    </button>
-        </div>
-        <span className="transition-transform group-open:rotate-180">
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-        </span>
-    </summary>
-    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
-        
-                <div className="mt-4 space-y-3">
-                    {projectUnits.map((item, index) => (
-                        <div
-                            key={`unit-${index}`}
-                            className="grid gap-3 rounded-lg border border-gray-200 p-3 md:grid-cols-2"
-                        >
-                            <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Başlık (TR)"
-                                value={item.title}
-                                onChange={(event) =>
-                                    setProjectUnits((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, title: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
-                            />
-                            <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Oda (örn. 2+1)"
-                                value={item.rooms}
-                                onChange={(event) =>
-                                    setProjectUnits((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, rooms: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
-                            />
-                            <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Alan (m²)"
-                                value={item.areaRaw}
-                                onChange={(event) =>
-                                    setProjectUnits((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, areaRaw: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
-                            />
-                            <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Fiyat (opsiyonel)"
-                                value={item.priceRaw}
-                                onChange={(event) =>
-                                    setProjectUnits((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, priceRaw: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
-                            />
-                            <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm md:col-span-2"
-                                placeholder="mediaId1, mediaId2"
-                                value={item.mediaIdsRaw}
-                                onChange={(event) =>
-                                    setProjectUnits((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, mediaIdsRaw: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
-                            />
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setProjectUnits((prev) =>
-                                        prev.filter((_, entryIndex) => entryIndex !== index)
-                                    )
-                                }
-                                className="inline-flex w-max items-center gap-1 text-sm text-red-600 hover:text-red-700"
-                            >
-                                <Trash2 className="h-4 w-4" /> Sil
-                            </button>
-                        </div>
-                    ))}
-                    {projectUnits.length === 0 && (
-                        <p className="text-sm text-gray-500">Henüz proje içi daire eklenmedi.</p>
-                    )}
-                </div>
-    </div>
-</details>
-
-<details className="group rounded-xl border border-gray-200 bg-white">
-    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
-        <div className="flex w-full flex-1 items-center justify-between pr-4">
-            <h2 className="text-base font-semibold text-gray-900">Özel Galeriler</h2>
-            <button
-                        type="button"
-                        onClick={addCustomGallery}
-                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                        <Plus className="h-4 w-4" /> Ekle
-                    </button>
-        </div>
-        <span className="transition-transform group-open:rotate-180">
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-        </span>
-    </summary>
-    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
-        
-                <p className="mt-2 text-xs text-gray-500">
-                    Media ID alanına virgülle ayırarak mevcut media kayıtlarını bağlayabilirsiniz.
-                </p>
-                <div className="mt-4 space-y-3">
-                    {customGalleries.map((item, index) => (
-                        <div
-                            key={`gallery-${index}`}
-                            className="grid gap-3 rounded-lg border border-gray-200 p-3 md:grid-cols-2"
-                        >
-                            <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Başlık (TR)"
-                                value={item.title}
-                                onChange={(event) =>
-                                    setCustomGalleries((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, title: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
-                            />
-                            <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                                placeholder="Alt başlık"
-                                value={item.subtitle}
-                                onChange={(event) =>
-                                    setCustomGalleries((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, subtitle: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
-                            />
-                            <input
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm md:col-span-2"
-                                placeholder="mediaId1, mediaId2"
-                                value={item.mediaIdsRaw}
-                                onChange={(event) =>
-                                    setCustomGalleries((prev) =>
-                                        prev.map((entry, entryIndex) =>
-                                            entryIndex === index
-                                                ? { ...entry, mediaIdsRaw: event.target.value }
-                                                : entry
-                                        )
-                                    )
-                                }
-                            />
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setCustomGalleries((prev) =>
-                                        prev.filter((_, entryIndex) => entryIndex !== index)
-                                    )
-                                }
-                                className="inline-flex w-max items-center gap-1 text-sm text-red-600 hover:text-red-700"
-                            >
-                                <Trash2 className="h-4 w-4" /> Sil
-                            </button>
-                        </div>
-                    ))}
-                    {customGalleries.length === 0 && (
-                        <p className="text-sm text-gray-500">Henüz özel galeri eklenmedi.</p>
-                    )}
-                </div>
-    </div>
-</details>
-
-<details className="group rounded-xl border border-gray-200 bg-white">
-    <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
-        <div className="flex w-full flex-1 items-center justify-between pr-4">
-            <h2 className="text-base font-semibold text-gray-900">Belgeler</h2>
-            
-        </div>
-        <span className="transition-transform group-open:rotate-180">
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-        </span>
-    </summary>
-    <div className="border-t border-gray-100 p-5 pt-0 mt-2">
-        <div className="mb-4"><label className="text-sm">
-    <span className="mb-1 block text-gray-600">Belge Media ID'leri (Virgülle ayrılmış):</span>
-    <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="mediaId1, mediaId2" value={documentMediaIdsRaw} onChange={(event) => setDocumentMediaIdsRaw(event.target.value)} />
-</label></div>
-<div className="mt-5 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <p className="text-sm font-semibold text-gray-900">
-                                Belge Yükleme
-                            </p>
-                            <p className="text-xs text-gray-500">
-                                PDF, DOC, DOCX, PPT, PPTX dosyalarını yükleyebilirsiniz.
-                            </p>
-                        </div>
-                        <label
-                            className={`inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium ${
-                                !project?.id || isUploadingDocuments
-                                    ? "cursor-not-allowed bg-gray-200 text-gray-500"
-                                    : "cursor-pointer bg-orange-500 text-white hover:bg-orange-600"
-                            }`}
-                        >
-                            {isUploadingDocuments ? "Yükleniyor..." : "Belge Yükle"}
-                            <input
-                                type="file"
-                                className="hidden"
-                                multiple
-                                accept=".pdf,.doc,.docx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                                disabled={!project?.id || isUploadingDocuments}
-                                onChange={handleDocumentUpload}
+                        </label>
+                        <label className="text-sm md:col-span-2">
+                            <span className="mb-1 block text-gray-600">
+                                Etiketler / Bullet&apos;lar (satır başına 1)
+                            </span>
+                            <textarea
+                                className="h-24 w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={featureBullets}
+                                onChange={(event) => setFeatureBullets(event.target.value)}
+                                placeholder="Öne Çıkan&#10;Lüks Konut"
                             />
                         </label>
                     </div>
-                    {!project?.id && (
-                        <p className="mt-2 text-xs text-amber-700">
-                            Önce projeyi oluşturun, sonra belge yükleyebilirsiniz.
-                        </p>
-                    )}
-                    {documentUploadError && (
-                        <p className="mt-2 text-xs text-red-600">{documentUploadError}</p>
-                    )}
-                    {documentUploadSuccess && (
-                        <p className="mt-2 text-xs text-emerald-600">{documentUploadSuccess}</p>
-                    )}
-                    {documents.length > 0 && (
-                        <div className="mt-3 space-y-2">
-                            {documents.map((document) => (
-                                <div
-                                    key={document.id}
-                                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-xs"
-                                >
-                                    <span className="font-mono text-gray-500">{document.id}</span>
-                                    <a
-                                        href={getMediaUrl(document.url)}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-orange-600 hover:text-orange-700"
-                                    >
-                                        Dosyayı Aç
-                                    </a>
-                                </div>
-                            ))}
-                        </div>
-                    )}
                 </div>
-    </div>
-</details>
+            </details>
+
+            <details className="group rounded-xl border border-gray-200 bg-white" open>
+                <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+                    <div className="flex w-full flex-1 items-center justify-between pr-4">
+                        <h2 className="text-base font-semibold text-gray-900">Konum ve Metrikler</h2>
+
+                    </div>
+                    <span className="transition-transform group-open:rotate-180">
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                    </span>
+                </summary>
+                <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+
+                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                        <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Şehir</span>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={city}
+                                onChange={(event) => setCity(event.target.value)}
+                                required
+                            />
+                        </label>
+                        <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">İlçe</span>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={district}
+                                onChange={(event) => setDistrict(event.target.value)}
+                                required
+                            />
+                        </label>
+                        <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Mahalle</span>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={neighborhood}
+                                onChange={(event) => setNeighborhood(event.target.value)}
+                            />
+                        </label>
+                        <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Teslim Tarihi</span>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={deliveryDate}
+                                onChange={(event) => setDeliveryDate(event.target.value)}
+                                placeholder="Aralık 2027"
+                            />
+                        </label>
+                        <label className="text-sm md:col-span-2">
+                            <span className="mb-1 block text-gray-600">Adres</span>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={address}
+                                onChange={(event) => setAddress(event.target.value)}
+                            />
+                        </label>
+                        <label className="text-sm md:col-span-2">
+                            <span className="mb-1 block text-gray-600">Google Maps Link</span>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={googleMapsLink}
+                                onChange={(event) => setGoogleMapsLink(event.target.value)}
+                            />
+                        </label>
+                        <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Latitude</span>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={latitude}
+                                onChange={(event) => setLatitude(event.target.value)}
+                            />
+                        </label>
+                        <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Longitude</span>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={longitude}
+                                onChange={(event) => setLongitude(event.target.value)}
+                            />
+                        </label>
+                        <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Kart Fiyatı (opsiyonel)</span>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={price}
+                                onChange={(event) => setPrice(event.target.value)}
+                            />
+                        </label>
+                        <label className="text-sm">
+                            <span className="mb-1 block text-gray-600">Kart m² (opsiyonel)</span>
+                            <input
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2"
+                                value={area}
+                                onChange={(event) => setArea(event.target.value)}
+                            />
+                        </label>
+                    </div>
+                </div>
+            </details>
+
+            <details className="group rounded-xl border border-gray-200 bg-white">
+                <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+                    <div className="flex w-full flex-1 items-center justify-between pr-4">
+                        <h2 className="text-base font-semibold text-gray-900">Proje Özellikleri (Genel + Sosyal)</h2>
+                        <button
+                            type="button"
+                            onClick={addProjectFeature}
+                            className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                            <Plus className="h-4 w-4" /> Ekle
+                        </button>
+                    </div>
+                    <span className="transition-transform group-open:rotate-180">
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                    </span>
+                </summary>
+                <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+
+                    <div className="mt-4 space-y-3">
+                        {projectFeatures.length === 0 && (
+                            <p className="text-sm text-gray-500">Henüz özellik eklenmedi.</p>
+                        )}
+                        {projectFeatures.map((item, index) => (
+                            <div
+                                key={`feature-${index}`}
+                                className="grid gap-3 rounded-lg border border-gray-200 p-3 md:grid-cols-4"
+                            >
+                                <input
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                    placeholder="Icon adı"
+                                    value={item.icon}
+                                    onChange={(event) =>
+                                        setProjectFeatures((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, icon: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                    list={`project-icon-options-${index}`}
+                                />
+                                <datalist id={`project-icon-options-${index}`}>
+                                    {PROJECT_ICON_OPTIONS.map((iconName) => (
+                                        <option key={iconName} value={iconName} />
+                                    ))}
+                                </datalist>
+                                <select
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                    value={item.category}
+                                    onChange={(event) =>
+                                        setProjectFeatures((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? {
+                                                        ...entry,
+                                                        category: event.target.value as FeatureCategory,
+                                                    }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                >
+                                    <option value="GENERAL">GENERAL</option>
+                                    <option value="SOCIAL">SOCIAL</option>
+                                </select>
+                                <input
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm md:col-span-2"
+                                    placeholder="Metin (TR)"
+                                    value={item.title}
+                                    onChange={(event) =>
+                                        setProjectFeatures((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, title: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setProjectFeatures((prev) =>
+                                            prev.filter((_, entryIndex) => entryIndex !== index)
+                                        )
+                                    }
+                                    className="inline-flex w-max items-center gap-1 text-sm text-red-600 hover:text-red-700"
+                                >
+                                    <Trash2 className="h-4 w-4" /> Sil
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </details>
+
+            <details className="group rounded-xl border border-gray-200 bg-white">
+                <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+                    <div className="flex w-full flex-1 items-center justify-between pr-4">
+                        <h2 className="text-base font-semibold text-gray-900">Dış Görseller</h2>
+
+                    </div>
+                    <span className="transition-transform group-open:rotate-180">
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                    </span>
+                </summary>
+                <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+                    <label className="text-sm">
+                        <span className="mb-1 block text-gray-600">Virgülle ayrılmış Media ID listesi girin:</span>
+                        <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="mediaId1, mediaId2" value={exteriorMediaIdsRaw} onChange={(event) => setExteriorMediaIdsRaw(event.target.value)} />
+                    </label>
+                </div>
+            </details>
+
+            <details className="group rounded-xl border border-gray-200 bg-white">
+                <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+                    <div className="flex w-full flex-1 items-center justify-between pr-4">
+                        <h2 className="text-base font-semibold text-gray-900">İç Görseller</h2>
+
+                    </div>
+                    <span className="transition-transform group-open:rotate-180">
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                    </span>
+                </summary>
+                <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+                    <label className="text-sm">
+                        <span className="mb-1 block text-gray-600">Virgülle ayrılmış Media ID listesi girin:</span>
+                        <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="mediaId1, mediaId2" value={interiorMediaIdsRaw} onChange={(event) => setInteriorMediaIdsRaw(event.target.value)} />
+                    </label>
+                </div>
+            </details>
+
+            <details className="group rounded-xl border border-gray-200 bg-white">
+                <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+                    <div className="flex w-full flex-1 items-center justify-between pr-4">
+                        <h2 className="text-base font-semibold text-gray-900">Kat Planları</h2>
+                        <button
+                            type="button"
+                            onClick={addFloorPlan}
+                            className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                            <Plus className="h-4 w-4" /> Ekle
+                        </button>
+                    </div>
+                    <span className="transition-transform group-open:rotate-180">
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                    </span>
+                </summary>
+                <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+
+                    <div className="mt-4 space-y-3">
+                        {floorPlans.map((item, index) => (
+                            <div
+                                key={`floor-${index}`}
+                                className="grid gap-3 rounded-lg border border-gray-200 p-3 md:grid-cols-2"
+                            >
+                                <input
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                    placeholder="Başlık (TR)"
+                                    value={item.title}
+                                    onChange={(event) =>
+                                        setFloorPlans((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, title: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                />
+                                <input
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                    placeholder="Alan (örn. 110 m²)"
+                                    value={item.area}
+                                    onChange={(event) =>
+                                        setFloorPlans((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, area: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                />
+                                <input
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm md:col-span-2"
+                                    placeholder="Görsel URL"
+                                    value={item.imageUrl}
+                                    onChange={(event) =>
+                                        setFloorPlans((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, imageUrl: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setFloorPlans((prev) =>
+                                            prev.filter((_, entryIndex) => entryIndex !== index)
+                                        )
+                                    }
+                                    className="inline-flex w-max items-center gap-1 text-sm text-red-600 hover:text-red-700"
+                                >
+                                    <Trash2 className="h-4 w-4" /> Sil
+                                </button>
+                            </div>
+                        ))}
+                        {floorPlans.length === 0 && (
+                            <p className="text-sm text-gray-500">Henüz kat planı eklenmedi.</p>
+                        )}
+                    </div>
+                </div>
+            </details>
+
+            <details className="group rounded-xl border border-gray-200 bg-white">
+                <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+                    <div className="flex w-full flex-1 items-center justify-between pr-4">
+                        <h2 className="text-base font-semibold text-gray-900">Harita Görselleri</h2>
+
+                    </div>
+                    <span className="transition-transform group-open:rotate-180">
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                    </span>
+                </summary>
+                <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+                    <label className="text-sm">
+                        <span className="mb-1 block text-gray-600">Virgülle ayrılmış Media ID listesi girin:</span>
+                        <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="mediaId1, mediaId2" value={mapMediaIdsRaw} onChange={(event) => setMapMediaIdsRaw(event.target.value)} />
+                    </label>
+                </div>
+            </details>
+
+            <details className="group rounded-xl border border-gray-200 bg-white">
+                <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+                    <div className="flex w-full flex-1 items-center justify-between pr-4">
+                        <h2 className="text-base font-semibold text-gray-900">Promosyon Videosu</h2>
+
+                    </div>
+                    <span className="transition-transform group-open:rotate-180">
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                    </span>
+                </summary>
+                <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+                    <label className="text-sm">
+                        <span className="mb-1 block text-gray-600">Youtube Video ID&apos;si veya Linki</span>
+                        <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="Örn: https://www.youtube.com/watch?v=..." value={promoVideoUrl} onChange={(event) => setPromoVideoUrl(event.target.value)} />
+                    </label>
+                </div>
+            </details>
+
+            <details className="group rounded-xl border border-gray-200 bg-white">
+                <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+                    <div className="flex w-full flex-1 items-center justify-between pr-4">
+                        <h2 className="text-base font-semibold text-gray-900">Sıkça Sorulan Sorular</h2>
+                        <button
+                            type="button"
+                            onClick={addFaq}
+                            className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                            <Plus className="h-4 w-4" /> Ekle
+                        </button>
+                    </div>
+                    <span className="transition-transform group-open:rotate-180">
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                    </span>
+                </summary>
+                <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+
+                    <div className="mt-4 space-y-3">
+                        {faqs.map((item, index) => (
+                            <div
+                                key={`faq-${index}`}
+                                className="grid gap-3 rounded-lg border border-gray-200 p-3"
+                            >
+                                <input
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                    placeholder="Soru"
+                                    value={item.question}
+                                    onChange={(event) =>
+                                        setFaqs((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, question: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                />
+                                <textarea
+                                    className="h-24 rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                    placeholder="Cevap"
+                                    value={item.answer}
+                                    onChange={(event) =>
+                                        setFaqs((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, answer: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setFaqs((prev) =>
+                                            prev.filter((_, entryIndex) => entryIndex !== index)
+                                        )
+                                    }
+                                    className="inline-flex w-max items-center gap-1 text-sm text-red-600 hover:text-red-700"
+                                >
+                                    <Trash2 className="h-4 w-4" /> Sil
+                                </button>
+                            </div>
+                        ))}
+                        {faqs.length === 0 && (
+                            <p className="text-sm text-gray-500">Henüz SSS eklenmedi.</p>
+                        )}
+                    </div>
+                </div>
+            </details>
+
+            <details className="group rounded-xl border border-gray-200 bg-white">
+                <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+                    <div className="flex w-full flex-1 items-center justify-between pr-4">
+                        <h2 className="text-base font-semibold text-gray-900">Proje İçi Daireler</h2>
+                        <button
+                            type="button"
+                            onClick={addProjectUnit}
+                            className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                            <Plus className="h-4 w-4" /> Ekle
+                        </button>
+                    </div>
+                    <span className="transition-transform group-open:rotate-180">
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                    </span>
+                </summary>
+                <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+
+                    <div className="mt-4 space-y-3">
+                        {projectUnits.map((item, index) => (
+                            <div
+                                key={`unit-${index}`}
+                                className="grid gap-3 rounded-lg border border-gray-200 p-3 md:grid-cols-2"
+                            >
+                                <input
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                    placeholder="Başlık (TR)"
+                                    value={item.title}
+                                    onChange={(event) =>
+                                        setProjectUnits((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, title: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                />
+                                <input
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                    placeholder="Oda (örn. 2+1)"
+                                    value={item.rooms}
+                                    onChange={(event) =>
+                                        setProjectUnits((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, rooms: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                />
+                                <input
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                    placeholder="Alan (m²)"
+                                    value={item.areaRaw}
+                                    onChange={(event) =>
+                                        setProjectUnits((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, areaRaw: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                />
+                                <input
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                    placeholder="Fiyat (opsiyonel)"
+                                    value={item.priceRaw}
+                                    onChange={(event) =>
+                                        setProjectUnits((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, priceRaw: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                />
+                                <input
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm md:col-span-2"
+                                    placeholder="mediaId1, mediaId2"
+                                    value={item.mediaIdsRaw}
+                                    onChange={(event) =>
+                                        setProjectUnits((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, mediaIdsRaw: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setProjectUnits((prev) =>
+                                            prev.filter((_, entryIndex) => entryIndex !== index)
+                                        )
+                                    }
+                                    className="inline-flex w-max items-center gap-1 text-sm text-red-600 hover:text-red-700"
+                                >
+                                    <Trash2 className="h-4 w-4" /> Sil
+                                </button>
+                            </div>
+                        ))}
+                        {projectUnits.length === 0 && (
+                            <p className="text-sm text-gray-500">Henüz proje içi daire eklenmedi.</p>
+                        )}
+                    </div>
+                </div>
+            </details>
+
+            <details className="group rounded-xl border border-gray-200 bg-white">
+                <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+                    <div className="flex w-full flex-1 items-center justify-between pr-4">
+                        <h2 className="text-base font-semibold text-gray-900">Özel Galeriler</h2>
+                        <button
+                            type="button"
+                            onClick={addCustomGallery}
+                            className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                            <Plus className="h-4 w-4" /> Ekle
+                        </button>
+                    </div>
+                    <span className="transition-transform group-open:rotate-180">
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                    </span>
+                </summary>
+                <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+
+                    <p className="mt-2 text-xs text-gray-500">
+                        Media ID alanına virgülle ayırarak mevcut media kayıtlarını bağlayabilirsiniz.
+                    </p>
+                    <div className="mt-4 space-y-3">
+                        {customGalleries.map((item, index) => (
+                            <div
+                                key={`gallery-${index}`}
+                                className="grid gap-3 rounded-lg border border-gray-200 p-3 md:grid-cols-2"
+                            >
+                                <input
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                    placeholder="Başlık (TR)"
+                                    value={item.title}
+                                    onChange={(event) =>
+                                        setCustomGalleries((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, title: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                />
+                                <input
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                    placeholder="Alt başlık"
+                                    value={item.subtitle}
+                                    onChange={(event) =>
+                                        setCustomGalleries((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, subtitle: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                />
+                                <input
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm md:col-span-2"
+                                    placeholder="mediaId1, mediaId2"
+                                    value={item.mediaIdsRaw}
+                                    onChange={(event) =>
+                                        setCustomGalleries((prev) =>
+                                            prev.map((entry, entryIndex) =>
+                                                entryIndex === index
+                                                    ? { ...entry, mediaIdsRaw: event.target.value }
+                                                    : entry
+                                            )
+                                        )
+                                    }
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setCustomGalleries((prev) =>
+                                            prev.filter((_, entryIndex) => entryIndex !== index)
+                                        )
+                                    }
+                                    className="inline-flex w-max items-center gap-1 text-sm text-red-600 hover:text-red-700"
+                                >
+                                    <Trash2 className="h-4 w-4" /> Sil
+                                </button>
+                            </div>
+                        ))}
+                        {customGalleries.length === 0 && (
+                            <p className="text-sm text-gray-500">Henüz özel galeri eklenmedi.</p>
+                        )}
+                    </div>
+                </div>
+            </details>
+
+            <details className="group rounded-xl border border-gray-200 bg-white">
+                <summary className="flex cursor-pointer list-none items-center justify-between p-5 marker:hidden">
+                    <div className="flex w-full flex-1 items-center justify-between pr-4">
+                        <h2 className="text-base font-semibold text-gray-900">Belgeler</h2>
+
+                    </div>
+                    <span className="transition-transform group-open:rotate-180">
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                    </span>
+                </summary>
+                <div className="border-t border-gray-100 p-5 pt-0 mt-2">
+                    <div className="mb-4"><label className="text-sm">
+                        <span className="mb-1 block text-gray-600">Belge Media ID&apos;leri (Virgülle ayrılmış):</span>
+                        <input className="w-full rounded-lg border border-gray-300 px-3 py-2" placeholder="mediaId1, mediaId2" value={documentMediaIdsRaw} onChange={(event) => setDocumentMediaIdsRaw(event.target.value)} />
+                    </label></div>
+                    <div className="mt-5 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-semibold text-gray-900">
+                                    Belge Yükleme
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                    PDF, DOC, DOCX, PPT, PPTX dosyalarını yükleyebilirsiniz.
+                                </p>
+                            </div>
+                            <label
+                                className={`inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium ${!project?.id || isUploadingDocuments
+                                        ? "cursor-not-allowed bg-gray-200 text-gray-500"
+                                        : "cursor-pointer bg-orange-500 text-white hover:bg-orange-600"
+                                    }`}
+                            >
+                                {isUploadingDocuments ? "Yükleniyor..." : "Belge Yükle"}
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    multiple
+                                    accept=".pdf,.doc,.docx,.ppt,.pptx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                                    disabled={!project?.id || isUploadingDocuments}
+                                    onChange={handleDocumentUpload}
+                                />
+                            </label>
+                        </div>
+                        {!project?.id && (
+                            <p className="mt-2 text-xs text-amber-700">
+                                Önce projeyi oluşturun, sonra belge yükleyebilirsiniz.
+                            </p>
+                        )}
+                        {documentUploadError && (
+                            <p className="mt-2 text-xs text-red-600">{documentUploadError}</p>
+                        )}
+                        {documentUploadSuccess && (
+                            <p className="mt-2 text-xs text-emerald-600">{documentUploadSuccess}</p>
+                        )}
+                        {documents.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                                {documents.map((document) => (
+                                    <div
+                                        key={document.id}
+                                        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-xs"
+                                    >
+                                        <span className="font-mono text-gray-500">{document.id}</span>
+                                        <a
+                                            href={getMediaUrl(document.url)}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-orange-600 hover:text-orange-700"
+                                        >
+                                            Dosyayı Aç
+                                        </a>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </details>
         </form>
     );
 }

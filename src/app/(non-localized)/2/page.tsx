@@ -307,7 +307,7 @@ export default function MediterraneanCoastalPage() {
                                         </div>
                                         <span className="text-sm font-medium text-gray-900">Yıllık 300+</span>
                                     </div>
-                                    <p className="text-xs text-gray-500">Güneşli gün ile Akdeniz'in en güzel iklimine sahip.</p>
+                                    <p className="text-xs text-gray-500">Güneşli gün ile Akdeniz&apos;in en güzel iklimine sahip.</p>
                                 </div>
                             </div>
 

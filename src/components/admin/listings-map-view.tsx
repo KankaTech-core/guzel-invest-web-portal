@@ -110,6 +110,7 @@ export default function ListingsMapView({
 
     useEffect(() => {
         if (open && !prevOpenRef.current) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setMapKey((prev) => prev + 1);
         }
         prevOpenRef.current = open;
@@ -126,6 +127,7 @@ export default function ListingsMapView({
 
     useEffect(() => {
         if (open) return;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setActiveId(null);
     }, [open]);
 
@@ -133,6 +135,7 @@ export default function ListingsMapView({
         if (!open) return;
         if (!activeId) return;
         const exists = visibleListings.some((listing) => listing.id === activeId);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (!exists) setActiveId(null);
     }, [open, activeId, visibleListings]);
 

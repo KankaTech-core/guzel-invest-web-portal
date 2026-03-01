@@ -54,6 +54,7 @@ const CustomGallerySchema = z.object({
 
 const ProjectUnitSchema = z.object({
     rooms: z.string().optional(),
+    detailType: z.string().optional(),
     area: z.number().nullable().optional(),
     price: z.number().nullable().optional(),
     mediaIds: z.array(z.string()).optional(),
@@ -261,6 +262,7 @@ async function replaceProjectUnits(
     await tx.projectUnit.deleteMany({ where: { listingId } });
 
     for (const item of units) {
+        const detailType = item.detailType || "ROOM";
         const rooms = normalizeProjectText(item.rooms);
         if (!rooms) continue;
 
@@ -268,6 +270,7 @@ async function replaceProjectUnits(
             data: {
                 listingId,
                 rooms,
+                detailType,
                 area: toNumberOrNull(item.area) ?? null,
                 price:
                     typeof item.price === "number" && Number.isFinite(item.price)

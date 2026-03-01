@@ -1,0 +1,403 @@
+
+> guzel-invest-website@0.1.0 lint
+> eslint
+
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/.agents/skills/react-components/examples/gold-standard-card.tsx
+  20:10  warning  'cardData' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/.agents/skills/shadcn-ui/examples/data-table.tsx
+  157:17  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/.agents/skills/shadcn-ui/examples/data-table.tsx:157:17
+  155 |   const [rowSelection, setRowSelection] = React.useState({})
+  156 |
+> 157 |   const table = useReactTable({
+      |                 ^^^^^^^^^^^^^ TanStack Table's `useReactTable()` API returns functions that cannot be memoized safely
+  158 |     data,
+  159 |     columns,
+  160 |     onSortingChange: setSorting,  react-hooks/incompatible-library
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/modify_form.js
+  1:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  2:14  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/modify_form2.js
+  1:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  2:14  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/refactor-project-form.js
+   1:12  error    A `require()` style import is forbidden             @typescript-eslint/no-require-imports
+  32:10  warning  'makeSectionCollapsible' is defined but never used  @typescript-eslint/no-unused-vars
+  32:59  warning  'isOpen' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  40:7   warning  'sections' is assigned a value but never used       @typescript-eslint/no-unused-vars
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/regenerate-new-project-form.js
+  1:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/regenerate-project-form.js
+  1:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/scripts/start-dev.js
+   9:29  error    A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  10:13  error    A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+  71:12  warning  'err' is defined but never used          @typescript-eslint/no-unused-vars
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(localized)/[locale]/hakkimizda/page.tsx
+  181:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  234:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  385:45  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  420:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  460:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(localized)/[locale]/ilan/[slug]/page.tsx
+   26:5   warning  'Scaling' is defined but never used                  @typescript-eslint/no-unused-vars
+   27:5   warning  'Trees' is defined but never used                    @typescript-eslint/no-unused-vars
+  117:11  warning  'formattedPrice' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(localized)/[locale]/page.tsx
+    37:5   warning  'ToggleLeft' is defined but never used                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+    38:5   warning  'ToggleRight' is defined but never used                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+   284:22  warning  'searchVersion' is assigned a value but never used                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   736:37  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+   736:56  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+   793:61  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+   922:49  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  1009:53  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  1344:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  1409:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  1564:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  1650:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  1788:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(localized)/[locale]/projeler/components/projects-cta-section.tsx
+  1:10  warning  'MoveRight' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(localized)/[locale]/projeler/components/projects-hero-section.tsx
+  13:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(localized)/[locale]/projeler/components/projects-list-section.tsx
+   1:10  warning  'MoveRight' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+  10:45  warning  'index' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  16:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/1/page.tsx
+   15:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   84:41  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+   84:60  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  107:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  158:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  200:45  warning  'idx' is defined but never used                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+  226:44  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  251:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/10/page.tsx
+   15:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   50:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+   94:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  116:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  145:35  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  155:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  161:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  167:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  173:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/2/page.tsx
+   15:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   80:44  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+   95:41  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+   95:60  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  145:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  154:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  161:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  220:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  294:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  310:97  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  321:44  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/3/page.tsx
+   15:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+  116:41  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  116:60  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  161:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  258:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  373:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/4/page.tsx
+    6:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   38:92  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+   43:64  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+   58:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+   63:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+   68:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+   99:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  140:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/5/page.tsx
+    6:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   25:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+   38:41  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+   66:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  102:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  112:44  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/6/page.tsx
+   15:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   94:44  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+   99:43  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+   99:90  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  134:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  147:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  154:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  208:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  282:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  304:44  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/7/page.tsx
+   15:13   warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   70:39   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+   89:33   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  105:37   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  164:41   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  226:37   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  261:43   error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  272:146  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/8/page.tsx
+   15:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   77:43  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  168:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/9/page.tsx
+   15:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   66:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+   74:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  106:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  132:29  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  134:63  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/admin/ilanlar/page.tsx
+  370:53  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/admin/makaleler/page.tsx
+  137:53  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/admin/projeler/yeni/components/NewProjectForm.tsx
+  367:7  warning  'parseNumberValue' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/p1/page.tsx
+   17:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+  230:61  warning  'idx' is defined but never used                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+  237:45  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/p10/page.tsx
+   17:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   62:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  147:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/p2/page.tsx
+   17:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   36:44  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+   98:40  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  102:77  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  240:49  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/p4/page.tsx
+   17:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   93:39  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  226:78  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  240:49  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/p5/page.tsx
+   17:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   87:39  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  219:45  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/p6/page.tsx
+   17:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   73:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  170:37  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  170:70  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  183:45  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  262:80  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/p7/page.tsx
+   16:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+   69:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+   83:40  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+   86:39  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  192:41  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/p8/page.tsx
+   17:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+  212:45  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/p9/page.tsx
+   17:13  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font                                                                                                                          @next/next/no-page-custom-font
+  125:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/s1/components/Visuals.tsx
+  120:5  warning  'totalCount' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/s1/data.ts
+  272:11  warning  'projectRoomFeatures' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  280:11  warning  'metaRibbon' is assigned a value but never used           @typescript-eslint/no-unused-vars
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/(non-localized)/s1/mockData.ts
+  1:10  warning  'LucideIcon' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/api/admin/ai/translate-listing/route.ts
+  113:18  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/app/api/admin/forms/[id]/route.ts
+  38:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/components/admin/article-form.tsx
+  1326:45  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/components/admin/company-option-select.tsx
+  38:11  warning  'selectedOption' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/components/admin/homepage-settings-manager.tsx
+    5:10  warning  'ArrowDown' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+    5:21  warning  'ArrowUp' is defined but never used                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  443:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/components/admin/listing-form.tsx
+   746:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+   823:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+   916:12  warning  'customRoomInput' is assigned a value but never used                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+   916:29  warning  'setCustomRoomInput' is assigned a value but never used                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+   917:12  warning  'isAddingRoom' is assigned a value but never used                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+   917:26  warning  'setIsAddingRoom' is assigned a value but never used                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+  3715:53  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  3768:57  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/components/admin/listings-map-view.tsx
+  113:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/components/admin/listings-map-view.tsx:113:13
+  111 |     useEffect(() => {
+  112 |         if (open && !prevOpenRef.current) {
+> 113 |             setMapKey((prev) => prev + 1);
+      |             ^^^^^^^^^ Avoid calling setState() directly within an effect
+  114 |         }
+  115 |         prevOpenRef.current = open;
+  116 |     }, [open]);                                                                 react-hooks/set-state-in-effect
+  129:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/components/admin/listings-map-view.tsx:129:9
+  127 |     useEffect(() => {
+  128 |         if (open) return;
+> 129 |         setActiveId(null);
+      |         ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  130 |     }, [open]);
+  131 |
+  132 |     useEffect(() => {                                                                                                                              react-hooks/set-state-in-effect
+  136:22  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/components/admin/listings-map-view.tsx:136:22
+  134 |         if (!activeId) return;
+  135 |         const exists = visibleListings.some((listing) => listing.id === activeId);
+> 136 |         if (!exists) setActiveId(null);
+      |                      ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  137 |     }, [open, activeId, visibleListings]);
+  138 |
+  139 |     const activeListing =  react-hooks/set-state-in-effect
+  192:33  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @next/next/no-img-element
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/components/admin/project-form.tsx
+   750:47  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  1112:64  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  1405:62  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/components/admin/project-form2.tsx
+    6:21  warning  'ChevronDown' is defined but never used                          @typescript-eslint/no-unused-vars
+    6:43  warning  'Plus' is defined but never used                                 @typescript-eslint/no-unused-vars
+    7:10  warning  'PROJECT_ICON_OPTIONS' is defined but never used                 @typescript-eslint/no-unused-vars
+    8:10  warning  'getMediaUrl' is defined but never used                          @typescript-eslint/no-unused-vars
+  197:18  warning  'setCity' is assigned a value but never used                     @typescript-eslint/no-unused-vars
+  198:22  warning  'setDistrict' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+  199:26  warning  'setNeighborhood' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  200:21  warning  'setAddress' is assigned a value but never used                  @typescript-eslint/no-unused-vars
+  201:28  warning  'setGoogleMapsLink' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  202:22  warning  'setLatitude' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+  207:23  warning  'setLongitude' is assigned a value but never used                @typescript-eslint/no-unused-vars
+  213:26  warning  'setDeliveryDate' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  214:19  warning  'setPrice' is assigned a value but never used                    @typescript-eslint/no-unused-vars
+  219:18  warning  'setArea' is assigned a value but never used                     @typescript-eslint/no-unused-vars
+  273:33  warning  'setExteriorMediaIdsRaw' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  276:33  warning  'setInteriorMediaIdsRaw' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  279:28  warning  'setMapMediaIdsRaw' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  282:27  warning  'setPromoVideoUrl' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  288:12  warning  'documents' is assigned a value but never used                   @typescript-eslint/no-unused-vars
+  291:12  warning  'isUploadingDocuments' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  292:12  warning  'documentUploadError' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  293:12  warning  'documentUploadSuccess' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  305:11  warning  'addProjectFeature' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  317:11  warning  'addCustomGallery' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  329:11  warning  'addProjectUnit' is assigned a value but never used              @typescript-eslint/no-unused-vars
+  342:11  warning  'addFloorPlan' is assigned a value but never used                @typescript-eslint/no-unused-vars
+  353:11  warning  'addFaq' is assigned a value but never used                      @typescript-eslint/no-unused-vars
+  364:11  warning  'handleDocumentUpload' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  740:47  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/components/admin/room-option-select.tsx
+   3:21  warning  'useMemo' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+  35:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/components/admin/room-option-select.tsx:35:9
+  33 |     // Update input value when prop changes
+  34 |     useEffect(() => {
+> 35 |         setInputValue(value || "");
+     |         ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  36 |     }, [value]);
+  37 |
+  38 |     useEffect(() => {  react-hooks/set-state-in-effect
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/lib/context/sidebar-context.tsx
+  19:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/canaltuntas/Documents/Work/Guzel Invest Alanya/src/lib/context/sidebar-context.tsx:19:13
+  17 |         const saved = localStorage.getItem("admin-sidebar-collapsed");
+  18 |         if (saved !== null) {
+> 19 |             setIsCollapsed(saved === "true");
+     |             ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  20 |         }
+  21 |     }, []);
+  22 |  react-hooks/set-state-in-effect
+
+✖ 210 problems (57 errors, 153 warnings)
+

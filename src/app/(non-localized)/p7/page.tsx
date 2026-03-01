@@ -80,10 +80,10 @@ export default function PortfolioMediterraneanFreeformPage() {
                                 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-lg"
                                 style={{ fontFamily: "'Libre Baskerville', serif" }}
                             >
-                                Akdeniz'in Güzeli
+                                Akdeniz&apos;in Güzeli
                             </h1>
                             <p className="text-white/80 text-xl mb-10 max-w-xl mx-auto">
-                                Alanya'da hayalinizdeki gayrimenkulü keşfedin
+                                Alanya&apos;da hayalinizdeki gayrimenkulü keşfedin
                             </p>
 
                             {/* Search bar overlay */}

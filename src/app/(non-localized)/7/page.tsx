@@ -269,7 +269,7 @@ export default function MediterraneanCoastalPage() {
                                 <button className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-5 rounded-full text-lg transition-all shadow-lg shadow-orange-500/25 hover:scale-105">
                                     Randevu Oluştur
                                 </button>
-                                <p className="text-center text-gray-500 text-sm">veya <a href="#" className="text-white hover:underline">WhatsApp'tan yazın</a></p>
+                                <p className="text-center text-gray-500 text-sm">veya <a href="#" className="text-white hover:underline">WhatsApp&apos;tan yazın</a></p>
                             </div>
                         </div>
                     </div>

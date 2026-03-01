@@ -90,7 +90,7 @@ export default function PortfolioScandinavianCalmPage() {
                                 Huzur Dolu Yaşam Alanları
                             </h1>
                             <p className="text-gray-400 max-w-lg mx-auto text-lg font-light leading-relaxed">
-                                Alanya'nın en güzel köşelerinde, size özel seçilmiş gayrimenkuller.
+                                Alanya&apos;nın en güzel köşelerinde, size özel seçilmiş gayrimenkuller.
                             </p>
                         </div>
 
@@ -223,7 +223,7 @@ export default function PortfolioScandinavianCalmPage() {
 
                                 {/* Trust cue */}
                                 <div className="pt-6 border-t border-gray-100 text-center">
-                                    <p className="text-xs text-gray-400">2001'den beri güvenle</p>
+                                    <p className="text-xs text-gray-400">2001&apos;den beri güvenle</p>
                                 </div>
                             </aside>
 

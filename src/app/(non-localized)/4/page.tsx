@@ -35,7 +35,7 @@ export default function ScandinavianCalmPage() {
                 <section className="pt-36 pb-24 px-8">
                     <div className="max-w-6xl mx-auto">
                         <div className="text-center max-w-3xl mx-auto mb-16">
-                            <p className="text-sm text-orange-500 font-medium mb-4">Akdeniz'in En Güzel Köşesi</p>
+                            <p className="text-sm text-orange-500 font-medium mb-4">Akdeniz&apos;in En Güzel Köşesi</p>
                             <h1 className="text-5xl md:text-6xl font-semibold leading-tight text-gray-900 mb-6">
                                 Güzel Şehre<br />Güzel Projeler
                             </h1>

@@ -30,6 +30,7 @@ import {
     ArrowLeft, ChevronDown,
     Building2,
     Check as CheckIcon,
+    CreditCard,
     FileText,
     GripVertical,
     Home,
@@ -39,6 +40,7 @@ import {
     Loader2,
     Languages,
     MapPin,
+    Megaphone,
     MessageSquare,
     PlayCircle,
     Plus,
@@ -127,9 +129,18 @@ interface FloorPlanRow {
     mediaId: string | null;
 }
 
+type ProjectDetailType = "ROOM" | "PAYMENT" | "PROMO";
+
+const PROJECT_DETAIL_TYPE_OPTIONS: { value: ProjectDetailType; label: string; icon: React.ElementType }[] = [
+    { value: "ROOM", label: "Oda Sayısı", icon: Home },
+    { value: "PAYMENT", label: "Ödeme Ayrıntısı", icon: CreditCard },
+    { value: "PROMO", label: "Promosyon Metni", icon: Megaphone },
+];
+
 interface ProjectUnitRow {
     id: string;
     rooms: string;
+    detailType: ProjectDetailType;
 }
 
 interface LocationsPayload {
@@ -201,6 +212,7 @@ interface ProjectUnitTranslationRecord {
 interface ProjectUnitRecord {
     id: string;
     rooms: string;
+    detailType?: string | null;
     area?: number | null;
     price?: number | null;
     translations?: ProjectUnitTranslationRecord[];
@@ -1832,6 +1844,7 @@ export default function NewProjectForm({
                     .map((unit) => ({
                         id: createRowId(),
                         rooms: unit.rooms?.trim() || "",
+                        detailType: (unit.detailType === "PAYMENT" || unit.detailType === "PROMO" ? unit.detailType : "ROOM") as ProjectDetailType,
                     }))
                     .filter((item) => item.rooms.length > 0);
 
@@ -1988,14 +2001,31 @@ export default function NewProjectForm({
         ]);
     };
 
-    const addProjectUnitRow = () => {
+    const [detailTypeMenuOpen, setDetailTypeMenuOpen] = useState(false);
+    const detailTypeMenuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (detailTypeMenuRef.current && !detailTypeMenuRef.current.contains(event.target as Node)) {
+                setDetailTypeMenuOpen(false);
+            }
+        };
+        if (detailTypeMenuOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [detailTypeMenuOpen]);
+
+    const addProjectUnitRow = (detailType: ProjectDetailType = "ROOM") => {
         setProjectUnits((prev) => [
             ...prev,
             {
                 id: createRowId(),
                 rooms: "",
+                detailType,
             },
         ]);
+        setDetailTypeMenuOpen(false);
     };
 
     const updateProjectUnitRoom = (id: string, value: string | null) => {
@@ -2004,7 +2034,7 @@ export default function NewProjectForm({
                 item.id === id
                     ? {
                         ...item,
-                        rooms: value?.trim() || "",
+                        rooms: value || "",
                     }
                     : item
             )
@@ -2206,6 +2236,7 @@ export default function NewProjectForm({
         const projectUnitsPayload = projectUnits
             .map((item) => ({
                 rooms: item.rooms.trim(),
+                detailType: item.detailType,
                 area: null,
                 price: null,
                 mediaIds: [],
@@ -2939,51 +2970,94 @@ export default function NewProjectForm({
                                                         Daire seçenekleri portföy filtresi ve tekil proje genel özelliklerinde otomatik kullanılır.
                                                     </p>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={addProjectUnitRow}
-                                                    className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100"
-                                                >
-                                                    <Plus className="h-3.5 w-3.5" />
-                                                    Seçenek Ekle
-                                                </button>
+                                                <div className="relative" ref={detailTypeMenuRef}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setDetailTypeMenuOpen((prev) => !prev)}
+                                                        className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100"
+                                                    >
+                                                        <Plus className="h-3.5 w-3.5" />
+                                                        Seçenek Ekle
+                                                        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${detailTypeMenuOpen ? "rotate-180" : ""}`} />
+                                                    </button>
+                                                    {detailTypeMenuOpen && (
+                                                        <div className="absolute right-0 top-full z-20 mt-1 w-52 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+                                                            {PROJECT_DETAIL_TYPE_OPTIONS.map((option) => (
+                                                                <button
+                                                                    key={option.value}
+                                                                    type="button"
+                                                                    onClick={() => addProjectUnitRow(option.value)}
+                                                                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                                                                >
+                                                                    <option.icon className="h-4 w-4 text-slate-400" />
+                                                                    {option.label}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {projectUnits.length === 0 ? (
                                                 <p className="text-xs text-slate-500">
-                                                    Henüz daire seçeneği eklenmedi.
+                                                    Henüz seçenek eklenmedi.
                                                 </p>
                                             ) : (
                                                 <div className="space-y-3">
-                                                    {projectUnits.map((unit) => (
-                                                        <div
-                                                            key={unit.id}
-                                                            className="flex items-end gap-2"
-                                                        >
-                                                            <RoomOptionSelect
-                                                                className="flex-1"
-                                                                value={unit.rooms || null}
-                                                                onChange={(value) =>
-                                                                    updateProjectUnitRoom(
-                                                                        unit.id,
-                                                                        value
-                                                                    )
-                                                                }
-                                                                options={roomOptions}
-                                                                onOptionsChange={setRoomOptions}
-                                                            />
-                                                            <button
-                                                                type="button"
-                                                                onClick={() =>
-                                                                    removeProjectUnitRow(unit.id)
-                                                                }
-                                                                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-red-200 hover:text-red-500"
-                                                                title="Daire seçeneğini sil"
+                                                    {projectUnits.map((unit) => {
+                                                        const typeOption = PROJECT_DETAIL_TYPE_OPTIONS.find((o) => o.value === unit.detailType) || PROJECT_DETAIL_TYPE_OPTIONS[0];
+                                                        return (
+                                                            <div
+                                                                key={unit.id}
+                                                                className="flex items-end gap-2"
                                                             >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </button>
-                                                        </div>
-                                                    ))}
+                                                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400" title={typeOption.label}>
+                                                                    <typeOption.icon className="h-4 w-4" />
+                                                                </div>
+                                                                {unit.detailType === "ROOM" ? (
+                                                                    <RoomOptionSelect
+                                                                        className="flex-1"
+                                                                        value={unit.rooms || null}
+                                                                        onChange={(value) =>
+                                                                            updateProjectUnitRoom(
+                                                                                unit.id,
+                                                                                value
+                                                                            )
+                                                                        }
+                                                                        options={roomOptions}
+                                                                        onOptionsChange={setRoomOptions}
+                                                                    />
+                                                                ) : (
+                                                                    <input
+                                                                        type="text"
+                                                                        className="flex-1 px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
+                                                                        placeholder={
+                                                                            unit.detailType === "PAYMENT"
+                                                                                ? "örn. X'ten başlayan fiyatlarla, 60 ay taksit"
+                                                                                : "örn. Erken rezervasyon indirimi"
+                                                                        }
+                                                                        value={unit.rooms}
+                                                                        onChange={(e) =>
+                                                                            updateProjectUnitRoom(
+                                                                                unit.id,
+                                                                                e.target.value
+                                                                            )
+                                                                        }
+                                                                    />
+                                                                )}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        removeProjectUnitRow(unit.id)
+                                                                    }
+                                                                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-red-200 hover:text-red-500"
+                                                                    title="Seçeneği sil"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </button>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
                                         </div>
