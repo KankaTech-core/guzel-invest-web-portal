@@ -72,7 +72,13 @@ export async function GET(req: NextRequest) {
         const maxBasementArea = parseNumberParam(searchParams.get("maxBasementArea"));
         const hasWaterSource = parseBooleanParam(searchParams.get("hasWaterSource"));
         const hasFruitTrees = parseBooleanParam(searchParams.get("hasFruitTrees"));
+        const onlyProjects = parseBooleanParam(searchParams.get("onlyProjects"));
         const sort = searchParams.get("sort") as SortOption | null;
+
+        const page = parseNumberParam(searchParams.get("page")) || 1;
+        const limit = parseNumberParam(searchParams.get("limit")) || 8;
+        const skip = (page - 1) * limit;
+        const take = limit;
 
         const types = rawTypes.filter((value): value is PropertyType =>
             Object.values(PropertyType).includes(value as PropertyType)
@@ -206,6 +212,10 @@ export async function GET(req: NextRequest) {
             where.hasFruitTrees = hasFruitTrees;
         }
 
+        if (onlyProjects) {
+            where.isProject = true;
+        }
+
         if (minPrice || maxPrice) {
             const priceFilter: Prisma.DecimalFilter = {};
             if (minPrice) priceFilter.gte = new Prisma.Decimal(minPrice);
@@ -231,66 +241,82 @@ export async function GET(req: NextRequest) {
                         ? { area: "desc" }
                         : { createdAt: "desc" };
 
-        const listings = await prisma.listing.findMany({
-            where,
-            include: {
-                translations: {
-                    where: {
-                        locale: {
-                            in: localeFallbacks,
-                        },
-                    },
-                },
-                media: {
-                    orderBy: [{ isCover: "desc" }, { order: "asc" }],
-                    take: 16,
-                },
-                tags: {
-                    include: {
-                        tag: {
-                            select: {
-                                name: true,
-                                color: true,
+        const [totalCount, listings] = await Promise.all([
+            prisma.listing.count({ where }),
+            prisma.listing.findMany({
+                where,
+                skip,
+                take,
+                include: {
+                    translations: {
+                        where: {
+                            locale: {
+                                in: localeFallbacks,
                             },
                         },
                     },
-                },
-                projectUnits: {
-                    orderBy: { rooms: "asc" },
-                    select: {
-                        rooms: true,
+                    media: {
+                        orderBy: [{ isCover: "desc" }, { order: "asc" }],
+                        take: 16,
                     },
-                },
-                projectFeatures: {
-                    where: {
-                        category: "GENERAL",
-                    },
-                    orderBy: { order: "asc" },
-                    select: {
-                        icon: true,
-                        translations: {
-                            where: {
-                                locale: {
-                                    in: localeFallbacks,
+                    tags: {
+                        include: {
+                            tag: {
+                                select: {
+                                    name: true,
+                                    color: true,
                                 },
                             },
-                            select: {
-                                locale: true,
-                                title: true,
+                        },
+                    },
+                    projectUnits: {
+                        orderBy: { rooms: "asc" },
+                        select: {
+                            rooms: true,
+                            detailType: true,
+                            translations: {
+                                where: {
+                                    locale: {
+                                        in: localeFallbacks,
+                                    },
+                                },
+                                select: {
+                                    locale: true,
+                                    title: true,
+                                },
                             },
                         },
                     },
-                },
-                _count: {
-                    select: {
-                        media: true,
+                    projectFeatures: {
+                        where: {
+                            category: "GENERAL",
+                        },
+                        orderBy: { order: "asc" },
+                        select: {
+                            icon: true,
+                            translations: {
+                                where: {
+                                    locale: {
+                                        in: localeFallbacks,
+                                    },
+                                },
+                                select: {
+                                    locale: true,
+                                    title: true,
+                                },
+                            },
+                        },
+                    },
+                    _count: {
+                        select: {
+                            media: true,
+                        },
                     },
                 },
-            },
-            orderBy,
-        });
+                orderBy,
+            })]);
 
-        return NextResponse.json({ listings });
+        return NextResponse.json({ listings, totalCount });
     } catch (error) {
         console.error("Public listings API error:", error);
         return NextResponse.json(

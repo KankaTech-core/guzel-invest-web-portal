@@ -13,6 +13,7 @@ import {
     Youtube,
     Facebook,
     Loader2,
+    MapPin,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { mapPublicProjectsToMenuItems, type NavbarProjectMenuItem, type PublicProjectMenuSource } from "@/lib/navbar-project-menu";
@@ -248,12 +249,12 @@ export function Navbar({ locale }: { locale: string }) {
                                         <ChevronDown className="h-4 w-4 opacity-70" />
                                     </Link>
 
-                                    <div className="pointer-events-none invisible absolute left-1/2 top-full z-50 w-[32rem] -translate-x-1/2 pt-2 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
-                                        <div className="rounded-xl border border-gray-200 bg-white p-2 shadow-xl shadow-gray-200/60">
-                                            <div className="grid grid-cols-2 gap-2">
+                                    <div className="pointer-events-none invisible absolute left-1/2 top-full z-50 w-[56rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 pt-2 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
+                                        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl shadow-gray-200/60">
+                                            <div className="grid grid-cols-2 gap-5">
                                                 {isProjectsMenuLoading ? (
-                                                    <div className="col-span-2 flex items-center justify-center gap-2 rounded-lg px-3 py-6 text-sm text-gray-500">
-                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    <div className="col-span-2 flex items-center justify-center gap-2 rounded-lg px-3 py-8 text-sm text-gray-500">
+                                                        <Loader2 className="h-5 w-5 animate-spin" />
                                                         Projeler yükleniyor...
                                                     </div>
                                                 ) : projectMenuItems.length > 0 ? (
@@ -261,24 +262,39 @@ export function Navbar({ locale }: { locale: string }) {
                                                         <Link
                                                             key={project.href}
                                                             href={`/${locale}${project.href}`}
-                                                            className="flex items-center gap-2 rounded-lg p-2 transition-colors hover:bg-orange-50"
+                                                            className="flex gap-4 rounded-xl p-3 transition-all hover:bg-orange-50/40 border border-transparent hover:border-orange-100/60 group/item items-start"
                                                         >
-                                                            <div className="h-12 w-16 shrink-0 overflow-hidden rounded-md bg-gray-100">
+                                                            <div className="h-28 w-36 shrink-0 overflow-hidden rounded-xl bg-gray-100 shadow-sm border border-gray-100">
                                                                 <Image
                                                                     src={appendVersionParam(
                                                                         getMediaUrl(project.image),
                                                                         project.imageVersion
                                                                     )}
                                                                     alt={project.title}
-                                                                    width={64}
-                                                                    height={48}
+                                                                    width={144}
+                                                                    height={112}
                                                                     unoptimized
-                                                                    className="h-full w-full object-cover"
+                                                                    className="h-full w-full object-cover transition-transform duration-700 group-hover/item:scale-105"
                                                                 />
                                                             </div>
-                                                            <span className="line-clamp-2 text-sm font-medium leading-snug text-gray-700">
-                                                                {project.title}
-                                                            </span>
+                                                            <div className="flex flex-col gap-2 flex-1 min-w-0 py-1">
+                                                                <div>
+                                                                    <h4 className="truncate text-base font-bold text-gray-900 group-hover/item:text-orange-600 transition-colors">
+                                                                        {project.title}
+                                                                    </h4>
+                                                                    {project.location && (
+                                                                        <div className="flex items-center gap-1.5 mt-1 text-[0.8rem] text-gray-500 font-medium">
+                                                                            <MapPin className="h-3.5 w-3.5 shrink-0 text-orange-500/70" />
+                                                                            <span className="truncate whitespace-nowrap">{project.location}</span>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                {project.description && (
+                                                                    <p className="line-clamp-2 text-sm text-gray-500 leading-snug">
+                                                                        {project.description}
+                                                                    </p>
+                                                                )}
+                                                            </div>
                                                         </Link>
                                                     ))
                                                 ) : (

@@ -631,6 +631,19 @@ select.input {
   animation: pulse 2s infinite;
 }
 
+/* Promotion badge – text color blink */
+@keyframes promo-text-blink {
+
+  0%,
+  100% {
+    color: white;
+  }
+
+  50% {
+    color: #EC6803;
+  }
+}
+
 .animate-slide-next {
   animation: slideNext 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }

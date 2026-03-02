@@ -85,8 +85,15 @@ interface ListingProjectFeature {
     translations: ListingProjectFeatureTranslation[];
 }
 
+interface ListingProjectUnitTranslation {
+    locale: string;
+    title?: string | null;
+}
+
 interface ListingProjectUnit {
     rooms: string;
+    detailType?: string | null;
+    translations?: ListingProjectUnitTranslation[];
 }
 
 interface Listing {
@@ -147,6 +154,7 @@ interface FiltersState {
     maxBasementArea?: number;
     hasWaterSource?: boolean;
     hasFruitTrees?: boolean;
+    onlyProjects?: boolean;
     sort: SortOption;
 }
 
@@ -526,6 +534,7 @@ function readInitialFilters(searchParams: URLSearchParams): FiltersState {
     const rawParcelNo = searchParams.get("parcelNo") || "";
     const rawHasWaterSource = parseBooleanParam(searchParams.get("hasWaterSource"));
     const rawHasFruitTrees = parseBooleanParam(searchParams.get("hasFruitTrees"));
+    const rawOnlyProjects = parseBooleanParam(searchParams.get("onlyProjects"));
     const rawSort = searchParams.get("sort") as SortOption | null;
 
     const selectedTypes = rawTypes.filter((value) => validTypeValues.has(value));
@@ -584,6 +593,7 @@ function readInitialFilters(searchParams: URLSearchParams): FiltersState {
             : undefined,
         hasWaterSource: canUseFarmFilters ? rawHasWaterSource : undefined,
         hasFruitTrees: canUseFarmFilters ? rawHasFruitTrees : undefined,
+        onlyProjects: rawOnlyProjects,
         sort: selectedSort,
     };
 }
@@ -671,6 +681,7 @@ function getListingDescription(listing: Listing, locale: string) {
 function getProjectRoomOptions(listing: Listing) {
     const unique = new Set<string>();
     const rooms = (listing.projectUnits || [])
+        .filter(unit => !unit.detailType || unit.detailType === "ROOM")
         .map((unit) => unit.rooms?.trim())
         .filter((value): value is string => Boolean(value))
         .filter((value) => {
@@ -681,6 +692,26 @@ function getProjectRoomOptions(listing: Listing) {
         });
 
     return rooms;
+}
+
+function getProjectPromoText(listing: Listing, locale: string) {
+    const promoUnit = (listing.projectUnits || []).find(unit => unit.detailType === "PROMO");
+    if (!promoUnit) return null;
+
+    const requested = promoUnit.translations?.find((t) => t.locale === locale);
+    const fallback = promoUnit.translations?.find((t) => t.locale === "tr");
+
+    return requested?.title || fallback?.title || promoUnit.rooms || null;
+}
+
+function getProjectPaymentDetails(listing: Listing, locale: string) {
+    const paymentUnit = (listing.projectUnits || []).find(unit => unit.detailType === "PAYMENT");
+    if (!paymentUnit) return null;
+
+    const requested = paymentUnit.translations?.find((t) => t.locale === locale);
+    const fallback = paymentUnit.translations?.find((t) => t.locale === "tr");
+
+    return requested?.title || fallback?.title || paymentUnit.rooms || null;
 }
 
 function getProjectGeneralFeatures(listing: Listing, locale: string) {
@@ -766,6 +797,11 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
     const [availableNeighborhoods, setAvailableNeighborhoods] = useState<string[]>([]);
     const [descriptionOverflowMap, setDescriptionOverflowMap] = useState<Record<string, boolean>>({});
+
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
+    const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+    const observerTarget = useRef<HTMLDivElement>(null);
 
     const abortRef = useRef<AbortController | null>(null);
     const snapshotRef = useRef("");
@@ -1069,6 +1105,9 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         if (filters.sort !== DEFAULT_SORT) {
             params.set("sort", filters.sort);
         }
+        if (filters.onlyProjects) {
+            params.set("onlyProjects", "true");
+        }
 
         return params.toString();
     }, [
@@ -1110,17 +1149,26 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     }, [queryString]);
 
     const fetchListings = useCallback(
-        async (mode: "initial" | "background" = "background") => {
+        async (mode: "initial" | "background" | "nextPage" = "background", currentPage = 1) => {
             const controller = new AbortController();
             abortRef.current?.abort();
             abortRef.current = controller;
 
             if (mode === "initial") {
                 setIsLoading(true);
+            } else if (mode === "nextPage") {
+                setIsFetchingNextPage(true);
             }
 
             try {
-                const response = await fetch(`/api/public/listings?${queryString}`, {
+                // Determine how many items to fetch. For background refresh of existing state, fetch up to current page.
+                const limit = 8;
+                const fetchLimit = (mode === "background" || mode === "initial") ? currentPage * limit : limit;
+                const fetchPage = mode === "nextPage" ? currentPage : 1;
+
+                const url = `/api/public/listings?${queryString}&page=${fetchPage}&limit=${fetchLimit}`;
+
+                const response = await fetch(url, {
                     signal: controller.signal,
                     cache: "no-store",
                     headers: {
@@ -1136,7 +1184,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                     throw new Error(apiError);
                 }
 
-                const data = (await response.json()) as { listings: Listing[] };
+                const data = (await response.json()) as { listings: Listing[], totalCount?: number };
                 const nextListings = Array.isArray(data.listings) ? data.listings : [];
                 const nextPriceHistogramValues = buildPriceHistogramValues(nextListings);
                 const nextSnapshot = nextListings
@@ -1148,7 +1196,16 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                     .join("|");
 
                 if (nextSnapshot !== snapshotRef.current) {
-                    setListings(nextListings);
+                    if (mode === "nextPage") {
+                        setListings(prev => {
+                            const existingIds = new Set(prev.map(l => l.id));
+                            const newItems = nextListings.filter(l => !existingIds.has(l.id));
+                            return [...prev, ...newItems];
+                        });
+                    } else {
+                        setListings(nextListings);
+                    }
+
                     setActiveImageIndexes((previous) => {
                         const nextIndexes: Record<string, number> = {};
                         for (const listing of nextListings) {
@@ -1168,10 +1225,15 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         }
                         return nextIndexes;
                     });
+
                     if (nextPriceHistogramValues.length > 0) {
                         setPriceHistogramValues(nextPriceHistogramValues);
                     }
                     snapshotRef.current = nextSnapshot;
+                }
+
+                if (data.totalCount !== undefined) {
+                    setHasMore((mode === "background" || mode === "initial" ? nextListings.length : snapshotRef.current.split("|").length + nextListings.length) < data.totalCount);
                 }
 
                 setError("");
@@ -1192,6 +1254,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             } finally {
                 if (mode === "initial") {
                     setIsLoading(false);
+                } else if (mode === "nextPage") {
+                    setIsFetchingNextPage(false);
                 }
             }
         },
@@ -1199,23 +1263,27 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     );
 
     useEffect(() => {
+        setPage(1);
         const mode = hasInitializedRef.current ? "background" : "initial";
-        void fetchListings(mode);
+        void fetchListings(mode, 1);
         hasInitializedRef.current = true;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [queryString]);
 
+    useEffect(() => {
         const intervalId = window.setInterval(() => {
             if (document.visibilityState === "visible") {
-                void fetchListings("background");
+                void fetchListings("background", page);
             }
         }, REFRESH_INTERVAL_MS);
 
         const onFocus = () => {
-            void fetchListings("background");
+            void fetchListings("background", page);
         };
 
         const onVisibilityChange = () => {
             if (document.visibilityState === "visible") {
-                void fetchListings("background");
+                void fetchListings("background", page);
             }
         };
 
@@ -1226,9 +1294,35 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             window.clearInterval(intervalId);
             window.removeEventListener("focus", onFocus);
             document.removeEventListener("visibilitychange", onVisibilityChange);
-            abortRef.current?.abort();
         };
-    }, [fetchListings]);
+    }, [fetchListings, page]);
+
+    useEffect(() => {
+        if (page > 1) {
+            void fetchListings("nextPage", page);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page]);
+
+    useEffect(() => {
+        const target = observerTarget.current;
+        if (!target) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !isFetchingNextPage) {
+                    setPage((prev) => prev + 1);
+                }
+            },
+            { threshold: 0.1 }
+        );
+
+        observer.observe(target);
+
+        return () => {
+            observer.unobserve(target);
+        };
+    }, [hasMore, isFetchingNextPage]);
 
     const typeCounts = useMemo(() => {
         return listings.reduce<Record<string, number>>((accumulator, listing) => {
@@ -1332,6 +1426,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             maxBasementArea: undefined,
             hasWaterSource: undefined,
             hasFruitTrees: undefined,
+            onlyProjects: undefined,
             sort: previous.sort,
         }));
     };
@@ -1522,9 +1617,27 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         </button>
                     ))}
                 </div>
+                <div className="mt-2 text-center text-xs font-semibold text-gray-500">— VEYA —</div>
+                <div className="mt-2">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setFilters(prev => ({
+                                ...prev,
+                                onlyProjects: prev.onlyProjects ? undefined : true
+                            }))
+                        }}
+                        className={`w-full cursor-pointer rounded-lg border px-3 py-2 text-sm font-medium transition ${filters.onlyProjects
+                            ? "border-orange-500 bg-orange-500 text-white"
+                            : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                            }`}
+                    >
+                        Projeler
+                    </button>
+                </div>
             </div>
 
-            <div className="mb-6">
+            <div className="mb-6 hidden">
                 <button
                     type="button"
                     onClick={() => setIsCategoryExpanded((previous) => !previous)}
@@ -1669,8 +1782,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 </div>
             </div>
 
-            <div className="mb-6 space-y-3">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <div className="mb-6 hidden">
+                <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
                     Konum
                 </h4>
                 <Select
@@ -1788,7 +1901,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             </div>
 
             {isLandFiltersVisible && (
-                <div className="mb-6 space-y-3">
+                <div className="mb-6 hidden space-y-3">
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
                         Arsa Detayları
                     </h4>
@@ -1889,7 +2002,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             )}
 
             {isCommercialFiltersVisible && (
-                <div className="mb-6 space-y-3">
+                <div className="mb-6 hidden space-y-3">
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
                         Ticari Detaylar
                     </h4>
@@ -2046,7 +2159,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             )}
 
             {isFarmFiltersVisible && (
-                <div className="mb-6">
+                <div className="mb-6 hidden">
                     <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
                         Çiftlik Detayları
                     </h4>
@@ -2266,7 +2379,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
-                <aside className="hidden h-fit rounded-xl border border-gray-200 bg-white p-5 lg:block">
+                <aside className="sticky top-28 hidden h-fit rounded-xl border border-gray-200 bg-white p-5 lg:block">
                     {renderFilterPanelContent(false)}
                 </aside>
 
@@ -2292,6 +2405,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                             const title = getListingTitle(listing, locale);
                             const description = getListingDescription(listing, locale);
                             const projectRoomOptions = getProjectRoomOptions(listing);
+                            const projectPromoText = getProjectPromoText(listing, locale);
+                            const projectPaymentDetails = getProjectPaymentDetails(listing, locale);
                             const projectGeneralFeatures = getProjectGeneralFeatures(
                                 listing,
                                 locale
@@ -2473,6 +2588,26 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                                 İkamet
                                                             </span>
                                                         )}
+                                                        {projectPromoText && (
+                                                            <>
+                                                                <style>{`
+                                                                    @keyframes promoBlink {
+                                                                        0%, 100% { color: white; }
+                                                                        50% { color: #EC6803; }
+                                                                    }
+                                                                `}</style>
+                                                                <span
+                                                                    className="rounded-md px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                                                                    style={{
+                                                                        backgroundColor: '#EC6803',
+                                                                        color: 'white',
+                                                                        animation: 'promoBlink 1.5s steps(1) infinite',
+                                                                    }}
+                                                                >
+                                                                    {projectPromoText}
+                                                                </span>
+                                                            </>
+                                                        )}
                                                     </div>
 
                                                     <h2 className="mb-1 text-lg font-semibold text-gray-900 transition-colors group-hover:text-orange-500">
@@ -2520,6 +2655,11 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                                     {roomOption}
                                                                 </span>
                                                             )
+                                                        )}
+                                                        {projectPaymentDetails && (
+                                                            <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                                                                {projectPaymentDetails}
+                                                            </span>
                                                         )}
                                                     </div>
                                                 ) : (
@@ -2599,8 +2739,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                     ? "bg-orange-500 hover:bg-orange-600"
                                                     : "bg-gray-900 hover:bg-gray-800"
                                                     }`}>
-                                                    İncele
-                                                    <span aria-hidden="true">{"->"}</span>
+                                                    {listing.isProject ? "Projeyi İncele" : "İncele"}
+                                                    {!listing.isProject && <span aria-hidden="true">{"->"}</span>}
                                                 </span>
                                             </div>
                                         </Link>
@@ -2608,6 +2748,13 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 </article>
                             );
                         })
+                    )}
+                    {hasMore && (
+                        <div ref={observerTarget} className="flex justify-center py-8">
+                            <div className="relative h-1 w-32 overflow-hidden rounded-full bg-gray-100">
+                                <div className="absolute inset-y-0 left-0 bg-orange-500 transition-all duration-500 animate-pulse w-full rounded-full" />
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>
