@@ -23,6 +23,8 @@ export interface MapListing {
     status: ListingStatusValue;
     latitude: number | null;
     longitude: number | null;
+    /** When provided, shown on the marker instead of the formatted price. */
+    label?: string;
 }
 
 const DEFAULT_CENTER: [number, number] = [36.5444, 31.999]; // Alanya
@@ -178,11 +180,16 @@ function createLeafletIcon(
     isActive: boolean,
     statusUi: StatusUi
 ) {
-    const ui = statusUi[listing.status];
-    const priceLabel = formatPrice(listing.price, listing.currency);
+    const displayLabel = listing.label ?? formatPrice(listing.price, listing.currency);
+
+    // Use brand orange for project markers (those with a label), status colors for regular listings
+    const bg = listing.label ? "#EC6803" : statusUi[listing.status].markerBg;
+    const text = listing.label ? "#FFFFFF" : statusUi[listing.status].markerText;
+    const ring = listing.label ? "rgba(236,104,3,0.45)" : statusUi[listing.status].markerRing;
+
     const html = `
-        <div class="listing-marker ${isActive ? "is-active" : ""}" style="--marker-bg: ${ui.markerBg}; --marker-text: ${ui.markerText}; --marker-ring: ${ui.markerRing};">
-            <div class="listing-marker__label">${priceLabel}</div>
+        <div class="listing-marker ${isActive ? "is-active" : ""}" style="--marker-bg: ${bg}; --marker-text: ${text}; --marker-ring: ${ring};">
+            <div class="listing-marker__label">${displayLabel}</div>
             <div class="listing-marker__pointer"></div>
         </div>
     `;

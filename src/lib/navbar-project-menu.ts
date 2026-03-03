@@ -11,6 +11,27 @@ export type PublicProjectMedia = {
     isCover?: boolean | null;
 };
 
+export type PublicProjectFeatureTranslation = {
+    locale: string;
+    title: string;
+};
+
+export type PublicProjectFeature = {
+    icon: string | null;
+    translations: PublicProjectFeatureTranslation[];
+};
+
+export type PublicProjectUnitTranslation = {
+    locale: string;
+    title?: string | null;
+};
+
+export type PublicProjectUnit = {
+    rooms: string;
+    detailType?: string | null;
+    translations?: PublicProjectUnitTranslation[];
+};
+
 export type PublicProjectMenuSource = {
     slug?: string | null;
     city?: string | null;
@@ -18,6 +39,13 @@ export type PublicProjectMenuSource = {
     updatedAt?: string | null;
     translations?: PublicProjectTranslation[] | null;
     media?: PublicProjectMedia[] | null;
+    projectFeatures?: PublicProjectFeature[] | null;
+    projectUnits?: PublicProjectUnit[] | null;
+};
+
+export type NavbarProjectFeature = {
+    icon: string;
+    label: string;
 };
 
 export type NavbarProjectMenuItem = {
@@ -27,6 +55,9 @@ export type NavbarProjectMenuItem = {
     imageVersion: string;
     description?: string;
     location?: string;
+    promoText?: string | null;
+    paymentDetails?: string | null;
+    features?: NavbarProjectFeature[];
 };
 
 export function mapPublicProjectsToMenuItems(
@@ -88,6 +119,31 @@ export function mapPublicProjectsToMenuItems(
             imageMedia?.url?.trim() ||
             slug;
 
+        const promoUnit = (project.projectUnits || []).find((unit) => unit.detailType === "PROMO");
+        const promoText = promoUnit
+            ? promoUnit.translations?.find((t) => t.locale === locale)?.title ||
+            promoUnit.translations?.find((t) => t.locale === "tr")?.title ||
+            promoUnit.rooms
+            : null;
+
+        const paymentUnit = (project.projectUnits || []).find((unit) => unit.detailType === "PAYMENT");
+        const paymentDetails = paymentUnit
+            ? paymentUnit.translations?.find((t) => t.locale === locale)?.title ||
+            paymentUnit.translations?.find((t) => t.locale === "tr")?.title ||
+            paymentUnit.rooms
+            : null;
+
+        const features = (project.projectFeatures || [])
+            .map((feature) => {
+                const title =
+                    feature.translations?.find((t) => t.locale === locale)?.title ||
+                    feature.translations?.find((t) => t.locale === "tr")?.title ||
+                    "";
+                return title ? { icon: feature.icon || "Building2", label: title } : null;
+            })
+            .filter((item): item is NavbarProjectFeature => item !== null)
+            .slice(0, 4);
+
         return {
             title,
             image,
@@ -95,6 +151,9 @@ export function mapPublicProjectsToMenuItems(
             imageVersion,
             description,
             location,
+            promoText,
+            paymentDetails,
+            features,
         } as NavbarProjectMenuItem;
     });
     return items.filter((item): item is NavbarProjectMenuItem => item !== null);

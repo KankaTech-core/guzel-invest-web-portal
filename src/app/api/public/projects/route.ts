@@ -86,6 +86,17 @@ export async function GET(request: NextRequest) {
                     },
                 },
             },
+            projectFeatures: {
+                include: {
+                    translations: {
+                        where: {
+                            locale: {
+                                in: localeFallbacks,
+                            },
+                        },
+                    },
+                },
+            },
             _count: {
                 select: {
                     media: true,
@@ -123,16 +134,16 @@ export async function GET(request: NextRequest) {
             const fallbackProjects =
                 missingSlots.length > 0
                     ? await prisma.listing.findMany({
-                          where: {
-                              ...where,
-                              ...(selectedIds.length > 0
-                                  ? { id: { notIn: selectedIds } }
-                                  : {}),
-                          },
-                          include: includeConfig,
-                          orderBy: fallbackProjectsOrderBy,
-                          take: missingSlots.length,
-                      })
+                        where: {
+                            ...where,
+                            ...(selectedIds.length > 0
+                                ? { id: { notIn: selectedIds } }
+                                : {}),
+                        },
+                        include: includeConfig,
+                        orderBy: fallbackProjectsOrderBy,
+                        take: missingSlots.length,
+                    })
                     : [];
 
             const projectsBySlot = new Map<

@@ -22,6 +22,7 @@ import {
     SlidersHorizontal,
     X,
 } from "lucide-react";
+import { ProjectIcon } from "@/components/single-project/ProjectIcon";
 import {
     cn,
     formatArea,
@@ -59,6 +60,27 @@ interface ListingMedia {
     url: string;
 }
 
+interface ProjectUnitTranslation {
+    locale: string;
+    title?: string | null;
+}
+
+interface ProjectUnit {
+    rooms: string;
+    detailType?: string | null;
+    translations?: ProjectUnitTranslation[];
+}
+
+interface ProjectFeatureTranslation {
+    locale: string;
+    title: string;
+}
+
+interface ProjectFeature {
+    icon: string | null;
+    translations: ProjectFeatureTranslation[];
+}
+
 interface Listing {
     id: string;
     slug: string;
@@ -78,8 +100,11 @@ interface Listing {
     bathrooms: number | null;
     citizenshipEligible: boolean;
     residenceEligible: boolean;
+    isProject: boolean;
     translations: ListingTranslation[];
     media: ListingMedia[];
+    projectUnits?: ProjectUnit[];
+    projectFeatures?: ProjectFeature[];
 }
 
 interface LocationsPayload {
@@ -109,6 +134,7 @@ interface FiltersState {
     maxBasementArea?: number;
     hasWaterSource?: boolean;
     hasFruitTrees?: boolean;
+    onlyProjects?: boolean;
 }
 
 interface DropdownOption {
@@ -227,6 +253,7 @@ const FILTER_QUERY_KEYS = [
     "maxBasementArea",
     "hasWaterSource",
     "hasFruitTrees",
+    "onlyProjects",
 ] as const;
 
 const LeafletMap = dynamic(() => import("@/components/admin/listings-leaflet-map"), {
@@ -555,6 +582,9 @@ export function PortfolioMapView({ locale }: { locale: string }) {
             try {
                 const params = new URLSearchParams(searchKey);
                 params.set("locale", locale);
+                // Fetch all listings for the map (override pagination)
+                params.set("limit", "500");
+                params.delete("page");
 
                 const response = await fetch(`/api/public/listings?${params.toString()}`, {
                     signal: controller.signal,
@@ -677,15 +707,15 @@ export function PortfolioMapView({ locale }: { locale: string }) {
         [filters.types]
     );
     const isLandFiltersVisible = useMemo(
-        () => isCategoryFieldVisibleForTypes("zoningStatus", filters.types),
+        () => filters.types.length > 0 && isCategoryFieldVisibleForTypes("zoningStatus", filters.types),
         [filters.types]
     );
     const isCommercialFiltersVisible = useMemo(
-        () => isCategoryFieldVisibleForTypes("groundFloorArea", filters.types),
+        () => filters.types.length > 0 && isCategoryFieldVisibleForTypes("groundFloorArea", filters.types),
         [filters.types]
     );
     const isFarmFiltersVisible = useMemo(
-        () => isCategoryFieldVisibleForTypes("hasWaterSource", filters.types),
+        () => filters.types.length > 0 && isCategoryFieldVisibleForTypes("hasWaterSource", filters.types),
         [filters.types]
     );
 
@@ -713,6 +743,12 @@ export function PortfolioMapView({ locale }: { locale: string }) {
             if (latitude === null || longitude === null) return [];
 
             const { amount, currency } = convertPrice(listing.price, listing.currency);
+
+            // Projects show their name on the marker; listings show price
+            const label = listing.isProject
+                ? (listing.translations[0]?.title || "Proje")
+                : undefined;
+
             return [
                 {
                     id: listing.id,
@@ -721,6 +757,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                     status: listing.status,
                     latitude,
                     longitude,
+                    label,
                 },
             ];
         });
@@ -1022,6 +1059,10 @@ export function PortfolioMapView({ locale }: { locale: string }) {
             if (filters.hasWaterSource === true) params.set("hasWaterSource", "true");
             if (filters.hasFruitTrees === true) params.set("hasFruitTrees", "true");
         }
+        if (filters.onlyProjects === true) {
+            params.set("isProject", "true");
+            params.set("onlyProjects", "true");
+        }
 
         const query = params.toString();
         router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
@@ -1166,7 +1207,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                 </div>
 
                                 <Link
-                                    href={`/${locale}/ilan/${activeListing.slug}`}
+                                    href={activeListing.isProject ? `/${locale}/proje/${activeListing.slug}` : `/${locale}/ilan/${activeListing.slug}`}
                                     className="contents"
                                 >
                                     <div className="flex cursor-pointer flex-col justify-between border-r border-gray-100 p-5">
@@ -1207,52 +1248,99 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                             </p>
                                         </div>
 
-                                        <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-gray-100 pt-4">
-                                            <div className="flex items-baseline gap-1.5">
-                                                <span className="text-sm font-semibold text-gray-900">
-                                                    {formatArea(activeListing.area).replace(" m²", "")}
-                                                </span>
-                                                <span className="text-xs text-gray-400">
-                                                    m<sup>2</sup>
-                                                </span>
+                                        {activeListing.isProject ? (
+                                            <div className="mt-4 flex min-h-9 flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
+                                                {getProjectRoomOptions(activeListing).map(
+                                                    (roomOption, roomIndex) => (
+                                                        <span
+                                                            key={`${activeListing.id}-room-${roomIndex}-${roomOption}`}
+                                                            className="inline-flex items-center rounded-full border border-orange-100 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700"
+                                                        >
+                                                            {roomOption}
+                                                        </span>
+                                                    )
+                                                )}
+                                                {(() => {
+                                                    const paymentDetails = getProjectPaymentDetails(activeListing, locale);
+                                                    return paymentDetails ? (
+                                                        <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                                                            {paymentDetails}
+                                                        </span>
+                                                    ) : null;
+                                                })()}
                                             </div>
-
-                                            {(activeListing.rooms || activeListing.bedrooms) && (
+                                        ) : (
+                                            <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-gray-100 pt-4">
                                                 <div className="flex items-baseline gap-1.5">
                                                     <span className="text-sm font-semibold text-gray-900">
-                                                        {activeListing.rooms || activeListing.bedrooms}
+                                                        {formatArea(activeListing.area).replace(" m²", "")}
                                                     </span>
-                                                    <span className="text-xs text-gray-400">oda</span>
+                                                    <span className="text-xs text-gray-400">
+                                                        m<sup>2</sup>
+                                                    </span>
                                                 </div>
-                                            )}
 
-                                            {activeListing.bathrooms && (
-                                                <div className="flex items-baseline gap-1.5">
-                                                    <span className="text-sm font-semibold text-gray-900">
-                                                        {activeListing.bathrooms}
-                                                    </span>
-                                                    <span className="text-xs text-gray-400">banyo</span>
-                                                </div>
-                                            )}
-                                        </div>
+                                                {(activeListing.rooms || activeListing.bedrooms) && (
+                                                    <div className="flex items-baseline gap-1.5">
+                                                        <span className="text-sm font-semibold text-gray-900">
+                                                            {activeListing.rooms || activeListing.bedrooms}
+                                                        </span>
+                                                        <span className="text-xs text-gray-400">oda</span>
+                                                    </div>
+                                                )}
+
+                                                {activeListing.bathrooms && (
+                                                    <div className="flex items-baseline gap-1.5">
+                                                        <span className="text-sm font-semibold text-gray-900">
+                                                            {activeListing.bathrooms}
+                                                        </span>
+                                                        <span className="text-xs text-gray-400">banyo</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="flex cursor-pointer items-center justify-between gap-3 bg-gray-50 p-5 md:flex-col md:items-stretch md:justify-between">
-                                        <div className="min-w-0 text-left md:text-right">
-                                            <p className="text-xl font-bold text-gray-900 sm:text-2xl">
-                                                {(() => {
-                                                    const { amount, currency } = convertPrice(activeListing.price, activeListing.currency);
-                                                    return formatPrice(amount, currency);
-                                                })()}
-                                            </p>
-                                            {activeListing.saleType === "RENT" && (
-                                                <p className="text-xs text-gray-400">/ ay</p>
-                                            )}
-                                        </div>
+                                        {activeListing.isProject ? (
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {getProjectGeneralFeatures(activeListing, locale).map((feature, featureIndex) => (
+                                                    <div
+                                                        key={`${activeListing.id}-project-feature-side-${featureIndex}-${feature.label}`}
+                                                        className="flex flex-col items-center justify-start gap-1 rounded-lg border border-slate-100 bg-white px-2 py-2 text-center"
+                                                    >
+                                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-50 text-slate-600">
+                                                            <ProjectIcon
+                                                                name={feature.icon}
+                                                                className="h-4 w-4"
+                                                            />
+                                                        </div>
+                                                        <span
+                                                            className="max-h-8 overflow-hidden text-[11px] font-semibold leading-4 text-slate-700"
+                                                            title={feature.label}
+                                                        >
+                                                            {feature.label}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="min-w-0 text-left md:text-right">
+                                                <p className="text-xl font-bold text-gray-900 sm:text-2xl">
+                                                    {(() => {
+                                                        const { amount, currency } = convertPrice(activeListing.price, activeListing.currency);
+                                                        return formatPrice(amount, currency);
+                                                    })()}
+                                                </p>
+                                                {activeListing.saleType === "RENT" && (
+                                                    <p className="text-xs text-gray-400">/ ay</p>
+                                                )}
+                                            </div>
+                                        )}
 
-                                        <span className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800 md:mt-4 md:w-full md:gap-2 md:px-5 md:py-2.5 md:text-sm">
-                                            İncele
-                                            <span aria-hidden="true">{"->"}</span>
+                                        <span className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-white transition md:mt-4 md:w-full md:gap-2 md:px-5 md:py-2.5 md:text-sm ${activeListing.isProject ? "bg-orange-500 hover:bg-orange-600" : "bg-gray-900 hover:bg-gray-800"}`}>
+                                            {activeListing.isProject ? "Projeyi İncele" : "İncele"}
+                                            {!activeListing.isProject && <span aria-hidden="true">{"->"}</span>}
                                         </span>
                                     </div>
                                 </Link>
@@ -1342,14 +1430,14 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                         <button
                                             key={item.value}
                                             type="button"
-                                            onClick={() =>
+                                            onClick={() => {
+                                                const nextValue = !isActive;
                                                 setFilters((previous) => ({
                                                     ...previous,
-                                                    saleType: isActive
-                                                        ? undefined
-                                                        : item.value,
-                                                }))
-                                            }
+                                                    saleType: nextValue ? (item.value as SaleType) : undefined,
+                                                    onlyProjects: false,
+                                                }));
+                                            }}
                                             className={cn(
                                                 "rounded-lg border px-3 py-2 text-sm font-medium transition",
                                                 isActive
@@ -1361,6 +1449,62 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                         </button>
                                     );
                                 })}
+                            </div>
+
+                            <div className="mt-2 text-center text-[10px] font-semibold text-gray-400">— VEYA —</div>
+
+                            <div className="mt-2 text-center">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const isActivating = !filters.onlyProjects;
+                                        const nextFilters = isActivating
+                                            ? {
+                                                ...filters,
+                                                onlyProjects: true,
+                                                saleType: undefined,
+                                                types: [],
+                                                rooms: [],
+                                                minPrice: undefined,
+                                                maxPrice: undefined,
+                                            }
+                                            : {
+                                                ...filters,
+                                                onlyProjects: undefined,
+                                            };
+
+                                        setFilters(nextFilters);
+
+                                        // Apply filter instantly to URL
+                                        const params = new URLSearchParams(searchKey);
+                                        FILTER_QUERY_KEYS.forEach((key) => params.delete(key));
+
+                                        if (nextFilters.onlyProjects) {
+                                            params.set("isProject", "true");
+                                            params.set("onlyProjects", "true");
+                                        } else {
+                                            // Restore other current filters from state if deactivating
+                                            nextFilters.types.forEach((t) => params.append("type", t));
+                                            if (nextFilters.saleType) params.set("saleType", nextFilters.saleType);
+                                            // ... more if needed, but for now just push the major change
+                                        }
+
+                                        // Re-apply common filters like location
+                                        if (nextFilters.city) params.set("city", nextFilters.city);
+                                        if (nextFilters.district) params.set("district", nextFilters.district);
+
+                                        const query = params.toString();
+                                        router.push(query ? `${pathname}?${query}` : pathname, { scroll: false });
+                                    }}
+                                    className={cn(
+                                        "w-full rounded-lg border px-3 py-2 text-sm font-medium transition",
+                                        filters.onlyProjects
+                                            ? "border-orange-500 bg-orange-500 text-white font-bold"
+                                            : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                                    )}
+                                >
+                                    Projeler
+                                </button>
                             </div>
                         </div>
 
@@ -1375,12 +1519,14 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                         <button
                                             key={item.value}
                                             type="button"
+                                            disabled={filters.onlyProjects}
                                             onClick={() => toggleType(item.value)}
                                             className={cn(
                                                 "rounded-lg border px-3 py-2 text-sm font-medium transition",
                                                 isActive
                                                     ? "border-orange-500 bg-orange-50 text-orange-700"
-                                                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                                                    : "border-gray-200 bg-white text-gray-700 hover:border-gray-300",
+                                                filters.onlyProjects && "opacity-50 cursor-not-allowed"
                                             )}
                                         >
                                             {item.label}
@@ -1941,6 +2087,7 @@ function readInitialFilters(searchParams: URLSearchParams): FiltersState {
             : undefined,
         hasWaterSource: canUseFarmFilters ? rawHasWaterSource : undefined,
         hasFruitTrees: canUseFarmFilters ? rawHasFruitTrees : undefined,
+        onlyProjects: searchParams.get("onlyProjects") === "true",
     };
 }
 
@@ -1977,4 +2124,49 @@ function normalizeCoordinate(value: Listing["latitude"]): number | null {
     }
     const parsed = Number.parseFloat(String(value).replace(",", "."));
     return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getProjectRoomOptions(listing: Listing): string[] {
+    const unique = new Set<string>();
+    return (listing.projectUnits || [])
+        .filter((unit) => !unit.detailType || unit.detailType === "ROOM")
+        .map((unit) => unit.rooms?.trim())
+        .filter((value): value is string => Boolean(value))
+        .filter((value) => {
+            const key = value.toLocaleLowerCase("tr-TR");
+            if (unique.has(key)) return false;
+            unique.add(key);
+            return true;
+        });
+}
+
+function getProjectPaymentDetails(listing: Listing, locale: string): string | null {
+    const paymentUnit = (listing.projectUnits || []).find(
+        (unit) => unit.detailType === "PAYMENT"
+    );
+    if (!paymentUnit) return null;
+
+    const requested = paymentUnit.translations?.find((t) => t.locale === locale);
+    const fallback = paymentUnit.translations?.find((t) => t.locale === "tr");
+
+    return requested?.title || fallback?.title || paymentUnit.rooms || null;
+}
+
+function getProjectGeneralFeatures(listing: Listing, locale: string) {
+    const items = listing.projectFeatures || [];
+
+    return items
+        .map((feature) => {
+            const requested = feature.translations.find((t) => t.locale === locale);
+            const fallback = feature.translations.find((t) => t.locale === "tr");
+            const label = (requested?.title || fallback?.title || "").trim();
+            if (!label) return null;
+
+            return {
+                icon: feature.icon || "Building2",
+                label,
+            };
+        })
+        .filter((item): item is { icon: string; label: string } => Boolean(item))
+        .slice(0, 4);
 }

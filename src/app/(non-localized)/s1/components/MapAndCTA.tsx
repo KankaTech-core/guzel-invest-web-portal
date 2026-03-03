@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -7,6 +9,8 @@ import {
     Download,
     Handshake,
     MapPin,
+    Minus,
+    Plus,
     Search,
 } from "lucide-react";
 import { S1SectionVisibility } from "../section-visibility";
@@ -48,6 +52,7 @@ export const MapAndCTA = ({
     videoUrl,
     videoTitle,
 }: MapAndCTAProps) => {
+    const [openFaq, setOpenFaq] = useState<number | null>(null);
     const mapGalleryItems: ListingGalleryItem[] = mapImages.map((item, index) => ({
         id: item.id,
         src: item.image,
@@ -277,24 +282,60 @@ export const MapAndCTA = ({
             ) : null}
 
             {visibility.faqs ? (
-                <section className="bg-white py-16">
-                    <div className="mx-auto max-w-5xl px-4">
-                        <h2 className="mb-8 text-3xl font-bold text-gray-900">
-                            Sıkça Sorulan Sorular
-                        </h2>
-                        <div className="space-y-3">
-                            {faqs.map((faq) => (
-                                <details
-                                    key={faq.id}
-                                    className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4"
-                                >
-                                    <summary className="cursor-pointer list-none font-semibold text-gray-900">
-                                        {faq.question}
-                                    </summary>
-                                    <p className="mt-3 leading-relaxed text-gray-600">
-                                        {faq.answer}
-                                    </p>
-                                </details>
+                <section className="bg-white py-20 px-4 sm:px-6">
+                    <div className="mx-auto max-w-7xl">
+                        {/* Section Header */}
+                        <div className="flex items-end justify-between mb-12 pb-6 border-b border-gray-100">
+                            <div>
+                                <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
+                                    SSS
+                                </span>
+                                <h2 className="text-3xl font-bold text-gray-900 mt-2">
+                                    Sıkça Sorulan Sorular
+                                </h2>
+                            </div>
+                            <a
+                                href={`/${locale}/iletisim`}
+                                className="hidden sm:inline-flex items-center gap-2 text-sm text-gray-500 hover:text-orange-500 transition-colors font-medium"
+                            >
+                                Daha Fazla Soru?
+                                <ArrowRight className="w-4 h-4" />
+                            </a>
+                        </div>
+
+                        {/* FAQ Items */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-0">
+                            {faqs.map((faq, idx) => (
+                                <div key={faq.id} className="border-b border-gray-100">
+                                    <button
+                                        type="button"
+                                        onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                                        className="w-full flex items-center justify-between py-5 text-left group"
+                                    >
+                                        <span className="text-sm font-semibold text-gray-900 pr-4 group-hover:text-orange-600 transition-colors">
+                                            {faq.question}
+                                        </span>
+                                        <div className="flex-shrink-0 w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center group-hover:border-orange-300 group-hover:text-orange-500 transition-colors">
+                                            {openFaq === idx ? (
+                                                <Minus className="w-4 h-4 text-orange-500" />
+                                            ) : (
+                                                <Plus className="w-4 h-4 text-gray-400" />
+                                            )}
+                                        </div>
+                                    </button>
+                                    <div
+                                        className={`grid transition-all duration-300 ease-in-out ${openFaq === idx
+                                                ? "grid-rows-[1fr] opacity-100"
+                                                : "grid-rows-[0fr] opacity-0"
+                                            }`}
+                                    >
+                                        <div className="overflow-hidden">
+                                            <p className="text-sm text-gray-400 leading-relaxed pb-5">
+                                                {faq.answer}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     </div>

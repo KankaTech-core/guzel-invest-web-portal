@@ -24,6 +24,9 @@ const minioClient = new Minio.Client({
 const BUCKET_NAME = process.env.MINIO_BUCKET || "guzel-invest";
 const DEFAULT_MAX_OPTIMIZED_IMAGE_MB = 8;
 const WEBP_QUALITY = 60;
+const WEBP_EFFORT = 4;
+const MAX_IMAGE_WIDTH = 1920;
+const MAX_IMAGE_HEIGHT = 1080;
 
 const parsePositiveInt = (value: string | undefined, fallback: number): number => {
     const parsed = Number.parseInt(value || "", 10);
@@ -110,10 +113,17 @@ export async function uploadImage(
     const image = sharp(file);
     const metadata = await image.metadata();
 
-    // Convert to WebP for optimization
+    // Resize if larger than max dimensions, then convert to WebP
     const optimizedBuffer = await image
-        .webp({ quality: WEBP_QUALITY })
+        .resize(MAX_IMAGE_WIDTH, MAX_IMAGE_HEIGHT, {
+            fit: "inside",
+            withoutEnlargement: true,
+        })
+        .webp({ quality: WEBP_QUALITY, effort: WEBP_EFFORT })
         .toBuffer();
+
+    // Get optimized image dimensions (after resize)
+    const optimizedMeta = await sharp(optimizedBuffer).metadata();
 
     if (optimizedBuffer.length > MAX_OPTIMIZED_IMAGE_SIZE_BYTES) {
         throw createMinioUploadError(
@@ -126,7 +136,7 @@ export async function uploadImage(
     // Create thumbnail
     const thumbnailBuffer = await sharp(file)
         .resize(400, 300, { fit: "cover" })
-        .webp({ quality: WEBP_QUALITY })
+        .webp({ quality: WEBP_QUALITY, effort: WEBP_EFFORT })
         .toBuffer();
 
     // Upload paths
@@ -153,8 +163,8 @@ export async function uploadImage(
     return {
         url: originalPath,
         thumbnailUrl: thumbnailPath,
-        width: metadata.width || 0,
-        height: metadata.height || 0,
+        width: optimizedMeta.width || metadata.width || 0,
+        height: optimizedMeta.height || metadata.height || 0,
         size: optimizedBuffer.length,
     };
 }

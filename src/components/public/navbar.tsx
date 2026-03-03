@@ -15,10 +15,11 @@ import {
     Loader2,
     MapPin,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { mapPublicProjectsToMenuItems, type NavbarProjectMenuItem, type PublicProjectMenuSource } from "@/lib/navbar-project-menu";
 import { cn, getMediaUrl } from "@/lib/utils";
 import { CurrencyToggle } from "@/components/public/currency-toggle";
+import { ProjectIcon } from "@/components/single-project/ProjectIcon";
 
 type NavigationItem = {
     href: string;
@@ -62,6 +63,25 @@ export function Navbar({ locale }: { locale: string }) {
     const [isOpen, setIsOpen] = useState(false);
     const [projectMenuItems, setProjectMenuItems] = useState<NavbarProjectMenuItem[]>([]);
     const [isProjectsMenuLoading, setIsProjectsMenuLoading] = useState(true);
+    const [projectsMenuState, setProjectsMenuState] = useState<'closed' | 'hover' | 'pinned'>('closed');
+    const projectsMenuRef = useRef<HTMLDivElement>(null);
+    const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        const handleOutsideClick = (event: MouseEvent) => {
+            if (projectsMenuState === 'pinned' && projectsMenuRef.current && !projectsMenuRef.current.contains(event.target as Node)) {
+                setProjectsMenuState('closed');
+            }
+        };
+
+        if (projectsMenuState === 'pinned') {
+            document.addEventListener("mousedown", handleOutsideClick);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleOutsideClick);
+        };
+    }, [projectsMenuState]);
     const aboutPath = `/${locale}/hakkimizda`;
 
     // Döviz butonu sadece portföy, tek ilan ve harita sayfalarında görünür
@@ -234,26 +254,57 @@ export function Navbar({ locale }: { locale: string }) {
                         }
 
                         if (item.href === "/projeler") {
+                            const isMenuVisible = projectsMenuState !== 'closed';
+
                             return (
-                                <div key={item.href} className="relative group">
-                                    <Link
-                                        href={href}
+                                <div
+                                    key={item.href}
+                                    className="relative"
+                                    ref={projectsMenuRef}
+                                    onMouseEnter={() => {
+                                        if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+                                        if (projectsMenuState === 'closed') setProjectsMenuState('hover');
+                                    }}
+                                    onMouseLeave={() => {
+                                        if (projectsMenuState === 'hover') {
+                                            closeTimerRef.current = setTimeout(() => setProjectsMenuState('closed'), 150);
+                                        }
+                                    }}
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={() => setProjectsMenuState(projectsMenuState === 'pinned' ? 'closed' : 'pinned')}
                                         className={cn(
                                             "inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium transition-all",
-                                            isActive
+                                            (isActive || isMenuVisible)
                                                 ? "bg-white text-gray-900 shadow-sm"
                                                 : "text-gray-600 hover:text-gray-900"
                                         )}
                                     >
                                         {item.label ?? t(item.name!)}
-                                        <ChevronDown className="h-4 w-4 opacity-70" />
-                                    </Link>
+                                        <ChevronDown className={cn("h-4 w-4 opacity-70 transition-transform duration-200", isMenuVisible && "rotate-180")} />
+                                    </button>
 
-                                    <div className="pointer-events-none invisible absolute left-1/2 top-full z-50 w-[56rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 pt-2 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:visible group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100">
-                                        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-2xl shadow-gray-200/60">
+                                    <div
+                                        className={cn(
+                                            "fixed top-[64px] left-4 right-4 z-50 max-w-7xl mx-auto mt-2 transition-all duration-200",
+                                            isMenuVisible
+                                                ? "pointer-events-auto visible opacity-100"
+                                                : "pointer-events-none invisible opacity-0"
+                                        )}
+                                        onMouseEnter={() => {
+                                            if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+                                        }}
+                                        onMouseLeave={() => {
+                                            if (projectsMenuState === 'hover') {
+                                                closeTimerRef.current = setTimeout(() => setProjectsMenuState('closed'), 150);
+                                            }
+                                        }}
+                                    >
+                                        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl shadow-gray-200/60">
                                             <div className="grid grid-cols-2 gap-5">
                                                 {isProjectsMenuLoading ? (
-                                                    <div className="col-span-2 flex items-center justify-center gap-2 rounded-lg px-3 py-8 text-sm text-gray-500">
+                                                    <div className="col-span-2 flex items-center justify-center gap-2 rounded-lg py-12 text-sm text-gray-500">
                                                         <Loader2 className="h-5 w-5 animate-spin" />
                                                         Projeler yükleniyor...
                                                     </div>
@@ -262,37 +313,57 @@ export function Navbar({ locale }: { locale: string }) {
                                                         <Link
                                                             key={project.href}
                                                             href={`/${locale}${project.href}`}
-                                                            className="flex gap-4 rounded-xl p-3 transition-all hover:bg-orange-50/40 border border-transparent hover:border-orange-100/60 group/item items-start"
+                                                            onClick={() => setProjectsMenuState('closed')}
+                                                            className="flex flex-row gap-5 rounded-2xl p-4 transition-all hover:bg-orange-50/40 border border-transparent hover:border-orange-100/60 group/item"
                                                         >
-                                                            <div className="h-28 w-36 shrink-0 overflow-hidden rounded-xl bg-gray-100 shadow-sm border border-gray-100">
+                                                            {/* Image */}
+                                                            <div className="relative aspect-[16/10] w-52 shrink-0 overflow-hidden rounded-xl bg-gray-100 shadow-sm border border-gray-100">
                                                                 <Image
                                                                     src={appendVersionParam(
                                                                         getMediaUrl(project.image),
                                                                         project.imageVersion
                                                                     )}
                                                                     alt={project.title}
-                                                                    width={144}
-                                                                    height={112}
+                                                                    fill
                                                                     unoptimized
-                                                                    className="h-full w-full object-cover transition-transform duration-700 group-hover/item:scale-105"
+                                                                    className="object-cover transition-transform duration-700 group-hover/item:scale-105"
                                                                 />
                                                             </div>
-                                                            <div className="flex flex-col gap-2 flex-1 min-w-0 py-1">
-                                                                <div>
-                                                                    <h4 className="truncate text-base font-bold text-gray-900 group-hover/item:text-orange-600 transition-colors">
-                                                                        {project.title}
-                                                                    </h4>
-                                                                    {project.location && (
-                                                                        <div className="flex items-center gap-1.5 mt-1 text-[0.8rem] text-gray-500 font-medium">
-                                                                            <MapPin className="h-3.5 w-3.5 shrink-0 text-orange-500/70" />
-                                                                            <span className="truncate whitespace-nowrap">{project.location}</span>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
+
+                                                            {/* Info */}
+                                                            <div className="flex flex-col flex-1 min-w-0 py-1">
+                                                                {project.promoText && (
+                                                                    <div className="mb-2 flex items-center">
+                                                                        <span className="rounded-md bg-orange-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+                                                                            {project.promoText}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                <h4 className="truncate text-base font-bold text-gray-900 group-hover/item:text-orange-600 transition-colors">
+                                                                    {project.title}
+                                                                </h4>
+                                                                {project.location && (
+                                                                    <div className="flex items-center gap-1.5 mt-1 text-[0.78rem] text-gray-500 font-medium">
+                                                                        <MapPin className="h-3.5 w-3.5 shrink-0 text-orange-500/70" />
+                                                                        <span className="truncate">{project.location}</span>
+                                                                    </div>
+                                                                )}
                                                                 {project.description && (
-                                                                    <p className="line-clamp-2 text-sm text-gray-500 leading-snug">
+                                                                    <p className="mt-2 line-clamp-2 text-sm text-gray-500 leading-relaxed">
                                                                         {project.description}
                                                                     </p>
+                                                                )}
+                                                                {project.features && project.features.length > 0 && (
+                                                                    <div className="mt-3 flex items-center gap-3">
+                                                                        {project.features.slice(0, 2).map((feature, idx) => (
+                                                                            <div key={idx} className="flex items-center gap-1.5 text-xs text-gray-500">
+                                                                                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-orange-50 text-orange-600">
+                                                                                    <ProjectIcon name={feature.icon} className="h-3.5 w-3.5" />
+                                                                                </div>
+                                                                                <span className="truncate text-xs font-medium text-gray-600">{feature.label}</span>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         </Link>
@@ -389,8 +460,11 @@ export function Navbar({ locale }: { locale: string }) {
             >
                 <div className="p-6 flex flex-col gap-2">
                     {navigation.map((item) => {
-                        const href = `/${locale}${item.href === "/" ? "" : item.href}`;
-                        const isActive = pathname === href;
+                        const isProjeler = item.href === "/projeler";
+                        const href = isProjeler
+                            ? `/${locale}/portfoy?onlyProjects=true`
+                            : `/${locale}${item.href === "/" ? "" : item.href}`;
+                        const isActive = pathname === `/${locale}${item.href === "/" ? "" : item.href}`;
 
                         return (
                             <Link

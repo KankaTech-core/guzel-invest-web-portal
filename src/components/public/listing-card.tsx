@@ -21,7 +21,7 @@ export interface Listing {
     city: string;
     isProject?: boolean;
     translations?: { title?: string }[];
-    media?: { url: string }[];
+    media?: { url: string; thumbnailUrl?: string | null }[];
 }
 
 interface ListingCardProps {
@@ -32,7 +32,9 @@ interface ListingCardProps {
 export function ListingCard({ listing, locale }: ListingCardProps) {
     const translation = listing.translations?.[0] || {};
     const mainImage = listing.media?.[0];
-    const imageUrl = mainImage ? getMediaUrl(mainImage.url) : null;
+    const imageUrl = mainImage
+        ? getMediaUrl(mainImage.thumbnailUrl || mainImage.url)
+        : null;
 
     return (
         <div className="card card-interactive group bg-white">
@@ -47,6 +49,7 @@ export function ListingCard({ listing, locale }: ListingCardProps) {
                         alt={translation.title || "Listing"}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     />
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-gray-100">

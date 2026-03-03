@@ -273,30 +273,35 @@ select:disabled {
    MAP STYLES
    ============================================ */
 
-.listing-marker-wrapper {
-  background: transparent;
-  border: none;
-  transform: translate(-50%, -100%);
+.listing-marker-wrapper,
+.leaflet-marker-icon {
+  background: transparent !important;
+  border: none !important;
+  overflow: visible !important;
 }
 
 .listing-marker {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: max-content !important;
+  transform: translate(-50%, -100%);
 }
 
 .listing-marker__label {
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 6px;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
-  background: var(--marker-bg);
-  color: var(--marker-text);
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18) !important;
+  background: var(--marker-bg) !important;
+  color: var(--marker-text) !important;
+  white-space: nowrap !important;
+  width: max-content !important;
 }
 
 .listing-marker.is-active .listing-marker__label {
-  box-shadow: 0 0 0 2px var(--marker-ring), 0 8px 16px rgba(15, 23, 42, 0.2);
+  box-shadow: 0 0 0 2px var(--marker-ring), 0 8px 16px rgba(15, 23, 42, 0.2) !important;
 }
 
 .listing-marker__pointer {
