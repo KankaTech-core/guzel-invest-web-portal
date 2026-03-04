@@ -448,6 +448,20 @@ model ListingFAQTranslation {
   @@map("listing_faq_translations")
 }
 
+model Testimonial {
+  id          String   @id @default(cuid())
+  name        String
+  quote       String
+  serviceName String
+  imageUrl    String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([order])
+  @@map("testimonials")
+}
+
 enum Role {
   ADMIN
   EDITOR

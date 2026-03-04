@@ -13,6 +13,7 @@ import {
 import {
     useCallback,
     useEffect,
+    useLayoutEffect,
     useMemo,
     useRef,
     useState,
@@ -401,6 +402,13 @@ export function ListingDetailGallery({
             window.cancelAnimationFrame(rafId);
         };
     }, [isReelOpen, total]);
+
+    // Force scroll to top on mount to fix Next.js scroll restoration issue.
+    // useLayoutEffect runs synchronously before paint, preventing the visible
+    // "start-at-bottom then scroll up" flash that useEffect caused.
+    useLayoutEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }, []);
 
     useEffect(() => {
         const hasOverlay =

@@ -171,7 +171,7 @@ const services = [
     { icon: ShieldCheck, titleKey: "service6Title", descKey: "service6Desc" },
 ];
 
-const testimonials = [
+const TESTIMONIALS_FALLBACK = [
     {
         name: "Ahmet & Elif Yılmaz",
         type: "Villa · Kargıcak",
@@ -281,6 +281,7 @@ export default function HomePage() {
     const [projectSlideIndex, setProjectSlideIndex] = useState(0);
     const [heroVideo, setHeroVideo] = useState<HomepageHeroVideo>(HERO_VIDEO_FALLBACK);
     const [isHeroVideoModalOpen, setIsHeroVideoModalOpen] = useState(false);
+    const [testimonials, setTestimonials] = useState(TESTIMONIALS_FALLBACK);
     const { version: searchVersion } = useVersion();
     const bannerRef = useRef<HTMLFormElement>(null);
     const testimonialRef = useRef<HTMLDivElement>(null);
@@ -385,6 +386,56 @@ export default function HomePage() {
         };
 
         loadHomepageVideo();
+
+        return () => {
+            isMounted = false;
+            controller.abort();
+        };
+    }, []);
+
+    useEffect(() => {
+        let isMounted = true;
+        const controller = new AbortController();
+
+        const loadTestimonials = async () => {
+            try {
+                const response = await fetch("/api/public/testimonials", {
+                    signal: controller.signal,
+                    cache: "no-store",
+                });
+                if (!response.ok) return;
+
+                const data = (await response.json()) as {
+                    testimonials?: Array<{
+                        id: string;
+                        name: string;
+                        quote: string;
+                        serviceName: string;
+                        imageUrl: string | null;
+                    }>;
+                };
+                if (!isMounted) return;
+
+                const incoming = data?.testimonials;
+                if (incoming && incoming.length > 0) {
+                    const minioBase = process.env.NEXT_PUBLIC_MINIO_URL || "";
+                    setTestimonials(
+                        incoming.map((t) => ({
+                            name: t.name,
+                            type: t.serviceName,
+                            quote: t.quote,
+                            image: t.imageUrl
+                                ? `${minioBase}/guzel-invest/${t.imageUrl}`
+                                : "/images/testimonials/testimonial-1.png",
+                        }))
+                    );
+                }
+            } catch {
+                // Keep fallback data on error
+            }
+        };
+
+        loadTestimonials();
 
         return () => {
             isMounted = false;

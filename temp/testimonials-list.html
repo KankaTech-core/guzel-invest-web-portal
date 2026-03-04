@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Testimonials Admin Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#f57519",
+            "background-light": "#f8f7f5",
+            "background-dark": "#221710",
+            "sidebar-dark": "#1a130f",
+          },
+          fontFamily: {
+            "display": ["Manrope"]
+          },
+          borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 bg-sidebar-dark text-slate-300 flex flex-col shrink-0">
+<div class="p-6 flex items-center gap-3">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">apartment</span>
+</div>
+<div>
+<h1 class="text-white font-bold text-lg leading-tight">EstateAdmin</h1>
+<p class="text-xs text-slate-500 uppercase tracking-widest">Yönetim Paneli</p>
+</div>
+</div>
+<nav class="flex-1 px-4 py-4 space-y-1">
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg bg-primary text-white shadow-lg shadow-primary/20 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">format_quote</span>
+<span class="text-sm font-medium">Referanslar</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">home_work</span>
+<span class="text-sm font-medium">Hizmetler</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">villa</span>
+<span class="text-sm font-medium">Projeler</span>
+</a>
+<div class="pt-4 mt-4 border-t border-white/10">
+<p class="px-3 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Ayarlar</p>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="text-sm font-medium">Genel Ayarlar</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">group</span>
+<span class="text-sm font-medium">Kullanıcılar</span>
+</a>
+</div>
+</nav>
+<div class="p-4 border-t border-white/10">
+<div class="flex items-center gap-3 px-3 py-2">
+<div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-xs font-bold text-white truncate">Admin Kullanıcı</p>
+<p class="text-[10px] text-slate-500 truncate">admin@estate.com</p>
+</div>
+<span class="material-symbols-outlined text-slate-500 cursor-pointer hover:text-white transition-colors">logout</span>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col overflow-hidden">
+<!-- Header Area -->
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 bg-white dark:bg-background-dark/50">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-slate-400">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64" placeholder="Referans ara..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined text-slate-500 cursor-pointer">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full ring-2 ring-white"></span>
+</div>
+<div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
+<div class="flex items-center gap-2">
+<span class="text-xs font-semibold text-slate-500 uppercase">TR</span>
+<span class="material-symbols-outlined text-sm text-slate-500">expand_more</span>
+</div>
+</div>
+</header>
+<!-- Scrollable content -->
+<div class="flex-1 overflow-y-auto p-8">
+<div class="max-w-6xl mx-auto">
+<!-- Page Title Section -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+<div>
+<h2 class="text-3xl font-extrabold text-slate-900 dark:text-white mb-1">Referanslar</h2>
+<p class="text-slate-500 dark:text-slate-400">Ana sayfada gösterilecek müşteri referanslarını yönetin.</p>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-lg shadow-primary/25">
+<span class="material-symbols-outlined">add</span>
+<span>Yeni Referans</span>
+</button>
+</div>
+<!-- Table Container -->
+<div class="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50">
+<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-20">Sıra</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-24">Görsel</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">İsim</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Hizmet</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-32">İşlem</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400 cursor-grab">drag_indicator</span>
+<span class="text-sm font-semibold text-slate-700 dark:text-slate-300">1</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="w-10 h-10 rounded-full bg-cover bg-center border-2 border-slate-100 dark:border-slate-800" data-alt="Portrait of a smiling professional male client" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCIydNzkAq-DPUQ7bfieBh958akpRM0W12WmXvsp7PZTp-vOwleA-OWJ5t2n3tMG6yjZbh6ZFaWMhmU2yJgi-EljFt_f8ZwJsAXUoqAUtZbz85AGiIuRLMp8zGCUvDMS9-qQl8WuHi9ZFTFomXhb7idioI54AOoti-OFNLbg-GnJYFDRyHIpp9UDkNHhSSOEV2PC4OTo1QbdRP1DZM5aoqRXxiQuBTSYzThItruLx6iWJnXlGKSV2b79gDG6zkS5W0PeQ2j_JNlRQwZ')"></div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white">Ahmet Yılmaz</span>
+<span class="text-xs text-slate-500">CEO, Tech Ventures</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                        Konut Satışı
+                      </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400 transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+                        Düzenle
+                      </button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400 cursor-grab">drag_indicator</span>
+<span class="text-sm font-semibold text-slate-700 dark:text-slate-300">2</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="w-10 h-10 rounded-full bg-cover bg-center border-2 border-slate-100 dark:border-slate-800" data-alt="Portrait of a female client in professional attire" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAyQ-oOfMmyjngxtl9rQ4spb5pYbcvCSWCqiq1CzRvpplyugbrxkr26rPE-tvJ62mb2_FIOjfNc4GrNBmIAOqfdAEJnNVEm0z75vXm4kczOYIsNDyzIppR0y6bKtxcplJq-VNKz-icjI9GzZdbTU_brVKaMhs_qcUNT-m8dlOanF3489v_iypzVeNqQE27Yh1peF_MO1SAikVPw5-q0UPYYVTHeER7IxlhZyzK7ydsUrgC1hjFymaxw4MmI3FZaew_ZYXVz2EPa-RlI')"></div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white">Ayşe Demir</span>
+<span class="text-xs text-slate-500">Mimar</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                        Ticari Kiralama
+                      </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400 transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+                        Düzenle
+                      </button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400 cursor-grab">drag_indicator</span>
+<span class="text-sm font-semibold text-slate-700 dark:text-slate-300">3</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="w-10 h-10 rounded-full bg-cover bg-center border-2 border-slate-100 dark:border-slate-800" data-alt="Portrait of an older businessman smiling" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB_zp1P5ABkrFK9hl9cvAuXjxSmm2d-O3xiYmx6WMIoRTmcaDx0vLdnRJKG2cToCZBOQPYVg4-8PkWjdYDE5mIephcjwFQ1MMOlWWsGDP-sDkyRteQu2duekGOK8NaWmTdksQnpikQyBXmaTcWh3H-xbdRSrv61gh6iocD4mhx30tX5EgNjZJfhJNdrEkyp3GB-VHW1UAdIl_81b-l3BLRYwE0QmVaEXoMeMEKyACVg0VHUjx_p7e8OZj0Yg2zzo28NV0rqxW7-ZymS')"></div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white">Mehmet Kaya</span>
+<span class="text-xs text-slate-500">Yatırımcı</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                        Arsa Danışmanlığı
+                      </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400 transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+                        Düzenle
+                      </button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400 cursor-grab">drag_indicator</span>
+<span class="text-sm font-semibold text-slate-700 dark:text-slate-300">4</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="w-10 h-10 rounded-full bg-cover bg-center border-2 border-slate-100 dark:border-slate-800" data-alt="Portrait of a young professional female client" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCyZ9y_VsrM9vQzZkF1sKdBFp2BnLXqu86G4JBvlEqIRQTYuIkc82T3XZzjmmpU040GgTbdLvxz1XFV0nRygojLVXjrbqpp-3bZDOWdus78CC1WKsUNOvNQc9hcnIop-ZuqgvnR2so93rzCG3unvU5mq3hftzuYgmYCAKYh-FZua0RdvEHK-qk-w4xt1tHRrHVfJd5woyy9hRW8Ws3I2ziKxpZ4m8O0S7LZKHumCC9XfzZwNywUo-iz4fnRLOekTr98oIbgIKBvOJDo')"></div>
+</td>
+<td class="px-6 py-4">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white">Zeynep Aksoy</span>
+<span class="text-xs text-slate-500">Girişimci</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                        Konut Satışı
+                      </span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold text-slate-600 dark:text-slate-400 transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">edit</span>
+                        Düzenle
+                      </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="px-6 py-4 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+<span class="text-xs text-slate-500">Toplam 4 referans gösteriliyor</span>
+<div class="flex items-center gap-2">
+<button class="p-1.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600 transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded bg-primary text-white text-xs font-bold">1</button>
+<button class="p-1.5 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-slate-600 transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -48,7 +48,7 @@ export interface UploadResult {
 }
 
 interface UploadImageOptions {
-    collection?: "listings" | "articles";
+    collection?: "listings" | "articles" | "testimonials";
 }
 
 interface UploadDocumentOptions {
