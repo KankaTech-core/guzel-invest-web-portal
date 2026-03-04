@@ -193,6 +193,19 @@ export function Navbar({ locale }: { locale: string }) {
         };
     }, [locale]);
 
+    useEffect(() => {
+        window.dispatchEvent(
+            new CustomEvent("mobile-nav-state-change", {
+                detail: { isOpen },
+            })
+        );
+        document.body.classList.toggle("mobile-menu-open", isOpen);
+
+        return () => {
+            document.body.classList.remove("mobile-menu-open");
+        };
+    }, [isOpen]);
+
     return (
         <nav className="fixed top-0 w-full z-50 transition-all duration-300 bg-white shadow-sm border-b border-gray-100 py-3">
             <div className="container-custom flex items-center justify-between">

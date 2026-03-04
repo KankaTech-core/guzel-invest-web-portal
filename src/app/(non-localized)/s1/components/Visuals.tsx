@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, ZoomIn, Images } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { S1SectionVisibility } from "../section-visibility";
 import {
     S1CustomGalleryData,
@@ -98,8 +98,7 @@ function PeekingCarouselStrip({
                             src={item.src}
                             alt={item.alt || `Görsel ${index + 1}`}
                             fill
-                            priority={index === 0}
-                            loading={index === 0 ? "eager" : "lazy"}
+                            loading="lazy"
                             className="object-cover"
                             sizes="(min-width: 1280px) 50vw, (min-width: 768px) 65vw, 100vw"
                         />
@@ -118,21 +117,23 @@ function PeekingVisualSection({
     bgClass,
     onImageClick,
     reverse = false,
-    totalCount,
     onViewAllClick,
+    titleAlign = "left",
 }: {
     title: string;
     items: ListingGalleryItem[];
     bgClass: string;
     onImageClick: () => void;
     reverse?: boolean;
-    totalCount: number;
     onViewAllClick: () => void;
+    titleAlign?: "left" | "right";
 }) {
     const [currentIndex, setCurrentIndex] = useState(0);
+    const touchStartXRef = useRef<number | null>(null);
     const total = items.length;
     const canNavigate = total > 1;
     const showViewAll = true;
+    const SWIPE_THRESHOLD_PX = 42;
 
     const goToPrev = useCallback(() => {
         setCurrentIndex((prev) => (prev <= 0 ? total - 1 : prev - 1));
@@ -141,6 +142,42 @@ function PeekingVisualSection({
     const goToNext = useCallback(() => {
         setCurrentIndex((prev) => (prev >= total - 1 ? 0 : prev + 1));
     }, [total]);
+
+    const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+        if (!canNavigate) return;
+        const touch = event.changedTouches[0];
+        touchStartXRef.current = touch ? touch.clientX : null;
+    };
+
+    const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+        if (!canNavigate) return;
+        const startX = touchStartXRef.current;
+        const touch = event.changedTouches[0];
+        touchStartXRef.current = null;
+
+        if (startX === null || !touch) return;
+
+        const deltaX = touch.clientX - startX;
+        if (Math.abs(deltaX) < SWIPE_THRESHOLD_PX) return;
+
+        if (deltaX < 0) {
+            if (reverse) {
+                goToPrev();
+                return;
+            }
+            goToNext();
+            return;
+        }
+        if (reverse) {
+            goToNext();
+            return;
+        }
+        goToPrev();
+    };
+
+    const handleTouchCancel = () => {
+        touchStartXRef.current = null;
+    };
 
     const cardWidthPercent = 75;
     const gap = 20;
@@ -178,7 +215,11 @@ function PeekingVisualSection({
 
     const titleColumn = (
         <div className="hidden w-[300px] shrink-0 md:flex md:flex-col md:gap-6">
-            <h2 className={BIG_SECTION_TITLE_CLASS}>{title}</h2>
+            <h2
+                className={`${BIG_SECTION_TITLE_CLASS} ${titleAlign === "right" ? "text-right" : ""}`}
+            >
+                {title}
+            </h2>
             {navButtons}
         </div>
     );
@@ -204,11 +245,20 @@ function PeekingVisualSection({
         <section className={`${bgClass} py-16`}>
             {/* Mobile: title above */}
             <div className="mx-auto max-w-7xl px-4 md:hidden">
-                <h2 className={`mb-6 ${BIG_SECTION_TITLE_CLASS}`}>{title}</h2>
+                <h2
+                    className={`mb-6 ${BIG_SECTION_TITLE_CLASS} ${titleAlign === "right" ? "text-right" : ""}`}
+                >
+                    {title}
+                </h2>
             </div>
 
             <div className="mx-auto max-w-7xl px-4">
-                <div className="flex items-center gap-16">
+                <div
+                    className="flex items-center gap-16"
+                    onTouchStart={handleTouchStart}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchCancel={handleTouchCancel}
+                >
                     {reverse ? (
                         <>
                             {carouselColumn}
@@ -293,8 +343,6 @@ export const Visuals = ({
         [exteriorGalleryItems]
     );
 
-    const exteriorTotalCount = exteriorGalleryItems.length;
-
     const socialGalleryItems = useMemo(
         () =>
             buildGalleryItems(
@@ -321,69 +369,54 @@ export const Visuals = ({
         [interiorGalleryItems]
     );
 
-    const interiorTotalCount = interiorGalleryItems.length;
-
     return (
         <>
             {visibility.socialFacilities && socialFacilities ? (
                 <section className="bg-gray-50 py-24">
-                    <div
-                        className={
-                            shouldShowSocialGallery
-                                ? "mx-auto grid max-w-7xl gap-16 px-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center"
-                                : "mx-auto max-w-7xl px-4"
-                        }
-                    >
-                        <div className={shouldShowSocialGallery ? "" : "mx-auto w-full max-w-5xl"}>
-                            {shouldShowSocialGallery ? null : (
-                                <h3 className="mb-10 text-center text-3xl font-black uppercase leading-[1.08] tracking-[-0.01em] text-gray-900">
-                                    {socialFacilities.title}
-                                </h3>
-                            )}
+                    <div className="mx-auto max-w-7xl px-4">
+                        <h3 className="mb-8 text-left text-3xl font-black uppercase leading-[1.08] tracking-[-0.01em] text-gray-900">
+                            {socialFacilities.title}
+                        </h3>
+                        <div
+                            className={
+                                shouldShowSocialGallery
+                                    ? "grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center"
+                                    : ""
+                            }
+                        >
+                            {shouldShowSocialGallery ? (
+                                <div className="order-1 min-w-0">
+                                    <div className="overflow-hidden rounded-3xl">
+                                        <ListingDetailGallery
+                                            items={socialGalleryItems}
+                                            title={socialFacilities.title}
+                                            layout="carousel"
+                                            galleryButtonLabel="Sosyal Galeri"
+                                            onRequestOpenGallery={() =>
+                                                dispatchOpenConnectedProjectGallery({ key: "social" })
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            ) : null}
 
                             <div
-                                className={`grid gap-7 ${pickSymmetricGridClass(socialFacilities.facilities.length)}`}
+                                className={shouldShowSocialGallery ? "order-2" : "mx-auto w-full max-w-5xl"}
                             >
-                                {socialFacilities.facilities.map((facility, idx) => (
-                                    <div key={`${facility.name}-${idx}`} className="group text-center">
-                                        <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full border border-gray-100 bg-gray-50 shadow-sm transition-all group-hover:border-orange-500 group-hover:bg-orange-500 group-hover:text-white">
-                                            <ProjectIcon name={facility.icon} className="h-8 w-8" />
+                                <div
+                                    className={`grid gap-7 ${pickSymmetricGridClass(socialFacilities.facilities.length)}`}
+                                >
+                                    {socialFacilities.facilities.map((facility, idx) => (
+                                        <div key={`${facility.name}-${idx}`} className="group text-center">
+                                            <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full border border-gray-100 bg-gray-50 shadow-sm transition-all group-hover:border-orange-500 group-hover:bg-orange-500 group-hover:text-white">
+                                                <ProjectIcon name={facility.icon} className="h-8 w-8" />
+                                            </div>
+                                            <p className="text-sm font-bold text-gray-700">{facility.name}</p>
                                         </div>
-                                        <p className="text-sm font-bold text-gray-700">{facility.name}</p>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
-
-                        {shouldShowSocialGallery ? (
-                            <div className="flex items-stretch gap-4">
-                                <div className="min-w-0 flex-1">
-                                    <ListingDetailGallery
-                                        items={socialGalleryItems}
-                                        title={socialFacilities.title}
-                                        layout="carousel"
-                                        galleryButtonLabel="Sosyal Galeri"
-                                        onRequestOpenGallery={() =>
-                                            dispatchOpenConnectedProjectGallery({ key: "social" })
-                                        }
-                                    />
-                                    <h3 className={`mt-4 md:hidden ${BIG_SECTION_TITLE_CLASS}`}>
-                                        {socialFacilities.title}
-                                    </h3>
-                                </div>
-                                <div className="hidden items-center md:flex">
-                                    <h3
-                                        className="text-[clamp(1.65rem,3.3vw,2.95rem)] font-black uppercase leading-[1.08] tracking-[-0.01em] text-gray-300"
-                                        style={{
-                                            writingMode: "vertical-rl",
-                                            textOrientation: "mixed",
-                                        }}
-                                    >
-                                        {socialFacilities.title}
-                                    </h3>
-                                </div>
-                            </div>
-                        ) : null}
                     </div>
                 </section>
             ) : null}
@@ -393,7 +426,7 @@ export const Visuals = ({
                     title="Dış Görseller"
                     items={exteriorDisplayItems}
                     bgClass="bg-white"
-                    totalCount={exteriorTotalCount}
+                    titleAlign="right"
                     onViewAllClick={() =>
                         dispatchOpenConnectedProjectGallery({ key: "exterior" })
                     }
@@ -409,7 +442,6 @@ export const Visuals = ({
                     items={interiorDisplayItems}
                     bgClass="bg-gray-50"
                     reverse
-                    totalCount={interiorTotalCount}
                     onViewAllClick={() =>
                         dispatchOpenConnectedProjectGallery({ key: "interior" })
                     }

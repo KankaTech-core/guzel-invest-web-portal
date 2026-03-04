@@ -20,7 +20,7 @@ export const ProjectFeaturesSection = ({
                 <h2 className="mb-24 text-center text-5xl font-black uppercase leading-none tracking-tighter text-gray-900">
                     {title}
                 </h2>
-                <div className="mx-auto mt-12 grid grid-cols-1 gap-x-8 gap-y-16 sm:grid-cols-2 lg:grid-cols-4 lg:gap-x-10 lg:gap-y-20">
+                <div className="mx-auto mt-12 grid grid-cols-2 gap-x-4 gap-y-14 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-16 lg:grid-cols-4 lg:gap-x-10 lg:gap-y-20">
                     {items.map((item, idx) => (
                         <div
                             key={`${item.icon}-${item.label}-${item.value || "x"}-${idx}`}

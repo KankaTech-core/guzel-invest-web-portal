@@ -39,6 +39,7 @@ import {
     isAbortFetchError,
     parseApiErrorMessage,
 } from "@/lib/fetch-error";
+import { resolvePortfolioResultsLayout } from "@/lib/portfolio-results-layout";
 import { shouldShowLastUnitsRibbon } from "@/lib/last-units-ribbon";
 import {
     isCategoryFieldVisibleForTypes,
@@ -786,6 +787,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     );
 
     const [listings, setListings] = useState<Listing[]>([]);
+    const [fallbackListings, setFallbackListings] = useState<Listing[]>([]);
     const [priceHistogramValues, setPriceHistogramValues] = useState<number[]>([]);
     const [activeImageIndexes, setActiveImageIndexes] = useState<Record<string, number>>({});
     const [activeMobilePanel, setActiveMobilePanel] = useState<MobilePanel | null>(null);
@@ -804,6 +806,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     const observerTarget = useRef<HTMLDivElement>(null);
 
     const abortRef = useRef<AbortController | null>(null);
+    const fallbackAbortRef = useRef<AbortController | null>(null);
     const snapshotRef = useRef("");
     const hasInitializedRef = useRef(false);
     const swipeStartXRef = useRef<Record<string, number>>({});
@@ -1148,6 +1151,78 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         return ACTIVE_FILTER_QUERY_KEYS.some((key) => params.has(key));
     }, [queryString]);
 
+    const {
+        visibleListings,
+        showNoResultsCard,
+        showDivider,
+        shouldFetchFallbackListings,
+    } = useMemo(
+        () =>
+            resolvePortfolioResultsLayout({
+                filteredListings: listings,
+                fallbackListings,
+                hasActiveFilters,
+            }),
+        [fallbackListings, hasActiveFilters, listings]
+    );
+
+    useEffect(() => {
+        if (!shouldFetchFallbackListings) {
+            fallbackAbortRef.current?.abort();
+            setFallbackListings([]);
+            return;
+        }
+
+        const controller = new AbortController();
+        fallbackAbortRef.current?.abort();
+        fallbackAbortRef.current = controller;
+
+        const params = new URLSearchParams({
+            locale,
+            page: "1",
+            limit: "8",
+        });
+
+        if (filters.sort !== DEFAULT_SORT) {
+            params.set("sort", filters.sort);
+        }
+
+        const loadFallbackListings = async () => {
+            try {
+                const response = await fetch(`/api/public/listings?${params.toString()}`, {
+                    signal: controller.signal,
+                    cache: "force-cache",
+                });
+
+                if (!response.ok) {
+                    setFallbackListings([]);
+                    return;
+                }
+
+                const payload = (await response.json()) as { listings?: Listing[] };
+                if (controller.signal.aborted) {
+                    return;
+                }
+
+                setFallbackListings(
+                    Array.isArray(payload.listings) ? payload.listings : []
+                );
+            } catch (fetchError) {
+                if (isAbortFetchError(fetchError)) {
+                    return;
+                }
+
+                setFallbackListings([]);
+            }
+        };
+
+        void loadFallbackListings();
+
+        return () => {
+            controller.abort();
+        };
+    }, [filters.sort, locale, shouldFetchFallbackListings]);
+
     const fetchListings = useCallback(
         async (mode: "initial" | "background" | "nextPage" = "background", currentPage = 1) => {
             const controller = new AbortController();
@@ -1348,7 +1423,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         setDescriptionOverflowMap((previous) => {
             const next: Record<string, boolean> = {};
 
-            listings.forEach((listing) => {
+            visibleListings.forEach((listing) => {
                 const element = descriptionRefs.current[listing.id];
                 next[listing.id] = Boolean(
                     element && element.scrollHeight - element.clientHeight > 1
@@ -1363,7 +1438,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
             return isSame ? previous : next;
         });
-    }, [listings]);
+    }, [visibleListings]);
 
     useEffect(() => {
         const rafId = window.requestAnimationFrame(() => {
@@ -2390,7 +2465,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         </div>
                     )}
 
-                    {listings.length === 0 ? (
+                    {showNoResultsCard && (
                         <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
                             <Search className="mx-auto h-8 w-8 text-gray-300" />
                             <p className="mt-3 font-semibold text-gray-700">
@@ -2400,8 +2475,19 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 Filtreleri temizleyip tekrar deneyebilirsiniz.
                             </p>
                         </div>
-                    ) : (
-                        listings.map((listing) => {
+                    )}
+
+                    {showDivider && (
+                        <div className="flex items-center gap-3 py-1">
+                            <span className="h-px flex-1 bg-gray-200" />
+                            <span className="text-xs font-semibold uppercase tracking-[0.1em] text-gray-500">
+                                Diğer İlanlar
+                            </span>
+                            <span className="h-px flex-1 bg-gray-200" />
+                        </div>
+                    )}
+
+                    {visibleListings.map((listing) => {
                             const title = getListingTitle(listing, locale);
                             const description = getListingDescription(listing, locale);
                             const projectRoomOptions = getProjectRoomOptions(listing);
@@ -2447,6 +2533,13 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 >
                                     <div className="grid grid-cols-1 md:grid-cols-[300px_1fr_200px]">
                                         <div className="relative min-h-[220px] overflow-hidden bg-gray-100">
+                                            {listing.isProject ? (
+                                                <Link
+                                                    href={`/${locale}/proje/${listing.slug}`}
+                                                    aria-label={`${title} projesini incele`}
+                                                    className="absolute inset-0 z-[5] md:hidden"
+                                                />
+                                            ) : null}
                                             {visibleTags.length > 0 && (
                                                 <div className="absolute left-3 top-3 z-10 flex max-w-[86%] flex-wrap gap-1.5">
                                                     {visibleTags.map((item) => (
@@ -2696,60 +2789,64 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
                                             <div className="flex cursor-pointer items-center justify-between gap-3 bg-gray-50 p-5 md:flex-col md:items-stretch md:justify-between">
                                                 {listing.isProject ? (
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        {projectGeneralFeatures.map(
-                                                            (feature, featureIndex) => (
-                                                                <div
-                                                                    key={`${listing.id}-project-feature-side-${featureIndex}-${feature.label}`}
-                                                                    className="flex flex-col items-center justify-start gap-1 rounded-lg border border-slate-100 bg-white px-2 py-2 text-center"
-                                                                >
-                                                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-50 text-slate-600">
-                                                                        <ProjectIcon
-                                                                            name={feature.icon}
-                                                                            className="h-4 w-4"
-                                                                        />
-                                                                    </div>
-                                                                    <span
-                                                                        className="max-h-8 overflow-hidden text-[11px] font-semibold leading-4 text-slate-700"
-                                                                        title={feature.label}
+                                                    <div className="w-full space-y-3">
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {projectGeneralFeatures.map(
+                                                                (feature, featureIndex) => (
+                                                                    <div
+                                                                        key={`${listing.id}-project-feature-side-${featureIndex}-${feature.label}`}
+                                                                        className="flex flex-col items-center justify-start gap-1 rounded-lg border border-slate-100 bg-white px-2 py-2 text-center"
                                                                     >
-                                                                        {feature.label}
-                                                                    </span>
-                                                                </div>
-                                                            )
-                                                        )}
-                                                    </div>
-                                                ) : hasDisplayPrice ? (
-                                                    <div className="min-w-0 text-left md:text-right">
-                                                        <p className="text-xl font-bold text-gray-900 sm:text-2xl" style={monoStyle}>
-                                                            {(() => {
-                                                                const { amount, currency } = convertPrice(listing.price, listing.currency);
-                                                                return formatPrice(amount, currency);
-                                                            })()}
-                                                        </p>
-                                                        {listing.saleType === "RENT" && (
-                                                            <p className="text-xs text-gray-400">/ ay</p>
-                                                        )}
+                                                                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-50 text-slate-600">
+                                                                            <ProjectIcon
+                                                                                name={feature.icon}
+                                                                                className="h-4 w-4"
+                                                                            />
+                                                                        </div>
+                                                                        <span
+                                                                            className="max-h-8 overflow-hidden text-[11px] font-semibold leading-4 text-slate-700"
+                                                                            title={feature.label}
+                                                                        >
+                                                                            {feature.label}
+                                                                        </span>
+                                                                    </div>
+                                                                )
+                                                            )}
+                                                        </div>
+                                                        <span className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-orange-600 md:mt-4 md:gap-2 md:px-5 md:py-2.5 md:text-sm">
+                                                            Projeyi İncele
+                                                        </span>
                                                     </div>
                                                 ) : (
-                                                    <div />
+                                                    <>
+                                                        {hasDisplayPrice ? (
+                                                            <div className="min-w-0 text-left md:text-right">
+                                                                <p className="text-xl font-bold text-gray-900 sm:text-2xl" style={monoStyle}>
+                                                                    {(() => {
+                                                                        const { amount, currency } = convertPrice(listing.price, listing.currency);
+                                                                        return formatPrice(amount, currency);
+                                                                    })()}
+                                                                </p>
+                                                                {listing.saleType === "RENT" && (
+                                                                    <p className="text-xs text-gray-400">/ ay</p>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div />
+                                                        )}
+                                                        <span className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800 md:mt-4 md:w-full md:gap-2 md:px-5 md:py-2.5 md:text-sm">
+                                                            İncele
+                                                            <span aria-hidden="true">{"->"}</span>
+                                                        </span>
+                                                    </>
                                                 )}
-
-                                                <span className={`inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-white transition md:mt-4 md:w-full md:gap-2 md:px-5 md:py-2.5 md:text-sm ${listing.isProject
-                                                    ? "bg-orange-500 hover:bg-orange-600"
-                                                    : "bg-gray-900 hover:bg-gray-800"
-                                                    }`}>
-                                                    {listing.isProject ? "Projeyi İncele" : "İncele"}
-                                                    {!listing.isProject && <span aria-hidden="true">{"->"}</span>}
-                                                </span>
                                             </div>
                                         </Link>
                                     </div>
                                 </article>
                             );
-                        })
-                    )}
-                    {hasMore && (
+                        })}
+                    {hasMore && !showNoResultsCard && (
                         <div ref={observerTarget} className="flex justify-center py-8">
                             <div className="relative h-1 w-32 overflow-hidden rounded-full bg-gray-100">
                                 <div className="absolute inset-y-0 left-0 bg-orange-500 transition-all duration-500 animate-pulse w-full rounded-full" />
@@ -2808,7 +2905,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                     <div className="grid grid-cols-3">
                         <Link
                             href={mapHref}
-                            className="inline-flex items-center justify-center gap-1.5 rounded-l-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-gray-700 shadow-[0_3px_14px_rgba(15,23,42,0.08)] transition hover:bg-gray-50"
+                            className="inline-flex -translate-y-1.5 items-center justify-center gap-1.5 rounded-l-xl border border-orange-300 bg-white px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-gray-700 shadow-[0_3px_14px_rgba(15,23,42,0.08)] transition hover:border-orange-400 hover:bg-orange-50/30"
                         >
                             <MapPin className="h-3.5 w-3.5" />
                             Harita
@@ -2816,9 +2913,9 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         <button
                             type="button"
                             onClick={() => toggleMobilePanel("filter")}
-                            className={`inline-flex cursor-pointer items-center justify-center gap-1.5 border-y border-r border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold uppercase tracking-wide shadow-[0_3px_14px_rgba(15,23,42,0.08)] transition ${activeMobilePanel === "filter" && isMobileDrawerOpen
+                            className={`inline-flex -translate-y-1.5 cursor-pointer items-center justify-center gap-1.5 border-y border-r border-orange-300 bg-white px-3 py-2.5 text-xs font-semibold uppercase tracking-wide shadow-[0_3px_14px_rgba(15,23,42,0.08)] transition ${activeMobilePanel === "filter" && isMobileDrawerOpen
                                 ? "bg-gray-900 text-white"
-                                : "text-gray-700 hover:bg-gray-50"
+                                : "text-gray-700 hover:border-orange-400 hover:bg-orange-50/30"
                                 }`}
                         >
                             <SlidersHorizontal className="h-3.5 w-3.5" />
@@ -2827,9 +2924,9 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         <button
                             type="button"
                             onClick={() => toggleMobilePanel("sort")}
-                            className={`inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-r-xl border-y border-r border-gray-200 bg-white px-3 py-2.5 text-xs font-semibold uppercase tracking-wide shadow-[0_3px_14px_rgba(15,23,42,0.08)] transition ${activeMobilePanel === "sort" && isMobileDrawerOpen
+                            className={`inline-flex -translate-y-1.5 cursor-pointer items-center justify-center gap-1.5 rounded-r-xl border-y border-r border-orange-300 bg-white px-3 py-2.5 text-xs font-semibold uppercase tracking-wide shadow-[0_3px_14px_rgba(15,23,42,0.08)] transition ${activeMobilePanel === "sort" && isMobileDrawerOpen
                                 ? "bg-gray-900 text-white"
-                                : "text-gray-700 hover:bg-gray-50"
+                                : "text-gray-700 hover:border-orange-400 hover:bg-orange-50/30"
                                 }`}
                         >
                             <ArrowUpDown className="h-3.5 w-3.5" />

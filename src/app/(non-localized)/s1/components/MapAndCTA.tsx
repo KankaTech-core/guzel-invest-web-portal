@@ -259,16 +259,18 @@ export const MapAndCTA = ({
                                     </div>
 
                                     <div className="px-4 pb-4">
-                                        <ListingDetailGallery
-                                            items={mapGalleryItems}
-                                            title="Harita Görselleri"
-                                            layout="carousel"
-                                            galleryButtonLabel="Harita Galerisi"
-                                            desktopHeightClass={mapEmbedHeightClass}
-                                            onRequestOpenGallery={() =>
-                                                dispatchOpenConnectedProjectGallery({ key: "map" })
-                                            }
-                                        />
+                                        <div className="overflow-hidden rounded-[1.5rem]">
+                                            <ListingDetailGallery
+                                                items={mapGalleryItems}
+                                                title="Harita Görselleri"
+                                                layout="carousel"
+                                                galleryButtonLabel="Harita Galerisi"
+                                                desktopHeightClass={mapEmbedHeightClass}
+                                                onRequestOpenGallery={() =>
+                                                    dispatchOpenConnectedProjectGallery({ key: "map" })
+                                                }
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             ) : null}
@@ -359,11 +361,11 @@ export const MapAndCTA = ({
                                 >
                                     <div className="relative h-64 overflow-hidden">
                                         <Image
-                                            quality={100}
-                                            unoptimized
                                             src={project.image}
                                             alt={project.title}
                                             fill
+                                            loading="lazy"
+                                            sizes="(min-width: 768px) 33vw, 100vw"
                                             className="object-cover transition-transform duration-500 group-hover:scale-105"
                                         />
                                         <div className="absolute left-4 top-4 rounded-lg bg-white/90 px-3 py-1 text-xs font-bold text-orange-500 backdrop-blur">

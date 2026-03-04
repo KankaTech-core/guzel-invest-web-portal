@@ -27,6 +27,7 @@ const WEBP_QUALITY = 60;
 const WEBP_EFFORT = 4;
 const MAX_IMAGE_WIDTH = 1920;
 const MAX_IMAGE_HEIGHT = 1080;
+const IMAGE_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
 const parsePositiveInt = (value: string | undefined, fallback: number): number => {
     const parsed = Number.parseInt(value || "", 10);
@@ -149,7 +150,10 @@ export async function uploadImage(
         originalPath,
         optimizedBuffer,
         optimizedBuffer.length,
-        { "Content-Type": "image/webp" }
+        {
+            "Content-Type": "image/webp",
+            "Cache-Control": IMAGE_CACHE_CONTROL,
+        }
     );
 
     await minioClient.putObject(
@@ -157,7 +161,10 @@ export async function uploadImage(
         thumbnailPath,
         thumbnailBuffer,
         thumbnailBuffer.length,
-        { "Content-Type": "image/webp" }
+        {
+            "Content-Type": "image/webp",
+            "Cache-Control": IMAGE_CACHE_CONTROL,
+        }
     );
 
     return {

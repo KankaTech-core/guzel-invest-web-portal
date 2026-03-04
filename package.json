@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:all": "node scripts/start-dev.js",
-    "build": "prisma generate && node scripts/prisma-baseline.mjs && prisma migrate deploy && next build && (npx tsx scripts/deploy-optimize-images.ts || true)",
+    "build": "prisma generate && node scripts/prisma-baseline.mjs && prisma migrate deploy && next build && (npx tsx scripts/deploy-optimize-images.ts || true) && (npx tsx scripts/backfill-image-cache-headers.ts || true)",
     "start": "next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
@@ -20,6 +20,7 @@
     "test:db-guard": "node --test scripts/destructive-db-guard.test.mjs",
     "data:locations:generate": "tsx scripts/generate-tr-location-data.ts",
     "data:sku:backfill": "tsx scripts/backfill-listing-sku.ts",
+    "images:cache:backfill": "tsx scripts/backfill-image-cache-headers.ts",
     "dev:turbo": "next dev --turbopack"
   },
   "prisma": {

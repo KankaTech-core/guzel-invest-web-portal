@@ -4,13 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useVersion } from "@/contexts/VersionContext";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { LastUnitsCornerRibbon } from "@/components/public/last-units-corner-ribbon";
 import { HomepagePopupForm } from "@/components/public/homepage-popup-form";
 import { shouldShowLastUnitsRibbon } from "@/lib/last-units-ribbon";
 import {
-    formatPrice,
     getMediaUrl,
     getPropertyTypeLabel,
     getSaleTypeLabel,
@@ -34,19 +32,22 @@ import {
     ArrowRight,
     Plus,
     Minus,
-    ToggleLeft,
-    ToggleRight,
     Play,
     X,
 } from "lucide-react";
 
 /* ─── data ─── */
 const propertyTypes = [
-    { value: "APARTMENT", label: "Konut" },
+    { value: "RESIDENTIAL", label: "Konut" },
     { value: "LAND", label: "Arsa" },
-    { value: "COMMERCIAL", label: "Ticari" },
+    { value: "COMMERCIAL_CLUSTER", label: "Ticari" },
     { value: "PENTHOUSE", label: "Özel Statü" },
 ] as const;
+
+const searchTypeQueryMap: Record<string, string[]> = {
+    RESIDENTIAL: ["APARTMENT", "VILLA", "PENTHOUSE"],
+    COMMERCIAL_CLUSTER: ["COMMERCIAL", "OFFICE", "SHOP"],
+};
 
 const fixedCity = "Antalya" as const;
 const fixedDistrict = "Alanya" as const;
@@ -282,10 +283,16 @@ export default function HomePage() {
     const [heroVideo, setHeroVideo] = useState<HomepageHeroVideo>(HERO_VIDEO_FALLBACK);
     const [isHeroVideoModalOpen, setIsHeroVideoModalOpen] = useState(false);
     const [testimonials, setTestimonials] = useState(TESTIMONIALS_FALLBACK);
-    const { version: searchVersion } = useVersion();
-    const bannerRef = useRef<HTMLFormElement>(null);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isMobileSearchSticky, setIsMobileSearchSticky] = useState(false);
+    const desktopBannerRef = useRef<HTMLFormElement>(null);
+    const mobileInlineBannerRef = useRef<HTMLFormElement>(null);
+    const mobileStickyBannerRef = useRef<HTMLFormElement>(null);
     const testimonialRef = useRef<HTMLDivElement>(null);
-    const heroSwipeStartXRef = useRef<number | null>(null);
+    const projectSwipeStartXRef = useRef<number | null>(null);
+    const heroSectionRef = useRef<HTMLElement>(null);
+    const mobileSearchAnchorRef = useRef<HTMLDivElement>(null);
+    const hasSeenMobileSearchBannerRef = useRef(false);
     const city = fixedCity;
     const district = fixedDistrict;
 
@@ -303,11 +310,21 @@ export default function HomePage() {
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (!bannerRef.current) {
+            const target = event.target as Node;
+            const bannerRoots = [
+                desktopBannerRef.current,
+                mobileInlineBannerRef.current,
+                mobileStickyBannerRef.current,
+            ].filter((root): root is HTMLFormElement => Boolean(root));
+
+            if (bannerRoots.length === 0) {
                 return;
             }
 
-            if (!bannerRef.current.contains(event.target as Node)) {
+            const isClickInsideAnyBanner = bannerRoots.some((root) =>
+                root.contains(target)
+            );
+            if (!isClickInsideAnyBanner) {
                 setOpenDropdown(null);
             }
         };
@@ -315,6 +332,84 @@ export default function HomePage() {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        const handleMobileMenuStateChange = (event: Event) => {
+            const detail = (event as CustomEvent<{ isOpen?: boolean }>).detail;
+            setIsMobileMenuOpen(Boolean(detail?.isOpen));
+        };
+
+        window.addEventListener(
+            "mobile-nav-state-change",
+            handleMobileMenuStateChange as EventListener
+        );
+
+        return () => {
+            window.removeEventListener(
+                "mobile-nav-state-change",
+                handleMobileMenuStateChange as EventListener
+            );
+        };
+    }, []);
+
+    useEffect(() => {
+        let isTicking = false;
+        const MOBILE_BREAKPOINT_PX = 1024;
+        const STICKY_TOP_OFFSET_PX = 80;
+
+        const updateStickyState = () => {
+            isTicking = false;
+
+            if (window.innerWidth >= MOBILE_BREAKPOINT_PX || isMobileMenuOpen) {
+                setIsMobileSearchSticky(false);
+                return;
+            }
+
+            const searchAnchor = mobileSearchAnchorRef.current;
+            const heroSection = heroSectionRef.current;
+
+            if (!searchAnchor || !heroSection) {
+                setIsMobileSearchSticky(false);
+                return;
+            }
+
+            const searchAnchorRect = searchAnchor.getBoundingClientRect();
+            const heroRect = heroSection.getBoundingClientRect();
+            const isBannerInViewport =
+                searchAnchorRect.top < window.innerHeight &&
+                searchAnchorRect.bottom > 0;
+
+            if (isBannerInViewport) {
+                hasSeenMobileSearchBannerRef.current = true;
+            }
+
+            if (!hasSeenMobileSearchBannerRef.current) {
+                setIsMobileSearchSticky(false);
+                return;
+            }
+
+            const shouldStick =
+                searchAnchorRect.bottom <= STICKY_TOP_OFFSET_PX && heroRect.top < 0;
+            setIsMobileSearchSticky(shouldStick);
+        };
+
+        const requestStickyUpdate = () => {
+            if (isTicking) {
+                return;
+            }
+            isTicking = true;
+            window.requestAnimationFrame(updateStickyState);
+        };
+
+        updateStickyState();
+        window.addEventListener("scroll", requestStickyUpdate, { passive: true });
+        window.addEventListener("resize", requestStickyUpdate);
+
+        return () => {
+            window.removeEventListener("scroll", requestStickyUpdate);
+            window.removeEventListener("resize", requestStickyUpdate);
+        };
+    }, [isMobileMenuOpen]);
 
     useEffect(() => {
         let isMounted = true;
@@ -570,7 +665,12 @@ export default function HomePage() {
     const handleSearch = () => {
         const params = new URLSearchParams();
         params.set("saleType", saleType);
-        if (propertyType) params.set("type", propertyType);
+
+        const searchTypes = propertyType
+            ? (searchTypeQueryMap[propertyType] || [propertyType])
+            : [];
+        searchTypes.forEach((typeValue) => params.append("type", typeValue));
+
         params.set("city", city);
         params.set("district", district);
         if (neighborhood) params.set("neighborhood", neighborhood);
@@ -586,16 +686,6 @@ export default function HomePage() {
             : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=700&h=500&fit=crop";
     const getHeroListingHref = (listing: HomepageHeroListing) =>
         listing.slug ? `/${locale}/ilan/${listing.slug}` : null;
-    const getHeroFeatureParts = (listing: HomepageHeroListing) =>
-        [
-            listing.rooms,
-            listing.area > 0 ? `${listing.area}m²` : null,
-            listing.seaView
-                ? locale === "tr"
-                    ? "Deniz Manzaralı"
-                    : "Sea View"
-                : listing.district,
-        ].filter((item): item is string => Boolean(item));
     const safeHeroProjects =
         heroProjects.length > 0 ? heroProjects : [PROJECT_FALLBACK];
     const getProjectImageUrl = (project: HomepageProject, index = 0) =>
@@ -632,17 +722,17 @@ export default function HomePage() {
         );
     };
 
-    const handleHeroTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-        if (!canNavigateHero) return;
+    const handleProjectTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+        if (!canNavigateProject) return;
         const touch = event.changedTouches[0];
-        heroSwipeStartXRef.current = touch ? touch.clientX : null;
+        projectSwipeStartXRef.current = touch ? touch.clientX : null;
     };
 
-    const handleHeroTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
-        if (!canNavigateHero) return;
-        const startX = heroSwipeStartXRef.current;
+    const handleProjectTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+        if (!canNavigateProject) return;
+        const startX = projectSwipeStartXRef.current;
         const touch = event.changedTouches[0];
-        heroSwipeStartXRef.current = null;
+        projectSwipeStartXRef.current = null;
 
         if (startX === null || !touch) return;
 
@@ -650,18 +740,23 @@ export default function HomePage() {
         if (Math.abs(deltaX) < HERO_SWIPE_THRESHOLD_PX) return;
 
         if (deltaX < 0) {
-            goToNextHeroSlide();
+            goToNextProjectSlide();
             return;
         }
-        goToPrevHeroSlide();
+        goToPrevProjectSlide();
     };
 
-    const handleHeroTouchCancel = () => {
-        heroSwipeStartXRef.current = null;
+    const handleProjectTouchCancel = () => {
+        projectSwipeStartXRef.current = null;
     };
 
-    const renderCompactSearchBanner = (className = "") => (
+    const renderCompactSearchBanner = (
+        className = "",
+        dropdownDirection: "up" | "down" = "down",
+        formRef?: { current: HTMLFormElement | null }
+    ) => (
         <form
+            ref={formRef}
             onSubmit={(event) => {
                 event.preventDefault();
                 handleSearch();
@@ -714,15 +809,22 @@ export default function HomePage() {
                     </button>
 
                     {openDropdown === "propertyType" && (
-                        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[100] max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl shadow-gray-200/50 animate-in fade-in zoom-in-95 duration-100 origin-top">
-                            <div className="grid grid-cols-2 gap-1">
+                        <div
+                            className={cn(
+                                "absolute left-0 right-0 z-[100] max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white p-1.5 shadow-xl shadow-gray-200/50 animate-in fade-in zoom-in-95 duration-100",
+                                dropdownDirection === "up"
+                                    ? "bottom-[calc(100%+8px)] origin-bottom"
+                                    : "top-[calc(100%+8px)] origin-top"
+                            )}
+                        >
+                            <div className="grid grid-cols-1 gap-1">
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setPropertyType("");
                                         setOpenDropdown(null);
                                     }}
-                                    className={`col-span-2 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${propertyType === ""
+                                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${propertyType === ""
                                         ? "bg-orange-50 text-orange-600"
                                         : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                                         }`}
@@ -767,7 +869,7 @@ export default function HomePage() {
             {/* ════════════════════════════════════════════
                 HERO SECTION (Updated to Variant /2 Design)
             ════════════════════════════════════════════ */}
-            <section className="pt-28 pb-16 px-8 bg-white">
+            <section ref={heroSectionRef} className="pt-28 pb-16 px-8 bg-white">
                 <div ref={heroRevealRef} className="max-w-7xl mx-auto">
                     {/* Hero Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -784,7 +886,7 @@ export default function HomePage() {
                             </h1>
 
                             <p className="reveal text-lg text-gray-500 mb-8 leading-relaxed max-w-md text-center lg:text-left mx-auto lg:mx-0">
-                                2001'den bu yana Alanya'da güvenilir gayrimenkul platformu. Satılık, kiralık mülkler ve profesyonel danışmanlık hizmetleriyle yanınızdayız.
+                                2001&apos;den bu yana Alanya&apos;da güvenilir gayrimenkul platformu. Satılık, kiralık mülkler ve profesyonel danışmanlık hizmetleriyle yanınızdayız.
                             </p>
 
                             {/* Mobile Buttons - After subtitle */}
@@ -807,75 +909,103 @@ export default function HomePage() {
                                 </button>
                             </div>
 
-                            {/* Mobile Image Slider - Taller Aspect Ratio */}
+                            {/* Mobile Project Slider */}
                             <div className="lg:hidden mb-8">
                                 <div className="aspect-[4/5] rounded-3xl overflow-hidden shadow-xl relative">
                                     <div
                                         className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
                                         style={{
-                                            transform: `translateX(-${heroSlideIndex * 100}%)`,
+                                            transform: `translateX(-${projectSlideIndex * 100}%)`,
                                             touchAction: "pan-y",
                                         }}
-                                        onTouchStart={handleHeroTouchStart}
-                                        onTouchEnd={handleHeroTouchEnd}
-                                        onTouchCancel={handleHeroTouchCancel}
+                                        onTouchStart={handleProjectTouchStart}
+                                        onTouchEnd={handleProjectTouchEnd}
+                                        onTouchCancel={handleProjectTouchCancel}
                                     >
-                                        {safeHeroListings.map((listing, index) => {
-                                            const heroImageUrl = getHeroImageUrl(listing, 0);
-                                            const heroListingHref = getHeroListingHref(listing);
-                                            const isSale = listing.saleType === "SALE";
+                                        {safeHeroProjects.map((project, index) => {
+                                            const projectImageUrl = getProjectImageUrl(project, 0);
+                                            const projectHref = getProjectHref(project);
 
                                             return (
                                                 <div
-                                                    key={`${listing.id}-${listing.slot ?? index}`}
+                                                    key={`${project.id}-${index}`}
                                                     className="relative h-full w-full shrink-0 px-1"
                                                 >
                                                     {/* Card Container */}
                                                     <div className="relative h-full w-full overflow-hidden rounded-3xl bg-white shadow-lg">
                                                         {/* Image Section - Fill Parent */}
                                                         <div className="relative h-full w-full overflow-hidden">
-                                                            {heroListingHref ? (
+                                                            {projectHref ? (
                                                                 <Link
-                                                                    href={heroListingHref}
+                                                                    href={projectHref}
                                                                     className="absolute inset-0 z-10"
-                                                                    title={listing.title}
+                                                                    title={project.title}
                                                                 />
                                                             ) : null}
                                                             <img
-                                                                src={heroImageUrl}
-                                                                alt={listing.title || "Featured Property"}
+                                                                src={projectImageUrl}
+                                                                alt={project.title || "Featured Project"}
                                                                 className="h-full w-full object-cover"
                                                             />
+                                                            {shouldShowLastUnitsRibbon({
+                                                                isProject: true,
+                                                                hasLastUnitsBanner: project.hasLastUnitsBanner,
+                                                            }) ? (
+                                                                <LastUnitsCornerRibbon />
+                                                            ) : null}
 
                                                             {/* Overlay Content (Badges + Text) */}
                                                             <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5">
 
                                                                 {/* Badges Row - Smaller Text */}
                                                                 <div className="flex items-center gap-2 mb-2">
-                                                                    <span className={`px-2.5 py-0.5 text-[10px] font-medium text-white uppercase tracking-wider rounded-md ${isSale ? "bg-orange-500" : "bg-blue-600"
-                                                                        }`}>
-                                                                        {getSaleTypeLabel(listing.saleType, locale)}
+                                                                    <span className="px-2.5 py-0.5 text-[10px] font-medium text-white uppercase tracking-wider rounded-md bg-orange-500">
+                                                                        Proje
                                                                     </span>
-                                                                    <span className="px-2.5 py-0.5 text-[10px] font-medium text-white bg-white/20 backdrop-blur-md rounded-md">
-                                                                        {getPropertyTypeLabel(listing.type, locale)}
-                                                                    </span>
+                                                                    {project.projectType ? (
+                                                                        <span className="px-2.5 py-0.5 text-[10px] font-medium text-white bg-white/20 backdrop-blur-md rounded-md">
+                                                                            {project.projectType}
+                                                                        </span>
+                                                                    ) : null}
                                                                 </div>
 
                                                                 {/* Title - Smaller Text */}
                                                                 <h3 className="text-xl font-medium text-white mb-2 uppercase tracking-wide leading-tight line-clamp-2">
-                                                                    {listing.title}
+                                                                    {project.title}
                                                                 </h3>
 
-                                                                {/* Bottom Row: Info + Price - Smaller Text */}
-                                                                <div className="flex items-end justify-between w-full">
-                                                                    {/* Info: 4+1 · 220m² · Alanya */}
-                                                                    <div className="flex items-center text-white/90 text-xs font-normal">
-                                                                        {getHeroFeatureParts(listing).join(" · ")}
-                                                                    </div>
-
-                                                                    {/* Price */}
-                                                                    <div className="text-xl font-medium text-white tracking-tight">
-                                                                        {formatPrice(listing.price, listing.currency)}
+                                                                {/* Bottom row */}
+                                                                <div className="flex items-center text-white/90 text-xs font-normal gap-2">
+                                                                    <span>{project.district}</span>
+                                                                    {project.deliveryDate ? (
+                                                                        <>
+                                                                            <span className="inline-block h-1 w-1 rounded-full bg-white/60" />
+                                                                            <span>Teslim: {project.deliveryDate}</span>
+                                                                        </>
+                                                                    ) : null}
+                                                                    <div className="ml-auto flex gap-2">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(event) => {
+                                                                                event.preventDefault();
+                                                                                event.stopPropagation();
+                                                                                goToPrevProjectSlide();
+                                                                            }}
+                                                                            className="h-8 w-8 rounded-full border border-white/30 bg-white/20 text-white backdrop-blur-sm"
+                                                                        >
+                                                                            <ChevronLeft className="mx-auto h-4 w-4" />
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(event) => {
+                                                                                event.preventDefault();
+                                                                                event.stopPropagation();
+                                                                                goToNextProjectSlide();
+                                                                            }}
+                                                                            className="h-8 w-8 rounded-full border border-white/30 bg-white/20 text-white backdrop-blur-sm"
+                                                                        >
+                                                                            <ChevronRight className="mx-auto h-4 w-4" />
+                                                                        </button>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -888,11 +1018,11 @@ export default function HomePage() {
 
                                     {/* Mobile Navigation Dots */}
                                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
-                                        {safeHeroListings.map((_, index) => (
+                                        {safeHeroProjects.map((_, index) => (
                                             <button
                                                 key={index}
-                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setHeroSlideIndex(index); }}
-                                                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${index === heroSlideIndex ? "w-4 bg-white" : "bg-white/50"
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setProjectSlideIndex(index); }}
+                                                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${index === projectSlideIndex ? "w-4 bg-white" : "bg-white/50"
                                                     }`}
                                             />
                                         ))}
@@ -901,8 +1031,15 @@ export default function HomePage() {
                             </div>
 
                             {/* Mobile Search Banner */}
-                            <div className="lg:hidden mb-8">
-                                {renderCompactSearchBanner()}
+                            <div
+                                ref={mobileSearchAnchorRef}
+                                className={cn(
+                                    "lg:hidden mb-8 transition-opacity duration-200",
+                                    isMobileMenuOpen ? "hidden" : "block",
+                                    isMobileSearchSticky ? "pointer-events-none opacity-0" : "opacity-100"
+                                )}
+                            >
+                                {renderCompactSearchBanner("", "down", mobileInlineBannerRef)}
                             </div>
 
                             {/* Desktop Buttons */}
@@ -1141,6 +1278,23 @@ export default function HomePage() {
                 </div>
             </section>
 
+            <div
+                className={cn(
+                    "fixed inset-x-0 bottom-3 z-[60] px-3 pb-[env(safe-area-inset-bottom)] transition-all duration-300 ease-out lg:hidden",
+                    !isMobileMenuOpen && isMobileSearchSticky
+                        ? "translate-y-0 opacity-100"
+                        : "pointer-events-none translate-y-[calc(100%+1.5rem)] opacity-0"
+                )}
+            >
+                <div className="mx-auto max-w-xl">
+                    {renderCompactSearchBanner(
+                        "shadow-xl shadow-gray-300/40",
+                        "up",
+                        mobileStickyBannerRef
+                    )}
+                </div>
+            </div>
+
             {isHeroVideoModalOpen ? (
                 <div
                     className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-4"
@@ -1179,7 +1333,7 @@ export default function HomePage() {
             <div ref={searchBannerRevealRef} className="hidden lg:block relative z-30 mt-8 px-4 mb-20">
                 <div className="reveal-scale max-w-7xl mx-auto bg-white rounded-[36px] shadow-xl shadow-gray-200/50">
                     <form
-                        ref={bannerRef}
+                        ref={desktopBannerRef}
                         onSubmit={(event) => {
                             event.preventDefault();
                             handleSearch();

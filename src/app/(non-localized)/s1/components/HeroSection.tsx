@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { S1HeroData } from "../types";
 import { HeroContactForm } from "./HeroContactForm";
@@ -16,12 +17,15 @@ export const HeroSection = ({ hero, projectSlug, locale }: HeroSectionProps) => 
 
     return (
         <section className="relative h-[100svh] min-h-[560px] w-full overflow-hidden">
-            <div
-                className="absolute inset-0 bg-cover bg-center"
-                style={{
-                    backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.12), rgba(0,0,0,0.72)), url('${backgroundImage}')`,
-                }}
+            <Image
+                src={backgroundImage}
+                alt={hero.title || "Proje kapak görseli"}
+                fill
+                priority
+                className="object-cover"
+                sizes="100vw"
             />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/15 to-black/75" />
             <div className="absolute bottom-10 left-6 right-6 z-10 text-white md:bottom-12 md:left-12 md:right-auto">
                 {hero.badge ? (
                     <span className="mb-4 inline-block rounded-full bg-orange-500 px-4 py-1 text-xs font-bold uppercase tracking-widest shadow-sm">

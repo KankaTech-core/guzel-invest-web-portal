@@ -29,6 +29,7 @@ const MAX_WIDTH = 1920;
 const MAX_HEIGHT = 1080;
 const THUMB_WIDTH = 400;
 const THUMB_HEIGHT = 300;
+const IMAGE_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
 const DRY_RUN = process.env.DRY_RUN === "true";
 const SKIP_SMALL = process.env.SKIP_SMALL === "true";
@@ -210,7 +211,10 @@ async function main() {
                         backupPath,
                         originalBuffer,
                         originalBuffer.length,
-                        { "Content-Type": "image/webp" }
+                        {
+                            "Content-Type": "image/webp",
+                            "Cache-Control": IMAGE_CACHE_CONTROL,
+                        }
                     );
                 }
 
@@ -220,7 +224,10 @@ async function main() {
                     imagePath,
                     optimizedBuffer,
                     optimizedBuffer.length,
-                    { "Content-Type": "image/webp" }
+                    {
+                        "Content-Type": "image/webp",
+                        "Cache-Control": IMAGE_CACHE_CONTROL,
+                    }
                 );
 
                 // 7. Overwrite thumbnail
@@ -230,7 +237,10 @@ async function main() {
                     thumbPath,
                     thumbBuffer,
                     thumbBuffer.length,
-                    { "Content-Type": "image/webp" }
+                    {
+                        "Content-Type": "image/webp",
+                        "Cache-Control": IMAGE_CACHE_CONTROL,
+                    }
                 );
             }
 

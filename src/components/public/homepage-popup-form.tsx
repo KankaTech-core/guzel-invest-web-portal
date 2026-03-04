@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { CountryCode } from "libphonenumber-js";
 import { Input, Checkbox, Button } from "@/components/ui";
 import { PhoneInput } from "@/components/ui/phone-input";
@@ -47,6 +47,8 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
+    const popupHistoryMarkerRef = useRef<string | null>(null);
+    const isOpenRef = useRef(false);
 
     const hasPhoneValue = formData.phone.trim().length > 0;
     const phoneIsValid = /^\+\d{8,15}$/.test(formData.phone);
@@ -55,22 +57,89 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
         : undefined;
 
     useEffect(() => {
+        isOpenRef.current = isOpen;
+    }, [isOpen]);
+
+    const openPopup = useCallback(() => {
+        if (isOpenRef.current) {
+            return;
+        }
+        const historyMarker = `homepage-popup-${Date.now()}`;
+        popupHistoryMarkerRef.current = historyMarker;
+        window.history.pushState(
+            {
+                ...(window.history.state || {}),
+                homepagePopupMarker: historyMarker,
+            },
+            "",
+            window.location.href
+        );
+        setIsOpen(true);
+    }, []);
+
+    const handleClose = useCallback((fromPopState = false) => {
+        const historyMarker = popupHistoryMarkerRef.current;
+        popupHistoryMarkerRef.current = null;
+
+        if (
+            !fromPopState &&
+            historyMarker &&
+            window.history.state?.homepagePopupMarker === historyMarker
+        ) {
+            window.history.back();
+            return;
+        }
+
+        setIsOpen(false);
+    }, []);
+
+    useEffect(() => {
         const timer = setTimeout(() => {
-            setIsOpen(true);
+            openPopup();
         }, 5000);
 
-        const handleOpenEvent = () => setIsOpen(true);
+        const handleOpenEvent = () => openPopup();
         window.addEventListener("open-homepage-popup", handleOpenEvent);
 
         return () => {
             clearTimeout(timer);
             window.removeEventListener("open-homepage-popup", handleOpenEvent);
         };
-    }, []);
+    }, [openPopup]);
 
-    const handleClose = () => {
-        setIsOpen(false);
-    };
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+
+        const handlePopState = () => {
+            if (isOpenRef.current) {
+                handleClose(true);
+            }
+        };
+
+        window.addEventListener("popstate", handlePopState);
+        return () => {
+            window.removeEventListener("popstate", handlePopState);
+        };
+    }, [isOpen, handleClose]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+
+        const previousBodyOverflow = document.body.style.overflow;
+        const previousHtmlOverflow = document.documentElement.style.overflow;
+
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+
+        return () => {
+            document.body.style.overflow = previousBodyOverflow;
+            document.documentElement.style.overflow = previousHtmlOverflow;
+        };
+    }, [isOpen]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -141,7 +210,7 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
 
     return (
         <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/60 p-4 transition-opacity duration-300"
+            className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-gray-900/60 p-2 transition-opacity duration-300 sm:p-4"
             onClick={(e) => {
                 if (e.target === e.currentTarget) {
                     handleClose();
@@ -149,20 +218,20 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
             }}
         >
             <div
-                className="relative w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all"
+                className="relative h-[calc(100dvh-1rem)] w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white shadow-2xl transition-all sm:h-auto sm:max-h-[calc(100dvh-2rem)]"
                 role="dialog"
                 aria-modal="true"
             >
                 {/* Close Button */}
                 <button
-                    onClick={handleClose}
+                    onClick={() => handleClose()}
                     className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-900"
                     aria-label="Close"
                 >
                     <X className="h-5 w-5" />
                 </button>
 
-                <div className="flex flex-col md:flex-row h-full">
+                <div className="flex h-full flex-col md:flex-row">
                     {/* Visual / Branding Side - Hidden on small screens to save space or made smaller */}
                     <div className="hidden md:flex w-1/3 flex-col justify-between bg-[#1E2839] p-8 text-white">
                         <div>
@@ -185,7 +254,7 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
                     </div>
 
                     {/* Form Side */}
-                    <div className="flex-1 p-6 sm:p-8 overflow-y-auto max-h-[90vh]">
+                    <div className="flex-1 overflow-y-auto overscroll-contain p-5 sm:p-8">
                         {/* Mobile Header (visible only on small screens) */}
                         <div className="mb-6 md:hidden text-center">
                             <h3 className="text-2xl font-bold text-gray-900">

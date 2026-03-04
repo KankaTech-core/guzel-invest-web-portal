@@ -39,6 +39,7 @@ interface ListingDetailGalleryProps {
     title: string;
     isRemoved?: boolean;
     layout?: ListingDetailGalleryLayout;
+    preloadMainImage?: boolean;
     showInlineThumbnails?: boolean;
     desktopHeightClass?: string;
     className?: string;
@@ -62,6 +63,7 @@ export function ListingDetailGallery({
     title,
     isRemoved = false,
     layout = "collage",
+    preloadMainImage = false,
     showInlineThumbnails = false,
     desktopHeightClass = "h-[clamp(330px,42vw,510px)]",
     className,
@@ -129,6 +131,7 @@ export function ListingDetailGallery({
         0,
         Math.min(carouselTotal - 1, inlineCarouselIndex)
     );
+    const shouldPreloadCoverImage = preloadMainImage && layout === "collage";
 
     const pushOverlayState = useCallback((overlay: "gallery" | "reel") => {
         if (typeof window === "undefined") {
@@ -602,8 +605,7 @@ export function ListingDetailGallery({
                                                 src={item.src}
                                                 alt={item.alt || `${title} ${index + 1}`}
                                                 fill
-                                                priority={index === 0}
-                                                loading={index === 0 ? "eager" : "lazy"}
+                                                loading="lazy"
                                                 className="object-cover"
                                                 sizes="100vw"
                                             />
@@ -657,7 +659,8 @@ export function ListingDetailGallery({
                                         src={coverImage.src}
                                         alt={coverImage.alt || title}
                                         fill
-                                        priority
+                                        priority={shouldPreloadCoverImage}
+                                        loading={shouldPreloadCoverImage ? "eager" : "lazy"}
                                         className="object-cover"
                                         sizes="(min-width: 768px) 75vw, 100vw"
                                     />
@@ -739,8 +742,7 @@ export function ListingDetailGallery({
                                                         src={item.src}
                                                         alt={item.alt || `${title} ${index + 1}`}
                                                         fill
-                                                        priority={index === 0}
-                                                        loading={index === 0 ? "eager" : "lazy"}
+                                                        loading="lazy"
                                                         className="object-cover"
                                                         sizes="(min-width: 1280px) 54vw, (min-width: 768px) 70vw, 100vw"
                                                     />

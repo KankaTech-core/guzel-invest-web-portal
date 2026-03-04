@@ -459,6 +459,7 @@ export default async function ListingDetailPage({
                         items={imageItems}
                         title={title}
                         isRemoved={isRemovedListing}
+                        preloadMainImage
                     />
                     <div className="px-4 pt-3 sm:px-6 md:hidden">
                         <div className="flex items-center gap-2 text-sm font-medium">
