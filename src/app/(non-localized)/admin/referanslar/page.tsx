@@ -43,6 +43,7 @@ export default async function AdminTestimonialsPage() {
                     quote: t.quote,
                     serviceName: t.serviceName,
                     imageUrl: t.imageUrl,
+                    videoUrl: t.videoUrl,
                     order: t.order,
                 }))}
                 isViewer={session.role === "VIEWER"}

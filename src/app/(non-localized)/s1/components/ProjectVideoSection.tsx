@@ -1,5 +1,7 @@
 "use client";
 
+import { StyledVideoPlayer } from "@/components/public/styled-video-player";
+
 interface ProjectVideoSectionProps {
     videoUrl: string;
     videoTitle?: string;
@@ -50,11 +52,15 @@ export const ProjectVideoSection = ({
                             allowFullScreen
                         />
                     ) : (
-                        <video
-                            controls
-                            preload="metadata"
-                            className="h-full w-full object-cover"
+                        <StyledVideoPlayer
                             src={videoUrl}
+                            title={videoTitle || "Tanıtım Videosu"}
+                            autoPlay={false}
+                            loop={false}
+                            mutedByDefault={false}
+                            playButtonPlacement="center"
+                            toggleOnVideoClick={true}
+                            showPlayButtonOnlyWhenPaused={true}
                         />
                     )}
                 </div>

@@ -10,6 +10,7 @@ export async function GET() {
             quote: true,
             serviceName: true,
             imageUrl: true,
+            videoUrl: true,
         },
     });
 

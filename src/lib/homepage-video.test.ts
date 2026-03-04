@@ -6,6 +6,7 @@ import {
     buildHomepageHeroAutoplayEmbedUrl,
     buildHomepageHeroPopupEmbedUrl,
     extractYoutubeVideoId,
+    isLikelyVideoFileInput,
     resolveHomepageHeroVideo,
 } from "./homepage-video";
 
@@ -46,12 +47,41 @@ test("resolveHomepageHeroVideo returns fallback video for invalid input", () => 
     const resolved = resolveHomepageHeroVideo("not-a-youtube-url");
 
     assert.equal(resolved.videoId, DEFAULT_HOMEPAGE_VIDEO_ID);
+    assert.ok(resolved.autoplayEmbedUrl);
     assert.match(
         resolved.autoplayEmbedUrl,
         new RegExp(`/embed/${DEFAULT_HOMEPAGE_VIDEO_ID}`)
     );
+    assert.ok(resolved.popupEmbedUrl);
     assert.match(
         resolved.popupEmbedUrl,
         new RegExp(`/embed/${DEFAULT_HOMEPAGE_VIDEO_ID}`)
     );
+});
+
+test("isLikelyVideoFileInput detects direct video urls and object paths", () => {
+    assert.equal(
+        isLikelyVideoFileInput("https://cdn.example.com/homepage/hero.mp4"),
+        true
+    );
+    assert.equal(
+        isLikelyVideoFileInput("public/homepage/hero/documents/intro.webm"),
+        true
+    );
+    assert.equal(
+        isLikelyVideoFileInput("https://www.youtube.com/watch?v=RrAT0lyOO2M"),
+        false
+    );
+    assert.equal(isLikelyVideoFileInput("not-a-video"), false);
+});
+
+test("resolveHomepageHeroVideo supports uploaded video files", () => {
+    const resolved = resolveHomepageHeroVideo("public/homepage/hero/documents/intro.mp4");
+
+    assert.equal(resolved.source, "file");
+    assert.equal(resolved.videoId, null);
+    assert.equal(resolved.watchUrl, null);
+    assert.equal(resolved.autoplayEmbedUrl, null);
+    assert.equal(resolved.popupEmbedUrl, null);
+    assert.match(resolved.playbackUrl, /\/public\/homepage\/hero\/documents\/intro\.mp4$/);
 });

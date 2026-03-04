@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, CloudUpload, X } from "lucide-react";
+import { getMediaUrl } from "@/lib/utils";
 
 interface TestimonialFormProps {
     readonly testimonial?: {
@@ -13,27 +14,58 @@ interface TestimonialFormProps {
         quote: string;
         serviceName: string;
         imageUrl: string | null;
+        videoUrl?: string | null;
     };
 }
 
 export function TestimonialForm({ testimonial }: TestimonialFormProps) {
     const router = useRouter();
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const imageFileInputRef = useRef<HTMLInputElement>(null);
+    const videoFileInputRef = useRef<HTMLInputElement>(null);
     const isEditing = !!testimonial;
 
     const [name, setName] = useState(testimonial?.name ?? "");
     const [quote, setQuote] = useState(testimonial?.quote ?? "");
     const [serviceName, setServiceName] = useState(testimonial?.serviceName ?? "");
     const [imageUrl, setImageUrl] = useState<string | null>(testimonial?.imageUrl ?? null);
-    const [isUploading, setIsUploading] = useState(false);
+    const [videoUrl, setVideoUrl] = useState<string>(testimonial?.videoUrl ?? "");
+    const [isImageUploading, setIsImageUploading] = useState(false);
+    const [isVideoUploading, setIsVideoUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [isDragging, setIsDragging] = useState(false);
+    const [isImageDragging, setIsImageDragging] = useState(false);
+    const [isVideoDragging, setIsVideoDragging] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const minioBaseUrl = process.env.NEXT_PUBLIC_MINIO_URL;
+    const isUploading = isImageUploading || isVideoUploading;
 
-    const uploadFile = useCallback(async (file: File) => {
-        setIsUploading(true);
+    const resolveEmbedUrl = (value: string): string | null => {
+        const input = value.trim();
+        if (!input) return null;
+
+        if (
+            input.includes("youtube.com/embed/") ||
+            input.includes("player.vimeo.com/video/")
+        ) {
+            return input;
+        }
+
+        const youtubeMatch = input.match(
+            /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
+        );
+        if (youtubeMatch && youtubeMatch[2].length === 11) {
+            return `https://www.youtube.com/embed/${youtubeMatch[2]}`;
+        }
+
+        const vimeoMatch = input.match(/vimeo\.com\/(?:.*#|.*\/videos\/)?([0-9]+)/);
+        if (vimeoMatch && vimeoMatch[1]) {
+            return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+        }
+
+        return null;
+    };
+
+    const uploadImageFile = useCallback(async (file: File) => {
+        setIsImageUploading(true);
         setError(null);
 
         try {
@@ -54,36 +86,90 @@ export function TestimonialForm({ testimonial }: TestimonialFormProps) {
         } catch {
             setError("Görsel yüklenirken bir hata oluştu.");
         } finally {
-            setIsUploading(false);
+            setIsImageUploading(false);
         }
     }, []);
 
-    const handleFileChange = useCallback(
+    const uploadVideoFile = useCallback(async (file: File) => {
+        setIsVideoUploading(true);
+        setError(null);
+
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const res = await fetch("/api/admin/testimonials/upload-video", {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!res.ok) {
+                throw new Error("Upload failed");
+            }
+
+            const data = (await res.json()) as { url: string };
+            setVideoUrl(data.url);
+        } catch {
+            setError("Video yüklenirken bir hata oluştu.");
+        } finally {
+            setIsVideoUploading(false);
+        }
+    }, []);
+
+    const handleImageFileChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
             const file = e.target.files?.[0];
-            if (file) void uploadFile(file);
+            if (file) void uploadImageFile(file);
         },
-        [uploadFile]
+        [uploadImageFile]
     );
 
-    const handleDragOver = useCallback((e: React.DragEvent) => {
+    const handleVideoFileChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const file = e.target.files?.[0];
+            if (file) void uploadVideoFile(file);
+        },
+        [uploadVideoFile]
+    );
+
+    const handleImageDragOver = useCallback((e: React.DragEvent) => {
         e.preventDefault();
-        setIsDragging(true);
+        setIsImageDragging(true);
     }, []);
 
-    const handleDragLeave = useCallback((e: React.DragEvent) => {
+    const handleImageDragLeave = useCallback((e: React.DragEvent) => {
         e.preventDefault();
-        setIsDragging(false);
+        setIsImageDragging(false);
     }, []);
 
-    const handleDrop = useCallback(
+    const handleImageDrop = useCallback(
         (e: React.DragEvent) => {
             e.preventDefault();
-            setIsDragging(false);
+            setIsImageDragging(false);
             const file = e.dataTransfer.files?.[0];
-            if (file) void uploadFile(file);
+            if (file) void uploadImageFile(file);
         },
-        [uploadFile]
+        [uploadImageFile]
+    );
+
+    const handleVideoDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsVideoDragging(true);
+    }, []);
+
+    const handleVideoDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsVideoDragging(false);
+    }, []);
+
+    const handleVideoDrop = useCallback(
+        (e: React.DragEvent) => {
+            e.preventDefault();
+            setIsVideoDragging(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) void uploadVideoFile(file);
+        },
+        [uploadVideoFile]
     );
 
     const handleSubmit = useCallback(
@@ -93,7 +179,13 @@ export function TestimonialForm({ testimonial }: TestimonialFormProps) {
             setError(null);
 
             try {
-                const body = { name, quote, serviceName, imageUrl };
+                const body = {
+                    name,
+                    quote,
+                    serviceName,
+                    imageUrl,
+                    videoUrl: videoUrl.trim() || null,
+                };
 
                 if (isEditing) {
                     const res = await fetch(`/api/admin/testimonials/${testimonial.id}`, {
@@ -119,8 +211,12 @@ export function TestimonialForm({ testimonial }: TestimonialFormProps) {
                 setIsSaving(false);
             }
         },
-        [name, quote, serviceName, imageUrl, isEditing, testimonial, router]
+        [name, quote, serviceName, imageUrl, videoUrl, isEditing, testimonial, router]
     );
+
+    const trimmedVideoUrl = videoUrl.trim();
+    const videoEmbedUrl = trimmedVideoUrl ? resolveEmbedUrl(trimmedVideoUrl) : null;
+    const videoPlaybackUrl = trimmedVideoUrl ? getMediaUrl(trimmedVideoUrl) : "";
 
     return (
         <div className="max-w-[840px] mx-auto">
@@ -203,7 +299,7 @@ export function TestimonialForm({ testimonial }: TestimonialFormProps) {
                                     <div className="flex items-center gap-6">
                                         <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-gray-100 shrink-0">
                                             <Image
-                                                src={`${minioBaseUrl}/guzel-invest/${imageUrl}`}
+                                                src={getMediaUrl(imageUrl)}
                                                 alt="Referans görseli"
                                                 fill
                                                 className="object-cover"
@@ -228,21 +324,21 @@ export function TestimonialForm({ testimonial }: TestimonialFormProps) {
                                 </div>
                             ) : (
                                 <div
-                                    className={`relative cursor-pointer border-2 border-dashed rounded-xl bg-gray-50 hover:border-orange-300 transition-all p-12 ${isDragging
+                                    className={`relative cursor-pointer border-2 border-dashed rounded-xl bg-gray-50 hover:border-orange-300 transition-all p-12 ${isImageDragging
                                             ? "border-orange-400 bg-orange-50"
                                             : "border-gray-200"
                                         }`}
-                                    onDragOver={handleDragOver}
-                                    onDragLeave={handleDragLeave}
-                                    onDrop={handleDrop}
-                                    onClick={() => fileInputRef.current?.click()}
+                                    onDragOver={handleImageDragOver}
+                                    onDragLeave={handleImageDragLeave}
+                                    onDrop={handleImageDrop}
+                                    onClick={() => imageFileInputRef.current?.click()}
                                 >
                                     <div className="flex flex-col items-center justify-center text-center">
                                         <div className="w-16 h-16 mb-4 rounded-full bg-orange-50 flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
                                             <CloudUpload className="h-8 w-8" />
                                         </div>
                                         <p className="text-gray-900 font-semibold text-lg">
-                                            {isUploading
+                                            {isImageUploading
                                                 ? "Yükleniyor..."
                                                 : "Görsel yüklemek için tıklayın veya sürükleyin"}
                                         </p>
@@ -251,14 +347,94 @@ export function TestimonialForm({ testimonial }: TestimonialFormProps) {
                                         </p>
                                     </div>
                                     <input
-                                        ref={fileInputRef}
+                                        ref={imageFileInputRef}
                                         type="file"
                                         accept="image/*"
-                                        onChange={handleFileChange}
+                                        onChange={handleImageFileChange}
                                         className="hidden"
                                     />
                                 </div>
                             )}
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="flex flex-col gap-2">
+                                <span className="text-gray-700 text-sm font-bold uppercase tracking-wider">
+                                    Video URL (YouTube veya Dosya)
+                                </span>
+                                <input
+                                    type="text"
+                                    value={videoUrl}
+                                    onChange={(e) => setVideoUrl(e.target.value)}
+                                    className="input h-12"
+                                    placeholder="https://youtube.com/watch?v=... veya yüklenen dosya yolu"
+                                />
+                            </label>
+
+                            <div
+                                className={`relative cursor-pointer border-2 border-dashed rounded-xl bg-gray-50 hover:border-orange-300 transition-all p-10 ${isVideoDragging
+                                        ? "border-orange-400 bg-orange-50"
+                                        : "border-gray-200"
+                                    }`}
+                                onDragOver={handleVideoDragOver}
+                                onDragLeave={handleVideoDragLeave}
+                                onDrop={handleVideoDrop}
+                                onClick={() => videoFileInputRef.current?.click()}
+                            >
+                                <div className="flex flex-col items-center justify-center text-center">
+                                    <div className="w-14 h-14 mb-3 rounded-full bg-orange-50 flex items-center justify-center text-orange-500">
+                                        <CloudUpload className="h-7 w-7" />
+                                    </div>
+                                    <p className="text-gray-900 font-semibold">
+                                        {isVideoUploading
+                                            ? "Video yükleniyor..."
+                                            : "Video yüklemek için tıklayın veya sürükleyin"}
+                                    </p>
+                                    <p className="text-gray-500 mt-1 text-sm">
+                                        MP4, WEBM, OGG, MOV (Max. 80MB)
+                                    </p>
+                                </div>
+                                <input
+                                    ref={videoFileInputRef}
+                                    type="file"
+                                    accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v,video/mpeg"
+                                    onChange={handleVideoFileChange}
+                                    className="hidden"
+                                />
+                            </div>
+
+                            {trimmedVideoUrl ? (
+                                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <p className="text-sm font-medium text-gray-700">Video önizleme</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setVideoUrl("")}
+                                            className="p-2 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                                        >
+                                            <X className="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                    <div className="aspect-video overflow-hidden rounded-lg bg-black">
+                                        {videoEmbedUrl ? (
+                                            <iframe
+                                                src={videoEmbedUrl}
+                                                title="Referans videosu"
+                                                className="h-full w-full border-0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                            />
+                                        ) : (
+                                            <video
+                                                controls
+                                                preload="metadata"
+                                                className="h-full w-full object-cover"
+                                                src={videoPlaybackUrl}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+                            ) : null}
                         </div>
 
                         {error && (

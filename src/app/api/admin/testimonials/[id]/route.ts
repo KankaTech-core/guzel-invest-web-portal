@@ -43,6 +43,7 @@ export async function PUT(
         quote?: string;
         serviceName?: string;
         imageUrl?: string | null;
+        videoUrl?: string | null;
     };
 
     const testimonial = await prisma.testimonial.update({
@@ -52,6 +53,7 @@ export async function PUT(
             ...(body.quote !== undefined && { quote: body.quote }),
             ...(body.serviceName !== undefined && { serviceName: body.serviceName }),
             ...(body.imageUrl !== undefined && { imageUrl: body.imageUrl }),
+            ...(body.videoUrl !== undefined && { videoUrl: body.videoUrl }),
         },
     });
 

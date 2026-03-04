@@ -10,7 +10,12 @@ import {
     HOMEPAGE_PROJECT_LIMIT,
     HOMEPAGE_PROJECT_SLOTS,
 } from "@/lib/homepage-project-carousel";
-import { extractYoutubeVideoId, resolveHomepageHeroVideo } from "@/lib/homepage-video";
+import {
+    extractYoutubeVideoId,
+    isLikelyVideoFileInput,
+    resolveHomepageHeroVideo,
+} from "@/lib/homepage-video";
+import { deleteImage } from "@/lib/minio";
 
 export const dynamic = "force-dynamic";
 
@@ -78,17 +83,23 @@ const normalizeVideoInput = (
     }
 
     const videoId = extractYoutubeVideoId(trimmed);
-    if (!videoId) {
+    if (videoId) {
         return {
-            ok: false,
-            error:
-                "Geçerli bir YouTube bağlantısı veya iframe kodu girin.",
+            ok: true,
+            value: `https://www.youtube.com/embed/${videoId}`,
+        };
+    }
+
+    if (isLikelyVideoFileInput(trimmed)) {
+        return {
+            ok: true,
+            value: trimmed,
         };
     }
 
     return {
-        ok: true,
-        value: `https://www.youtube.com/embed/${videoId}`,
+        ok: false,
+        error: "Geçerli bir YouTube bağlantısı veya video dosyası URL/yolu girin.",
     };
 };
 
@@ -194,10 +205,12 @@ const buildHomepagePayload = async () => {
     return {
         video: {
             rawInput: setting?.heroVideoUrl || resolvedVideo.rawInput,
+            source: resolvedVideo.source,
             watchUrl: resolvedVideo.watchUrl,
             autoplayEmbedUrl: resolvedVideo.autoplayEmbedUrl,
             popupEmbedUrl: resolvedVideo.popupEmbedUrl,
             videoId: resolvedVideo.videoId,
+            playbackUrl: resolvedVideo.playbackUrl,
         },
         listings: {
             selected: selectedListings.map((item) =>
@@ -343,8 +356,18 @@ export async function PATCH(request: NextRequest) {
             );
         }
 
+        const videoCleanupState: { previousHeroVideoUrl: string | null } = {
+            previousHeroVideoUrl: null,
+        };
+
         await prisma.$transaction(async (tx) => {
             if (normalizedVideoInput.value !== undefined) {
+                const existing = await tx.homepageSetting.findUnique({
+                    where: { id: HOMEPAGE_SETTING_ID },
+                    select: { heroVideoUrl: true },
+                });
+                videoCleanupState.previousHeroVideoUrl = existing?.heroVideoUrl ?? null;
+
                 await tx.homepageSetting.upsert({
                     where: { id: HOMEPAGE_SETTING_ID },
                     update: {
@@ -403,6 +426,16 @@ export async function PATCH(request: NextRequest) {
                 }
             }
         });
+
+        if (
+            normalizedVideoInput.value !== undefined &&
+            typeof videoCleanupState.previousHeroVideoUrl === "string" &&
+            videoCleanupState.previousHeroVideoUrl !== normalizedVideoInput.value &&
+            videoCleanupState.previousHeroVideoUrl.startsWith("public/") &&
+            isLikelyVideoFileInput(videoCleanupState.previousHeroVideoUrl)
+        ) {
+            await deleteImage(videoCleanupState.previousHeroVideoUrl);
+        }
 
         const payload = await buildHomepagePayload();
         return NextResponse.json(payload);

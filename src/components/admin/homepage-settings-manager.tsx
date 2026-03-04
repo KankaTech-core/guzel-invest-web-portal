@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Loader2, Plus, Save, Trash2, GripVertical, Image as ImageIcon } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, CloudUpload, Loader2, Plus, Save, Trash2, GripVertical, Image as ImageIcon } from "lucide-react";
 import { cn, getMediaUrl } from "@/lib/utils";
 import { Select } from "@/components/ui/select";
 import {
@@ -43,10 +43,12 @@ interface HomepageManagedSection {
 interface HomepageSettingsPayload {
     video: {
         rawInput: string;
-        watchUrl: string;
-        autoplayEmbedUrl: string;
-        popupEmbedUrl: string;
-        videoId: string;
+        source: "youtube" | "file";
+        watchUrl: string | null;
+        autoplayEmbedUrl: string | null;
+        popupEmbedUrl: string | null;
+        videoId: string | null;
+        playbackUrl: string;
     };
     projects: HomepageManagedSection;
     listings: HomepageManagedSection;
@@ -63,11 +65,14 @@ const SECTION_URLS: Record<ManagedSectionKey, (id: string) => string> = {
 };
 
 export function HomepageSettingsManager() {
+    const videoFileInputRef = useRef<HTMLInputElement | null>(null);
     const [data, setData] = useState<HomepageSettingsPayload | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [videoInput, setVideoInput] = useState("");
     const [isVideoSaving, setIsVideoSaving] = useState(false);
+    const [isVideoUploading, setIsVideoUploading] = useState(false);
+    const [isVideoDragging, setIsVideoDragging] = useState(false);
     const [savingSection, setSavingSection] = useState<ManagedSectionKey | null>(null);
     const [pendingProjectAddId, setPendingProjectAddId] = useState("");
     const [pendingListingAddId, setPendingListingAddId] = useState("");
@@ -153,7 +158,8 @@ export function HomepageSettingsManager() {
         }
     };
 
-    const updateVideo = async () => {
+    const updateVideo = async (nextInput?: string) => {
+        const effectiveInput = typeof nextInput === "string" ? nextInput : videoInput;
         setIsVideoSaving(true);
         setError(null);
 
@@ -163,7 +169,7 @@ export function HomepageSettingsManager() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ videoUrl: videoInput }),
+                body: JSON.stringify({ videoUrl: effectiveInput }),
             });
 
             const payload = (await response.json().catch(() => null)) as
@@ -188,6 +194,40 @@ export function HomepageSettingsManager() {
             setError(message);
         } finally {
             setIsVideoSaving(false);
+        }
+    };
+
+    const uploadHomepageVideo = async (file: File) => {
+        setIsVideoUploading(true);
+        setError(null);
+
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await fetch("/api/admin/homepage/video", {
+                method: "POST",
+                body: formData,
+            });
+
+            const payload = (await response.json().catch(() => null)) as
+                | { url?: string; error?: string }
+                | null;
+
+            if (!response.ok || !payload?.url) {
+                throw new Error(payload?.error || "Video dosyası yüklenemedi.");
+            }
+
+            setVideoInput(payload.url);
+            await updateVideo(payload.url);
+        } catch (uploadError) {
+            const message =
+                uploadError instanceof Error
+                    ? uploadError.message
+                    : "Video dosyası yüklenemedi.";
+            setError(message);
+        } finally {
+            setIsVideoUploading(false);
         }
     };
 
@@ -252,6 +292,8 @@ export function HomepageSettingsManager() {
         return videoInput.trim() !== (data.video.rawInput || "").trim();
     }, [data, videoInput]);
 
+    const isVideoBusy = isVideoSaving || isVideoUploading;
+
     if (isLoading) {
         return (
             <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500">
@@ -280,27 +322,40 @@ export function HomepageSettingsManager() {
             <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <h2 className="text-lg font-semibold text-gray-900">Hero Video</h2>
                 <p className="mt-1 text-sm text-gray-500">
-                    Ana sayfada oynatılan videoyu YouTube URL ya da iframe kodu ile güncelle.
+                    Ana sayfada oynatılan videoyu YouTube linki veya video dosyası ile güncelle.
                 </p>
 
                 <div className="mt-5 grid gap-5 lg:grid-cols-[1.2fr_1fr]">
                     <div className="overflow-hidden rounded-xl border border-gray-200 bg-black">
                         <div className="aspect-video">
-                            <iframe
-                                className="h-full w-full"
-                                src={data.video.popupEmbedUrl}
-                                title="Ana sayfa hero videosu"
-                                frameBorder="0"
-                                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                referrerPolicy="strict-origin-when-cross-origin"
-                                allowFullScreen
-                            />
+                            {data.video.source === "youtube" && data.video.popupEmbedUrl ? (
+                                <iframe
+                                    className="h-full w-full"
+                                    src={data.video.popupEmbedUrl}
+                                    title="Ana sayfa hero videosu"
+                                    frameBorder="0"
+                                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    referrerPolicy="strict-origin-when-cross-origin"
+                                    allowFullScreen
+                                />
+                            ) : (
+                                <video
+                                    className="h-full w-full object-cover"
+                                    src={data.video.playbackUrl}
+                                    autoPlay
+                                    muted
+                                    loop
+                                    controls
+                                    playsInline
+                                    preload="metadata"
+                                />
+                            )}
                         </div>
                     </div>
 
                     <div className="space-y-3">
                         <label className="block text-sm font-medium text-gray-700">
-                            Video URL / iframe kodu
+                            Video URL / iframe kodu / dosya yolu
                         </label>
                         <textarea
                             value={videoInput}
@@ -308,27 +363,81 @@ export function HomepageSettingsManager() {
                             className="min-h-[150px] w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
                             placeholder="https://www.youtube.com/watch?v=..."
                         />
-                        <a
-                            href={data.video.watchUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex text-sm text-orange-600 hover:text-orange-700"
+                        <div
+                            onDragOver={(event) => {
+                                event.preventDefault();
+                                setIsVideoDragging(true);
+                            }}
+                            onDragLeave={(event) => {
+                                event.preventDefault();
+                                setIsVideoDragging(false);
+                            }}
+                            onDrop={(event) => {
+                                event.preventDefault();
+                                setIsVideoDragging(false);
+                                const file = event.dataTransfer.files?.[0];
+                                if (file) void uploadHomepageVideo(file);
+                            }}
+                            onClick={() => videoFileInputRef.current?.click()}
+                            className={cn(
+                                "cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors",
+                                isVideoDragging
+                                    ? "border-orange-400 bg-orange-50"
+                                    : "border-gray-200 bg-gray-50 hover:border-orange-300"
+                            )}
                         >
-                            Mevcut videoyu YouTube uzerinde ac
-                        </a>
+                            <input
+                                ref={videoFileInputRef}
+                                type="file"
+                                className="hidden"
+                                accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v,video/mpeg"
+                                onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    event.target.value = "";
+                                    if (file) void uploadHomepageVideo(file);
+                                }}
+                            />
+                            <div className="flex flex-col items-center gap-2 text-sm text-gray-600">
+                                <CloudUpload className="h-5 w-5 text-orange-500" />
+                                <span>
+                                    {isVideoUploading
+                                        ? "Video yükleniyor..."
+                                        : "Video dosyasını sürükleyin veya seçin (MP4, WEBM, OGG, MOV)"}
+                                </span>
+                            </div>
+                        </div>
+                        {data.video.source === "youtube" && data.video.watchUrl ? (
+                            <a
+                                href={data.video.watchUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex text-sm text-orange-600 hover:text-orange-700"
+                            >
+                                Mevcut videoyu YouTube üzerinde aç
+                            </a>
+                        ) : (
+                            <a
+                                href={getMediaUrl(data.video.rawInput)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex text-sm text-orange-600 hover:text-orange-700"
+                            >
+                                Mevcut video dosyasını aç
+                            </a>
+                        )}
                         <div>
                             <button
                                 type="button"
-                                onClick={updateVideo}
-                                disabled={isVideoSaving || !hasVideoChanges}
+                                onClick={() => void updateVideo()}
+                                disabled={isVideoBusy || !hasVideoChanges}
                                 className={cn(
                                     "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
-                                    isVideoSaving || !hasVideoChanges
+                                    isVideoBusy || !hasVideoChanges
                                         ? "cursor-not-allowed bg-gray-100 text-gray-400"
                                         : "bg-orange-500 text-white hover:bg-orange-600"
                                 )}
                             >
-                                {isVideoSaving ? (
+                                {isVideoBusy ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
                                     <Save className="h-4 w-4" />

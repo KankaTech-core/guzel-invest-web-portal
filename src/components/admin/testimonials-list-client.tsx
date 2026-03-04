@@ -13,6 +13,7 @@ interface Testimonial {
     quote: string;
     serviceName: string;
     imageUrl: string | null;
+    videoUrl?: string | null;
     order: number;
 }
 

@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
         quote: string;
         serviceName: string;
         imageUrl?: string;
+        videoUrl?: string;
     };
 
     // Get the max order to put new testimonial at the end
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
             quote: body.quote,
             serviceName: body.serviceName,
             imageUrl: body.imageUrl || null,
+            videoUrl: body.videoUrl || null,
             order: (maxOrder._max.order ?? -1) + 1,
         },
     });

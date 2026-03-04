@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { LastUnitsCornerRibbon } from "@/components/public/last-units-corner-ribbon";
 import { HomepagePopupForm } from "@/components/public/homepage-popup-form";
+import { StyledVideoPlayer } from "@/components/public/styled-video-player";
 import { shouldShowLastUnitsRibbon } from "@/lib/last-units-ribbon";
 import {
     getMediaUrl,
@@ -172,38 +173,123 @@ const services = [
     { icon: ShieldCheck, titleKey: "service6Title", descKey: "service6Desc" },
 ];
 
-const TESTIMONIALS_FALLBACK = [
+interface HomepageTestimonialItem {
+    name: string;
+    type: string;
+    quote: string;
+    image: string;
+    video: string | null;
+}
+
+const TESTIMONIALS_FALLBACK: HomepageTestimonialItem[] = [
     {
         name: "Ahmet & Elif Yılmaz",
         type: "Villa · Kargıcak",
         quote: "Güzel Invest ile hayalimizi gerçeğe dönüştürdük, sürecin her adımında yanımızdaydılar.",
         image: "/images/testimonials/testimonial-1.png",
+        video: null,
     },
     {
         name: "Mehmet Karaca",
         type: "Yatırım · Mahmutlar",
         quote: "Profesyonel yaklaşımları ve pazar bilgileri sayesinde doğru yatırım kararını verdim.",
         image: "/images/testimonials/testimonial-2.png",
+        video: null,
     },
     {
         name: "Demir Ailesi",
         type: "Konut · Oba",
         quote: "Aile olarak huzurla yaşayacağımız yuvamızı bulduk, tüm ekibe teşekkürler.",
         image: "/images/testimonials/testimonial-3.png",
+        video: null,
     },
     {
         name: "Canan & Emre Aksoy",
         type: "Daire · Tosmur",
         quote: "İlk evimizi alırken bizi adım adım yönlendirdiler, hiçbir sorumuzu cevapsız bırakmadılar.",
         image: "/images/testimonials/testimonial-4.png",
+        video: null,
     },
     {
         name: "Klaus Müller",
         type: "Vatandaşlık · Kestel",
         quote: "Türk vatandaşlığı sürecimi sorunsuz tamamladık, mülk yatırımımdan çok memnunum.",
         image: "/images/testimonials/testimonial-5.png",
+        video: null,
     },
 ];
+
+const resolveEmbeddableTestimonialVideo = (value: string): string | null => {
+    const input = value.trim();
+    if (!input) return null;
+
+    if (
+        input.includes("youtube.com/embed/") ||
+        input.includes("player.vimeo.com/video/")
+    ) {
+        return input;
+    }
+
+    const youtubeMatch = input.match(
+        /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
+    );
+    if (youtubeMatch && youtubeMatch[2].length === 11) {
+        return `https://www.youtube.com/embed/${youtubeMatch[2]}`;
+    }
+
+    const vimeoMatch = input.match(/vimeo\.com\/(?:.*#|.*\/videos\/)?([0-9]+)/);
+    if (vimeoMatch && vimeoMatch[1]) {
+        return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    }
+
+    return null;
+};
+
+function TestimonialMedia({
+    image,
+    video,
+    name,
+}: {
+    image: string;
+    video: string | null;
+    name: string;
+}) {
+    if (!video) {
+        return (
+            <img
+                src={image}
+                alt={name}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+        );
+    }
+
+    const embedUrl = resolveEmbeddableTestimonialVideo(video);
+    if (embedUrl) {
+        return (
+            <iframe
+                src={embedUrl}
+                title={`${name} referans videosu`}
+                className="h-full w-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+            />
+        );
+    }
+
+    return (
+        <StyledVideoPlayer
+            src={video}
+            title={`${name} referans videosu`}
+            autoPlay={false}
+            loop={false}
+            mutedByDefault={true}
+            playButtonPlacement="center"
+            toggleOnVideoClick={true}
+            showPlayButtonOnlyWhenPaused={true}
+        />
+    );
+}
 
 interface HomepageHeroListing {
     id: string;
@@ -507,21 +593,22 @@ export default function HomePage() {
                         quote: string;
                         serviceName: string;
                         imageUrl: string | null;
+                        videoUrl?: string | null;
                     }>;
                 };
                 if (!isMounted) return;
 
                 const incoming = data?.testimonials;
                 if (incoming && incoming.length > 0) {
-                    const minioBase = process.env.NEXT_PUBLIC_MINIO_URL || "";
                     setTestimonials(
                         incoming.map((t) => ({
                             name: t.name,
                             type: t.serviceName,
                             quote: t.quote,
                             image: t.imageUrl
-                                ? `${minioBase}/guzel-invest/${t.imageUrl}`
+                                ? getMediaUrl(t.imageUrl)
                                 : "/images/testimonials/testimonial-1.png",
+                            video: t.videoUrl ? getMediaUrl(t.videoUrl) : null,
                         }))
                     );
                 }
@@ -1256,15 +1343,27 @@ export default function HomePage() {
                                         onClick={() => setIsHeroVideoModalOpen(true)}
                                         className="group absolute inset-0 block h-full w-full cursor-pointer overflow-hidden"
                                     >
-                                        <iframe
-                                            className="pointer-events-none absolute inset-0 h-full w-full origin-center scale-[2.3] transform-gpu"
-                                            src={heroVideo.autoplayEmbedUrl}
-                                            title="Hero video player"
-                                            frameBorder="0"
-                                            allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                            referrerPolicy="strict-origin-when-cross-origin"
-                                            allowFullScreen
-                                        ></iframe>
+                                        {heroVideo.source === "youtube" && heroVideo.autoplayEmbedUrl ? (
+                                            <iframe
+                                                className="pointer-events-none absolute inset-0 h-full w-full origin-center scale-[2.3] transform-gpu"
+                                                src={heroVideo.autoplayEmbedUrl}
+                                                title="Hero video player"
+                                                frameBorder="0"
+                                                allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                referrerPolicy="strict-origin-when-cross-origin"
+                                                allowFullScreen
+                                            ></iframe>
+                                        ) : (
+                                            <video
+                                                className="pointer-events-none absolute inset-0 h-full w-full origin-center scale-[2.3] transform-gpu object-cover"
+                                                src={heroVideo.playbackUrl}
+                                                autoPlay
+                                                muted
+                                                loop
+                                                playsInline
+                                                preload="metadata"
+                                            />
+                                        )}
                                         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                                         <div className="pointer-events-none absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/45 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition-colors group-hover:bg-black/60">
                                             <Play className="h-3.5 w-3.5" />
@@ -1314,15 +1413,26 @@ export default function HomePage() {
                         </button>
                         <div className="overflow-hidden rounded-2xl border border-white/15 bg-black shadow-2xl">
                             <div className="aspect-video w-full">
-                                <iframe
-                                    className="h-full w-full object-cover"
-                                    src={heroVideo.popupEmbedUrl}
-                                    title="Hero expanded video player"
-                                    frameBorder="0"
-                                    allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                    referrerPolicy="strict-origin-when-cross-origin"
-                                    allowFullScreen
-                                ></iframe>
+                                {heroVideo.source === "youtube" && heroVideo.popupEmbedUrl ? (
+                                    <iframe
+                                        className="h-full w-full object-cover"
+                                        src={heroVideo.popupEmbedUrl}
+                                        title="Hero expanded video player"
+                                        frameBorder="0"
+                                        allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        referrerPolicy="strict-origin-when-cross-origin"
+                                        allowFullScreen
+                                    ></iframe>
+                                ) : (
+                                    <StyledVideoPlayer
+                                        src={heroVideo.playbackUrl}
+                                        title="Hero expanded video player"
+                                        autoPlay
+                                        loop
+                                        mutedByDefault={false}
+                                        playButtonPlacement="corner"
+                                    />
+                                )}
                             </div>
                         </div>
                     </div>
@@ -1852,10 +1962,10 @@ export default function HomePage() {
                             >
                                 {/* Photo */}
                                 <div className="h-56 overflow-hidden">
-                                    <img
-                                        src={item.image}
-                                        alt={item.name}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    <TestimonialMedia
+                                        image={item.image}
+                                        video={item.video}
+                                        name={item.name}
                                     />
                                 </div>
 

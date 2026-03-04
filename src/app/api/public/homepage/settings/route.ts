@@ -20,10 +20,12 @@ export async function GET() {
         return NextResponse.json({
             video: {
                 rawInput: setting?.heroVideoUrl || video.rawInput,
+                source: video.source,
                 watchUrl: video.watchUrl,
                 autoplayEmbedUrl: video.autoplayEmbedUrl,
                 popupEmbedUrl: video.popupEmbedUrl,
                 videoId: video.videoId,
+                playbackUrl: video.playbackUrl,
             },
         });
     } catch (error) {

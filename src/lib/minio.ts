@@ -53,7 +53,7 @@ interface UploadImageOptions {
 }
 
 interface UploadDocumentOptions {
-    collection?: "listings" | "articles";
+    collection?: "listings" | "articles" | "testimonials" | "homepage";
     contentType?: string;
 }
 

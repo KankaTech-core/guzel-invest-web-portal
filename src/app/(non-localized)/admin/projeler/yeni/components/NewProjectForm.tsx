@@ -346,9 +346,27 @@ const ALLOWED_MEDIA_TYPES = new Set([
     "image/gif",
     "image/avif",
 ]);
+const ALLOWED_PROMO_VIDEO_TYPES = new Set([
+    "video/mp4",
+    "video/webm",
+    "video/ogg",
+    "video/quicktime",
+    "video/x-m4v",
+    "video/mpeg",
+]);
+const ALLOWED_PROMO_VIDEO_EXTENSIONS = new Set([
+    "mp4",
+    "webm",
+    "ogg",
+    "mov",
+    "m4v",
+    "mpeg",
+]);
 
 const MAX_MEDIA_FILE_SIZE_MB = 30;
 const MAX_MEDIA_FILE_SIZE_BYTES = MAX_MEDIA_FILE_SIZE_MB * 1024 * 1024;
+const MAX_PROMO_VIDEO_FILE_SIZE_MB = 120;
+const MAX_PROMO_VIDEO_FILE_SIZE_BYTES = MAX_PROMO_VIDEO_FILE_SIZE_MB * 1024 * 1024;
 const MEDIA_UPLOAD_CHUNK_SIZE = 4;
 const MEDIA_UPLOAD_CHUNK_MAX_MB = 30;
 const MEDIA_UPLOAD_CHUNK_MAX_BYTES = MEDIA_UPLOAD_CHUNK_MAX_MB * 1024 * 1024;
@@ -414,6 +432,35 @@ const validateMediaFiles = (files: File[]): string | null => {
     return null;
 };
 
+const getFileExtension = (filename: string) => {
+    const parts = filename.toLowerCase().split(".");
+    if (parts.length < 2) return "";
+    return (parts.pop() || "").replace(/[^a-z0-9]/g, "");
+};
+
+const isAllowedPromoVideoFile = (file: File) => {
+    const extension = getFileExtension(file.name);
+    if (ALLOWED_PROMO_VIDEO_EXTENSIONS.has(extension)) {
+        return true;
+    }
+
+    return ALLOWED_PROMO_VIDEO_TYPES.has(file.type.trim().toLowerCase());
+};
+
+const validatePromoVideoFile = (file: File | null | undefined): string | null => {
+    if (!file) return "Yüklenecek video dosyası bulunamadı.";
+
+    if (!isAllowedPromoVideoFile(file)) {
+        return `Desteklenmeyen video türü: ${file.name}. Sadece MP4, WEBM, OGG, MOV, M4V veya MPEG yükleyin.`;
+    }
+
+    if (file.size <= 0 || file.size > MAX_PROMO_VIDEO_FILE_SIZE_BYTES) {
+        return `${file.name} için maksimum video boyutu ${MAX_PROMO_VIDEO_FILE_SIZE_MB}MB olmalıdır.`;
+    }
+
+    return null;
+};
+
 const buildMediaUploadChunks = (files: File[]): File[][] => {
     const chunks: File[][] = [];
     let currentChunk: File[] = [];
@@ -451,6 +498,32 @@ const toUniqueMedia = (items: UploadedMedia[]): UploadedMedia[] => {
 const getTurkishTranslation = <T extends { locale: string }>(items: T[] | undefined) => {
     const list = items || [];
     return list.find((item) => item.locale === "tr") || list[0] || null;
+};
+
+const resolveEmbeddableVideoUrl = (value: string): string | null => {
+    const input = value.trim();
+    if (!input) return null;
+
+    if (
+        input.includes("youtube.com/embed/") ||
+        input.includes("player.vimeo.com/video/")
+    ) {
+        return input;
+    }
+
+    const youtubeMatch = input.match(
+        /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
+    );
+    if (youtubeMatch && youtubeMatch[2].length === 11) {
+        return `https://www.youtube.com/embed/${youtubeMatch[2]}`;
+    }
+
+    const vimeoMatch = input.match(/vimeo\.com\/(?:.*#|.*\/videos\/)?([0-9]+)/);
+    if (vimeoMatch && vimeoMatch[1]) {
+        return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    }
+
+    return null;
 };
 
 const normalizeRoomOption = (value: string) =>
@@ -1056,6 +1129,13 @@ export default function NewProjectForm({
     const turkishTranslation =
         translations.find((translation) => translation.locale === "tr") ||
         currentTranslation;
+    const promoVideoInput = promoVideoUrl.trim();
+    const promoVideoEmbedUrl = promoVideoInput
+        ? resolveEmbeddableVideoUrl(promoVideoInput)
+        : null;
+    const promoVideoPlaybackUrl = promoVideoInput
+        ? getMediaUrl(promoVideoInput)
+        : "";
 
     const locationLabel = [address, neighborhood, district, city]
         .map((value) => value.trim())
@@ -2520,6 +2600,56 @@ export default function NewProjectForm({
         }
     };
 
+    const handlePromoVideoUpload = async (files: File[]) => {
+        const file = files[0];
+        const validationError = validatePromoVideoFile(file);
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
+
+        if (!file) return;
+
+        setError("");
+        setSuccess("");
+        setIsUploading(true);
+
+        try {
+            const listingId = await ensureProjectId();
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await fetch(`/api/admin/projects/${listingId}/promo-video`, {
+                method: "POST",
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const apiError = await parseApiErrorMessage(
+                    response,
+                    "Promosyon videosu yüklenemedi."
+                );
+                throw new Error(apiError);
+            }
+
+            const payload = (await response.json()) as { url?: string };
+            const uploadedUrl =
+                typeof payload.url === "string" ? payload.url.trim() : "";
+            if (!uploadedUrl) {
+                throw new Error("Yükleme tamamlandı ancak video URL alınamadı.");
+            }
+
+            setPromoVideoUrl(uploadedUrl);
+            setSuccess("Promosyon videosu yüklendi.");
+        } catch (errorValue) {
+            setError(
+                getFriendlyFetchErrorMessage(errorValue, "Promosyon videosu yükleme hatası.")
+            );
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     const handleFloorPlanImageUpload = async (floorPlanId: string, files: File[]) => {
         if (files.length === 0) return;
 
@@ -3903,9 +4033,55 @@ export default function NewProjectForm({
                                             type="text"
                                         />
                                         <p className="text-xs text-slate-500">
-                                            YouTube veya Vimeo bağlantılarını destekler.
+                                            YouTube/Vimeo bağlantısı girebilir veya aşağıdan dosya yükleyebilirsiniz.
                                         </p>
                                     </div>
+
+                                    <UploadPanel
+                                        title="Video yüklemek için tıklayın veya sürükleyin"
+                                        subtitle={`MP4, WEBM, OGG, MOV (Max ${MAX_PROMO_VIDEO_FILE_SIZE_MB}MB)`}
+                                        onFilesSelected={(files) =>
+                                            void handlePromoVideoUpload(files)
+                                        }
+                                        accept="video/mp4,video/webm,video/ogg,video/quicktime,video/x-m4v,video/mpeg"
+                                        multiple={false}
+                                        disabled={isSaving || isUploading}
+                                        compact
+                                    />
+
+                                    {promoVideoInput ? (
+                                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
+                                            <div className="flex items-center justify-between gap-3">
+                                                <p className="text-sm font-medium text-slate-700">Video önizleme</p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPromoVideoUrl("")}
+                                                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-500 transition-colors"
+                                                    title="Videoyu kaldır"
+                                                >
+                                                    <X className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                            <div className="aspect-video overflow-hidden rounded-lg bg-black">
+                                                {promoVideoEmbedUrl ? (
+                                                    <iframe
+                                                        src={promoVideoEmbedUrl}
+                                                        title="Promosyon videosu"
+                                                        className="h-full w-full border-0"
+                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                        allowFullScreen
+                                                    />
+                                                ) : (
+                                                    <video
+                                                        controls
+                                                        preload="metadata"
+                                                        className="h-full w-full object-cover"
+                                                        src={promoVideoPlaybackUrl}
+                                                    />
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : null}
                                 </div>
                             </div>
                         </details>

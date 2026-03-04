@@ -15,6 +15,7 @@ import {
     normalizeProjectText,
 } from "@/lib/projects";
 import { resolveGoogleMapsLink } from "@/lib/google-maps";
+import { deleteImage } from "@/lib/minio";
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -571,6 +572,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             );
         }
 
+        const promoVideoUrlsToCleanup: string[] = [];
+
         await prisma.$transaction(async (tx) => {
             if (nextHomepageProjectSlot !== null) {
                 await tx.listing.updateMany({
@@ -645,21 +648,37 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             });
 
             if (payload.promoVideoUrl !== undefined) {
+                const existingPromoVideos = await tx.media.findMany({
+                    where: { listingId: id, type: "VIDEO", category: "PROMO" },
+                    select: { url: true },
+                });
                 await tx.media.deleteMany({
                     where: { listingId: id, type: "VIDEO", category: "PROMO" },
                 });
 
                 if (payload.promoVideoUrl) {
+                    const nextUrl = payload.promoVideoUrl.trim();
                     await tx.media.create({
                         data: {
                             listingId: id,
                             type: "VIDEO",
                             category: "PROMO",
-                            url: payload.promoVideoUrl.trim(),
+                            url: nextUrl,
                             order: 0,
                             isCover: false,
                         },
                     });
+                    promoVideoUrlsToCleanup.push(
+                        ...existingPromoVideos
+                            .map((item) => item.url)
+                            .filter((url) => url && url !== nextUrl)
+                    );
+                } else {
+                    promoVideoUrlsToCleanup.push(
+                        ...existingPromoVideos
+                            .map((item) => item.url)
+                            .filter(Boolean)
+                    );
                 }
             }
 
@@ -725,6 +744,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
                 logoMediaIds: payload.logoMediaIds,
             });
         });
+
+        if (promoVideoUrlsToCleanup.length > 0) {
+            const uniquePromoVideoUrls = Array.from(new Set(promoVideoUrlsToCleanup));
+            await Promise.all(
+                uniquePromoVideoUrls
+                    .filter((url) => url.startsWith("public/"))
+                    .map((url) => deleteImage(url))
+            );
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

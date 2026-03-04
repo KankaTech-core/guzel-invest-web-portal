@@ -23,9 +23,6 @@
     "images:cache:backfill": "tsx scripts/backfill-image-cache-headers.ts",
     "dev:turbo": "next dev --turbopack"
   },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  },
   "dependencies": {
     "@blocknote/core": "^0.46.2",
     "@blocknote/mantine": "^0.46.2",

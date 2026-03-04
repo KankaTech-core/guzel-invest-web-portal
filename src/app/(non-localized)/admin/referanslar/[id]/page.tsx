@@ -32,6 +32,7 @@ export default async function EditTestimonialPage({ params }: EditTestimonialPag
                 quote: testimonial.quote,
                 serviceName: testimonial.serviceName,
                 imageUrl: testimonial.imageUrl,
+                videoUrl: testimonial.videoUrl,
             }}
         />
     );
