@@ -603,6 +603,7 @@ export function ListingDetailGallery({
                                                 alt={item.alt || `${title} ${index + 1}`}
                                                 fill
                                                 priority={index === 0}
+                                                loading={index === 0 ? "eager" : "lazy"}
                                                 className="object-cover"
                                                 sizes="100vw"
                                             />
@@ -676,6 +677,7 @@ export function ListingDetailGallery({
                                             src={secondImage.src}
                                             alt={secondImage.alt || `${title} ikinci görsel`}
                                             fill
+                                            loading="lazy"
                                             className="object-cover"
                                             sizes="(min-width: 768px) 25vw, 100vw"
                                         />
@@ -694,6 +696,7 @@ export function ListingDetailGallery({
                                                 src={thirdImage.src}
                                                 alt={thirdImage.alt || `${title} üçüncü görsel`}
                                                 fill
+                                                loading="lazy"
                                                 className="object-cover"
                                                 sizes="(min-width: 768px) 25vw, 100vw"
                                             />
@@ -737,6 +740,7 @@ export function ListingDetailGallery({
                                                         alt={item.alt || `${title} ${index + 1}`}
                                                         fill
                                                         priority={index === 0}
+                                                        loading={index === 0 ? "eager" : "lazy"}
                                                         className="object-cover"
                                                         sizes="(min-width: 1280px) 54vw, (min-width: 768px) 70vw, 100vw"
                                                     />
@@ -804,6 +808,7 @@ export function ListingDetailGallery({
                                                 src={item.src}
                                                 alt={item.alt || `${title} ${index + 1}`}
                                                 fill
+                                                loading="lazy"
                                                 className="object-cover"
                                                 sizes="(min-width: 1024px) 12vw, 25vw"
                                             />
@@ -884,6 +889,7 @@ export function ListingDetailGallery({
                                                         src={item.src}
                                                         alt={item.alt || `${title} ${index + 1}`}
                                                         fill
+                                                        loading="lazy"
                                                         className="object-cover"
                                                         sizes="(min-width: 1024px) 22vw, (min-width: 640px) 33vw, 50vw"
                                                     />
@@ -1022,24 +1028,30 @@ export function ListingDetailGallery({
                                     }}
                                     className="h-full overflow-y-auto snap-y snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                                 >
-                                    {items.map((item, index) => (
-                                        <section
-                                            key={`${item.id}-reel`}
-                                            data-reel-index={index}
-                                            className="relative h-[100svh] snap-start snap-always"
-                                        >
-                                            <div className="relative h-full w-full px-2 pb-14 pt-16 md:px-6">
-                                                <Image
-                                                    src={item.src}
-                                                    alt={item.alt || `${title} ${index + 1}`}
-                                                    fill
-                                                    className="object-contain"
-                                                    sizes="100vw"
-                                                    priority={index === activeReelIndex}
-                                                />
-                                            </div>
-                                        </section>
-                                    ))}
+                                    {items.map((item, index) => {
+                                        const isNearActive = Math.abs(index - activeReelIndex) <= 2;
+                                        return (
+                                            <section
+                                                key={`${item.id}-reel`}
+                                                data-reel-index={index}
+                                                className="relative h-[100svh] snap-start snap-always"
+                                            >
+                                                <div className="relative h-full w-full px-2 pb-14 pt-16 md:px-6">
+                                                    {isNearActive ? (
+                                                        <Image
+                                                            src={item.src}
+                                                            alt={item.alt || `${title} ${index + 1}`}
+                                                            fill
+                                                            className="object-contain"
+                                                            sizes="100vw"
+                                                            priority={index === activeReelIndex}
+                                                            loading={index === activeReelIndex ? "eager" : "lazy"}
+                                                        />
+                                                    ) : null}
+                                                </div>
+                                            </section>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ) : null}

@@ -99,6 +99,7 @@ function PeekingCarouselStrip({
                             alt={item.alt || `Görsel ${index + 1}`}
                             fill
                             priority={index === 0}
+                            loading={index === 0 ? "eager" : "lazy"}
                             className="object-cover"
                             sizes="(min-width: 1280px) 50vw, (min-width: 768px) 65vw, 100vw"
                         />
@@ -473,12 +474,12 @@ export const Visuals = ({
                                         aria-label={`${plan.title} planını aç`}
                                     >
                                         <Image
-                                            quality={100}
-                                            unoptimized
                                             src={plan.image}
                                             alt={plan.title}
                                             fill
+                                            loading="lazy"
                                             className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                                            sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
                                         />
                                     </button>
                                     <div className="flex items-center justify-between gap-4 text-gray-900">
