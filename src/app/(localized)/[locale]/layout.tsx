@@ -45,7 +45,7 @@ export default async function LocaleLayout({ children, params }: Props) {
 
     return (
         <html lang={locale} dir={dir}>
-            <body className={`${outfit.variable} font-sans antialiased bg-white`}>
+            <body suppressHydrationWarning className={`${outfit.variable} font-sans antialiased bg-white`}>
                 <NextIntlClientProvider messages={messages}>
                     <VersionProvider>
                         <CurrencyProvider>

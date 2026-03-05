@@ -182,6 +182,11 @@ const EMSAL_MAX = 5;
 const EMSAL_STEP = 0.05;
 const IMAGE_SWIPE_THRESHOLD_PX = 48;
 const MOBILE_DRAWER_ANIMATION_MS = 280;
+const LISTINGS_PAGE_SIZE = 8;
+const PORTFOLIO_SCROLL_STORAGE_PREFIX = "portfolio:scroll:";
+const PORTFOLIO_SCROLL_PENDING_KEY = "portfolio:scroll:pending";
+const PORTFOLIO_SCROLL_PAGE_PREFIX = "portfolio:scroll:page:";
+const PORTFOLIO_SCROLL_LISTING_ID_KEY = "portfolio:scroll:listing-id";
 
 const propertyTypes = PROPERTY_TYPE_OPTIONS;
 
@@ -527,6 +532,24 @@ function parseMultiParam(params: URLSearchParams, key: string) {
         .filter(Boolean);
 }
 
+function buildCanonicalSearchKey(rawSearch: string) {
+    const params = new URLSearchParams(rawSearch);
+    const entries = Array.from(params.entries()).sort(([leftKey, leftValue], [rightKey, rightValue]) => {
+        if (leftKey === rightKey) {
+            return leftValue.localeCompare(rightValue, "tr");
+        }
+
+        return leftKey.localeCompare(rightKey, "tr");
+    });
+
+    const normalized = new URLSearchParams();
+    entries.forEach(([key, value]) => {
+        normalized.append(key, value);
+    });
+
+    return normalized.toString();
+}
+
 function readInitialFilters(searchParams: URLSearchParams): FiltersState {
     const validTypeValues = new Set<string>(propertyTypes.map((type) => type.value));
     const validSaleTypeValues = new Set<string>(saleTypes.map((type) => type.value));
@@ -786,12 +809,26 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const searchParamsKey = searchParams.toString();
+    const canonicalSearchParamsKey = useMemo(
+        () => buildCanonicalSearchKey(searchParamsKey),
+        [searchParamsKey]
+    );
     const mapHref = useMemo(
         () =>
             searchParamsKey
                 ? `/${locale}/harita?${searchParamsKey}`
                 : `/${locale}/harita`,
         [locale, searchParamsKey]
+    );
+    const scrollStorageKey = useMemo(
+        () =>
+            `${PORTFOLIO_SCROLL_STORAGE_PREFIX}${pathname}${canonicalSearchParamsKey ? `?${canonicalSearchParamsKey}` : ""}`,
+        [canonicalSearchParamsKey, pathname]
+    );
+    const scrollPageStorageKey = useMemo(
+        () =>
+            `${PORTFOLIO_SCROLL_PAGE_PREFIX}${pathname}${canonicalSearchParamsKey ? `?${canonicalSearchParamsKey}` : ""}`,
+        [canonicalSearchParamsKey, pathname]
     );
 
     const [filters, setFilters] = useState<FiltersState>(() =>
@@ -827,11 +864,186 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     const descriptionRefs = useRef<Record<string, HTMLParagraphElement | null>>({});
     const mobileDrawerOpenTimerRef = useRef<number | null>(null);
     const mobileDrawerCloseTimerRef = useRef<number | null>(null);
+    const hasRestoredScrollRef = useRef(false);
+    const restorePageRef = useRef<number | null>(null);
+    const restoreListingIdRef = useRef<string | null>(null);
+    const skipNextPageFetchRef = useRef<number | null>(null);
+    const isInitialFetchInFlightRef = useRef(false);
 
     useEffect(() => {
         const nextFilters = readInitialFilters(new URLSearchParams(searchParamsKey));
         setFilters(nextFilters);
     }, [searchParamsKey]);
+
+    useEffect(() => {
+        hasRestoredScrollRef.current = false;
+        restorePageRef.current = null;
+        restoreListingIdRef.current = null;
+        skipNextPageFetchRef.current = null;
+
+        const pendingRestoreKey = window.sessionStorage.getItem(
+            PORTFOLIO_SCROLL_PENDING_KEY
+        );
+
+        if (pendingRestoreKey !== scrollStorageKey) {
+            return;
+        }
+
+        const savedPage = Number(
+            window.sessionStorage.getItem(scrollPageStorageKey)
+        );
+
+        if (Number.isFinite(savedPage) && savedPage > 1) {
+            restorePageRef.current = Math.floor(savedPage);
+        }
+
+        const savedListingId = window.sessionStorage.getItem(
+            PORTFOLIO_SCROLL_LISTING_ID_KEY
+        );
+
+        if (savedListingId) {
+            restoreListingIdRef.current = savedListingId;
+        }
+    }, [scrollPageStorageKey, scrollStorageKey]);
+
+    useEffect(() => {
+        let rafId: number | null = null;
+
+        const persistScrollPosition = () => {
+            if (!hasRestoredScrollRef.current) {
+                return;
+            }
+
+            if (rafId !== null) {
+                return;
+            }
+
+            rafId = window.requestAnimationFrame(() => {
+                rafId = null;
+                window.sessionStorage.setItem(scrollStorageKey, String(window.scrollY));
+            });
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "hidden") {
+                persistScrollPosition();
+            }
+        };
+
+        window.addEventListener("scroll", persistScrollPosition, { passive: true });
+        window.addEventListener("pagehide", persistScrollPosition);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        return () => {
+            if (rafId !== null) {
+                window.cancelAnimationFrame(rafId);
+            }
+
+            window.removeEventListener("scroll", persistScrollPosition);
+            window.removeEventListener("pagehide", persistScrollPosition);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+        };
+    }, [scrollStorageKey]);
+
+    useEffect(() => {
+        if (hasRestoredScrollRef.current) {
+            return;
+        }
+
+        const pendingRestoreKey = window.sessionStorage.getItem(
+            PORTFOLIO_SCROLL_PENDING_KEY
+        );
+
+        if (pendingRestoreKey !== scrollStorageKey) {
+            hasRestoredScrollRef.current = true;
+            return;
+        }
+
+        const savedListingId = restoreListingIdRef.current;
+        const savedScrollY = Number(window.sessionStorage.getItem(scrollStorageKey));
+
+        if (
+            !savedListingId &&
+            (!Number.isFinite(savedScrollY) || savedScrollY <= 0)
+        ) {
+            window.sessionStorage.removeItem(PORTFOLIO_SCROLL_PENDING_KEY);
+            window.sessionStorage.removeItem(PORTFOLIO_SCROLL_LISTING_ID_KEY);
+            hasRestoredScrollRef.current = true;
+            return;
+        }
+
+        if (isLoading) {
+            return;
+        }
+
+        let attempts = 0;
+        let frameId: number | null = null;
+
+        const finishRestore = () => {
+            window.sessionStorage.removeItem(PORTFOLIO_SCROLL_PENDING_KEY);
+            window.sessionStorage.removeItem(PORTFOLIO_SCROLL_LISTING_ID_KEY);
+            restoreListingIdRef.current = null;
+            hasRestoredScrollRef.current = true;
+        };
+
+        const restoreScrollPosition = () => {
+            attempts += 1;
+
+            // Prefer scrolling to the specific listing the user clicked on.
+            if (savedListingId) {
+                const listingElement = document.getElementById(
+                    `listing-${savedListingId}`
+                );
+
+                if (listingElement) {
+                    listingElement.scrollIntoView({ block: "center", behavior: "auto" });
+                    finishRestore();
+                    return;
+                }
+
+                // Element not rendered yet – keep trying up to 30 frames.
+                if (attempts < 30) {
+                    frameId = window.requestAnimationFrame(restoreScrollPosition);
+                    return;
+                }
+
+                // Fallback: try scrollY if the element never appeared.
+            }
+
+            // Fallback: restore by saved scrollY position.
+            if (Number.isFinite(savedScrollY) && savedScrollY > 0) {
+                const maxScrollY = Math.max(
+                    0,
+                    document.documentElement.scrollHeight - window.innerHeight
+                );
+                const targetY = Math.min(savedScrollY, maxScrollY);
+
+                window.scrollTo({ top: targetY, left: 0, behavior: "auto" });
+
+                const closeEnough = Math.abs(window.scrollY - targetY) < 2;
+                const canFitTarget =
+                    document.documentElement.scrollHeight >= savedScrollY + window.innerHeight;
+
+                if ((closeEnough && canFitTarget) || attempts >= 30) {
+                    finishRestore();
+                    return;
+                }
+
+                frameId = window.requestAnimationFrame(restoreScrollPosition);
+                return;
+            }
+
+            finishRestore();
+        };
+
+        frameId = window.requestAnimationFrame(restoreScrollPosition);
+
+        return () => {
+            if (frameId !== null) {
+                window.cancelAnimationFrame(frameId);
+            }
+        };
+    }, [isLoading, scrollStorageKey]);
 
     const cityOptions = useMemo(
         () =>
@@ -1138,6 +1350,16 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
     useEffect(() => {
         const timer = setTimeout(() => {
+            const pendingRestoreKey = window.sessionStorage.getItem(
+                PORTFOLIO_SCROLL_PENDING_KEY
+            );
+            if (
+                pendingRestoreKey === scrollStorageKey &&
+                !hasRestoredScrollRef.current
+            ) {
+                return;
+            }
+
             const current = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : searchParams.toString());
             const nextParams = new URLSearchParams(queryString);
             if (nextParams.has('locale')) nextParams.delete('locale');
@@ -1158,7 +1380,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         }, 300); // Debounce for 300ms
 
         return () => clearTimeout(timer);
-    }, [queryString, pathname, router, searchParams]);
+    }, [queryString, pathname, router, scrollStorageKey, searchParams]);
 
     const hasActiveFilters = useMemo(() => {
         const params = new URLSearchParams(queryString);
@@ -1194,7 +1416,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         const params = new URLSearchParams({
             locale,
             page: "1",
-            limit: "8",
+            limit: String(LISTINGS_PAGE_SIZE),
         });
 
         if (filters.sort !== DEFAULT_SORT) {
@@ -1239,11 +1461,20 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
     const fetchListings = useCallback(
         async (mode: "initial" | "background" | "nextPage" = "background", currentPage = 1) => {
+            if (
+                mode === "background" &&
+                isInitialFetchInFlightRef.current &&
+                !hasRestoredScrollRef.current
+            ) {
+                return;
+            }
+
             const controller = new AbortController();
             abortRef.current?.abort();
             abortRef.current = controller;
 
             if (mode === "initial") {
+                isInitialFetchInFlightRef.current = true;
                 setIsLoading(true);
             } else if (mode === "nextPage") {
                 setIsFetchingNextPage(true);
@@ -1251,7 +1482,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
             try {
                 // Determine how many items to fetch. For background refresh of existing state, fetch up to current page.
-                const limit = 8;
+                const limit = LISTINGS_PAGE_SIZE;
                 const fetchLimit = (mode === "background" || mode === "initial") ? currentPage * limit : limit;
                 const fetchPage = mode === "nextPage" ? currentPage : 1;
 
@@ -1338,6 +1569,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 );
             } finally {
                 if (mode === "initial") {
+                    isInitialFetchInFlightRef.current = false;
                     setIsLoading(false);
                 } else if (mode === "nextPage") {
                     setIsFetchingNextPage(false);
@@ -1348,26 +1580,45 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     );
 
     useEffect(() => {
-        setPage(1);
+        const restorePage =
+            restorePageRef.current && restorePageRef.current > 1
+                ? restorePageRef.current
+                : 1;
+
+        setPage(restorePage);
+        if (restorePage > 1) {
+            skipNextPageFetchRef.current = restorePage;
+        }
+
         const mode = hasInitializedRef.current ? "background" : "initial";
-        void fetchListings(mode, 1);
+        void fetchListings(mode, restorePage);
+        restorePageRef.current = null;
         hasInitializedRef.current = true;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [queryString]);
 
     useEffect(() => {
         const intervalId = window.setInterval(() => {
-            if (document.visibilityState === "visible") {
+            if (
+                document.visibilityState === "visible" &&
+                hasRestoredScrollRef.current
+            ) {
                 void fetchListings("background", page);
             }
         }, REFRESH_INTERVAL_MS);
 
         const onFocus = () => {
+            if (!hasRestoredScrollRef.current) {
+                return;
+            }
             void fetchListings("background", page);
         };
 
         const onVisibilityChange = () => {
-            if (document.visibilityState === "visible") {
+            if (
+                document.visibilityState === "visible" &&
+                hasRestoredScrollRef.current
+            ) {
                 void fetchListings("background", page);
             }
         };
@@ -1384,6 +1635,11 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
     useEffect(() => {
         if (page > 1) {
+            if (skipNextPageFetchRef.current === page) {
+                skipNextPageFetchRef.current = null;
+                return;
+            }
+
             void fetchListings("nextPage", page);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1667,12 +1923,34 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         delete swipeStartPointRef.current[listingId];
     };
 
+    const rememberScrollForListingReturn = useCallback((listingId?: string) => {
+        const loadedPage = Math.max(
+            1,
+            page,
+            Math.ceil(listings.length / LISTINGS_PAGE_SIZE)
+        );
+
+        window.sessionStorage.setItem(scrollStorageKey, String(window.scrollY));
+        window.sessionStorage.setItem(
+            PORTFOLIO_SCROLL_PENDING_KEY,
+            scrollStorageKey
+        );
+        window.sessionStorage.setItem(scrollPageStorageKey, String(loadedPage));
+
+        if (listingId) {
+            window.sessionStorage.setItem(PORTFOLIO_SCROLL_LISTING_ID_KEY, listingId);
+        } else {
+            window.sessionStorage.removeItem(PORTFOLIO_SCROLL_LISTING_ID_KEY);
+        }
+    }, [listings.length, page, scrollPageStorageKey, scrollStorageKey]);
+
     const handleImageClick = (listingId: string, listingDetailHref: string) => {
         const lastSwipeAt = lastImageSwipeAtRef.current[listingId];
         if (lastSwipeAt && Date.now() - lastSwipeAt < 400) {
             return;
         }
 
+        rememberScrollForListingReturn(listingId);
         router.push(listingDetailHref);
     };
 
@@ -2575,6 +2853,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                             return (
                                 <article
                                     key={listing.id}
+                                    id={`listing-${listing.id}`}
                                     className={`group overflow-hidden rounded-xl border bg-white transition-all hover:shadow-lg ${listing.isProject
                                         ? "border-orange-300 hover:border-orange-500"
                                         : "border-gray-200 hover:border-orange-200"
@@ -2651,6 +2930,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                                                 href={listingDetailHref}
                                                                                 onClick={(event) => {
                                                                                     event.stopPropagation();
+                                                                                    rememberScrollForListingReturn(listing.id);
                                                                                 }}
                                                                                 className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
                                                                             >
@@ -2739,6 +3019,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
                                         <Link
                                             href={listingDetailHref}
+                                            onClick={() => rememberScrollForListingReturn(listing.id)}
                                             className="contents"
                                         >
                                             <div className="flex cursor-pointer flex-col justify-between border-r border-gray-100 p-5">

@@ -1181,8 +1181,7 @@ export default function HomePage() {
                                                                     src={heroImageUrl}
                                                                     alt={listing.title || "Featured Listing"}
                                                                     fill
-                                                                    sizes="100vw"
-                                                                    priority={index === 0}
+                                                                    sizes="(max-width: 1023px) calc(100vw - 4rem), 100vw"
                                                                     className="h-full w-full object-cover"
                                                                 />
                                                                 <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5">
@@ -1275,7 +1274,7 @@ export default function HomePage() {
                                                                 src={projectImageUrl}
                                                                 alt={project.title || "Featured Project"}
                                                                 fill
-                                                                sizes="100vw"
+                                                                sizes="(max-width: 1023px) calc(100vw - 4rem), 100vw"
                                                                 priority={index === 0}
                                                                 className="h-full w-full object-cover"
                                                             />
@@ -1476,7 +1475,7 @@ export default function HomePage() {
                                                     src={projectImageUrl}
                                                     alt={project.title || "Featured Project"}
                                                     fill
-                                                    sizes="(max-width: 1280px) 100vw, 66vw"
+                                                    sizes="(min-width: 1280px) 853px, (min-width: 1024px) 66vw, 100vw"
                                                     priority={index === 0}
                                                     className="h-full w-full object-cover"
                                                 />
@@ -1604,8 +1603,7 @@ export default function HomePage() {
                                                         src={heroImageUrl}
                                                         alt={listing.title || "Featured Listing"}
                                                         fill
-                                                        sizes="(max-width: 1280px) 100vw, 33vw"
-                                                        priority={index === 0}
+                                                        sizes="(min-width: 1280px) 427px, (min-width: 1024px) 33vw, 100vw"
                                                         className="h-full w-full object-cover"
                                                     />
                                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
@@ -1998,7 +1996,7 @@ export default function HomePage() {
                                         src={cat.image}
                                         alt={cat.label}
                                         fill
-                                        sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 320px"
+                                        sizes="(max-width: 1023px) 50vw, (max-width: 1279px) 25vw, 320px"
                                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                                     />
                                 </div>
@@ -2068,7 +2066,7 @@ export default function HomePage() {
                                             src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=700&h=400&fit=crop"
                                             alt="Satılık & Kiralık Gayrimenkul"
                                             fill
-                                            sizes="(max-width: 1280px) 100vw, 40vw"
+                                            sizes="(min-width: 1280px) 533px, (min-width: 1024px) 40vw, 100vw"
                                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                         />
                                     </div>
@@ -2226,7 +2224,7 @@ export default function HomePage() {
                                     src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=900&h=675&fit=crop"
                                     alt="Alanya Panorama"
                                     fill
-                                    sizes="(max-width: 1280px) 100vw, 50vw"
+                                    sizes="(min-width: 1280px) 640px, (min-width: 1024px) 50vw, 100vw"
                                     className="h-full w-full object-cover"
                                 />
                             </div>
@@ -2471,7 +2469,7 @@ export default function HomePage() {
                                         src={article.image}
                                         alt={article.title}
                                         fill
-                                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                                        sizes="(max-width: 767px) 100vw, (min-width: 1280px) 411px, 33vw"
                                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                     />
                                 </div>

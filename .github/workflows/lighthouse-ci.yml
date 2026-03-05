@@ -1,0 +1,35 @@
+name: Lighthouse CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  lhci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app for Lighthouse
+        run: npm run build:lhci
+
+      - name: Run Lighthouse CI
+        env:
+          LHCI_LOCALE: tr
+          LHCI_LISTING_SLUG: ${{ vars.LHCI_LISTING_SLUG }}
+          LHCI_PROJECT_SLUG: ${{ vars.LHCI_PROJECT_SLUG }}
+        run: npm run lhci

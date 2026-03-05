@@ -52,3 +52,6 @@ lint_errors.txt
 error.txt
 temp/
 temp_stitch.html
+
+# lighthouse ci local artifacts
+.lighthouseci/

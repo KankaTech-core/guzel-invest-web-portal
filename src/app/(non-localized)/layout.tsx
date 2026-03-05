@@ -20,7 +20,7 @@ export default function RootLayout({
 }) {
     return (
         <html lang="tr">
-            <body className={`${outfit.variable} font-sans antialiased bg-white`}>
+            <body suppressHydrationWarning className={`${outfit.variable} font-sans antialiased bg-white`}>
                 {children}
                 {process.env.NODE_ENV === "development" && <Agentation />}
             </body>
