@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MediaType } from "@/generated/prisma";
 import { getSession } from "@/lib/auth";
+import { getDocumentNameFromMedia, upsertDocumentNameTag } from "@/lib/project-document-name";
 import { uploadDocument } from "@/lib/minio";
 import { prisma } from "@/lib/prisma";
 
@@ -152,6 +153,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         const createdDocuments: Array<{
             id: string;
+            name: string;
             url: string;
             category: string | null;
             type: MediaType;
@@ -174,7 +176,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                     category: "DOCUMENT",
                     order: mediaCount + index,
                     isCover: false,
-                    aiTags: [],
+                    aiTags: upsertDocumentNameTag([], file.name),
                     width: null,
                     height: null,
                     size: upload.size,
@@ -184,13 +186,25 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                 select: {
                     id: true,
                     url: true,
+                    aiTags: true,
                     category: true,
                     type: true,
                     order: true,
                 },
             });
 
-            createdDocuments.push(media);
+            createdDocuments.push({
+                id: media.id,
+                name: getDocumentNameFromMedia({
+                    url: media.url,
+                    aiTags: media.aiTags,
+                    fallback: file.name || `Belge ${index + 1}`,
+                }),
+                url: media.url,
+                category: media.category,
+                type: media.type,
+                order: media.order,
+            });
         }
 
         return NextResponse.json({ documents: createdDocuments }, { status: 201 });

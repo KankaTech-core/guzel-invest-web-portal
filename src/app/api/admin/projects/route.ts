@@ -5,6 +5,7 @@ import { getSession } from "@/lib/auth";
 import { replaceProjectMediaAssignments } from "@/lib/project-media-assignments";
 import { prisma } from "@/lib/prisma";
 import { parseHomepageProjectSlot } from "@/lib/homepage-project-carousel";
+import { upsertDocumentNameTag } from "@/lib/project-document-name";
 import {
     getProjectSlugBase,
     normalizeProjectIcon,
@@ -83,6 +84,11 @@ const FaqSchema = z.object({
     ),
 });
 
+const DocumentNameSchema = z.object({
+    id: z.string(),
+    name: z.string().optional(),
+});
+
 const CreateProjectSchema = z.object({
     status: z.string().optional(),
     slug: z.string().optional(),
@@ -110,6 +116,7 @@ const CreateProjectSchema = z.object({
     interiorMediaIds: z.array(z.string()).optional(),
     mapMediaIds: z.array(z.string()).optional(),
     documentMediaIds: z.array(z.string()).optional(),
+    documentNames: z.array(DocumentNameSchema).optional(),
     logoMediaIds: z.array(z.string()).optional(),
     homepageProjectSlot: z.number().int().nullable().optional(),
     hasLastUnitsBanner: z.boolean().optional(),
@@ -408,6 +415,55 @@ async function replaceFaqs(
     }
 }
 
+async function applyDocumentNames(
+    tx: Prisma.TransactionClient,
+    listingId: string,
+    documentNames?: z.infer<typeof DocumentNameSchema>[]
+) {
+    if (!documentNames || documentNames.length === 0) {
+        return;
+    }
+
+    const nameById = new Map<string, string>();
+    for (const item of documentNames) {
+        const id = item.id.trim();
+        if (!id) continue;
+        const normalizedName = normalizeProjectText(item.name || "")?.slice(0, 160) || "";
+        nameById.set(id, normalizedName);
+    }
+
+    const documentIds = Array.from(nameById.keys());
+    if (documentIds.length === 0) {
+        return;
+    }
+
+    const existingDocuments = await tx.media.findMany({
+        where: {
+            listingId,
+            id: { in: documentIds },
+            type: "DOCUMENT",
+        },
+        select: {
+            id: true,
+            aiTags: true,
+        },
+    });
+
+    await Promise.all(
+        existingDocuments.map((document) =>
+            tx.media.update({
+                where: { id: document.id },
+                data: {
+                    aiTags: upsertDocumentNameTag(
+                        document.aiTags,
+                        nameById.get(document.id) || ""
+                    ),
+                },
+            })
+        )
+    );
+}
+
 export async function POST(request: NextRequest) {
     try {
         const session = await getSession();
@@ -447,6 +503,17 @@ export async function POST(request: NextRequest) {
         if (!city || !district) {
             return NextResponse.json(
                 { error: "Şehir ve ilçe zorunludur." },
+                { status: 400 }
+            );
+        }
+
+        const promoUnitCount = (payload.projectUnits || []).filter((unit) => {
+            const detailType = unit.detailType || "ROOM";
+            return detailType === "PROMO" && Boolean(normalizeProjectText(unit.rooms));
+        }).length;
+        if (promoUnitCount > 1) {
+            return NextResponse.json(
+                { error: "Proje formunda en fazla bir promosyon metni eklenebilir." },
                 { status: 400 }
             );
         }
@@ -606,6 +673,7 @@ export async function POST(request: NextRequest) {
                 documentMediaIds: payload.documentMediaIds,
                 logoMediaIds: payload.logoMediaIds,
             });
+            await applyDocumentNames(tx, created.id, payload.documentNames);
 
             return created;
         });

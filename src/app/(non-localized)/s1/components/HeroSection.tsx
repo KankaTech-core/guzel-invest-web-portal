@@ -28,7 +28,7 @@ export const HeroSection = ({ hero, projectSlug, locale }: HeroSectionProps) => 
             <div className="absolute inset-0 bg-gradient-to-b from-black/15 to-black/75" />
             <div className="absolute bottom-10 left-6 right-6 z-10 text-white md:bottom-12 md:left-12 md:right-auto">
                 {hero.badge ? (
-                    <span className="mb-4 inline-block rounded-full bg-orange-500 px-4 py-1 text-xs font-bold uppercase tracking-widest shadow-sm">
+                    <span className="mb-4 inline-block rounded-full bg-orange-500 px-4 py-1 text-xs font-bold tracking-widest shadow-sm">
                         {hero.badge}
                     </span>
                 ) : null}

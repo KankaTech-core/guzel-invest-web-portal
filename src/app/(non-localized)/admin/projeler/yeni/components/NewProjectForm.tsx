@@ -46,7 +46,6 @@ import {
     Plus,
     PlusCircle,
     Save,
-    Send,
     Settings,
     Sparkles,
     Star,
@@ -77,6 +76,8 @@ import {
 } from "@/lib/feature-reorder";
 import { splitFeaturesByCategory } from "@/lib/feature-category";
 import { normalizeGoogleMapsLink, toGoogleMapsEmbedLink } from "@/lib/google-maps";
+import { getDocumentNameFromMedia } from "@/lib/project-document-name";
+import { selectFilesForUpload } from "@/lib/upload-selection";
 import { cn, getMediaUrl } from "@/lib/utils";
 
 type ProjectStatusValue = "DRAFT" | "PUBLISHED" | "ARCHIVED";
@@ -103,6 +104,7 @@ interface UploadedMedia {
 
 interface UploadedDocument {
     id: string;
+    name: string;
     url: string;
     category: string | null;
     type: string;
@@ -130,12 +132,18 @@ interface FloorPlanRow {
 }
 
 type ProjectDetailType = "ROOM" | "PAYMENT" | "PROMO";
+type NonRoomProjectDetailType = Exclude<ProjectDetailType, "ROOM">;
 
 const PROJECT_DETAIL_TYPE_OPTIONS: { value: ProjectDetailType; label: string; icon: React.ElementType }[] = [
     { value: "ROOM", label: "Oda Sayısı", icon: Home },
     { value: "PAYMENT", label: "Ödeme Ayrıntısı", icon: CreditCard },
     { value: "PROMO", label: "Promosyon Metni", icon: Megaphone },
 ];
+
+const PROJECT_ADDITIONAL_DETAIL_OPTIONS = PROJECT_DETAIL_TYPE_OPTIONS.filter(
+    (option): option is { value: NonRoomProjectDetailType; label: string; icon: React.ElementType } =>
+        option.value !== "ROOM"
+);
 
 interface ProjectUnitRow {
     id: string;
@@ -195,6 +203,7 @@ interface ProjectFeatureRecord {
 interface ProjectMediaRecord extends UploadedMedia {
     category: string | null;
     type: string;
+    aiTags?: string[];
     customGalleryId?: string | null;
     projectUnitId?: string | null;
 }
@@ -373,6 +382,7 @@ const MEDIA_UPLOAD_CHUNK_MAX_BYTES = MEDIA_UPLOAD_CHUNK_MAX_MB * 1024 * 1024;
 const MEDIA_OPTIMIZATION_SUCCESS_DURATION_MS = 1100;
 const FEEDBACK_POPUP_AUTO_CLOSE_MS = 5000;
 const POST_SAVE_UNSAVED_GUARD_MS = 1800;
+const SHOW_PROJECT_LOGO_FIELD = false;
 
 const wait = (ms: number) =>
     new Promise<void>((resolve) => {
@@ -553,6 +563,22 @@ const toUploadedMedia = (item: ProjectMediaRecord): UploadedMedia => ({
     thumbnailUrl: item.thumbnailUrl ?? null,
     order: typeof item.order === "number" ? item.order : 0,
     isCover: Boolean(item.isCover),
+});
+
+const toUploadedDocument = (
+    item: Pick<ProjectMediaRecord, "id" | "url" | "category" | "type" | "order" | "aiTags">,
+    fallback: string
+): UploadedDocument => ({
+    id: item.id,
+    name: getDocumentNameFromMedia({
+        url: item.url,
+        aiTags: item.aiTags,
+        fallback,
+    }),
+    url: item.url,
+    category: item.category,
+    type: item.type,
+    order: typeof item.order === "number" ? item.order : 0,
 });
 
 const buildDefaultTranslations = (): TranslationFormRow[] =>
@@ -767,9 +793,11 @@ function MediaGrid({ items, onRemove, onReorder, emptyMessage }: MediaGridProps)
 function SortableDocumentItem({
     document,
     onRemove,
+    onNameChange,
 }: {
     document: UploadedDocument;
     onRemove: (id: string) => void;
+    onNameChange: (id: string, name: string) => void;
 }) {
     const {
         attributes,
@@ -806,12 +834,18 @@ function SortableDocumentItem({
                 >
                     <GripVertical className="w-5 h-5 shrink-0" />
                 </button>
-                <div>
-                    <p className="text-sm font-medium text-slate-900">
-                        {document.id}
-                    </p>
+                <div className="space-y-1.5">
+                    <input
+                        type="text"
+                        value={document.name}
+                        onChange={(event) =>
+                            onNameChange(document.id, event.target.value)
+                        }
+                        className="w-full rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-900 outline-none transition-colors focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+                        placeholder="Dokuman adi"
+                    />
                     <p className="text-xs text-slate-500">
-                        {document.type}
+                        {document.type} • {document.id}
                     </p>
                 </div>
             </div>
@@ -1035,6 +1069,19 @@ export default function NewProjectForm({
     const [roomOptions, setRoomOptions] = useState<string[]>([
         ...DEFAULT_ROOM_OPTIONS,
     ]);
+    const roomProjectUnits = useMemo(
+        () => projectUnits.filter((unit) => unit.detailType === "ROOM"),
+        [projectUnits]
+    );
+    const nonRoomProjectUnits = useMemo(
+        () => projectUnits.filter((unit) => unit.detailType !== "ROOM"),
+        [projectUnits]
+    );
+    const promoProjectUnitCount = useMemo(
+        () =>
+            projectUnits.filter((unit) => unit.detailType === "PROMO").length,
+        [projectUnits]
+    );
 
     const [documents, setDocuments] = useState<UploadedDocument[]>([]);
 
@@ -1991,19 +2038,17 @@ export default function NewProjectForm({
                 setMapMedia(map.map(toUploadedMedia));
                 setSocialMedia(toUniqueMedia(socialItems));
                 setDocuments(
-                    documentItems.map((item) => ({
-                        id: item.id,
-                        url: item.url,
-                        category: item.category,
-                        type: item.type,
-                        order: item.order,
-                    }))
+                    documentItems.map((item, index) =>
+                        toUploadedDocument(item, `Belge ${index + 1}`)
+                    )
                 );
                 setProjectUnits(projectUnitRows);
                 setRoomOptions(
                     mergeRoomOptions(
                         [...DEFAULT_ROOM_OPTIONS],
-                        projectUnitRows.map((item) => item.rooms)
+                        projectUnitRows
+                            .filter((item) => item.detailType === "ROOM")
+                            .map((item) => item.rooms)
                     )
                 );
                 setFloorPlans(
@@ -2096,7 +2141,13 @@ export default function NewProjectForm({
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [detailTypeMenuOpen]);
 
-    const addProjectUnitRow = (detailType: ProjectDetailType = "ROOM") => {
+    const addProjectDetailRow = (detailType: NonRoomProjectDetailType) => {
+        if (detailType === "PROMO" && promoProjectUnitCount >= 1) {
+            setError("En fazla bir promosyon metni ekleyebilirsiniz.");
+            setDetailTypeMenuOpen(false);
+            return;
+        }
+
         setProjectUnits((prev) => [
             ...prev,
             {
@@ -2105,7 +2156,20 @@ export default function NewProjectForm({
                 detailType,
             },
         ]);
+        setError("");
         setDetailTypeMenuOpen(false);
+    };
+
+    const addProjectRoomRow = () => {
+        setProjectUnits((prev) => [
+            ...prev,
+            {
+                id: createRowId(),
+                rooms: "",
+                detailType: "ROOM",
+            },
+        ]);
+        setError("");
     };
 
     const updateProjectUnitRoom = (id: string, value: string | null) => {
@@ -2415,6 +2479,10 @@ export default function NewProjectForm({
             interiorMediaIds: interiorMedia.map((media) => media.id),
             mapMediaIds: mapMedia.map((media) => media.id),
             documentMediaIds: documents.map((document) => document.id),
+            documentNames: documents.map((document) => ({
+                id: document.id,
+                name: document.name.trim(),
+            })),
             logoMediaIds: logoMedia.map((media) => media.id).slice(0, 1),
             promoVideoUrl: promoVideoUrl.trim() || null,
         };
@@ -2438,6 +2506,13 @@ export default function NewProjectForm({
 
         if (!payload.city || !payload.district) {
             throw new Error("Şehir ve ilçe zorunludur.");
+        }
+
+        const promoUnitCount = payload.projectUnits.filter(
+            (unit) => unit.detailType === "PROMO"
+        ).length;
+        if (promoUnitCount > 1) {
+            throw new Error("En fazla bir promosyon metni kaydedebilirsiniz.");
         }
 
         const endpoint = projectId
@@ -2524,9 +2599,10 @@ export default function NewProjectForm({
         onUploaded: (items: UploadedMedia[]) => void,
         options?: { useFirstOnly?: boolean }
     ) => {
-        if (files.length === 0) return;
+        const filesToUpload = selectFilesForUpload(files, options);
+        if (filesToUpload.length === 0) return;
 
-        const validationError = validateMediaFiles(files);
+        const validationError = validateMediaFiles(filesToUpload);
         if (validationError) {
             setError(validationError);
             return;
@@ -2538,13 +2614,12 @@ export default function NewProjectForm({
         setMediaOptimizationState("optimizing");
 
         try {
-            const uploaded = await uploadImageFiles(files);
-            const selected = options?.useFirstOnly ? uploaded.slice(0, 1) : uploaded;
-            onUploaded(selected);
+            const uploaded = await uploadImageFiles(filesToUpload);
+            onUploaded(uploaded);
 
             setMediaOptimizationState("completed");
             await wait(MEDIA_OPTIMIZATION_SUCCESS_DURATION_MS);
-            setSuccess(`${selected.length} görsel yüklendi.`);
+            setSuccess(`${uploaded.length} görsel yüklendi.`);
         } catch (errorValue) {
             setError(
                 getFriendlyFetchErrorMessage(errorValue, "Medya yükleme hatası.", {
@@ -2588,7 +2663,18 @@ export default function NewProjectForm({
 
             if (uploaded.length > 0) {
                 const byId = new Map<string, UploadedDocument>();
-                [...documents, ...uploaded].forEach((item) => byId.set(item.id, item));
+                documents.forEach((item) => byId.set(item.id, item));
+                uploaded.forEach((item, index) => {
+                    byId.set(item.id, {
+                        ...item,
+                        name:
+                            item.name?.trim() ||
+                            getDocumentNameFromMedia({
+                                url: item.url,
+                                fallback: `Belge ${documents.length + index + 1}`,
+                            }),
+                    });
+                });
                 setDocuments(Array.from(byId.values()));
             }
 
@@ -2685,6 +2771,12 @@ export default function NewProjectForm({
             return arrayMove(prev, oldIndex, newIndex);
         });
     };
+
+    const handleDocumentNameChange = useCallback((id: string, name: string) => {
+        setDocuments((prev) =>
+            prev.map((item) => (item.id === id ? { ...item, name } : item))
+        );
+    }, []);
 
     const handleSaveAction = async (
         nextStatus: ProjectStatusValue,
@@ -2819,37 +2911,6 @@ export default function NewProjectForm({
                         </div>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={() => void handleSaveAction("DRAFT")}
-                                disabled={isSaving || isUploading || isHydrating}
-                                className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-60 disabled:cursor-not-allowed text-slate-700 font-medium text-sm rounded-lg flex items-center gap-2 transition-colors shadow-sm"
-                            >
-                                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                Taslak Kaydet
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => void handleSaveAction("PUBLISHED")}
-                                disabled={isSaving || isUploading || isHydrating}
-                                className="px-6 py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium text-sm rounded-lg flex items-center gap-2 transition-all shadow-sm"
-                            >
-                                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                                {isEditMode ? "Güncelle & Yayınla" : "Yayınla"}
-                            </button>
-                            {status === "PUBLISHED" && projectSlug && (
-                                <Link
-                                    href={`/tr/proje/${projectSlug}`}
-                                    target="_blank"
-                                    className="flex items-center gap-2 px-4 py-1.5 bg-green-50 text-green-700 border border-green-200 text-sm font-semibold rounded-lg hover:bg-green-100 hover:border-green-300 hover:text-green-800 transition-all shadow-sm group"
-                                    title="Projeyi Gör"
-                                >
-                                    <span>Projeyi Gör</span>
-                                    <ExternalLink className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                                </Link>
-                            )}
-                        </div>
                         <div className="flex flex-wrap justify-end gap-2">
                             {HOMEPAGE_PROJECT_SLOT_OPTIONS.map((slot) => {
                                 const isSelected = homepageProjectSlot === slot;
@@ -3097,7 +3158,7 @@ export default function NewProjectForm({
                                                         Konut Detayları
                                                     </h3>
                                                     <p className="mt-1 text-xs text-slate-500">
-                                                        Daire seçenekleri portföy filtresi ve tekil proje genel özelliklerinde otomatik kullanılır.
+                                                        Proje için ödeme koşulları ve tek bir promosyon metni tanımlayın.
                                                     </p>
                                                 </div>
                                                 <div className="relative" ref={detailTypeMenuRef}>
@@ -3112,30 +3173,52 @@ export default function NewProjectForm({
                                                     </button>
                                                     {detailTypeMenuOpen && (
                                                         <div className="absolute right-0 top-full z-20 mt-1 w-52 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
-                                                            {PROJECT_DETAIL_TYPE_OPTIONS.map((option) => (
-                                                                <button
-                                                                    key={option.value}
-                                                                    type="button"
-                                                                    onClick={() => addProjectUnitRow(option.value)}
-                                                                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50"
-                                                                >
-                                                                    <option.icon className="h-4 w-4 text-slate-400" />
-                                                                    {option.label}
-                                                                </button>
-                                                            ))}
+                                                            {PROJECT_ADDITIONAL_DETAIL_OPTIONS.map((option) => {
+                                                                const promoLimitReached =
+                                                                    option.value === "PROMO" &&
+                                                                    promoProjectUnitCount >= 1;
+
+                                                                return (
+                                                                    <button
+                                                                        key={option.value}
+                                                                        type="button"
+                                                                        disabled={promoLimitReached}
+                                                                        onClick={() => addProjectDetailRow(option.value)}
+                                                                        className={cn(
+                                                                            "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors",
+                                                                            promoLimitReached
+                                                                                ? "cursor-not-allowed text-slate-300"
+                                                                                : "text-slate-700 hover:bg-slate-50"
+                                                                        )}
+                                                                    >
+                                                                        <option.icon className="h-4 w-4 text-slate-400" />
+                                                                        {option.label}
+                                                                    </button>
+                                                                );
+                                                            })}
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
 
-                                            {projectUnits.length === 0 ? (
+                                            {promoProjectUnitCount >= 1 && (
+                                                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+                                                    Promosyon metni limiti doldu. Yeni bir promosyon eklemek için mevcut olanı silin.
+                                                </p>
+                                            )}
+
+                                            {nonRoomProjectUnits.length === 0 ? (
                                                 <p className="text-xs text-slate-500">
-                                                    Henüz seçenek eklenmedi.
+                                                    Henüz ödeme veya promosyon detayı eklenmedi.
                                                 </p>
                                             ) : (
                                                 <div className="space-y-3">
-                                                    {projectUnits.map((unit) => {
-                                                        const typeOption = PROJECT_DETAIL_TYPE_OPTIONS.find((o) => o.value === unit.detailType) || PROJECT_DETAIL_TYPE_OPTIONS[0];
+                                                    {nonRoomProjectUnits.map((unit) => {
+                                                        const typeOption =
+                                                            PROJECT_DETAIL_TYPE_OPTIONS.find(
+                                                                (option) => option.value === unit.detailType
+                                                            ) || PROJECT_DETAIL_TYPE_OPTIONS[0];
+
                                                         return (
                                                             <div
                                                                 key={unit.id}
@@ -3144,37 +3227,22 @@ export default function NewProjectForm({
                                                                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400" title={typeOption.label}>
                                                                     <typeOption.icon className="h-4 w-4" />
                                                                 </div>
-                                                                {unit.detailType === "ROOM" ? (
-                                                                    <RoomOptionSelect
-                                                                        className="flex-1"
-                                                                        value={unit.rooms || null}
-                                                                        onChange={(value) =>
-                                                                            updateProjectUnitRoom(
-                                                                                unit.id,
-                                                                                value
-                                                                            )
-                                                                        }
-                                                                        options={roomOptions}
-                                                                        onOptionsChange={setRoomOptions}
-                                                                    />
-                                                                ) : (
-                                                                    <input
-                                                                        type="text"
-                                                                        className="flex-1 px-3 py-2.5 rounded-lg border border-slate-200 bg-white text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
-                                                                        placeholder={
-                                                                            unit.detailType === "PAYMENT"
-                                                                                ? "örn. X'ten başlayan fiyatlarla, 60 ay taksit"
-                                                                                : "örn. Erken rezervasyon indirimi"
-                                                                        }
-                                                                        value={unit.rooms}
-                                                                        onChange={(e) =>
-                                                                            updateProjectUnitRoom(
-                                                                                unit.id,
-                                                                                e.target.value
-                                                                            )
-                                                                        }
-                                                                    />
-                                                                )}
+                                                                <input
+                                                                    type="text"
+                                                                    className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+                                                                    placeholder={
+                                                                        unit.detailType === "PAYMENT"
+                                                                            ? "örn. X'ten başlayan fiyatlarla, 60 ay taksit"
+                                                                            : "örn. Erken rezervasyon indirimi"
+                                                                    }
+                                                                    value={unit.rooms}
+                                                                    onChange={(event) =>
+                                                                        updateProjectUnitRoom(
+                                                                            unit.id,
+                                                                            event.target.value
+                                                                        )
+                                                                    }
+                                                                />
                                                                 <button
                                                                     type="button"
                                                                     onClick={() =>
@@ -3188,6 +3256,68 @@ export default function NewProjectForm({
                                                             </div>
                                                         );
                                                     })}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div>
+                                                    <h3 className="text-sm font-semibold text-slate-900">
+                                                        Oda Sayıları
+                                                    </h3>
+                                                    <p className="mt-1 text-xs text-slate-500">
+                                                        İlan formundaki düzenlenebilir dropdown ile daire tiplerini ekleyin.
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={addProjectRoomRow}
+                                                    className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100"
+                                                >
+                                                    <Plus className="h-3.5 w-3.5" />
+                                                    Oda Sayısı Ekle
+                                                </button>
+                                            </div>
+
+                                            {roomProjectUnits.length === 0 ? (
+                                                <p className="text-xs text-slate-500">
+                                                    Henüz oda tipi eklenmedi.
+                                                </p>
+                                            ) : (
+                                                <div className="space-y-3">
+                                                    {roomProjectUnits.map((unit) => (
+                                                        <div
+                                                            key={unit.id}
+                                                            className="flex items-end gap-2"
+                                                        >
+                                                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400" title="Oda Sayısı">
+                                                                <Home className="h-4 w-4" />
+                                                            </div>
+                                                            <RoomOptionSelect
+                                                                className="flex-1"
+                                                                value={unit.rooms || null}
+                                                                onChange={(value) =>
+                                                                    updateProjectUnitRoom(
+                                                                        unit.id,
+                                                                        value
+                                                                    )
+                                                                }
+                                                                options={roomOptions}
+                                                                onOptionsChange={setRoomOptions}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    removeProjectUnitRow(unit.id)
+                                                                }
+                                                                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-red-200 hover:text-red-500"
+                                                                title="Seçeneği sil"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             )}
                                         </div>
@@ -3246,39 +3376,41 @@ export default function NewProjectForm({
                                                 />
                                             </div>
 
-                                            <div className="pt-6 border-t border-slate-200 space-y-4">
-                                                <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900">
-                                                    <ImagePlus className="w-4 h-4 text-orange-500" />
-                                                    Proje Logosu
-                                                </h3>
-                                                <UploadPanel
-                                                    title="Logo yüklemek için tıklayın"
-                                                    subtitle="PNG, JPG, WebP, GIF, AVIF (Max 30MB)"
-                                                    onFilesSelected={(files) =>
-                                                        void handleImageUpload(
-                                                            files,
-                                                            (uploaded) => {
-                                                                const first = uploaded[0];
-                                                                if (!first) return;
-                                                                setLogoMedia([first]);
-                                                            },
-                                                            { useFirstOnly: true }
-                                                        )
-                                                    }
-                                                    multiple={false}
-                                                    disabled={isSaving || isUploading}
-                                                    compact
-                                                />
-                                                <MediaGrid
-                                                    items={logoMedia}
-                                                    onRemove={(id) =>
-                                                        setLogoMedia((prev) =>
-                                                            prev.filter((item) => item.id !== id)
-                                                        )
-                                                    }
-                                                    emptyMessage="Henüz logo eklenmedi"
-                                                />
-                                            </div>
+                                            {SHOW_PROJECT_LOGO_FIELD ? (
+                                                <div className="pt-6 border-t border-slate-200 space-y-4">
+                                                    <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900">
+                                                        <ImagePlus className="w-4 h-4 text-orange-500" />
+                                                        Proje Logosu
+                                                    </h3>
+                                                    <UploadPanel
+                                                        title="Logo yüklemek için tıklayın"
+                                                        subtitle="PNG, JPG, WebP, GIF, AVIF (Max 30MB)"
+                                                        onFilesSelected={(files) =>
+                                                            void handleImageUpload(
+                                                                files,
+                                                                (uploaded) => {
+                                                                    const first = uploaded[0];
+                                                                    if (!first) return;
+                                                                    setLogoMedia([first]);
+                                                                },
+                                                                { useFirstOnly: true }
+                                                            )
+                                                        }
+                                                        multiple={false}
+                                                        disabled={isSaving || isUploading}
+                                                        compact
+                                                    />
+                                                    <MediaGrid
+                                                        items={logoMedia}
+                                                        onRemove={(id) =>
+                                                            setLogoMedia((prev) =>
+                                                                prev.filter((item) => item.id !== id)
+                                                            )
+                                                        }
+                                                        emptyMessage="Henüz logo eklenmedi"
+                                                    />
+                                                </div>
+                                            ) : null}
                                         </div>
                                     </div>
                                 </div>
@@ -4128,6 +4260,7 @@ export default function NewProjectForm({
                                                     <SortableDocumentItem
                                                         key={document.id}
                                                         document={document}
+                                                        onNameChange={handleDocumentNameChange}
                                                         onRemove={(id) =>
                                                             setDocuments((prev) =>
                                                                 prev.filter((item) => item.id !== id)

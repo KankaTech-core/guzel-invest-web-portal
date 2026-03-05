@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, ZoomIn, Images } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { S1SectionVisibility } from "../section-visibility";
 import {
     S1CustomGalleryData,
@@ -18,6 +18,7 @@ import {
 } from "@/components/public/listing-detail-gallery";
 import { dispatchOpenConnectedProjectGallery } from "./project-gallery-events";
 import { hasSocialGalleryImages } from "./media-layout";
+import { getPeekingCarouselTranslatePx } from "./peeking-carousel-math";
 
 interface VisualsProps {
     exteriorVisuals?: S1ExteriorVisualsData;
@@ -62,19 +63,19 @@ function PeekingCarouselStrip({
     onImageClick,
     cardWidthPercent,
     gap,
-    currentIndex,
+    translatePx,
     reverse = false,
 }: {
     items: ListingGalleryItem[];
     onImageClick?: () => void;
     cardWidthPercent: number;
     gap: number;
-    currentIndex: number;
+    translatePx: number;
     reverse?: boolean;
 }) {
     const translateValue = reverse
-        ? `translateX(calc(${currentIndex} * (${cardWidthPercent}% + ${gap}px)))`
-        : `translateX(calc(-${currentIndex} * (${cardWidthPercent}% + ${gap}px)))`;
+        ? `translateX(${translatePx}px)`
+        : `translateX(-${translatePx}px)`;
 
     return (
         <div
@@ -129,7 +130,9 @@ function PeekingVisualSection({
     titleAlign?: "left" | "right";
 }) {
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [carouselViewportWidth, setCarouselViewportWidth] = useState(0);
     const touchStartXRef = useRef<number | null>(null);
+    const carouselViewportRef = useRef<HTMLDivElement | null>(null);
     const total = items.length;
     const canNavigate = total > 1;
     const showViewAll = true;
@@ -181,6 +184,43 @@ function PeekingVisualSection({
 
     const cardWidthPercent = 75;
     const gap = 20;
+    const translatePx = useMemo(
+        () =>
+            getPeekingCarouselTranslatePx({
+                currentIndex,
+                viewportWidthPx: carouselViewportWidth,
+                cardWidthPercent,
+                gapPx: gap,
+            }),
+        [cardWidthPercent, currentIndex, gap, carouselViewportWidth]
+    );
+
+    useEffect(() => {
+        const viewport = carouselViewportRef.current;
+        if (!viewport) {
+            return;
+        }
+
+        const syncWidth = () => {
+            setCarouselViewportWidth(viewport.clientWidth);
+        };
+
+        syncWidth();
+
+        if (typeof ResizeObserver === "undefined") {
+            window.addEventListener("resize", syncWidth);
+            return () => {
+                window.removeEventListener("resize", syncWidth);
+            };
+        }
+
+        const observer = new ResizeObserver(syncWidth);
+        observer.observe(viewport);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, []);
 
     const navButtons = canNavigate ? (
         <div className="flex items-center gap-3">
@@ -229,13 +269,13 @@ function PeekingVisualSection({
         : "-mr-4 min-w-0 flex-1 overflow-hidden md:-mr-[calc((100vw-80rem)/2+1rem)]";
 
     const carouselColumn = (
-        <div className={carouselWrapperClass}>
+        <div ref={carouselViewportRef} className={carouselWrapperClass}>
             <PeekingCarouselStrip
                 items={items}
                 onImageClick={onImageClick}
                 cardWidthPercent={cardWidthPercent}
                 gap={gap}
-                currentIndex={currentIndex}
+                translatePx={translatePx}
                 reverse={reverse}
             />
         </div>

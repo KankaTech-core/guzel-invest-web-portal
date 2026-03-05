@@ -118,3 +118,29 @@ export function findFirstAvailableHomepageProjectSlot(
 
     return null;
 }
+
+export function getNextHomepageProjectSlideIndex(
+    currentIndex: number,
+    totalSlides: number
+): number {
+    if (totalSlides <= 0) {
+        return 0;
+    }
+
+    const maxIndex = totalSlides - 1;
+    const safeCurrent = Math.min(Math.max(0, currentIndex), maxIndex);
+    return Math.min(safeCurrent + 1, maxIndex);
+}
+
+export function getPrevHomepageProjectSlideIndex(
+    currentIndex: number,
+    totalSlides: number
+): number {
+    if (totalSlides <= 0) {
+        return 0;
+    }
+
+    const maxIndex = totalSlides - 1;
+    const safeCurrent = Math.min(Math.max(0, currentIndex), maxIndex);
+    return Math.max(safeCurrent - 1, 0);
+}

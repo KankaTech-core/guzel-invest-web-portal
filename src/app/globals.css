@@ -636,17 +636,27 @@ select.input {
   animation: pulse 2s infinite;
 }
 
-/* Promotion badge – text color blink */
 @keyframes promo-text-blink {
 
   0%,
   100% {
-    color: white;
+    color: #ffffff;
+    text-shadow: 0 0 0 rgb(220 38 38 / 0);
   }
 
   50% {
-    color: #EC6803;
+    color: #dc2626;
+    text-shadow:
+      0 0 3px rgb(248 113 113 / 0.2),
+      0 0 8px rgb(239 68 68 / 0.12);
   }
+}
+
+.promo-text-blink {
+  display: inline-block;
+  color: #ffffff;
+  will-change: color, text-shadow;
+  animation: promo-text-blink 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .animate-slide-next {

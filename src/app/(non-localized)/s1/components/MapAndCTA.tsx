@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -12,6 +12,7 @@ import {
     Minus,
     Plus,
     Search,
+    X,
 } from "lucide-react";
 import { S1SectionVisibility } from "../section-visibility";
 import {
@@ -28,6 +29,7 @@ import {
 import { dispatchOpenConnectedProjectGallery } from "./project-gallery-events";
 import { getMapSectionLayout } from "./media-layout";
 import { ProjectVideoSection } from "./ProjectVideoSection";
+import { getDocumentCta } from "./document-cta";
 
 interface MapAndCTAProps {
     documents: S1DocumentItem[];
@@ -53,6 +55,8 @@ export const MapAndCTA = ({
     videoTitle,
 }: MapAndCTAProps) => {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
+    const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
+    const documentCta = getDocumentCta(documents);
     const mapGalleryItems: ListingGalleryItem[] = mapImages.map((item, index) => ({
         id: item.id,
         src: item.image,
@@ -65,6 +69,22 @@ export const MapAndCTA = ({
     const shouldShowDocumentsAndCta = visibility.documents || Boolean(map?.mapsLink);
     const shouldShowMapBlock = mapSectionLayout.showSection;
     const mapEmbedHeightClass = mapSectionLayout.useSplitLayout ? "h-[420px]" : "h-[520px]";
+
+    useEffect(() => {
+        if (!isDocumentsModalOpen) {
+            return undefined;
+        }
+
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                setIsDocumentsModalOpen(false);
+            }
+        };
+
+        window.addEventListener("keydown", handleEscape);
+        return () => window.removeEventListener("keydown", handleEscape);
+    }, [isDocumentsModalOpen]);
+
     const actionCards = [
         {
             icon: Search,
@@ -78,13 +98,19 @@ export const MapAndCTA = ({
             href: `/${locale}/iletisim`,
             external: false,
         },
-        documents[0]
-            ? {
-                icon: Download,
-                title: "Proje Sunumunu İndir",
-                href: documents[0].url,
-                external: true,
-            }
+        documentCta
+            ? documentCta.type === "single"
+                ? {
+                    icon: Download,
+                    title: documentCta.title,
+                    href: documentCta.href,
+                    external: true,
+                }
+                : {
+                    icon: Download,
+                    title: documentCta.title,
+                    onClick: () => setIsDocumentsModalOpen(true),
+                }
             : map?.mapsLink
                 ? {
                     icon: MapPin,
@@ -96,8 +122,9 @@ export const MapAndCTA = ({
     ].filter(Boolean) as Array<{
         icon: typeof Search;
         title: string;
-        href: string;
-        external: boolean;
+        href?: string;
+        external?: boolean;
+        onClick?: () => void;
     }>;
 
     return (
@@ -148,7 +175,7 @@ export const MapAndCTA = ({
                                             </>
                                         );
 
-                                        if (card.external) {
+                                        if (card.href && card.external) {
                                             return (
                                                 <a
                                                     key={card.title}
@@ -162,37 +189,88 @@ export const MapAndCTA = ({
                                             );
                                         }
 
+                                        if (card.href) {
+                                            return (
+                                                <Link
+                                                    key={card.title}
+                                                    href={card.href}
+                                                    className={actionClassName}
+                                                >
+                                                    {content}
+                                                </Link>
+                                            );
+                                        }
+
                                         return (
-                                            <Link
+                                            <button
                                                 key={card.title}
-                                                href={card.href}
+                                                type="button"
+                                                onClick={card.onClick}
                                                 className={actionClassName}
                                             >
                                                 {content}
-                                            </Link>
+                                            </button>
                                         );
                                     })}
                                 </div>
-
-                                {documents.length > 1 ? (
-                                    <div className="flex flex-wrap items-center gap-2 border-t border-gray-700 bg-gray-800 px-4 py-3">
-                                        {documents.slice(1, 4).map((document) => (
-                                            <Link
-                                                key={document.id}
-                                                href={document.url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="rounded-full border border-gray-600 px-3 py-1.5 text-xs font-semibold text-gray-200 transition hover:border-orange-400 hover:text-orange-300"
-                                            >
-                                                {document.name}
-                                            </Link>
-                                        ))}
-                                    </div>
-                                ) : null}
                             </div>
                         </div>
                     </div>
                 </section>
+            ) : null}
+
+            {documentCta?.type === "multiple" && isDocumentsModalOpen ? (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Proje belgeleri"
+                    className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-4"
+                    onClick={() => setIsDocumentsModalOpen(false)}
+                >
+                    <div
+                        className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900">
+                                    Belgelere Gözat
+                                </h3>
+                                <p className="mt-1 text-sm text-gray-500">
+                                    İlgili belgeyi seçip ayrı ayrı indirebilirsiniz.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsDocumentsModalOpen(false)}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:border-orange-300 hover:text-orange-500"
+                                aria-label="Belge penceresini kapat"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+
+                        <div className="mt-5 space-y-2">
+                            {documents.map((document, index) => (
+                                <a
+                                    key={document.id}
+                                    href={document.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 px-4 py-3 transition hover:border-orange-300 hover:bg-orange-50/40"
+                                >
+                                    <span className="min-w-0 truncate text-sm font-semibold text-gray-800">
+                                        {document.name.trim() || `Belge ${index + 1}`}
+                                    </span>
+                                    <span className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">
+                                        <Download className="h-3.5 w-3.5" />
+                                        İndir
+                                    </span>
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             ) : null}
 
             {shouldShowMapBlock ? (

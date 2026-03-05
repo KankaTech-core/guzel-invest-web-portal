@@ -1,6 +1,8 @@
 import { ListingStatus } from "@/generated/prisma";
+import { getDocumentNameFromMedia } from "@/lib/project-document-name";
+import { selectProjectDocumentMedia } from "@/lib/project-document-selection";
 import { prisma } from "@/lib/prisma";
-import { getMediaUrl } from "@/lib/utils";
+import { getMediaUrl, getProjectCategoryLabel } from "@/lib/utils";
 import {
     S1CustomGalleryData,
     S1DocumentItem,
@@ -38,16 +40,6 @@ const getStatusLabel = (status: ListingStatus) => {
     if (status === ListingStatus.ARCHIVED) return "ARŞİV";
     if (status === ListingStatus.REMOVED) return "KALDIRILDI";
     return "TASLAK";
-};
-
-const getDocumentName = (url: string, fallback = "Belge") => {
-    const rawName = url.split("/").pop();
-    if (!rawName) return fallback;
-    try {
-        return decodeURIComponent(rawName);
-    } catch {
-        return rawName;
-    }
 };
 
 const hasCoordinates = (lat: number | null, lng: number | null) =>
@@ -220,6 +212,8 @@ export async function getS1ProjectPageData({
     const projectDescription =
         translation?.description?.trim() ||
         [project.district, project.city].filter(Boolean).join(", ");
+    const projectCategoryLabel =
+        getProjectCategoryLabel(project.projectType, locale) || project.projectType;
 
     const imageMedia = project.media.filter((media) => media.type === "IMAGE");
     const exteriorImages = imageMedia
@@ -243,12 +237,14 @@ export async function getS1ProjectPageData({
         .map((media) => getMediaUrl(media.url))
         .find(isNonEmptyString);
 
-    const documentMedia = project.media.filter(
-        (media) => media.type === "DOCUMENT" || media.category === "DOCUMENT"
-    );
+    const documentMedia = selectProjectDocumentMedia(project.media);
     const documents: S1DocumentItem[] = documentMedia.map((media, index) => ({
         id: media.id,
-        name: getDocumentName(media.url, `Belge ${index + 1}`),
+        name: getDocumentNameFromMedia({
+            url: media.url,
+            aiTags: media.aiTags,
+            fallback: `Belge ${index + 1}`,
+        }),
         url: getMediaUrl(media.url),
     }))
         .filter((item) => isNonEmptyString(item.url));
@@ -282,7 +278,7 @@ export async function getS1ProjectPageData({
             ? {
                 icon: "Building2",
                 label: "Proje Tipi",
-                value: project.projectType,
+                value: projectCategoryLabel,
             }
             : null,
     ].filter(isPresent);
@@ -473,7 +469,7 @@ export async function getS1ProjectPageData({
     return {
         slug: project.slug,
         hero: {
-            badge: project.projectType || "Yeni Proje",
+            badge: projectCategoryLabel || "Yeni Proje",
             title: projectTitle,
             description: projectDescription,
             backgroundImage: heroImage,

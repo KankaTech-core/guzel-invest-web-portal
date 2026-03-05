@@ -132,6 +132,47 @@ export function getSaleTypeLabel(type: string, locale: string = "tr"): string {
     return labels[locale]?.[type] || labels.en[type] || type;
 }
 
+export function getProjectCategoryLabel(
+    projectType: string | null | undefined,
+    locale: string = "tr"
+): string {
+    const normalized = (projectType || "").trim().toUpperCase();
+    if (!normalized) return "";
+
+    const labels: Record<string, Record<string, string>> = {
+        tr: {
+            RESIDENCE: "Residence",
+            SITE: "Site",
+            VILLA_COMPLEX: "Villa Kompleksi",
+            VILLA_COMPLEKS: "Villa Kompleksi",
+            COMMERCIAL_PROJECT: "Ticari Proje",
+            MIXED_USE: "Karma Proje",
+            HOTEL: "Otel Projesi",
+            OTHER: "Diğer",
+        },
+        en: {
+            RESIDENCE: "Residence",
+            SITE: "Site",
+            VILLA_COMPLEX: "Villa Complex",
+            VILLA_COMPLEKS: "Villa Complex",
+            COMMERCIAL_PROJECT: "Commercial Project",
+            MIXED_USE: "Mixed Use",
+            HOTEL: "Hotel Project",
+            OTHER: "Other",
+        },
+    };
+
+    const localized = labels[locale]?.[normalized] || labels.tr[normalized];
+    if (localized) {
+        return localized;
+    }
+
+    return normalized
+        .replace(/_/g, " ")
+        .toLocaleLowerCase("tr-TR")
+        .replace(/\b\w/g, (char) => char.toLocaleUpperCase("tr-TR"));
+}
+
 export function truncateText(text: string, maxLength: number): string {
     if (text.length <= maxLength) return text;
     return text.slice(0, maxLength).trim() + "...";

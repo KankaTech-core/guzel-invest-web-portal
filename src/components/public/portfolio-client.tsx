@@ -28,6 +28,7 @@ import {
     formatArea,
     formatPrice,
     getMediaUrl,
+    getProjectCategoryLabel,
     getPropertyTypeLabel,
     getSaleTypeLabel,
 } from "@/lib/utils";
@@ -103,6 +104,7 @@ interface Listing {
     isProject: boolean;
     hasLastUnitsBanner?: boolean | null;
     type: string;
+    projectType?: string | null;
     saleType: string;
     price: number | string;
     currency: string;
@@ -655,6 +657,11 @@ function getListingGalleryMedia(listing: Listing): ListingMedia[] {
     exteriorMedia.slice(0, 3).forEach((item) => pushIfUnique(item));
 
     return ordered.slice(0, 4);
+}
+
+function getListingGallerySlideCount(listing: Listing): number {
+    const mediaLength = getListingGalleryMedia(listing).length;
+    return mediaLength > 0 ? mediaLength + 1 : 0;
 }
 
 function getListingTitle(listing: Listing, locale: string) {
@@ -1284,19 +1291,14 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                     setActiveImageIndexes((previous) => {
                         const nextIndexes: Record<string, number> = {};
                         for (const listing of nextListings) {
-                            const mediaLength = getListingGalleryMedia(listing).length;
-                            if (mediaLength <= 1) {
-                                nextIndexes[listing.id] = 0;
-                                continue;
-                            }
-
-                            if (listing.isProject) {
+                            const slideCount = getListingGallerySlideCount(listing);
+                            if (slideCount <= 1) {
                                 nextIndexes[listing.id] = 0;
                                 continue;
                             }
 
                             const prior = previous[listing.id] ?? 0;
-                            nextIndexes[listing.id] = Math.min(prior, mediaLength - 1);
+                            nextIndexes[listing.id] = Math.min(prior, slideCount - 1);
                         }
                         return nextIndexes;
                     });
@@ -1411,7 +1413,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             const next: Record<string, number> = {};
 
             listings.forEach((listing) => {
-                const maxIndex = Math.max(0, Math.min(3, listing.media.length - 1));
+                const maxIndex = Math.max(0, getListingGallerySlideCount(listing) - 1);
                 const current = previous[listing.id] ?? 0;
                 next[listing.id] = Math.min(current, maxIndex);
             });
@@ -1508,24 +1510,20 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
     const updateImageIndex = (
         listingId: string,
-        mediaLength: number,
+        slideCount: number,
         direction: "prev" | "next"
     ) => {
-        if (mediaLength <= 1) {
+        if (slideCount <= 1) {
             return;
         }
 
         setActiveImageIndexes((previous) => {
             const currentIndex = previous[listingId] ?? 0;
-            const maxIndex = Math.max(0, Math.min(3, mediaLength - 1));
+            const maxIndex = Math.max(0, slideCount - 1);
             const nextIndex =
                 direction === "next"
-                    ? currentIndex >= maxIndex
-                        ? 0
-                        : currentIndex + 1
-                    : currentIndex <= 0
-                        ? maxIndex
-                        : currentIndex - 1;
+                    ? Math.min(currentIndex + 1, maxIndex)
+                    : Math.max(currentIndex - 1, 0);
 
             return {
                 ...previous,
@@ -1625,10 +1623,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
     const handleImageTouchEnd = (
         listingId: string,
-        mediaLength: number,
+        slideCount: number,
         event: ReactTouchEvent<HTMLDivElement>
     ) => {
-        if (mediaLength <= 1) {
+        if (slideCount <= 1) {
             return;
         }
 
@@ -1646,7 +1644,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             return;
         }
 
-        updateImageIndex(listingId, mediaLength, deltaX < 0 ? "next" : "prev");
+        updateImageIndex(listingId, slideCount, deltaX < 0 ? "next" : "prev");
     };
 
     const handleImageTouchCancel = (listingId: string) => {
@@ -2497,6 +2495,16 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 listing,
                                 locale
                             );
+                            const projectCategoryLabel = getProjectCategoryLabel(
+                                listing.projectType,
+                                locale
+                            );
+                            const projectPropertyTypeLabel = listing.isProject
+                                ? getPropertyTypeLabel(listing.type, locale)
+                                : null;
+                            const listingDetailHref = listing.isProject
+                                ? `/${locale}/proje/${listing.slug}`
+                                : `/${locale}/ilan/${listing.slug}`;
                             const listingNumericPrice = getListingNumericPrice(listing);
                             const hasDisplayPrice =
                                 !listing.isProject &&
@@ -2505,11 +2513,24 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                             const hasDescriptionOverflow = Boolean(descriptionOverflowMap[listing.id]);
                             const locationLabel = buildLocationLabel(listing);
                             const galleryMedia = getListingGalleryMedia(listing);
-                            const maxImageIndex = Math.max(0, galleryMedia.length - 1);
+                            const gallerySlides =
+                                galleryMedia.length > 0
+                                    ? [
+                                        ...galleryMedia.map((media, mediaIndex) => ({
+                                            kind: "media" as const,
+                                            media,
+                                            mediaIndex,
+                                        })),
+                                        { kind: "cta" as const },
+                                    ]
+                                    : [];
+                            const maxImageIndex = Math.max(0, gallerySlides.length - 1);
                             const activeImageIndex = Math.min(
                                 activeImageIndexes[listing.id] ?? 0,
                                 maxImageIndex
                             );
+                            const isImageSlideAtStart = activeImageIndex <= 0;
+                            const isImageSlideAtEnd = activeImageIndex >= maxImageIndex;
                             const sortedTags = listing.tags
                                 .filter((item) => {
                                     const normalized = item.tag.name
@@ -2535,7 +2556,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                         <div className="relative min-h-[220px] overflow-hidden bg-gray-100">
                                             {listing.isProject ? (
                                                 <Link
-                                                    href={`/${locale}/proje/${listing.slug}`}
+                                                    href={listingDetailHref}
                                                     aria-label={`${title} projesini incele`}
                                                     className="absolute inset-0 z-[5] md:hidden"
                                                 />
@@ -2568,7 +2589,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                 <LastUnitsCornerRibbon />
                                             ) : null}
 
-                                            {galleryMedia.length > 0 ? (
+                                            {gallerySlides.length > 0 ? (
                                                 <div
                                                     className="absolute inset-0 overflow-hidden"
                                                     style={{ touchAction: "pan-y" }}
@@ -2578,7 +2599,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                     onTouchEnd={(event) =>
                                                         handleImageTouchEnd(
                                                             listing.id,
-                                                            galleryMedia.length,
+                                                            gallerySlides.length,
                                                             event
                                                         )
                                                     }
@@ -2592,26 +2613,49 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                             transform: `translateX(-${activeImageIndex * 100}%)`,
                                                         }}
                                                     >
-                                                        {galleryMedia.map((media, mediaIndex) => (
-                                                            <div
-                                                                key={
-                                                                    media.id ||
-                                                                    `${listing.id}-media-${mediaIndex}`
-                                                                }
-                                                                className="relative h-full w-full shrink-0"
-                                                            >
-                                                                <Image
-                                                                    src={appendVersionParam(
-                                                                        getMediaUrl(media.url),
-                                                                        `${listing.updatedAt || "0"}-${media.id || mediaIndex}`
-                                                                    )}
-                                                                    alt={`${title} - ${mediaIndex + 1}`}
-                                                                    fill
-                                                                    className="object-cover"
-                                                                    sizes="(max-width: 768px) 100vw, 300px"
-                                                                />
-                                                            </div>
-                                                        ))}
+                                                        {gallerySlides.map((slide, slideIndex) => {
+                                                            if (slide.kind === "cta") {
+                                                                return (
+                                                                    <div
+                                                                        key={`${listing.id}-gallery-cta`}
+                                                                        className="relative h-full w-full shrink-0"
+                                                                    >
+                                                                        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+                                                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.35),transparent_58%)]" />
+                                                                        <div className="relative z-10 flex h-full items-center justify-center">
+                                                                            <Link
+                                                                                href={listingDetailHref}
+                                                                                className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
+                                                                            >
+                                                                                Hepsini Gör
+                                                                                <ChevronRight className="h-4 w-4" />
+                                                                            </Link>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            }
+
+                                                            return (
+                                                                <div
+                                                                    key={
+                                                                        slide.media.id ||
+                                                                        `${listing.id}-media-${slide.mediaIndex}`
+                                                                    }
+                                                                    className="relative h-full w-full shrink-0"
+                                                                >
+                                                                    <Image
+                                                                        src={appendVersionParam(
+                                                                            getMediaUrl(slide.media.url),
+                                                                            `${listing.updatedAt || "0"}-${slide.media.id || slide.mediaIndex}`
+                                                                        )}
+                                                                        alt={`${title} - ${slideIndex + 1}`}
+                                                                        fill
+                                                                        className="object-cover"
+                                                                        sizes="(max-width: 768px) 100vw, 300px"
+                                                                    />
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             ) : (
@@ -2620,7 +2664,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                 </div>
                                             )}
 
-                                            {galleryMedia.length > 1 && (
+                                            {gallerySlides.length > 1 && (
                                                 <div className="absolute bottom-3 right-3 z-10 flex items-center overflow-hidden rounded-lg border border-slate-200/90 bg-white/95 shadow-[0_4px_14px_rgba(15,23,42,0.18)] backdrop-blur-[2px]">
                                                     <button
                                                         type="button"
@@ -2629,11 +2673,15 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                             event.stopPropagation();
                                                             updateImageIndex(
                                                                 listing.id,
-                                                                galleryMedia.length,
+                                                                gallerySlides.length,
                                                                 "prev"
                                                             );
                                                         }}
-                                                        className="inline-flex h-8 w-8 items-center justify-center text-slate-700 transition hover:bg-slate-100"
+                                                        disabled={isImageSlideAtStart}
+                                                        className={`inline-flex h-8 w-8 items-center justify-center text-slate-700 transition ${isImageSlideAtStart
+                                                            ? "cursor-not-allowed opacity-45"
+                                                            : "hover:bg-slate-100"
+                                                            }`}
                                                         aria-label="Önceki görsel"
                                                     >
                                                         <ChevronLeft className="h-4 w-4" />
@@ -2645,11 +2693,15 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                             event.stopPropagation();
                                                             updateImageIndex(
                                                                 listing.id,
-                                                                galleryMedia.length,
+                                                                gallerySlides.length,
                                                                 "next"
                                                             );
                                                         }}
-                                                        className="inline-flex h-8 w-8 items-center justify-center text-slate-700 transition hover:bg-slate-100"
+                                                        disabled={isImageSlideAtEnd}
+                                                        className={`inline-flex h-8 w-8 items-center justify-center text-slate-700 transition ${isImageSlideAtEnd
+                                                            ? "cursor-not-allowed opacity-45"
+                                                            : "hover:bg-slate-100"
+                                                            }`}
                                                         aria-label="Sonraki görsel"
                                                     >
                                                         <ChevronRight className="h-4 w-4" />
@@ -2659,18 +2711,35 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                         </div>
 
                                         <Link
-                                            href={listing.isProject ? `/${locale}/proje/${listing.slug}` : `/${locale}/ilan/${listing.slug}`}
+                                            href={listingDetailHref}
                                             className="contents"
                                         >
                                             <div className="flex cursor-pointer flex-col justify-between border-r border-gray-100 p-5">
                                                 <div>
                                                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                                                        <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-                                                            {getPropertyTypeLabel(listing.type, locale)}
-                                                        </span>
-                                                        <span className="rounded bg-orange-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-orange-600">
-                                                            {getSaleTypeLabel(listing.saleType, locale)}
-                                                        </span>
+                                                        {listing.isProject ? (
+                                                            <>
+                                                                {projectCategoryLabel && (
+                                                                    <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                                                                        {projectCategoryLabel}
+                                                                    </span>
+                                                                )}
+                                                                {projectPropertyTypeLabel && (
+                                                                    <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+                                                                        {projectPropertyTypeLabel}
+                                                                    </span>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <span className="rounded bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                                                                {getPropertyTypeLabel(listing.type, locale)}
+                                                            </span>
+                                                        )}
+                                                        {!listing.isProject && (
+                                                            <span className="rounded bg-orange-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-orange-600">
+                                                                {getSaleTypeLabel(listing.saleType, locale)}
+                                                            </span>
+                                                        )}
                                                         {listing.citizenshipEligible && (
                                                             <span className="rounded bg-green-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-green-700">
                                                                 Vatandaşlık
@@ -2682,24 +2751,11 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                             </span>
                                                         )}
                                                         {projectPromoText && (
-                                                            <>
-                                                                <style>{`
-                                                                    @keyframes promoBlink {
-                                                                        0%, 100% { color: white; }
-                                                                        50% { color: #EC6803; }
-                                                                    }
-                                                                `}</style>
-                                                                <span
-                                                                    className="rounded-md px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider"
-                                                                    style={{
-                                                                        backgroundColor: '#EC6803',
-                                                                        color: 'white',
-                                                                        animation: 'promoBlink 1.5s steps(1) infinite',
-                                                                    }}
-                                                                >
+                                                            <span className="rounded-md border border-red-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                                                                <span className="promo-text-blink">
                                                                     {projectPromoText}
                                                                 </span>
-                                                            </>
+                                                            </span>
                                                         )}
                                                     </div>
 

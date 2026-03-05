@@ -11,11 +11,16 @@ import { StyledVideoPlayer } from "@/components/public/styled-video-player";
 import { shouldShowLastUnitsRibbon } from "@/lib/last-units-ribbon";
 import {
     getMediaUrl,
+    getProjectCategoryLabel,
     getPropertyTypeLabel,
     getSaleTypeLabel,
     cn,
 } from "@/lib/utils";
 import { resolveHomepageHeroVideo } from "@/lib/homepage-video";
+import {
+    getNextHomepageProjectSlideIndex,
+    getPrevHomepageProjectSlideIndex,
+} from "@/lib/homepage-project-carousel";
 import {
     Building2,
     Handshake,
@@ -318,6 +323,37 @@ interface HomepageProject {
     images: string[];
 }
 
+type HomepageHeroListingSlide =
+    | {
+        kind: "listing";
+        listing: HomepageHeroListing;
+    }
+    | {
+        kind: "portfolio";
+    };
+
+type HomepageProjectSlide =
+    | {
+        kind: "project";
+        project: HomepageProject;
+    }
+    | {
+        kind: "portfolio";
+    };
+
+type HomepageMobileCarouselSlide =
+    | {
+        kind: "project";
+        project: HomepageProject;
+    }
+    | {
+        kind: "listing";
+        listing: HomepageHeroListing;
+    }
+    | {
+        kind: "portfolio";
+    };
+
 type HomepageHeroVideo = ReturnType<typeof resolveHomepageHeroVideo>;
 
 const HERO_FALLBACK: HomepageHeroListing = {
@@ -366,6 +402,7 @@ export default function HomePage() {
     const [heroSlideIndex, setHeroSlideIndex] = useState(0);
     const [heroProjects, setHeroProjects] = useState<HomepageProject[]>([PROJECT_FALLBACK]);
     const [projectSlideIndex, setProjectSlideIndex] = useState(0);
+    const [mobileCarouselSlideIndex, setMobileCarouselSlideIndex] = useState(0);
     const [heroVideo, setHeroVideo] = useState<HomepageHeroVideo>(HERO_VIDEO_FALLBACK);
     const [isHeroVideoModalOpen, setIsHeroVideoModalOpen] = useState(false);
     const [testimonials, setTestimonials] = useState(TESTIMONIALS_FALLBACK);
@@ -375,7 +412,7 @@ export default function HomePage() {
     const mobileInlineBannerRef = useRef<HTMLFormElement>(null);
     const mobileStickyBannerRef = useRef<HTMLFormElement>(null);
     const testimonialRef = useRef<HTMLDivElement>(null);
-    const projectSwipeStartXRef = useRef<number | null>(null);
+    const mobileCarouselSwipeStartXRef = useRef<number | null>(null);
     const heroSectionRef = useRef<HTMLElement>(null);
     const mobileSearchAnchorRef = useRef<HTMLDivElement>(null);
     const hasSeenMobileSearchBannerRef = useRef(false);
@@ -522,10 +559,12 @@ export default function HomePage() {
                     incomingListings.length > 0 ? incomingListings : [HERO_FALLBACK]
                 );
                 setHeroSlideIndex(0);
+                setMobileCarouselSlideIndex(0);
             } catch {
                 if (isMounted) {
                     setHeroListings([HERO_FALLBACK]);
                     setHeroSlideIndex(0);
+                    setMobileCarouselSlideIndex(0);
                 }
             }
         };
@@ -733,10 +772,12 @@ export default function HomePage() {
                         : [PROJECT_FALLBACK]
                 );
                 setProjectSlideIndex(0);
+                setMobileCarouselSlideIndex(0);
             } catch {
                 if (isMounted) {
                     setHeroProjects([PROJECT_FALLBACK]);
                     setProjectSlideIndex(0);
+                    setMobileCarouselSlideIndex(0);
                 }
             }
         };
@@ -773,6 +814,18 @@ export default function HomePage() {
             : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=700&h=500&fit=crop";
     const getHeroListingHref = (listing: HomepageHeroListing) =>
         listing.slug ? `/${locale}/ilan/${listing.slug}` : null;
+    const heroSlides: HomepageHeroListingSlide[] = [
+        ...safeHeroListings.map((listing) => ({
+            kind: "listing" as const,
+            listing,
+        })),
+        { kind: "portfolio" },
+    ];
+    const totalHeroSlides = heroSlides.length;
+    const normalizedHeroSlideIndex = Math.min(heroSlideIndex, totalHeroSlides - 1);
+    const activeHeroSlide = heroSlides[normalizedHeroSlideIndex];
+    const activeHeroListing =
+        activeHeroSlide?.kind === "listing" ? activeHeroSlide.listing : null;
     const safeHeroProjects =
         heroProjects.length > 0 ? heroProjects : [PROJECT_FALLBACK];
     const getProjectImageUrl = (project: HomepageProject, index = 0) =>
@@ -781,45 +834,105 @@ export default function HomePage() {
             : "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=700&h=900&fit=crop";
     const getProjectHref = (project: HomepageProject) =>
         project.slug ? `/${locale}/proje/${project.slug}` : null;
-    const canNavigateHero = safeHeroListings.length > 1;
-    const canNavigateProject = safeHeroProjects.length > 1;
+    const projectSlides: HomepageProjectSlide[] = [
+        ...safeHeroProjects.map((project) => ({
+            kind: "project" as const,
+            project,
+        })),
+        { kind: "portfolio" },
+    ];
+    const totalProjectSlides = projectSlides.length;
+    const normalizedProjectSlideIndex = Math.min(
+        projectSlideIndex,
+        totalProjectSlides - 1
+    );
+    const activeProjectSlide = projectSlides[normalizedProjectSlideIndex];
+    const activeProject =
+        activeProjectSlide?.kind === "project"
+            ? activeProjectSlide.project
+            : null;
+    const mobileCarouselSlides: HomepageMobileCarouselSlide[] = [
+        ...safeHeroProjects.map((project) => ({
+            kind: "project" as const,
+            project,
+        })),
+        ...safeHeroListings.map((listing) => ({
+            kind: "listing" as const,
+            listing,
+        })),
+        { kind: "portfolio" },
+    ];
+    const totalMobileCarouselSlides = mobileCarouselSlides.length;
+    const normalizedMobileCarouselSlideIndex = Math.min(
+        mobileCarouselSlideIndex,
+        totalMobileCarouselSlides - 1
+    );
+    const canNavigateHero = totalHeroSlides > 1;
+    const canNavigateProject = totalProjectSlides > 1;
+    const canNavigateMobileCarousel = totalMobileCarouselSlides > 1;
+    const isHeroSlideAtStart = normalizedHeroSlideIndex <= 0;
+    const isHeroSlideAtEnd = normalizedHeroSlideIndex >= totalHeroSlides - 1;
+    const isProjectSlideAtStart = normalizedProjectSlideIndex <= 0;
+    const isProjectSlideAtEnd =
+        normalizedProjectSlideIndex >= totalProjectSlides - 1;
+    const isMobileCarouselSlideAtStart = normalizedMobileCarouselSlideIndex <= 0;
+    const isMobileCarouselSlideAtEnd =
+        normalizedMobileCarouselSlideIndex >= totalMobileCarouselSlides - 1;
     const HERO_SWIPE_THRESHOLD_PX = 42;
 
     const goToNextHeroSlide = () => {
         if (!canNavigateHero) return;
-        setHeroSlideIndex((prev) => (prev + 1) % safeHeroListings.length);
+        setHeroSlideIndex((prev) =>
+            getNextHomepageProjectSlideIndex(prev, totalHeroSlides)
+        );
     };
 
     const goToPrevHeroSlide = () => {
         if (!canNavigateHero) return;
-        setHeroSlideIndex(
-            (prev) => (prev - 1 + safeHeroListings.length) % safeHeroListings.length
+        setHeroSlideIndex((prev) =>
+            getPrevHomepageProjectSlideIndex(prev, totalHeroSlides)
         );
     };
 
     const goToNextProjectSlide = () => {
         if (!canNavigateProject) return;
-        setProjectSlideIndex((prev) => (prev + 1) % safeHeroProjects.length);
+        setProjectSlideIndex((prev) =>
+            getNextHomepageProjectSlideIndex(prev, totalProjectSlides)
+        );
     };
 
     const goToPrevProjectSlide = () => {
         if (!canNavigateProject) return;
-        setProjectSlideIndex(
-            (prev) => (prev - 1 + safeHeroProjects.length) % safeHeroProjects.length
+        setProjectSlideIndex((prev) =>
+            getPrevHomepageProjectSlideIndex(prev, totalProjectSlides)
         );
     };
 
-    const handleProjectTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
-        if (!canNavigateProject) return;
-        const touch = event.changedTouches[0];
-        projectSwipeStartXRef.current = touch ? touch.clientX : null;
+    const goToNextMobileCarouselSlide = () => {
+        if (!canNavigateMobileCarousel) return;
+        setMobileCarouselSlideIndex((prev) =>
+            getNextHomepageProjectSlideIndex(prev, totalMobileCarouselSlides)
+        );
     };
 
-    const handleProjectTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
-        if (!canNavigateProject) return;
-        const startX = projectSwipeStartXRef.current;
+    const goToPrevMobileCarouselSlide = () => {
+        if (!canNavigateMobileCarousel) return;
+        setMobileCarouselSlideIndex((prev) =>
+            getPrevHomepageProjectSlideIndex(prev, totalMobileCarouselSlides)
+        );
+    };
+
+    const handleMobileCarouselTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+        if (!canNavigateMobileCarousel) return;
         const touch = event.changedTouches[0];
-        projectSwipeStartXRef.current = null;
+        mobileCarouselSwipeStartXRef.current = touch ? touch.clientX : null;
+    };
+
+    const handleMobileCarouselTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+        if (!canNavigateMobileCarousel) return;
+        const startX = mobileCarouselSwipeStartXRef.current;
+        const touch = event.changedTouches[0];
+        mobileCarouselSwipeStartXRef.current = null;
 
         if (startX === null || !touch) return;
 
@@ -827,14 +940,14 @@ export default function HomePage() {
         if (Math.abs(deltaX) < HERO_SWIPE_THRESHOLD_PX) return;
 
         if (deltaX < 0) {
-            goToNextProjectSlide();
+            goToNextMobileCarouselSlide();
             return;
         }
-        goToPrevProjectSlide();
+        goToPrevMobileCarouselSlide();
     };
 
-    const handleProjectTouchCancel = () => {
-        projectSwipeStartXRef.current = null;
+    const handleMobileCarouselTouchCancel = () => {
+        mobileCarouselSwipeStartXRef.current = null;
     };
 
     const renderCompactSearchBanner = (
@@ -956,12 +1069,12 @@ export default function HomePage() {
             {/* ════════════════════════════════════════════
                 HERO SECTION (Updated to Variant /2 Design)
             ════════════════════════════════════════════ */}
-            <section ref={heroSectionRef} className="pt-28 pb-16 px-8 bg-white">
+            <section ref={heroSectionRef} className="pt-[4.5rem] sm:pt-20 lg:pt-28 pb-16 px-8 bg-white">
                 <div ref={heroRevealRef} className="max-w-7xl mx-auto">
                     {/* Hero Grid */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                         {/* Main Content */}
-                        <div className="lg:col-span-5 pt-8">
+                        <div className="lg:col-span-5 pt-2 sm:pt-4 lg:pt-8">
                             <div className="reveal flex items-center justify-center lg:justify-start gap-2 bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm mb-6 lg:mb-6 w-fit mx-auto lg:mx-0">
                                 <Globe className="w-4 h-4" />
                                 Alanya Satış & Yatırım Merkezi
@@ -996,20 +1109,133 @@ export default function HomePage() {
                                 </button>
                             </div>
 
-                            {/* Mobile Project Slider */}
+                            {/* Mobile Mixed Slider (Projects + Listings) */}
                             <div className="lg:hidden mb-8">
                                 <div className="aspect-[4/5] rounded-3xl overflow-hidden shadow-xl relative">
                                     <div
                                         className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
                                         style={{
-                                            transform: `translateX(-${projectSlideIndex * 100}%)`,
+                                            transform: `translateX(-${normalizedMobileCarouselSlideIndex * 100}%)`,
                                             touchAction: "pan-y",
                                         }}
-                                        onTouchStart={handleProjectTouchStart}
-                                        onTouchEnd={handleProjectTouchEnd}
-                                        onTouchCancel={handleProjectTouchCancel}
+                                        onTouchStart={handleMobileCarouselTouchStart}
+                                        onTouchEnd={handleMobileCarouselTouchEnd}
+                                        onTouchCancel={handleMobileCarouselTouchCancel}
                                     >
-                                        {safeHeroProjects.map((project, index) => {
+                                        {mobileCarouselSlides.map((slide, index) => {
+                                            if (slide.kind === "portfolio") {
+                                                return (
+                                                    <div
+                                                        key={`portfolio-${index}`}
+                                                        className="relative h-full w-full shrink-0 px-1"
+                                                    >
+                                                        <div className="relative h-full w-full overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 shadow-lg">
+                                                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.35),transparent_58%)]" />
+                                                            <div className="relative z-10 flex h-full items-center justify-center">
+                                                                <Link
+                                                                    href={`/${locale}/portfoy`}
+                                                                    className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-6 py-3 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
+                                                                >
+                                                                    Hepsini Gör
+                                                                    <ChevronRight className="h-4 w-4" />
+                                                                </Link>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (slide.kind === "listing") {
+                                                const listing = slide.listing;
+                                                const heroImageUrl = getHeroImageUrl(listing, 0);
+                                                const heroListingHref = getHeroListingHref(listing);
+
+                                                return (
+                                                    <div
+                                                        key={`${listing.id}-${listing.slot ?? index}`}
+                                                        className="relative h-full w-full shrink-0 px-1"
+                                                    >
+                                                        <div className="relative h-full w-full overflow-hidden rounded-3xl bg-white shadow-lg">
+                                                            <div className="relative h-full w-full overflow-hidden">
+                                                                {heroListingHref ? (
+                                                                    <Link
+                                                                        href={heroListingHref}
+                                                                        className="absolute inset-0 z-10"
+                                                                        title={listing.title}
+                                                                    />
+                                                                ) : null}
+                                                                <img
+                                                                    src={heroImageUrl}
+                                                                    alt={listing.title || "Featured Listing"}
+                                                                    className="h-full w-full object-cover"
+                                                                />
+                                                                <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5">
+                                                                    <div className="mb-2 flex items-center gap-2">
+                                                                        <span className={`rounded-md px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white ${listing.saleType === "SALE" ? "bg-orange-500" : "bg-blue-600"}`}>
+                                                                            {getSaleTypeLabel(listing.saleType, locale)}
+                                                                        </span>
+                                                                        <span className="rounded-md bg-white/20 px-2.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-md">
+                                                                            {getPropertyTypeLabel(listing.type, locale)}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    <h3 className="mb-2 line-clamp-2 text-xl font-medium uppercase tracking-wide leading-tight text-white">
+                                                                        {listing.title}
+                                                                    </h3>
+
+                                                                    <div className="flex items-center gap-2 text-xs font-normal text-white/90">
+                                                                        <span>{listing.district}</span>
+                                                                        {listing.rooms ? (
+                                                                            <>
+                                                                                <span className="inline-block h-1 w-1 rounded-full bg-white/60" />
+                                                                                <span>{listing.rooms}</span>
+                                                                            </>
+                                                                        ) : null}
+                                                                        <div className="ml-auto flex gap-2">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(event) => {
+                                                                                    event.preventDefault();
+                                                                                    event.stopPropagation();
+                                                                                    goToPrevMobileCarouselSlide();
+                                                                                }}
+                                                                                disabled={isMobileCarouselSlideAtStart}
+                                                                                className={cn(
+                                                                                    "h-8 w-8 rounded-full border border-white/30 bg-white/20 text-white backdrop-blur-sm transition-colors",
+                                                                                    isMobileCarouselSlideAtStart
+                                                                                        ? "cursor-not-allowed opacity-45"
+                                                                                        : "hover:bg-white/35"
+                                                                                )}
+                                                                            >
+                                                                                <ChevronLeft className="mx-auto h-4 w-4" />
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={(event) => {
+                                                                                    event.preventDefault();
+                                                                                    event.stopPropagation();
+                                                                                    goToNextMobileCarouselSlide();
+                                                                                }}
+                                                                                disabled={isMobileCarouselSlideAtEnd}
+                                                                                className={cn(
+                                                                                    "h-8 w-8 rounded-full border border-white/30 bg-white/20 text-white backdrop-blur-sm transition-colors",
+                                                                                    isMobileCarouselSlideAtEnd
+                                                                                        ? "cursor-not-allowed opacity-45"
+                                                                                        : "hover:bg-white/35"
+                                                                                )}
+                                                                            >
+                                                                                <ChevronRight className="mx-auto h-4 w-4" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            const project = slide.project;
                                             const projectImageUrl = getProjectImageUrl(project, 0);
                                             const projectHref = getProjectHref(project);
 
@@ -1043,26 +1269,25 @@ export default function HomePage() {
 
                                                             {/* Overlay Content (Badges + Text) */}
                                                             <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5">
-
                                                                 {/* Badges Row - Smaller Text */}
-                                                                <div className="flex items-center gap-2 mb-2">
-                                                                    <span className="px-2.5 py-0.5 text-[10px] font-medium text-white uppercase tracking-wider rounded-md bg-orange-500">
+                                                                <div className="mb-2 flex items-center gap-2">
+                                                                    <span className="rounded-md bg-orange-500 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white">
                                                                         Proje
                                                                     </span>
                                                                     {project.projectType ? (
-                                                                        <span className="px-2.5 py-0.5 text-[10px] font-medium text-white bg-white/20 backdrop-blur-md rounded-md">
-                                                                            {project.projectType}
+                                                                        <span className="rounded-md bg-white/20 px-2.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-md">
+                                                                            {getProjectCategoryLabel(project.projectType, locale)}
                                                                         </span>
                                                                     ) : null}
                                                                 </div>
 
                                                                 {/* Title - Smaller Text */}
-                                                                <h3 className="text-xl font-medium text-white mb-2 uppercase tracking-wide leading-tight line-clamp-2">
+                                                                <h3 className="mb-2 line-clamp-2 text-xl font-medium uppercase tracking-wide leading-tight text-white">
                                                                     {project.title}
                                                                 </h3>
 
                                                                 {/* Bottom row */}
-                                                                <div className="flex items-center text-white/90 text-xs font-normal gap-2">
+                                                                <div className="flex items-center gap-2 text-xs font-normal text-white/90">
                                                                     <span>{project.district}</span>
                                                                     {project.deliveryDate ? (
                                                                         <>
@@ -1076,9 +1301,15 @@ export default function HomePage() {
                                                                             onClick={(event) => {
                                                                                 event.preventDefault();
                                                                                 event.stopPropagation();
-                                                                                goToPrevProjectSlide();
+                                                                                goToPrevMobileCarouselSlide();
                                                                             }}
-                                                                            className="h-8 w-8 rounded-full border border-white/30 bg-white/20 text-white backdrop-blur-sm"
+                                                                            disabled={isMobileCarouselSlideAtStart}
+                                                                            className={cn(
+                                                                                "h-8 w-8 rounded-full border border-white/30 bg-white/20 text-white backdrop-blur-sm transition-colors",
+                                                                                isMobileCarouselSlideAtStart
+                                                                                    ? "cursor-not-allowed opacity-45"
+                                                                                    : "hover:bg-white/35"
+                                                                            )}
                                                                         >
                                                                             <ChevronLeft className="mx-auto h-4 w-4" />
                                                                         </button>
@@ -1087,9 +1318,15 @@ export default function HomePage() {
                                                                             onClick={(event) => {
                                                                                 event.preventDefault();
                                                                                 event.stopPropagation();
-                                                                                goToNextProjectSlide();
+                                                                                goToNextMobileCarouselSlide();
                                                                             }}
-                                                                            className="h-8 w-8 rounded-full border border-white/30 bg-white/20 text-white backdrop-blur-sm"
+                                                                            disabled={isMobileCarouselSlideAtEnd}
+                                                                            className={cn(
+                                                                                "h-8 w-8 rounded-full border border-white/30 bg-white/20 text-white backdrop-blur-sm transition-colors",
+                                                                                isMobileCarouselSlideAtEnd
+                                                                                    ? "cursor-not-allowed opacity-45"
+                                                                                    : "hover:bg-white/35"
+                                                                            )}
                                                                         >
                                                                             <ChevronRight className="mx-auto h-4 w-4" />
                                                                         </button>
@@ -1105,11 +1342,11 @@ export default function HomePage() {
 
                                     {/* Mobile Navigation Dots */}
                                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
-                                        {safeHeroProjects.map((_, index) => (
+                                        {mobileCarouselSlides.map((_, index) => (
                                             <button
                                                 key={index}
-                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setProjectSlideIndex(index); }}
-                                                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${index === projectSlideIndex ? "w-4 bg-white" : "bg-white/50"
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileCarouselSlideIndex(index); }}
+                                                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${index === normalizedMobileCarouselSlideIndex ? "w-4 bg-white" : "bg-white/50"
                                                     }`}
                                             />
                                         ))}
@@ -1175,10 +1412,32 @@ export default function HomePage() {
                                 <div
                                     className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
                                     style={{
-                                        transform: `translateX(-${projectSlideIndex * 100}%)`,
+                                        transform: `translateX(-${normalizedProjectSlideIndex * 100}%)`,
                                     }}
                                 >
-                                    {safeHeroProjects.map((project, index) => {
+                                    {projectSlides.map((slide, index) => {
+                                        if (slide.kind === "portfolio") {
+                                            return (
+                                                <div
+                                                    key={`portfolio-${index}`}
+                                                    className="relative h-full w-full shrink-0"
+                                                >
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+                                                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.35),transparent_58%)]" />
+                                                    <div className="relative z-10 flex h-full items-center justify-center">
+                                                        <Link
+                                                            href={`/${locale}/portfoy`}
+                                                            className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-6 py-3 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
+                                                        >
+                                                            Hepsini Gör
+                                                            <ChevronRight className="h-4 w-4" />
+                                                        </Link>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        const project = slide.project;
                                         const projectImageUrl = getProjectImageUrl(project, 0);
                                         const projectHref = getProjectHref(project);
 
@@ -1213,42 +1472,58 @@ export default function HomePage() {
 
                                 <div className="absolute inset-x-0 bottom-0 p-8 z-20 flex justify-between items-end pointer-events-none bg-gradient-to-t from-black/80 via-black/40 to-transparent">
                                     <div className="text-white pointer-events-auto pb-2 font-light">
-                                        <div className="flex items-center gap-2 mb-3">
-                                            <span className="px-3 py-1 text-xs font-light text-white uppercase tracking-wider rounded-md bg-orange-500">
-                                                Proje
-                                            </span>
-                                            {safeHeroProjects[projectSlideIndex]?.projectType ? (
-                                                <span className="px-3 py-1 text-xs font-light text-white bg-white/20 backdrop-blur-md rounded-md">
-                                                    {safeHeroProjects[projectSlideIndex]?.projectType}
-                                                </span>
-                                            ) : null}
-                                        </div>
+                                        {activeProject ? (
+                                            <>
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className="px-3 py-1 text-xs font-light text-white uppercase tracking-wider rounded-md bg-orange-500">
+                                                        Proje
+                                                    </span>
+                                                    {activeProject.projectType ? (
+                                                        <span className="px-3 py-1 text-xs font-light text-white bg-white/20 backdrop-blur-md rounded-md">
+                                                            {getProjectCategoryLabel(activeProject.projectType, locale)}
+                                                        </span>
+                                                    ) : null}
+                                                </div>
 
-                                        <h3 className="text-3xl mb-2 font-light leading-tight">
-                                            {safeHeroProjects[projectSlideIndex]?.title}
-                                        </h3>
+                                                <h3 className="text-3xl mb-2 font-light leading-tight">
+                                                    {activeProject.title}
+                                                </h3>
 
-                                        <div className="flex items-center gap-2 text-white/90 text-base font-normal">
-                                            <span>{safeHeroProjects[projectSlideIndex]?.district}</span>
-                                            {safeHeroProjects[projectSlideIndex]?.deliveryDate ? (
-                                                <>
-                                                    <div className="w-1 h-1 rounded-full bg-white/50" />
-                                                    <span>Teslim: {safeHeroProjects[projectSlideIndex]?.deliveryDate}</span>
-                                                </>
-                                            ) : null}
-                                        </div>
+                                                <div className="flex items-center gap-2 text-white/90 text-base font-normal">
+                                                    <span>{activeProject.district}</span>
+                                                    {activeProject.deliveryDate ? (
+                                                        <>
+                                                            <div className="w-1 h-1 rounded-full bg-white/50" />
+                                                            <span>Teslim: {activeProject.deliveryDate}</span>
+                                                        </>
+                                                    ) : null}
+                                                </div>
+                                            </>
+                                        ) : null}
                                     </div>
 
                                     <div className="flex gap-2 pointer-events-auto pb-2">
                                         <button
                                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); goToPrevProjectSlide(); }}
-                                            className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                                            disabled={isProjectSlideAtStart}
+                                            className={cn(
+                                                "w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white transition-colors",
+                                                isProjectSlideAtStart
+                                                    ? "cursor-not-allowed opacity-45"
+                                                    : "hover:bg-white/30"
+                                            )}
                                         >
                                             <ChevronLeft className="w-6 h-6" />
                                         </button>
                                         <button
                                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); goToNextProjectSlide(); }}
-                                            className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                                            disabled={isProjectSlideAtEnd}
+                                            className={cn(
+                                                "w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white transition-colors",
+                                                isProjectSlideAtEnd
+                                                    ? "cursor-not-allowed opacity-45"
+                                                    : "hover:bg-white/30"
+                                            )}
                                         >
                                             <ChevronRight className="w-6 h-6" />
                                         </button>
@@ -1262,10 +1537,32 @@ export default function HomePage() {
                                     <div
                                         className="flex h-full w-full transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
                                         style={{
-                                            transform: `translateX(-${heroSlideIndex * 100}%)`,
+                                            transform: `translateX(-${normalizedHeroSlideIndex * 100}%)`,
                                         }}
                                     >
-                                        {safeHeroListings.map((listing, index) => {
+                                        {heroSlides.map((slide, index) => {
+                                            if (slide.kind === "portfolio") {
+                                                return (
+                                                    <div
+                                                        key={`hero-portfolio-${index}`}
+                                                        className="relative h-full w-full shrink-0"
+                                                    >
+                                                        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+                                                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.35),transparent_58%)]" />
+                                                        <div className="relative z-10 flex h-full items-center justify-center">
+                                                            <Link
+                                                                href={`/${locale}/portfoy`}
+                                                                className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
+                                                            >
+                                                                Hepsini Gör
+                                                                <ChevronRight className="h-4 w-4" />
+                                                            </Link>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            const listing = slide.listing;
                                             const heroImageUrl = getHeroImageUrl(listing, 0);
                                             const heroListingHref = getHeroListingHref(listing);
 
@@ -1294,27 +1591,31 @@ export default function HomePage() {
 
                                     <div className="absolute inset-x-0 bottom-0 z-20 p-4 pointer-events-none">
                                         <div className="pointer-events-auto">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className={`px-2 py-0.5 text-[10px] font-medium text-white uppercase tracking-wider rounded-md ${safeHeroListings[heroSlideIndex]?.saleType === "SALE" ? "bg-orange-500" : "bg-blue-600"}`}>
-                                                    {getSaleTypeLabel(safeHeroListings[heroSlideIndex]?.saleType, locale)}
-                                                </span>
-                                                <span className="px-2 py-0.5 text-[10px] font-medium text-white bg-white/20 backdrop-blur-md rounded-md">
-                                                    {getPropertyTypeLabel(safeHeroListings[heroSlideIndex]?.type, locale)}
-                                                </span>
-                                            </div>
-                                            <h4 className="text-base font-medium text-white leading-tight line-clamp-2">
-                                                {safeHeroListings[heroSlideIndex]?.title}
-                                            </h4>
+                                            {activeHeroListing ? (
+                                                <>
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className={`px-2 py-0.5 text-[10px] font-medium text-white uppercase tracking-wider rounded-md ${activeHeroListing.saleType === "SALE" ? "bg-orange-500" : "bg-blue-600"}`}>
+                                                            {getSaleTypeLabel(activeHeroListing.saleType, locale)}
+                                                        </span>
+                                                        <span className="px-2 py-0.5 text-[10px] font-medium text-white bg-white/20 backdrop-blur-md rounded-md">
+                                                            {getPropertyTypeLabel(activeHeroListing.type, locale)}
+                                                        </span>
+                                                    </div>
+                                                    <h4 className="text-base font-medium text-white leading-tight line-clamp-2">
+                                                        {activeHeroListing.title}
+                                                    </h4>
+                                                </>
+                                            ) : null}
                                         </div>
                                         <div className="pointer-events-auto mt-3 flex items-center justify-between">
                                             <div className="flex gap-1.5">
-                                                {safeHeroListings.map((_, index) => (
+                                                {heroSlides.map((_, index) => (
                                                     <button
                                                         key={index}
                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setHeroSlideIndex(index); }}
                                                         className={cn(
                                                             "h-1.5 rounded-full transition-all duration-300",
-                                                            index === heroSlideIndex ? "w-4 bg-white" : "w-1.5 bg-white/50"
+                                                            index === normalizedHeroSlideIndex ? "w-4 bg-white" : "w-1.5 bg-white/50"
                                                         )}
                                                     />
                                                 ))}
@@ -1322,13 +1623,25 @@ export default function HomePage() {
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); goToPrevHeroSlide(); }}
-                                                    className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                                                    disabled={isHeroSlideAtStart}
+                                                    className={cn(
+                                                        "w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white transition-colors",
+                                                        isHeroSlideAtStart
+                                                            ? "cursor-not-allowed opacity-45"
+                                                            : "hover:bg-white/30"
+                                                    )}
                                                 >
                                                     <ChevronLeft className="w-4 h-4" />
                                                 </button>
                                                 <button
                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); goToNextHeroSlide(); }}
-                                                    className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white hover:bg-white/30 transition-colors"
+                                                    disabled={isHeroSlideAtEnd}
+                                                    className={cn(
+                                                        "w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white transition-colors",
+                                                        isHeroSlideAtEnd
+                                                            ? "cursor-not-allowed opacity-45"
+                                                            : "hover:bg-white/30"
+                                                    )}
                                                 >
                                                     <ChevronRight className="w-4 h-4" />
                                                 </button>
@@ -1715,7 +2028,10 @@ export default function HomePage() {
                             const featured = services[0];
                             const FeaturedIcon = featured.icon;
                             return (
-                                <div className="reveal lg:col-span-5 group relative bg-white rounded-xl border border-gray-100 hover:border-orange-200 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 overflow-hidden">
+                                <Link
+                                    href={`/${locale}/iletisim`}
+                                    className="reveal lg:col-span-5 group relative block bg-white rounded-xl border border-gray-100 hover:border-orange-200 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 overflow-hidden"
+                                >
                                     {/* Orange left accent */}
                                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 rounded-l-xl z-10" />
 
@@ -1778,7 +2094,7 @@ export default function HomePage() {
                                             <ArrowRight className="w-3.5 h-3.5" />
                                         </div>
                                     </div>
-                                </div>
+                                </Link>
                             );
                         })()}
 
@@ -1790,8 +2106,9 @@ export default function HomePage() {
                                     const num = String(idx + 2).padStart(2, "0");
                                     const isLast = idx === services.length - 2;
                                     return (
-                                        <div
+                                        <Link
                                             key={idx}
+                                            href={`/${locale}/iletisim`}
                                             className={`reveal group relative bg-white p-6 cursor-pointer hover:bg-orange-50/50 hover:-translate-y-0.5 transition-all duration-300 ${isLast ? "sm:col-span-2" : ""
                                                 }`}
                                         >
@@ -1822,7 +2139,7 @@ export default function HomePage() {
                                                 {t("common.learnMore")}
                                                 <ArrowRight className="w-3 h-3" />
                                             </div>
-                                        </div>
+                                        </Link>
                                     );
                                 })}
                             </div>
@@ -2023,15 +2340,11 @@ export default function HomePage() {
                             [
                                 { icon: Search, title: "Portföyü Keşfet", href: `/${locale}/portfoy` },
                                 { icon: Handshake, title: "İletişime Geç", href: `/${locale}/iletisim` },
-                                { icon: Building2, title: "Satış Yap", href: `/${locale}/iletisim` },
+                                { icon: Building2, title: "Satış Yap", onClick: () => window.dispatchEvent(new Event("open-homepage-popup")) },
                             ].map((card, idx) => {
                                 const CardIcon = card.icon;
-                                return (
-                                    <Link
-                                        key={idx}
-                                        href={card.href}
-                                        className="group w-full sm:w-auto bg-gray-800 px-6 py-5 flex items-center justify-between sm:justify-start gap-4 hover:bg-gray-800/60 transition-colors duration-300"
-                                    >
+                                const cardContent = (
+                                    <>
                                         <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center group-hover:bg-orange-400 transition-colors">
                                             <CardIcon className="w-4 h-4 text-white" />
                                         </div>
@@ -2039,6 +2352,29 @@ export default function HomePage() {
                                             {card.title}
                                         </span>
                                         <ArrowRight className="ml-auto sm:ml-0 w-4 h-4 text-gray-500 group-hover:text-orange-400 group-hover:translate-x-1 transition-all duration-300" />
+                                    </>
+                                );
+
+                                if ("onClick" in card) {
+                                    return (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={card.onClick}
+                                            className="group w-full sm:w-auto bg-gray-800 px-6 py-5 flex items-center justify-between sm:justify-start gap-4 hover:bg-gray-800/60 transition-colors duration-300"
+                                        >
+                                            {cardContent}
+                                        </button>
+                                    );
+                                }
+
+                                return (
+                                    <Link
+                                        key={idx}
+                                        href={card.href}
+                                        className="group w-full sm:w-auto bg-gray-800 px-6 py-5 flex items-center justify-between sm:justify-start gap-4 hover:bg-gray-800/60 transition-colors duration-300"
+                                    >
+                                        {cardContent}
                                     </Link>
                                 );
                             })

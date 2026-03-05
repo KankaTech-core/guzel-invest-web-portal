@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
     Menu,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { mapPublicProjectsToMenuItems, type NavbarProjectMenuItem, type PublicProjectMenuSource } from "@/lib/navbar-project-menu";
+import { SOCIAL_LINK_ITEMS, type SocialLinkKey } from "@/lib/social-links";
 import { cn, getMediaUrl } from "@/lib/utils";
 import { CurrencyToggle } from "@/components/public/currency-toggle";
 import { ProjectIcon } from "@/components/single-project/ProjectIcon";
@@ -27,11 +28,11 @@ type NavigationItem = {
     label?: string;
 };
 
-const socialLinks = [
-    { label: "Instagram", href: "https://www.instagram.com", icon: Instagram },
-    { label: "YouTube", href: "https://www.youtube.com", icon: Youtube },
-    { label: "Facebook", href: "https://www.facebook.com", icon: Facebook },
-] as const;
+const socialIconMap: Record<SocialLinkKey, typeof Instagram> = {
+    instagram: Instagram,
+    youtube: Youtube,
+    facebook: Facebook,
+};
 
 const navigation = [
     { name: "nav.home", href: "/" },
@@ -59,29 +60,26 @@ const appendVersionParam = (url: string, version: string) => {
 export function Navbar({ locale }: { locale: string }) {
     const t = useTranslations();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [projectMenuItems, setProjectMenuItems] = useState<NavbarProjectMenuItem[]>([]);
     const [isProjectsMenuLoading, setIsProjectsMenuLoading] = useState(true);
-    const [projectsMenuState, setProjectsMenuState] = useState<'closed' | 'hover' | 'pinned'>('closed');
-    const projectsMenuRef = useRef<HTMLDivElement>(null);
+    const [isProjectsMenuOpen, setIsProjectsMenuOpen] = useState(false);
     const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
-        const handleOutsideClick = (event: MouseEvent) => {
-            if (projectsMenuState === 'pinned' && projectsMenuRef.current && !projectsMenuRef.current.contains(event.target as Node)) {
-                setProjectsMenuState('closed');
+        return () => {
+            if (closeTimerRef.current) {
+                clearTimeout(closeTimerRef.current);
             }
         };
+    }, []);
 
-        if (projectsMenuState === 'pinned') {
-            document.addEventListener("mousedown", handleOutsideClick);
-        }
+    useEffect(() => {
+        setIsProjectsMenuOpen(false);
+    }, [pathname, searchParams]);
 
-        return () => {
-            document.removeEventListener("mousedown", handleOutsideClick);
-        };
-    }, [projectsMenuState]);
     const aboutPath = `/${locale}/hakkimizda`;
 
     // Döviz butonu sadece portföy, tek ilan ve harita sayfalarında görünür
@@ -227,14 +225,14 @@ export function Navbar({ locale }: { locale: string }) {
                 {/* Desktop Navigation */}
                 <div className="hidden lg:flex items-center gap-1 bg-gray-100 rounded-full px-1.5 py-1.5">
                     {navigation.map((item) => {
-                        const href = `/${locale}${item.href === "/" ? "" : item.href}`;
-                        const isActive = pathname === href;
+                        const baseHref = `/${locale}${item.href === "/" ? "" : item.href}`;
+                        const isActive = pathname === baseHref;
 
                         if (item.href === "/hakkimizda") {
                             return (
                                 <div key={item.href} className="relative group">
                                     <Link
-                                        href={href}
+                                        href={baseHref}
                                         className={cn(
                                             "inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium transition-all",
                                             isActive
@@ -251,7 +249,7 @@ export function Navbar({ locale }: { locale: string }) {
                                             {aboutSectionLinks.map((section) => (
                                                 <a
                                                     key={section.id}
-                                                    href={`${href}#${section.id}`}
+                                                    href={`${baseHref}#${section.id}`}
                                                     onClick={(event) =>
                                                         handleAboutSectionClick(event, section.id)
                                                     }
@@ -267,40 +265,47 @@ export function Navbar({ locale }: { locale: string }) {
                         }
 
                         if (item.href === "/projeler") {
-                            const isMenuVisible = projectsMenuState !== 'closed';
+                            const projectsFilterHref = `/${locale}/portfoy?onlyProjects=true`;
+                            const isProjectsFilterActive =
+                                pathname === `/${locale}/portfoy` &&
+                                searchParams.get("onlyProjects") === "true";
+                            const isMenuVisible = isProjectsMenuOpen;
 
                             return (
                                 <div
                                     key={item.href}
                                     className="relative"
-                                    ref={projectsMenuRef}
                                     onMouseEnter={() => {
                                         if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-                                        if (projectsMenuState === 'closed') setProjectsMenuState('hover');
+                                        setIsProjectsMenuOpen(true);
                                     }}
                                     onMouseLeave={() => {
-                                        if (projectsMenuState === 'hover') {
-                                            closeTimerRef.current = setTimeout(() => setProjectsMenuState('closed'), 150);
-                                        }
+                                        closeTimerRef.current = setTimeout(
+                                            () => setIsProjectsMenuOpen(false),
+                                            150
+                                        );
                                     }}
                                 >
-                                    <button
-                                        type="button"
-                                        onClick={() => setProjectsMenuState(projectsMenuState === 'pinned' ? 'closed' : 'pinned')}
+                                    <Link
+                                        href={projectsFilterHref}
+                                        onClick={() => {
+                                            setIsProjectsMenuOpen(false);
+                                            setIsOpen(false);
+                                        }}
                                         className={cn(
                                             "inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-medium transition-all",
-                                            (isActive || isMenuVisible)
+                                            (isProjectsFilterActive || isMenuVisible)
                                                 ? "bg-white text-gray-900 shadow-sm"
                                                 : "text-gray-600 hover:text-gray-900"
                                         )}
                                     >
                                         {item.label ?? t(item.name!)}
                                         <ChevronDown className={cn("h-4 w-4 opacity-70 transition-transform duration-200", isMenuVisible && "rotate-180")} />
-                                    </button>
+                                    </Link>
 
                                     <div
                                         className={cn(
-                                            "fixed top-[64px] left-4 right-4 z-50 max-w-7xl mx-auto mt-2 transition-all duration-200",
+                                            "fixed top-[64px] left-4 right-4 z-50 mx-auto mt-2 max-w-[min(96vw,1700px)] transition-all duration-200",
                                             isMenuVisible
                                                 ? "pointer-events-auto visible opacity-100"
                                                 : "pointer-events-none invisible opacity-0"
@@ -309,28 +314,47 @@ export function Navbar({ locale }: { locale: string }) {
                                             if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
                                         }}
                                         onMouseLeave={() => {
-                                            if (projectsMenuState === 'hover') {
-                                                closeTimerRef.current = setTimeout(() => setProjectsMenuState('closed'), 150);
-                                            }
+                                            closeTimerRef.current = setTimeout(
+                                                () => setIsProjectsMenuOpen(false),
+                                                150
+                                            );
                                         }}
                                     >
-                                        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl shadow-gray-200/60">
-                                            <div className="grid grid-cols-2 gap-5">
+                                        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl shadow-gray-200/60 sm:p-5">
+                                            <div className="max-h-[min(70vh,720px)] overflow-y-auto pr-1">
+                                                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
                                                 {isProjectsMenuLoading ? (
-                                                    <div className="col-span-2 flex items-center justify-center gap-2 rounded-lg py-12 text-sm text-gray-500">
+                                                        <div className="col-span-full flex items-center justify-center gap-2 rounded-lg py-12 text-sm text-gray-500">
                                                         <Loader2 className="h-5 w-5 animate-spin" />
                                                         Projeler yükleniyor...
                                                     </div>
                                                 ) : projectMenuItems.length > 0 ? (
-                                                    projectMenuItems.map((project) => (
+                                                    projectMenuItems.map((project) => {
+                                                        const features = project.features || [];
+                                                        const topFeatures = features.slice(0, 2);
+                                                        const hasLongFeatureLabel = features.some(
+                                                            (feature) => feature.label.trim().length > 14
+                                                        );
+                                                        const combinedFeatureLength = topFeatures.reduce(
+                                                            (total, feature) => total + feature.label.trim().length,
+                                                            0
+                                                        );
+                                                        const shouldShowSingleFeature =
+                                                            hasLongFeatureLabel || combinedFeatureLength > 22;
+                                                        const visibleFeatures = topFeatures.slice(
+                                                            0,
+                                                            shouldShowSingleFeature ? 1 : 2
+                                                        );
+
+                                                        return (
                                                         <Link
                                                             key={project.href}
                                                             href={`/${locale}${project.href}`}
-                                                            onClick={() => setProjectsMenuState('closed')}
-                                                            className="flex flex-row gap-5 rounded-2xl p-4 transition-all hover:bg-orange-50/40 border border-transparent hover:border-orange-100/60 group/item"
+                                                            onClick={() => setIsProjectsMenuOpen(false)}
+                                                            className="group/item flex h-full flex-row gap-5 rounded-2xl border border-transparent p-4 transition-all hover:border-orange-100/60 hover:bg-orange-50/40"
                                                         >
                                                             {/* Image */}
-                                                            <div className="relative aspect-[16/10] w-52 shrink-0 overflow-hidden rounded-xl bg-gray-100 shadow-sm border border-gray-100">
+                                                            <div className="relative aspect-[16/10] w-52 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-100 shadow-sm">
                                                                 <Image
                                                                     src={appendVersionParam(
                                                                         getMediaUrl(project.image),
@@ -344,15 +368,13 @@ export function Navbar({ locale }: { locale: string }) {
                                                             </div>
 
                                                             {/* Info */}
-                                                            <div className="flex flex-col flex-1 min-w-0 py-1">
-                                                                {project.promoText && (
-                                                                    <div className="mb-2 flex items-center">
-                                                                        <span className="rounded-md bg-orange-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
-                                                                            {project.promoText}
-                                                                        </span>
-                                                                    </div>
+                                                            <div className="flex min-w-0 flex-1 flex-col py-1">
+                                                                {project.projectCategory && (
+                                                                    <span className="mb-2 inline-flex w-fit items-center rounded bg-orange-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+                                                                        {project.projectCategory}
+                                                                    </span>
                                                                 )}
-                                                                <h4 className="truncate text-base font-bold text-gray-900 group-hover/item:text-orange-600 transition-colors">
+                                                                <h4 className="truncate text-lg font-bold text-gray-900 group-hover/item:text-orange-600 transition-colors">
                                                                     {project.title}
                                                                 </h4>
                                                                 {project.location && (
@@ -366,10 +388,10 @@ export function Navbar({ locale }: { locale: string }) {
                                                                         {project.description}
                                                                     </p>
                                                                 )}
-                                                                {project.features && project.features.length > 0 && (
+                                                                {visibleFeatures.length > 0 && (
                                                                     <div className="mt-3 flex items-center gap-3">
-                                                                        {project.features.slice(0, 2).map((feature, idx) => (
-                                                                            <div key={idx} className="flex items-center gap-1.5 text-xs text-gray-500">
+                                                                        {visibleFeatures.map((feature, idx) => (
+                                                                            <div key={idx} className="flex min-w-0 items-center gap-1.5 text-xs text-gray-500">
                                                                                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-orange-50 text-orange-600">
                                                                                     <ProjectIcon name={feature.icon} className="h-3.5 w-3.5" />
                                                                                 </div>
@@ -380,12 +402,14 @@ export function Navbar({ locale }: { locale: string }) {
                                                                 )}
                                                             </div>
                                                         </Link>
-                                                    ))
+                                                        );
+                                                    })
                                                 ) : (
-                                                    <div className="col-span-2 rounded-lg px-3 py-6 text-center text-sm text-gray-500">
+                                                        <div className="col-span-full rounded-lg px-3 py-6 text-center text-sm text-gray-500">
                                                         Yayınlanmış proje bulunamadı.
                                                     </div>
                                                 )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -396,7 +420,7 @@ export function Navbar({ locale }: { locale: string }) {
                         return (
                             <Link
                                 key={item.href}
-                                href={href}
+                                href={baseHref}
                                 className={cn(
                                     "px-5 py-2 rounded-full text-sm font-medium transition-all",
                                     isActive
@@ -414,8 +438,8 @@ export function Navbar({ locale }: { locale: string }) {
                 <div className="hidden lg:flex items-center gap-3">
                     {/* Social Icons */}
                     <div className="flex items-center gap-1 rounded-full bg-gray-100 p-1">
-                        {socialLinks.map((item) => {
-                            const Icon = item.icon;
+                        {SOCIAL_LINK_ITEMS.map((item) => {
+                            const Icon = socialIconMap[item.key];
                             return (
                                 <a
                                     key={item.label}
@@ -474,10 +498,14 @@ export function Navbar({ locale }: { locale: string }) {
                 <div className="p-6 flex flex-col gap-2">
                     {navigation.map((item) => {
                         const isProjeler = item.href === "/projeler";
+                        const baseHref = `/${locale}${item.href === "/" ? "" : item.href}`;
                         const href = isProjeler
                             ? `/${locale}/portfoy?onlyProjects=true`
-                            : `/${locale}${item.href === "/" ? "" : item.href}`;
-                        const isActive = pathname === `/${locale}${item.href === "/" ? "" : item.href}`;
+                            : baseHref;
+                        const isActive = isProjeler
+                            ? pathname === `/${locale}/portfoy` &&
+                            searchParams.get("onlyProjects") === "true"
+                            : pathname === baseHref;
 
                         return (
                             <Link
@@ -499,8 +527,8 @@ export function Navbar({ locale }: { locale: string }) {
                     <div className="mt-6 pt-6 border-t border-gray-100">
                         <p className="text-sm text-gray-400 mb-3">Sosyal Medya</p>
                         <div className="flex items-center gap-3">
-                            {socialLinks.map((item) => {
-                                const Icon = item.icon;
+                            {SOCIAL_LINK_ITEMS.map((item) => {
+                                const Icon = socialIconMap[item.key];
                                 return (
                                     <a
                                         key={item.label}

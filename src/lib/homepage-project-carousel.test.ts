@@ -6,6 +6,8 @@ import {
     HOMEPAGE_PROJECT_SLOTS,
     canSelectProjectForHomepageCarousel,
     findFirstAvailableHomepageProjectSlot,
+    getNextHomepageProjectSlideIndex,
+    getPrevHomepageProjectSlideIndex,
     getHomepageProjectRemovalError,
     getHomepageProjectSelectionError,
     parseHomepageProjectSlot,
@@ -132,4 +134,20 @@ test("getHomepageProjectRemovalError prevents removing the last selected project
         }),
         null
     );
+});
+
+test("getNextHomepageProjectSlideIndex advances forward without looping", () => {
+    assert.equal(getNextHomepageProjectSlideIndex(0, 4), 1);
+    assert.equal(getNextHomepageProjectSlideIndex(2, 4), 3);
+    assert.equal(getNextHomepageProjectSlideIndex(3, 4), 3);
+    assert.equal(getNextHomepageProjectSlideIndex(999, 4), 3);
+    assert.equal(getNextHomepageProjectSlideIndex(0, 0), 0);
+});
+
+test("getPrevHomepageProjectSlideIndex moves backward without looping", () => {
+    assert.equal(getPrevHomepageProjectSlideIndex(3, 4), 2);
+    assert.equal(getPrevHomepageProjectSlideIndex(1, 4), 0);
+    assert.equal(getPrevHomepageProjectSlideIndex(0, 4), 0);
+    assert.equal(getPrevHomepageProjectSlideIndex(-99, 4), 0);
+    assert.equal(getPrevHomepageProjectSlideIndex(0, 0), 0);
 });

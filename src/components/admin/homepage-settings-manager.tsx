@@ -331,7 +331,7 @@ export function HomepageSettingsManager() {
                             {data.video.source === "youtube" && data.video.popupEmbedUrl ? (
                                 <iframe
                                     className="h-full w-full"
-                                    src={data.video.popupEmbedUrl}
+                                    src={data.video.popupEmbedUrl.replace("autoplay=1", "autoplay=0")}
                                     title="Ana sayfa hero videosu"
                                     frameBorder="0"
                                     allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -342,7 +342,7 @@ export function HomepageSettingsManager() {
                                 <video
                                     className="h-full w-full object-cover"
                                     src={data.video.playbackUrl}
-                                    autoPlay
+                                    autoPlay={false}
                                     muted
                                     loop
                                     controls

@@ -7,9 +7,15 @@ import {
     MapPin,
     Instagram,
     Facebook,
-    Twitter,
     Youtube,
 } from "lucide-react";
+import { SOCIAL_LINK_ITEMS, type SocialLinkKey } from "@/lib/social-links";
+
+const socialIconMap: Record<SocialLinkKey, typeof Instagram> = {
+    instagram: Instagram,
+    youtube: Youtube,
+    facebook: Facebook,
+};
 
 export function Footer({ locale }: { locale: string }) {
     const t = useTranslations();
@@ -38,30 +44,21 @@ export function Footer({ locale }: { locale: string }) {
                             {t("footer.slogan")}
                         </p>
                         <div className="flex gap-3">
-                            <a
-                                href="#"
-                                className="w-10 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-gray-500 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
-                            >
-                                <Instagram className="w-5 h-5" />
-                            </a>
-                            <a
-                                href="#"
-                                className="w-10 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-gray-500 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
-                            >
-                                <Facebook className="w-5 h-5" />
-                            </a>
-                            <a
-                                href="#"
-                                className="w-10 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-gray-500 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
-                            >
-                                <Twitter className="w-5 h-5" />
-                            </a>
-                            <a
-                                href="#"
-                                className="w-10 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-gray-500 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
-                            >
-                                <Youtube className="w-5 h-5" />
-                            </a>
+                            {SOCIAL_LINK_ITEMS.map((item) => {
+                                const Icon = socialIconMap[item.key];
+                                return (
+                                    <a
+                                        key={item.key}
+                                        href={item.href}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        aria-label={item.label}
+                                        className="w-10 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-gray-500 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-colors"
+                                    >
+                                        <Icon className="w-5 h-5" />
+                                    </a>
+                                );
+                            })}
                         </div>
                     </div>
 

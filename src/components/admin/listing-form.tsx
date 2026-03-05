@@ -2352,7 +2352,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     }, []);
 
     return (
-        <div className="w-full max-w-[1400px] mx-auto px-2 sm:px-4 lg:px-8">
+        <div className="w-full max-w-[1400px] mx-auto px-2 sm:px-4 lg:px-8 pb-16">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-4">
@@ -3792,61 +3792,85 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                 </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-between bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-                <div className="flex items-center gap-2">
-                    {!isNew && formData.status !== "ARCHIVED" && formData.status !== "REMOVED" && (
+            <div className="sticky bottom-4 z-40 mx-auto w-full">
+                <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white/90 p-4 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] backdrop-blur-md">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                            {!isNew &&
+                            formData.status !== "ARCHIVED" &&
+                            formData.status !== "REMOVED" ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmAction("archive")}
+                                    className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm rounded-lg flex items-center gap-2 transition-colors shadow-sm"
+                                >
+                                    <Archive className="w-4 h-4" />
+                                    Arşivle
+                                </button>
+                            ) : null}
+                            {!isNew && formData.status === "PUBLISHED" ? (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (formData.homepageHeroSlot !== null) {
+                                            setConfirmAction("homepageHeroReplacementRequired");
+                                            return;
+                                        }
+                                        setConfirmAction("remove");
+                                    }}
+                                    className="px-4 py-2 border border-red-200 bg-white hover:bg-red-50 text-red-600 font-medium text-sm rounded-lg flex items-center gap-2 transition-colors shadow-sm"
+                                >
+                                    <CircleOff className="w-4 h-4" />
+                                    Yayından Kaldır
+                                </button>
+                            ) : null}
+                            {!isNew ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmAction("delete")}
+                                    className="px-4 py-2 border border-red-200 bg-white hover:bg-red-50 text-red-600 font-medium text-sm rounded-lg flex items-center gap-2 transition-colors shadow-sm"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    İlanı Sil
+                                </button>
+                            ) : null}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
                         <button
-                            onClick={() => setConfirmAction("archive")}
-                            className="btn btn-ghost btn-md text-gray-500"
+                            type="button"
+                            onClick={() => handleSubmit({ statusOverride: "DRAFT" })}
+                            disabled={isSaving || isUploading}
+                            className="px-6 py-2.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm rounded-lg flex items-center gap-2 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            <Archive className="w-4 h-4" />
-                            Arşivle
+                            <Save className="w-4 h-4" />
+                            {isSaving ? "Kaydediliyor..." : "Taslak Kaydet"}
                         </button>
-                    )}
-                    {!isNew && formData.status === "PUBLISHED" && (
                         <button
-                            onClick={() => {
-                                if (formData.homepageHeroSlot !== null) {
-                                    setConfirmAction("homepageHeroReplacementRequired");
-                                    return;
-                                }
-                                setConfirmAction("remove");
-                            }}
-                            className="btn btn-ghost btn-md text-red-600 hover:text-red-700 hover:bg-red-50"
+                            type="button"
+                            onClick={() => handleSubmit({ statusOverride: "PUBLISHED" })}
+                            disabled={isSaving || isUploading}
+                            className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold text-sm rounded-lg flex items-center gap-2 transition-colors shadow-md shadow-orange-500/20 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            <CircleOff className="w-4 h-4" />
-                            Yayından Kaldır
+                            <Send className="w-4 h-4" />
+                            {isSaving
+                                ? "Yayınlanıyor..."
+                                : isNew
+                                    ? "Tamamla & Yayınla"
+                                    : "Güncelle & Yayınla"}
                         </button>
-                    )}
-                    {!isNew && (
-                        <button
-                            onClick={() => setConfirmAction("delete")}
-                            className="btn btn-ghost btn-md text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                            İlanı Sil
-                        </button>
-                    )}
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => handleSubmit({ statusOverride: "DRAFT" })}
-                        disabled={isSaving || isUploading}
-                        className="btn btn-outline btn-md"
-                    >
-                        <Save className="w-4 h-4" />
-                        {isSaving ? "Kaydediliyor..." : "Taslak Kaydet"}
-                    </button>
-                    <button
-                        onClick={() => handleSubmit({ statusOverride: "PUBLISHED" })}
-                        disabled={isSaving || isUploading}
-                        className="btn btn-primary btn-md"
-                    >
-                        <Send className="w-4 h-4" />
-                        {isSaving ? "Yayınlanıyor..." : "Yayınla"}
-                    </button>
+                        {formData.status === "PUBLISHED" && formData.slug && (
+                            <Link
+                                href={`/tr/ilan/${formData.slug}`}
+                                target="_blank"
+                                className="px-6 py-2.5 flex items-center gap-2 bg-green-50 text-green-700 border border-green-200 text-sm font-semibold rounded-lg hover:bg-green-100 hover:border-green-300 hover:text-green-800 transition-all shadow-sm group"
+                                title="İlanı Gör"
+                            >
+                                <span>İlanı Gör</span>
+                                <ExternalLink className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                            </Link>
+                        )}
+                    </div>
                 </div>
             </div>
 

@@ -1,3 +1,5 @@
+import { getProjectCategoryLabel } from "@/lib/utils";
+
 export type PublicProjectTranslation = {
     locale?: string;
     title?: string | null;
@@ -34,6 +36,7 @@ export type PublicProjectUnit = {
 
 export type PublicProjectMenuSource = {
     slug?: string | null;
+    projectType?: string | null;
     city?: string | null;
     district?: string | null;
     updatedAt?: string | null;
@@ -55,6 +58,7 @@ export type NavbarProjectMenuItem = {
     imageVersion: string;
     description?: string;
     location?: string;
+    projectCategory?: string | null;
     promoText?: string | null;
     paymentDetails?: string | null;
     features?: NavbarProjectFeature[];
@@ -119,12 +123,7 @@ export function mapPublicProjectsToMenuItems(
             imageMedia?.url?.trim() ||
             slug;
 
-        const promoUnit = (project.projectUnits || []).find((unit) => unit.detailType === "PROMO");
-        const promoText = promoUnit
-            ? promoUnit.translations?.find((t) => t.locale === locale)?.title ||
-            promoUnit.translations?.find((t) => t.locale === "tr")?.title ||
-            promoUnit.rooms
-            : null;
+        const projectCategory = getProjectCategoryLabel(project.projectType, locale) || null;
 
         const paymentUnit = (project.projectUnits || []).find((unit) => unit.detailType === "PAYMENT");
         const paymentDetails = paymentUnit
@@ -151,7 +150,7 @@ export function mapPublicProjectsToMenuItems(
             imageVersion,
             description,
             location,
-            promoText,
+            projectCategory,
             paymentDetails,
             features,
         } as NavbarProjectMenuItem;
