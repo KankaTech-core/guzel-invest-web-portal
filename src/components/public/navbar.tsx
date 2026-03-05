@@ -16,7 +16,12 @@ import {
     MapPin,
 } from "lucide-react";
 import { useCallback, useEffect, useState, useRef } from "react";
-import { mapPublicProjectsToMenuItems, type NavbarProjectMenuItem, type PublicProjectMenuSource } from "@/lib/navbar-project-menu";
+import {
+    getNavbarProjectMenuColumnCount,
+    mapPublicProjectsToMenuItems,
+    type NavbarProjectMenuItem,
+    type PublicProjectMenuSource,
+} from "@/lib/navbar-project-menu";
 import { SOCIAL_LINK_ITEMS, type SocialLinkKey } from "@/lib/social-links";
 import { cn, getMediaUrl } from "@/lib/utils";
 import { CurrencyToggle } from "@/components/public/currency-toggle";
@@ -270,6 +275,21 @@ export function Navbar({ locale }: { locale: string }) {
                                 pathname === `/${locale}/portfoy` &&
                                 searchParams.get("onlyProjects") === "true";
                             const isMenuVisible = isProjectsMenuOpen;
+                            const menuColumnCount = getNavbarProjectMenuColumnCount(
+                                isProjectsMenuLoading ? 1 : projectMenuItems.length
+                            );
+                            const menuWidthClass =
+                                menuColumnCount === 1
+                                    ? "max-w-[560px]"
+                                    : menuColumnCount === 2
+                                      ? "max-w-[1120px]"
+                                      : "max-w-[1120px] 2xl:max-w-[1700px]";
+                            const menuGridClass =
+                                menuColumnCount === 1
+                                    ? "lg:grid-cols-1"
+                                    : menuColumnCount === 2
+                                      ? "lg:grid-cols-2"
+                                      : "lg:grid-cols-2 2xl:grid-cols-3";
 
                             return (
                                 <div
@@ -305,7 +325,8 @@ export function Navbar({ locale }: { locale: string }) {
 
                                     <div
                                         className={cn(
-                                            "fixed top-[64px] left-4 right-4 z-50 mx-auto mt-2 max-w-[min(96vw,1700px)] transition-all duration-200",
+                                            "fixed top-[64px] left-1/2 z-50 mt-2 w-[calc(100vw-1rem)] -translate-x-1/2 transition-all duration-200",
+                                            menuWidthClass,
                                             isMenuVisible
                                                 ? "pointer-events-auto visible opacity-100"
                                                 : "pointer-events-none invisible opacity-0"
@@ -322,7 +343,7 @@ export function Navbar({ locale }: { locale: string }) {
                                     >
                                         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl shadow-gray-200/60 sm:p-5">
                                             <div className="max-h-[min(70vh,720px)] overflow-y-auto pr-1">
-                                                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+                                                <div className={cn("grid grid-cols-1 gap-4", menuGridClass)}>
                                                 {isProjectsMenuLoading ? (
                                                         <div className="col-span-full flex items-center justify-center gap-2 rounded-lg py-12 text-sm text-gray-500">
                                                         <Loader2 className="h-5 w-5 animate-spin" />
@@ -330,21 +351,7 @@ export function Navbar({ locale }: { locale: string }) {
                                                     </div>
                                                 ) : projectMenuItems.length > 0 ? (
                                                     projectMenuItems.map((project) => {
-                                                        const features = project.features || [];
-                                                        const topFeatures = features.slice(0, 2);
-                                                        const hasLongFeatureLabel = features.some(
-                                                            (feature) => feature.label.trim().length > 14
-                                                        );
-                                                        const combinedFeatureLength = topFeatures.reduce(
-                                                            (total, feature) => total + feature.label.trim().length,
-                                                            0
-                                                        );
-                                                        const shouldShowSingleFeature =
-                                                            hasLongFeatureLabel || combinedFeatureLength > 22;
-                                                        const visibleFeatures = topFeatures.slice(
-                                                            0,
-                                                            shouldShowSingleFeature ? 1 : 2
-                                                        );
+                                                        const visibleFeatures = (project.features || []).slice(0, 2);
 
                                                         return (
                                                         <Link
@@ -354,7 +361,7 @@ export function Navbar({ locale }: { locale: string }) {
                                                             className="group/item flex h-full flex-row gap-5 rounded-2xl border border-transparent p-4 transition-all hover:border-orange-100/60 hover:bg-orange-50/40"
                                                         >
                                                             {/* Image */}
-                                                            <div className="relative aspect-[16/10] w-52 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-100 shadow-sm">
+                                                            <div className="relative aspect-[16/10] w-48 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-100 shadow-sm">
                                                                 <Image
                                                                     src={appendVersionParam(
                                                                         getMediaUrl(project.image),

@@ -44,3 +44,11 @@ next-env.d.ts
 
 # deployment logs
 deployment-*.txt
+
+# local cleanup artifacts
+build_output.log
+lint_output.txt
+lint_errors.txt
+error.txt
+temp/
+temp_stitch.html

@@ -40,6 +40,7 @@ import {
     isAbortFetchError,
     parseApiErrorMessage,
 } from "@/lib/fetch-error";
+import { resolvePortfolioResultCount } from "@/lib/portfolio-result-count";
 import { resolvePortfolioResultsLayout } from "@/lib/portfolio-results-layout";
 import { shouldShowLastUnitsRibbon } from "@/lib/last-units-ribbon";
 import {
@@ -810,6 +811,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(false);
     const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+    const [totalCount, setTotalCount] = useState<number | undefined>(undefined);
     const observerTarget = useRef<HTMLDivElement>(null);
 
     const abortRef = useRef<AbortController | null>(null);
@@ -1310,6 +1312,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 }
 
                 if (data.totalCount !== undefined) {
+                    setTotalCount(data.totalCount);
                     setHasMore((mode === "background" || mode === "initial" ? nextListings.length : snapshotRef.current.split("|").length + nextListings.length) < data.totalCount);
                 }
 
@@ -2436,7 +2439,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 <div>
                     Toplam sonuç:{" "}
                     <span className="font-semibold text-gray-900" style={monoStyle}>
-                        {listings.length}
+                        {resolvePortfolioResultCount({
+                            totalCount,
+                            loadedCount: listings.length,
+                        })}
                     </span>{" "}
                     ilan
                 </div>

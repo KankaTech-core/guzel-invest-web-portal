@@ -19,7 +19,9 @@ export type PublicProjectFeatureTranslation = {
 };
 
 export type PublicProjectFeature = {
+    category?: string | null;
     icon: string | null;
+    order?: number | null;
     translations: PublicProjectFeatureTranslation[];
 };
 
@@ -63,6 +65,12 @@ export type NavbarProjectMenuItem = {
     paymentDetails?: string | null;
     features?: NavbarProjectFeature[];
 };
+
+export function getNavbarProjectMenuColumnCount(projectCount: number): 1 | 2 | 3 {
+    if (projectCount <= 1) return 1;
+    if (projectCount === 2) return 2;
+    return 3;
+}
 
 export function mapPublicProjectsToMenuItems(
     projects: PublicProjectMenuSource[],
@@ -133,6 +141,8 @@ export function mapPublicProjectsToMenuItems(
             : null;
 
         const features = (project.projectFeatures || [])
+            .filter((feature) => feature.category === "GENERAL")
+            .sort((left, right) => (left.order ?? Number.MAX_SAFE_INTEGER) - (right.order ?? Number.MAX_SAFE_INTEGER))
             .map((feature) => {
                 const title =
                     feature.translations?.find((t) => t.locale === locale)?.title ||
@@ -141,7 +151,7 @@ export function mapPublicProjectsToMenuItems(
                 return title ? { icon: feature.icon || "Building2", label: title } : null;
             })
             .filter((item): item is NavbarProjectFeature => item !== null)
-            .slice(0, 4);
+            .slice(0, 2);
 
         return {
             title,

@@ -772,7 +772,23 @@ export function PortfolioMapView({ locale }: { locale: string }) {
     const activeListing =
         visibleListings.find((listing) => listing.id === activeId) ?? null;
     const galleryMedia = activeListing ? activeListing.media.slice(0, 4) : [];
-    const maxImageIndex = Math.max(0, galleryMedia.length - 1);
+    const listingDetailHref = activeListing
+        ? activeListing.isProject
+            ? `/${locale}/proje/${activeListing.slug}`
+            : `/${locale}/ilan/${activeListing.slug}`
+        : "#";
+    const gallerySlides =
+        galleryMedia.length > 0
+            ? [
+                ...galleryMedia.map((media, mediaIndex) => ({
+                    kind: "media" as const,
+                    media,
+                    mediaIndex,
+                })),
+                { kind: "cta" as const },
+            ]
+            : [];
+    const maxImageIndex = Math.max(0, gallerySlides.length - 1);
     const activeImageIndex = activeListing
         ? Math.min(activeImageIndexes[activeListing.id] ?? 0, maxImageIndex)
         : 0;
@@ -1107,8 +1123,8 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                 </div>
 
                 {activeListing && (
-                    <div className="absolute bottom-4 left-1/2 z-[1250] w-[92%] max-w-[980px] -translate-x-1/2">
-                        <article className="group relative overflow-hidden rounded-xl border border-gray-200 bg-white transition-all hover:border-orange-200 hover:shadow-lg">
+                    <div className="absolute bottom-4 left-1/2 z-[1250] w-[92%] max-h-[calc(100dvh-2rem)] max-w-[980px] -translate-x-1/2 md:max-h-none">
+                        <article className="group relative max-h-full overflow-y-auto overscroll-contain [scrollbar-gutter:stable] rounded-xl border border-gray-200 bg-white transition-all hover:border-orange-200 hover:shadow-lg md:overflow-hidden [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-slate-100 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-slate-300">
                             <button
                                 type="button"
                                 onClick={() => setActiveId(null)}
@@ -1126,7 +1142,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                             className="absolute inset-0 z-[5] md:hidden"
                                         />
                                     ) : null}
-                                    {galleryMedia.length > 0 ? (
+                                    {gallerySlides.length > 0 ? (
                                         <div
                                             className="absolute inset-0 overflow-hidden"
                                             style={{ touchAction: "pan-y" }}
@@ -1136,7 +1152,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                             onTouchEnd={(event) =>
                                                 handleImageTouchEnd(
                                                     activeListing.id,
-                                                    galleryMedia.length,
+                                                    gallerySlides.length,
                                                     event
                                                 )
                                             }
@@ -1150,23 +1166,46 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                     transform: `translateX(-${activeImageIndex * 100}%)`,
                                                 }}
                                             >
-                                                {galleryMedia.map((media, mediaIndex) => (
-                                                    <div
-                                                        key={
-                                                            media.id ||
-                                                            `${activeListing.id}-media-${mediaIndex}`
-                                                        }
-                                                        className="relative h-full w-full shrink-0"
-                                                    >
-                                                        <Image
-                                                            src={getMediaUrl(media.url)}
-                                                            alt=""
-                                                            fill
-                                                            className="object-cover"
-                                                            sizes="(max-width: 768px) 100vw, 300px"
-                                                        />
-                                                    </div>
-                                                ))}
+                                                {gallerySlides.map((slide, slideIndex) => {
+                                                    if (slide.kind === "cta") {
+                                                        return (
+                                                            <div
+                                                                key={`${activeListing.id}-gallery-cta`}
+                                                                className="relative h-full w-full shrink-0"
+                                                            >
+                                                                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" />
+                                                                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.35),transparent_58%)]" />
+                                                                <div className="relative z-10 flex h-full items-center justify-center">
+                                                                    <Link
+                                                                        href={listingDetailHref}
+                                                                        className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
+                                                                    >
+                                                                        Hepsini Gör
+                                                                        <ChevronRight className="h-4 w-4" />
+                                                                    </Link>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <div
+                                                            key={
+                                                                slide.media.id ||
+                                                                `${activeListing.id}-media-${slide.mediaIndex}`
+                                                            }
+                                                            className="relative h-full w-full shrink-0"
+                                                        >
+                                                            <Image
+                                                                src={getMediaUrl(slide.media.url)}
+                                                                alt={`${getListingTitle(activeListing, locale)} - ${slideIndex + 1}`}
+                                                                fill
+                                                                className="object-cover"
+                                                                sizes="(max-width: 768px) 100vw, 300px"
+                                                            />
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     ) : (
@@ -1175,7 +1214,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                         </div>
                                     )}
 
-                                    {galleryMedia.length > 1 && (
+                                    {gallerySlides.length > 1 && (
                                         <div className="absolute bottom-3 right-3 z-10 flex items-center overflow-hidden rounded-lg border border-slate-200/90 bg-white/95 shadow-[0_4px_14px_rgba(15,23,42,0.18)] backdrop-blur-[2px]">
                                             <button
                                                 type="button"
@@ -1184,7 +1223,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                     event.stopPropagation();
                                                     updateImageIndex(
                                                         activeListing.id,
-                                                        galleryMedia.length,
+                                                        gallerySlides.length,
                                                         "prev"
                                                     );
                                                 }}
@@ -1200,7 +1239,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                     event.stopPropagation();
                                                     updateImageIndex(
                                                         activeListing.id,
-                                                        galleryMedia.length,
+                                                        gallerySlides.length,
                                                         "next"
                                                     );
                                                 }}
@@ -1247,7 +1286,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                 {buildLocationLabel(activeListing) || "Konum belirtilmedi"}
                                             </p>
 
-                                            <p className="text-sm text-gray-500">
+                                            <p className="overflow-hidden text-sm text-gray-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] md:[display:block] md:overflow-visible md:[-webkit-line-clamp:unset]">
                                                 {truncateText(
                                                     getListingDescription(activeListing, locale),
                                                     190
@@ -1315,7 +1354,10 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                     {getProjectGeneralFeatures(activeListing, locale).map((feature, featureIndex) => (
                                                         <div
                                                             key={`${activeListing.id}-project-feature-side-${featureIndex}-${feature.label}`}
-                                                            className="flex flex-col items-center justify-start gap-1 rounded-lg border border-slate-100 bg-white px-2 py-2 text-center"
+                                                            className={cn(
+                                                                "flex flex-col items-center justify-start gap-1 rounded-lg border border-slate-100 bg-white px-2 py-2 text-center",
+                                                                featureIndex > 1 && "hidden md:flex"
+                                                            )}
                                                         >
                                                             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-slate-50 text-slate-600">
                                                                 <ProjectIcon
