@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { ScrollRevealSection } from "@/components/ui/scroll-reveal-section";
 
 export function ProjectsHeroSection() {
@@ -10,10 +11,13 @@ export function ProjectsHeroSection() {
         >
             {/* Background Image */}
             <div className="absolute inset-0 z-0">
-                <img
+                <Image
                     src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9GAcpIIQUszVUgzVGbHSCxuCnsb7ysV4VezsUGBYNUms34ZIn8fvxYFfiIp7Er7qQzMHjWT1YwEkRlZldIsxHElthq3HgFZTVJ16LN6nrC4-bluQJlTu41JKSIaFxV4fJ2NiBGBxDE0iL1va4Qe8EwdnOTh0Hr75q3AOPv9ImDrW72-zxL6k6bO6s-eCCbKrKb--bRNZY77XwBv2kk3l1l9t_IcPHMNK5YrAodYiOKDSmgguITMjAA1admw3hkp3pKZKQq5vcDS0a"
                     alt="Projelerimiz için modern mimari arka plan görseli"
-                    className="h-full w-full object-cover object-center opacity-80"
+                    fill
+                    priority
+                    sizes="100vw"
+                    className="object-cover object-center opacity-80"
                 />
             </div>
 

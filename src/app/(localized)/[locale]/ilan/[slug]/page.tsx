@@ -23,8 +23,6 @@ import {
     MapPin,
     Square,
     Layers,
-    Scaling,
-    Trees,
 } from "lucide-react";
 import {
     ListingDetailGallery,
@@ -63,6 +61,7 @@ export default async function ListingDetailPage({
     params: Promise<{ locale: string; slug: string }>;
 }) {
     const { locale, slug } = await params;
+    const localeFallbacks = Array.from(new Set(["tr", locale]));
 
     const listing = await prisma.listing.findFirst({
         where: {
@@ -75,7 +74,7 @@ export default async function ListingDetailPage({
             translations: {
                 where: {
                     locale: {
-                        in: Array.from(new Set(["tr", locale])),
+                        in: localeFallbacks,
                     },
                 },
             },
@@ -114,7 +113,6 @@ export default async function ListingDetailPage({
         (typeof listing.bedrooms === "number" ? `${listing.bedrooms}+0` : "-");
     const bathroomValue =
         typeof listing.bathrooms === "number" ? `${listing.bathrooms}` : "-";
-    const formattedPrice = formatPrice(priceValue, listing.currency);
     const saleTypeLabel = getSaleTypeLabel(listing.saleType, "tr");
     const propertyTypeLabel = getPropertyTypeLabel(listing.type, "tr");
     const locationLabel = [listing.neighborhood, listing.district, listing.city]
@@ -305,20 +303,44 @@ export default async function ListingDetailPage({
             },
             type: listing.type,
         },
-        include: {
+        select: {
+            id: true,
+            slug: true,
+            neighborhood: true,
+            district: true,
+            city: true,
+            rooms: true,
+            bedrooms: true,
+            saleType: true,
+            type: true,
+            area: true,
+            price: true,
+            currency: true,
+            createdAt: true,
             translations: {
                 where: {
                     locale: {
-                        in: Array.from(new Set(["tr", locale])),
+                        in: localeFallbacks,
                     },
+                },
+                select: {
+                    locale: true,
+                    title: true,
                 },
             },
             media: {
+                where: {
+                    type: "IMAGE",
+                },
                 orderBy: [{ isCover: "desc" }, { order: "asc" }],
+                take: 1,
+                select: {
+                    url: true,
+                },
             },
         },
         orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
-        take: 36,
+        take: 24,
     });
 
     const similarListings = similarCandidates
@@ -380,9 +402,7 @@ export default async function ListingDetailPage({
             ]
                 .filter(Boolean)
                 .join(", ");
-            const candidateImage = candidate.media.find(
-                (item) => item.type === "IMAGE"
-            );
+            const candidateImage = candidate.media[0];
             const candidatePriceValue =
                 typeof candidate.price === "object" &&
                     candidate.price !== null &&

@@ -4,11 +4,19 @@ import { NextRequest, NextResponse } from "next/server";
 
 const intlMiddleware = createMiddleware(routing);
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
+
+    const isStaticAssetRequest =
+        pathname.startsWith("/_next") ||
+        pathname.startsWith("/_vercel") ||
+        pathname.includes("/_next/") ||
+        pathname.includes("/_vercel/") ||
+        /\.[^/]+$/.test(pathname);
 
     // Skip middleware for admin routes and design variant routes (no i18n)
     if (
+        isStaticAssetRequest ||
         pathname.startsWith("/admin") ||
         pathname.startsWith("/api") ||
         /^\/(?:p|s)?(?:10|[1-9])(\/|$)/.test(pathname)

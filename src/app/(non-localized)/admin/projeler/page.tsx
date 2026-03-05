@@ -242,10 +242,21 @@ export default async function AdminProjectsPage({ searchParams }: AdminProjectsP
         await Promise.all([
             prisma.listing.findMany({
                 where,
-                include: {
+                select: {
+                    id: true,
+                    sku: true,
+                    district: true,
+                    city: true,
+                    type: true,
+                    projectType: true,
+                    status: true,
+                    updatedAt: true,
                     translations: {
                         where: { locale: "tr" },
                         take: 1,
+                        select: {
+                            title: true,
+                        },
                     },
                 },
                 orderBy,

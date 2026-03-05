@@ -1,6 +1,12 @@
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import dynamic from "next/dynamic";
 import { Suspense } from "react";
-import { PortfolioClient } from "@/components/public/portfolio-client";
+
+const PortfolioClient = dynamic(() =>
+    import("@/components/public/portfolio-client").then(
+        (module) => module.PortfolioClient
+    )
+);
 
 const ibmPlexSans = IBM_Plex_Sans({
     subsets: ["latin"],

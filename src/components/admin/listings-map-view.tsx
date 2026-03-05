@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useSidebar } from "@/lib/context/sidebar-context";
@@ -70,11 +71,9 @@ const LeafletMap = dynamic(() => import("./listings-leaflet-map"), {
 
 export default function ListingsMapView({
     listings,
-    open,
     closeHref,
 }: {
     listings: MapListingInput[];
-    open: boolean;
     closeHref: string;
 }) {
     const { isCollapsed } = useSidebar();
@@ -105,46 +104,24 @@ export default function ListingsMapView({
     );
 
     const [activeId, setActiveId] = useState<string | null>(null);
-    const [mapKey, setMapKey] = useState(0);
-    const prevOpenRef = useRef(open);
 
     useEffect(() => {
-        if (open && !prevOpenRef.current) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setMapKey((prev) => prev + 1);
-        }
-        prevOpenRef.current = open;
-    }, [open]);
-
-    useEffect(() => {
-        if (!open) return;
         const originalOverflow = document.body.style.overflow;
         document.body.style.overflow = "hidden";
         return () => {
             document.body.style.overflow = originalOverflow;
         };
-    }, [open]);
+    }, []);
 
     useEffect(() => {
-        if (open) return;
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setActiveId(null);
-    }, [open]);
-
-    useEffect(() => {
-        if (!open) return;
         if (!activeId) return;
         const exists = visibleListings.some((listing) => listing.id === activeId);
         // eslint-disable-next-line react-hooks/set-state-in-effect
         if (!exists) setActiveId(null);
-    }, [open, activeId, visibleListings]);
+    }, [activeId, visibleListings]);
 
     const activeListing =
         visibleListings.find((listing) => listing.id === activeId) ?? null;
-
-    if (!open) {
-        return null;
-    }
 
     return (
         <section
@@ -156,7 +133,6 @@ export default function ListingsMapView({
         >
             <div className="absolute inset-0 z-0">
                 <LeafletMap
-                    key={mapKey}
                     listings={mapListings}
                     activeId={activeId}
                     onSelect={setActiveId}
@@ -190,12 +166,14 @@ export default function ListingsMapView({
             {activeListing && (
                 <div className="absolute bottom-4 left-1/2 z-20 w-[92%] max-w-4xl -translate-x-1/2">
                     <div className="rounded-2xl border border-white/60 bg-white/95 backdrop-blur shadow-2xl p-4 flex flex-col lg:flex-row gap-4">
-                        <div className="w-full lg:w-56 h-36 rounded-xl overflow-hidden bg-gray-100">
+                        <div className="relative h-36 w-full overflow-hidden rounded-xl bg-gray-100 lg:w-56">
                             {activeListing.imageUrl ? (
-                                <img
+                                <Image
                                     src={activeListing.imageUrl}
                                     alt=""
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    sizes="(max-width: 1024px) 100vw, 224px"
+                                    className="h-full w-full object-cover"
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-gray-300">

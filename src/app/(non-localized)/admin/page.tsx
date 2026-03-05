@@ -20,9 +20,18 @@ export default async function AdminDashboard() {
         prisma.listing.findMany({
             take: 5,
             orderBy: { createdAt: "desc" },
-            include: {
+            select: {
+                id: true,
+                slug: true,
+                city: true,
+                district: true,
+                status: true,
                 translations: {
                     where: { locale: "tr" },
+                    take: 1,
+                    select: {
+                        title: true,
+                    },
                 },
             },
         }),

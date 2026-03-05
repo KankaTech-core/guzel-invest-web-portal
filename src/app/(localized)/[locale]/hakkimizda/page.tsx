@@ -13,6 +13,7 @@ import {
     ShieldCheck,
     Users2,
 } from "lucide-react";
+import Image from "next/image";
 import { ScrollRevealSection } from "@/components/ui/scroll-reveal-section";
 
 const stats = [
@@ -178,10 +179,13 @@ export default async function AboutPage({ params }: PageProps) {
     return (
         <main className="overflow-x-hidden bg-white pt-16 pb-20">
             <ScrollRevealSection as="section" className="relative isolate min-h-[430px] overflow-hidden bg-gray-900 sm:min-h-[520px]" threshold={0.05} rootMargin="0px">
-                <img
+                <Image
                     src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=2000&h=1200&fit=crop"
                     alt="Birlikte çalışan gayrimenkul ekibi"
-                    className="absolute inset-0 h-full w-full object-cover"
+                    fill
+                    priority
+                    sizes="100vw"
+                    className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-gray-900/25 via-gray-900/70 to-gray-900/80" />
 
@@ -230,11 +234,13 @@ export default async function AboutPage({ params }: PageProps) {
                 </div>
                 <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-8 lg:grid-cols-12">
                     <div className="reveal-scale lg:col-span-5">
-                        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
-                            <img
+                        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
+                            <Image
                                 src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=900&h=700&fit=crop"
                                 alt="Güzel Invest ofisi"
-                                className="aspect-[4/3] h-full w-full object-cover"
+                                fill
+                                sizes="(max-width: 1024px) 100vw, 42vw"
+                                className="object-cover"
                             />
                         </div>
                     </div>
@@ -381,11 +387,13 @@ export default async function AboutPage({ params }: PageProps) {
                                     </div>
 
                                     <div className={`lg:col-span-5 ${reversed ? "lg:order-1" : ""}`}>
-                                        <div className={`overflow-hidden rounded-2xl border ${service.dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}>
-                                            <img
+                                        <div className={`relative aspect-[4/3] overflow-hidden rounded-2xl border ${service.dark ? "border-gray-700 bg-gray-800" : "border-gray-200 bg-white"}`}>
+                                            <Image
                                                 src={service.image}
                                                 alt={service.title}
-                                                className="aspect-[4/3] h-full w-full object-cover"
+                                                fill
+                                                sizes="(max-width: 1024px) 100vw, 42vw"
+                                                className="object-cover"
                                             />
                                         </div>
                                     </div>
@@ -417,9 +425,12 @@ export default async function AboutPage({ params }: PageProps) {
                                 className="reveal group overflow-hidden rounded-xl border border-gray-100 bg-white transition-all duration-300 hover:border-orange-200 hover:shadow-xl hover:shadow-orange-500/5"
                             >
                                 <div className="overflow-hidden">
-                                    <img
+                                    <Image
                                         src={member.image}
                                         alt={member.name}
+                                        width={640}
+                                        height={480}
+                                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                                         className="aspect-[4/3] h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                     />
                                 </div>
@@ -456,11 +467,13 @@ export default async function AboutPage({ params }: PageProps) {
                             </article>
 
                             <div className={`reveal-scale lg:col-span-5 ${item.reverse ? "lg:order-1" : ""}`}>
-                                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
-                                    <img
+                                <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
+                                    <Image
                                         src={item.image}
                                         alt={item.title}
-                                        className="aspect-[4/3] h-full w-full object-cover"
+                                        fill
+                                        sizes="(max-width: 1024px) 100vw, 42vw"
+                                        className="object-cover"
                                     />
                                 </div>
                             </div>

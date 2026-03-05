@@ -351,7 +351,7 @@ export function ListingContactPanel({
                 ? createPortal(
                     <>
                         <div
-                            className={`fixed inset-x-4 z-[10020] transition-opacity xl:hidden ${isMobileOpen ? "pointer-events-none opacity-0" : "opacity-100"}`}
+                            className={`fixed inset-x-4 z-[9990] transition-opacity xl:hidden ${isMobileOpen ? "pointer-events-none opacity-0" : "opacity-100"}`}
                             style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
                         >
                             <button

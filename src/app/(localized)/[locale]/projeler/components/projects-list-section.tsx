@@ -1,5 +1,6 @@
-import { MoveRight, CheckCircle2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { ScrollRevealSection } from "@/components/ui/scroll-reveal-section";
 import { projectsData } from "../data";
 
@@ -7,16 +8,18 @@ export function ProjectsListSection({ locale }: { locale: string }) {
     return (
         <ScrollRevealSection className="bg-white py-24">
             <div className="mx-auto max-w-7xl px-4 space-y-32 sm:px-6">
-                {projectsData.map((project, index) => (
+                {projectsData.map((project) => (
                     <div
                         key={project.id}
                         className={`flex flex-col items-center gap-12 ${project.reverse ? "md:flex-row-reverse" : "md:flex-row"}`}
                     >
                         <div className="reveal-scale group relative aspect-[4/3] w-full overflow-hidden rounded-2xl shadow-sm md:w-1/2">
-                            <img
+                            <Image
                                 src={project.image}
                                 alt={project.title}
-                                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                fill
+                                sizes="(max-width: 768px) 100vw, 50vw"
+                                className="object-cover transition-transform duration-700 group-hover:scale-105"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-gray-900/40 to-transparent" />
                         </div>

@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { LastUnitsCornerRibbon } from "@/components/public/last-units-corner-ribbon";
-import { HomepagePopupForm } from "@/components/public/homepage-popup-form";
-import { StyledVideoPlayer } from "@/components/public/styled-video-player";
 import { shouldShowLastUnitsRibbon } from "@/lib/last-units-ribbon";
 import {
     getMediaUrl,
@@ -261,10 +261,12 @@ function TestimonialMedia({
 }) {
     if (!video) {
         return (
-            <img
+            <Image
                 src={image}
                 alt={name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                fill
+                sizes="(max-width: 640px) 85vw, 340px"
+                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
         );
     }
@@ -276,6 +278,7 @@ function TestimonialMedia({
                 src={embedUrl}
                 title={`${name} referans videosu`}
                 className="h-full w-full border-0"
+                loading="lazy"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
             />
@@ -383,6 +386,16 @@ const PROJECT_FALLBACK: HomepageProject = {
 };
 
 const HERO_VIDEO_FALLBACK = resolveHomepageHeroVideo(null);
+const HomepagePopupForm = dynamic(() =>
+    import("@/components/public/homepage-popup-form").then(
+        (module) => module.HomepagePopupForm
+    )
+);
+const StyledVideoPlayer = dynamic(() =>
+    import("@/components/public/styled-video-player").then(
+        (module) => module.StyledVideoPlayer
+    )
+);
 
 /* ─── page ─── */
 export default function HomePage() {
@@ -1164,9 +1177,12 @@ export default function HomePage() {
                                                                         title={listing.title}
                                                                     />
                                                                 ) : null}
-                                                                <img
+                                                                <Image
                                                                     src={heroImageUrl}
                                                                     alt={listing.title || "Featured Listing"}
+                                                                    fill
+                                                                    sizes="100vw"
+                                                                    priority={index === 0}
                                                                     className="h-full w-full object-cover"
                                                                 />
                                                                 <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/20 to-transparent p-5">
@@ -1255,9 +1271,12 @@ export default function HomePage() {
                                                                     title={project.title}
                                                                 />
                                                             ) : null}
-                                                            <img
+                                                            <Image
                                                                 src={projectImageUrl}
                                                                 alt={project.title || "Featured Project"}
+                                                                fill
+                                                                sizes="100vw"
+                                                                priority={index === 0}
                                                                 className="h-full w-full object-cover"
                                                             />
                                                             {shouldShowLastUnitsRibbon({
@@ -1453,10 +1472,13 @@ export default function HomePage() {
                                                         title={project.title}
                                                     />
                                                 ) : null}
-                                                <img
+                                                <Image
                                                     src={projectImageUrl}
                                                     alt={project.title || "Featured Project"}
-                                                    className="w-full h-full object-cover"
+                                                    fill
+                                                    sizes="(max-width: 1280px) 100vw, 66vw"
+                                                    priority={index === 0}
+                                                    className="h-full w-full object-cover"
                                                 />
                                                 {shouldShowLastUnitsRibbon({
                                                     isProject: true,
@@ -1578,10 +1600,13 @@ export default function HomePage() {
                                                             title={listing.title}
                                                         />
                                                     ) : null}
-                                                    <img
+                                                    <Image
                                                         src={heroImageUrl}
                                                         alt={listing.title || "Featured Listing"}
-                                                        className="w-full h-full object-cover"
+                                                        fill
+                                                        sizes="(max-width: 1280px) 100vw, 33vw"
+                                                        priority={index === 0}
+                                                        className="h-full w-full object-cover"
                                                     />
                                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
                                                 </div>
@@ -1968,11 +1993,13 @@ export default function HomePage() {
                                 href={`/${locale}/portfoy?type=${cat.type}`}
                                 className="reveal group bg-white rounded-xl overflow-hidden border border-gray-100 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300"
                             >
-                                <div className="aspect-[16/10] overflow-hidden">
-                                    <img
+                                <div className="relative aspect-[16/10] overflow-hidden">
+                                    <Image
                                         src={cat.image}
                                         alt={cat.label}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                        fill
+                                        sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 320px"
+                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                                     />
                                 </div>
                                 <div className="p-4">
@@ -2036,11 +2063,13 @@ export default function HomePage() {
                                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 rounded-l-xl z-10" />
 
                                     {/* Featured image */}
-                                    <div className="h-48 overflow-hidden">
-                                        <img
+                                    <div className="relative h-48 overflow-hidden">
+                                        <Image
                                             src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=700&h=400&fit=crop"
                                             alt="Satılık & Kiralık Gayrimenkul"
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                            fill
+                                            sizes="(max-width: 1280px) 100vw, 40vw"
+                                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                         />
                                     </div>
 
@@ -2192,11 +2221,13 @@ export default function HomePage() {
                         </div>
 
                         <div className="reveal relative">
-                            <div className="aspect-[4/3] rounded-2xl overflow-hidden">
-                                <img
+                            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
+                                <Image
                                     src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=900&h=675&fit=crop"
                                     alt="Alanya Panorama"
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    sizes="(max-width: 1280px) 100vw, 50vw"
+                                    className="h-full w-full object-cover"
                                 />
                             </div>
 
@@ -2278,7 +2309,7 @@ export default function HomePage() {
                                 className="group flex-shrink-0 w-[340px] snap-start rounded-xl border border-gray-100 overflow-hidden hover:border-orange-200 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 bg-white flex flex-col"
                             >
                                 {/* Photo */}
-                                <div className="h-56 overflow-hidden">
+                                <div className="relative h-56 overflow-hidden">
                                     <TestimonialMedia
                                         image={item.image}
                                         video={item.video}
@@ -2435,11 +2466,13 @@ export default function HomePage() {
                                 className="reveal group rounded-xl border border-gray-100 overflow-hidden hover:border-orange-200 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 bg-white"
                             >
                                 {/* Image */}
-                                <div className="h-48 overflow-hidden">
-                                    <img
+                                <div className="relative h-48 overflow-hidden">
+                                    <Image
                                         src={article.image}
                                         alt={article.title}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        fill
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                     />
                                 </div>
 

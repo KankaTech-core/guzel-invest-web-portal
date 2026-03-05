@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Download, Images, Phone } from "lucide-react";
 import { S1SectionVisibility } from "../section-visibility";
 import { S1RibbonItem, S1SummaryData } from "../types";
@@ -65,13 +66,13 @@ export const ProjectInfo = ({
                     <div className="mx-auto max-w-7xl px-4">
                         <div className="flex flex-col items-center gap-12 rounded-[24px] border border-gray-100 bg-white p-8 shadow-[0_1px_3px_rgba(0,0,0,0.05)] lg:flex-row">
                             {summary.logoUrl ? (
-                                <div className="flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-50">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
+                                <div className="relative flex h-40 w-40 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gray-50">
+                                    <Image
                                         src={summary.logoUrl}
                                         alt={`${summary.title} logosu`}
-                                        className="h-full w-full object-contain"
-                                        loading="lazy"
+                                        fill
+                                        sizes="160px"
+                                        className="object-contain"
                                     />
                                 </div>
                             ) : null}

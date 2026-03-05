@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import Image from "next/image";
 import { getMediaUrl, cn, getPropertyTypeLabel, formatPrice } from "@/lib/utils";
 import { ChevronDown, Plus, Star } from "lucide-react";
 import { ListingRowActions } from "@/components/admin/listing-row-actions";
@@ -167,13 +168,35 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
         await Promise.all([
             prisma.listing.findMany({
                 where,
-                include: {
+                select: {
+                    id: true,
+                    slug: true,
+                    sku: true,
+                    type: true,
+                    price: true,
+                    currency: true,
+                    status: true,
+                    createdAt: true,
+                    city: true,
+                    district: true,
+                    latitude: true,
+                    longitude: true,
+                    homepageHeroSlot: true,
                     translations: {
                         where: { locale: "tr" },
+                        take: 1,
+                        select: {
+                            title: true,
+                            description: true,
+                        },
                     },
                     media: {
+                        where: { type: "IMAGE" },
                         take: 1,
-                        orderBy: { order: "asc" },
+                        orderBy: [{ isCover: "desc" }, { order: "asc" }],
+                        select: {
+                            url: true,
+                        },
                     },
                 },
                 orderBy,
@@ -224,6 +247,22 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
     const homepageHeroListingsBySlot = new Map(
         homepageHeroListings.map((listing) => [listing.homepageHeroSlot, listing])
     );
+    const mapListings = isMapOpen
+        ? listings.map((listing) => ({
+              id: listing.id,
+              slug: listing.slug,
+              title: listing.translations[0]?.title || "İsimsiz İlan",
+              description: listing.translations[0]?.description || "",
+              city: listing.city,
+              district: listing.district,
+              price: listing.price.toString(),
+              currency: listing.currency,
+              status: listing.status as ListingStatus,
+              imageUrl: listing.media[0] ? getMediaUrl(listing.media[0].url) : null,
+              latitude: listing.latitude,
+              longitude: listing.longitude,
+          }))
+        : [];
 
     return (
         <div>
@@ -367,9 +406,11 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                                         <div className="flex items-center gap-3">
                                             <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
                                                 {listing.media[0] ? (
-                                                    <img
+                                                    <Image
                                                         src={getMediaUrl(listing.media[0].url)}
                                                         alt=""
+                                                        width={48}
+                                                        height={48}
                                                         className="w-full h-full object-cover"
                                                     />
                                                 ) : (
@@ -448,26 +489,12 @@ export default async function AdminListingsPage({ searchParams }: AdminListingsP
                 )}
             </div>
 
-            <ListingsMapView
-                listings={listings.map((listing) => ({
-                    id: listing.id,
-                    slug: listing.slug,
-                    title: listing.translations[0]?.title || "İsimsiz İlan",
-                    description: listing.translations[0]?.description || "",
-                    city: listing.city,
-                    district: listing.district,
-                    price: listing.price.toString(),
-                    currency: listing.currency,
-                    status: listing.status as ListingStatus,
-                    imageUrl: listing.media[0]
-                        ? getMediaUrl(listing.media[0].url)
-                        : null,
-                    latitude: listing.latitude,
-                    longitude: listing.longitude,
-                }))}
-                open={isMapOpen}
-                closeHref={buildUrl({ view: undefined })}
-            />
+            {isMapOpen ? (
+                <ListingsMapView
+                    listings={mapListings}
+                    closeHref={buildUrl({ view: undefined })}
+                />
+            ) : null}
         </div>
     );
 }

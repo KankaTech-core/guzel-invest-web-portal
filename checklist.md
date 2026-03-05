@@ -125,3 +125,77 @@ Bu listeyi her sayfa için ayrı uygulayarak hem hataları azaltabilir hem de pe
 - Sonuç:
 ```
 
+## 7) Uygulanan Sayfa Optimizasyonları (2026-03-05)
+
+### Sayfa: `/{locale}` (Ana Sayfa)
+- Dosya: `src/app/(localized)/[locale]/page.tsx`
+- Yapılanlar:
+  - [x] Bundle: `HomepagePopupForm` ve `StyledVideoPlayer` dynamic import ile ayrıldı.
+  - [x] Görsel/font: Hero, kategori, servis, highlight, blog ve testimonial görselleri `next/image` ile optimize edildi.
+  - [x] Görsel/font: Testimonial embed iframe’lerine `loading="lazy"` eklendi.
+- Not: Baseline/after metrik ölçümü bekliyor.
+
+### Sayfa: `/{locale}/proje/[slug]` (Proje Detay)
+- Dosya: `src/app/(localized)/[locale]/proje/[slug]/page.tsx`
+- Yapılanlar:
+  - [x] Bundle: `Visuals`, `MapAndCTA`, `ProjectGalleryHub` dynamic import ile ayrıldı.
+  - [x] Waterfall/Render: Bu bloklar `Suspense` sınırları içinde parçalandı.
+- Not: Baseline/after metrik ölçümü bekliyor.
+
+### Sayfa: `/{locale}/portfoy` (Portföy)
+- Dosya: `src/app/(localized)/[locale]/portfoy/page.tsx`
+- Yapılanlar:
+  - [x] Bundle: `PortfolioClient` dynamic import ile route-level yük ayrıştırması yapıldı.
+- Not: Baseline/after metrik ölçümü bekliyor.
+
+### Sayfa: `/{locale}/ilan/[slug]` (İlan Detay)
+- Dosya: `src/app/(localized)/[locale]/ilan/[slug]/page.tsx`
+- Yapılanlar:
+  - [x] Server cache/serialization: Benzer ilan sorgusunda `include` yerine dar `select` kullanıldı.
+  - [x] Server cache/serialization: Görsel seçiminde yalnızca `IMAGE` + `take: 1` alındı.
+  - [x] Waterfall/Query cost: Benzer aday sorgusu `take: 36` -> `take: 24` düşürüldü.
+- Not: Baseline/after metrik ölçümü bekliyor.
+
+### Sayfa: `/admin` (Dashboard)
+- Dosya: `src/app/(non-localized)/admin/page.tsx`
+- Yapılanlar:
+  - [x] Server cache/serialization: Son ilanlar sorgusu dar `select` ile optimize edildi (`title` dışında translation alanları kaldırıldı).
+- Not: Baseline/after metrik ölçümü bekliyor.
+
+### Sayfa: `/admin/ilanlar` (İlan Yönetimi)
+- Dosya: `src/app/(non-localized)/admin/ilanlar/page.tsx`
+- Yapılanlar:
+  - [x] Server cache/serialization: Liste sorgusu dar `select` + `media` için `IMAGE`/`take: 1`.
+  - [x] Render/Hydration: Harita payload’u yalnızca `view=map` iken oluşturuluyor.
+  - [x] Render/Hydration: `ListingsMapView` yalnızca map açıkken render ediliyor.
+- Not: Baseline/after metrik ölçümü bekliyor.
+
+### Sayfa: `/admin/projeler` (Proje Yönetimi)
+- Dosya: `src/app/(non-localized)/admin/projeler/page.tsx`
+- Yapılanlar:
+  - [x] Server cache/serialization: Proje listesi sorgusu dar `select` ile optimize edildi.
+- Not: Baseline/after metrik ölçümü bekliyor.
+
+## 8) İkinci Tur (Yeni Skill Uygulaması) - 2026-03-05
+
+### Kullanılan Skill Seti
+- [x] `vercel-react-best-practices`
+- [x] `next-best-practices`
+- [x] `vercel-composition-patterns`
+
+### Uygulanan Ek İyileştirmeler
+
+#### A) Next.js Dosya Konvansiyonu (next-best-practices)
+- [x] `middleware.ts` -> `proxy.ts` migration yapıldı.
+- [x] Exportlar Next.js 16 formatına taşındı: `middleware`/`config` -> `proxy`/`proxyConfig`.
+- Etki: Build sırasında gelen middleware deprecation uyarısı giderildi.
+
+#### B) Composition Refactor (vercel-composition-patterns)
+- [x] `ListingsMapView` bileşenindeki `open` boolean prop kaldırıldı.
+- [x] Map açık/kapalı kontrolü parent route seviyesine taşındı (`/admin/ilanlar`).
+- [x] Böylece tek bir “map overlay” varyantı kaldı; boolean mode dallanmaları azaltıldı.
+- Etki: Bileşen API’si sadeleşti, koşullu render sorumluluğu netleşti.
+
+#### C) Ek Görsel İyileştirmesi (next-best-practices + vercel-react-best-practices)
+- [x] `ListingsMapView` aktif kart görseli `<img>` yerine `next/image` olarak güncellendi.
+- Etki: no-img lint uyarısı azaltıldı, responsive image yükleme iyileştirildi.

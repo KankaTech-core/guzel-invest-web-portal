@@ -44,6 +44,10 @@ import { resolvePortfolioResultCount } from "@/lib/portfolio-result-count";
 import { resolvePortfolioResultsLayout } from "@/lib/portfolio-results-layout";
 import { shouldShowLastUnitsRibbon } from "@/lib/last-units-ribbon";
 import {
+    getImageSwipeDirection,
+    shouldSwipeImageCarousel,
+} from "@/lib/portfolio-image-gesture";
+import {
     isCategoryFieldVisibleForTypes,
     normalizeZoningStatus,
     PROPERTY_TYPE_OPTIONS,
@@ -818,7 +822,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     const fallbackAbortRef = useRef<AbortController | null>(null);
     const snapshotRef = useRef("");
     const hasInitializedRef = useRef(false);
-    const swipeStartXRef = useRef<Record<string, number>>({});
+    const swipeStartPointRef = useRef<Record<string, { x: number; y: number }>>({});
+    const lastImageSwipeAtRef = useRef<Record<string, number>>({});
     const descriptionRefs = useRef<Record<string, HTMLParagraphElement | null>>({});
     const mobileDrawerOpenTimerRef = useRef<number | null>(null);
     const mobileDrawerCloseTimerRef = useRef<number | null>(null);
@@ -1621,7 +1626,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             return;
         }
 
-        swipeStartXRef.current[listingId] = point.clientX;
+        swipeStartPointRef.current[listingId] = {
+            x: point.clientX,
+            y: point.clientY,
+        };
     };
 
     const handleImageTouchEnd = (
@@ -1629,29 +1637,43 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         slideCount: number,
         event: ReactTouchEvent<HTMLDivElement>
     ) => {
-        if (slideCount <= 1) {
-            return;
-        }
-
-        const startX = swipeStartXRef.current[listingId];
+        const startPoint = swipeStartPointRef.current[listingId];
         const point = event.changedTouches[0];
 
-        if (startX === undefined || !point) {
+        delete swipeStartPointRef.current[listingId];
+
+        if (!startPoint || !point || slideCount <= 1) {
             return;
         }
 
-        const deltaX = point.clientX - startX;
-        delete swipeStartXRef.current[listingId];
+        const deltaX = point.clientX - startPoint.x;
+        const deltaY = point.clientY - startPoint.y;
 
-        if (Math.abs(deltaX) < IMAGE_SWIPE_THRESHOLD_PX) {
+        const shouldSwipe = shouldSwipeImageCarousel({
+            deltaX,
+            deltaY,
+            thresholdPx: IMAGE_SWIPE_THRESHOLD_PX,
+        });
+
+        if (!shouldSwipe) {
             return;
         }
 
-        updateImageIndex(listingId, slideCount, deltaX < 0 ? "next" : "prev");
+        lastImageSwipeAtRef.current[listingId] = Date.now();
+        updateImageIndex(listingId, slideCount, getImageSwipeDirection(deltaX));
     };
 
     const handleImageTouchCancel = (listingId: string) => {
-        delete swipeStartXRef.current[listingId];
+        delete swipeStartPointRef.current[listingId];
+    };
+
+    const handleImageClick = (listingId: string, listingDetailHref: string) => {
+        const lastSwipeAt = lastImageSwipeAtRef.current[listingId];
+        if (lastSwipeAt && Date.now() - lastSwipeAt < 400) {
+            return;
+        }
+
+        router.push(listingDetailHref);
     };
 
     const monoStyle = { fontFamily: "var(--font-ibm-plex-mono)" };
@@ -2560,13 +2582,6 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 >
                                     <div className="grid grid-cols-1 md:grid-cols-[300px_1fr_200px]">
                                         <div className="relative min-h-[220px] overflow-hidden bg-gray-100">
-                                            {listing.isProject ? (
-                                                <Link
-                                                    href={listingDetailHref}
-                                                    aria-label={`${title} projesini incele`}
-                                                    className="absolute inset-0 z-[5] md:hidden"
-                                                />
-                                            ) : null}
                                             {visibleTags.length > 0 && (
                                                 <div className="absolute left-3 top-3 z-10 flex max-w-[86%] flex-wrap gap-1.5">
                                                     {visibleTags.map((item) => (
@@ -2597,8 +2612,11 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
                                             {gallerySlides.length > 0 ? (
                                                 <div
-                                                    className="absolute inset-0 overflow-hidden"
+                                                    className="absolute inset-0 cursor-pointer overflow-hidden"
                                                     style={{ touchAction: "pan-y" }}
+                                                    onClick={() =>
+                                                        handleImageClick(listing.id, listingDetailHref)
+                                                    }
                                                     onTouchStart={(event) =>
                                                         handleImageTouchStart(listing.id, event)
                                                     }
@@ -2631,6 +2649,9 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                                         <div className="relative z-10 flex h-full items-center justify-center">
                                                                             <Link
                                                                                 href={listingDetailHref}
+                                                                                onClick={(event) => {
+                                                                                    event.stopPropagation();
+                                                                                }}
                                                                                 className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
                                                                             >
                                                                                 Hepsini Gör

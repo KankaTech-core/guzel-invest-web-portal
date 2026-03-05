@@ -369,6 +369,7 @@ export function Navbar({ locale }: { locale: string }) {
                                                                     )}
                                                                     alt={project.title}
                                                                     fill
+                                                                    sizes="192px"
                                                                     unoptimized
                                                                     className="object-cover transition-transform duration-700 group-hover/item:scale-105"
                                                                 />
