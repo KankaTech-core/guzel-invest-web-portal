@@ -19,6 +19,7 @@ import {
     OPEN_CONNECTED_PROJECT_GALLERY_EVENT,
     type OpenConnectedProjectGalleryDetail,
 } from "./project-gallery-events";
+import { resolveGalleryOpenIndex } from "./gallery-open-index";
 
 interface GalleryCategory {
     key: string;
@@ -62,6 +63,10 @@ export const ProjectGalleryHub = ({
     visibility,
 }: ProjectGalleryHubProps) => {
     const galleryRef = useRef<ListingDetailGalleryHandle | null>(null);
+    const pendingOpenRequestRef = useRef<{
+        key: string;
+        index: number | null;
+    } | null>(null);
 
     const socialImages = useMemo(() => {
         if (!socialFacilities) {
@@ -179,12 +184,30 @@ export const ProjectGalleryHub = ({
             const resolvedKey = categoriesByKey.has(requestedKey)
                 ? requestedKey
                 : categories[0].key;
+            const resolvedCategory = categoriesByKey.get(resolvedKey) || categories[0];
+            const resolvedIndex = resolveGalleryOpenIndex(
+                customEvent.detail?.index,
+                resolvedCategory.items.length
+            );
+            const openResolvedRequest = () => {
+                if (resolvedIndex === null) {
+                    galleryRef.current?.openGallery();
+                    return;
+                }
 
+                galleryRef.current?.openAt(resolvedIndex);
+            };
+
+            if (resolvedKey === safeActiveKey) {
+                window.requestAnimationFrame(openResolvedRequest);
+                return;
+            }
+
+            pendingOpenRequestRef.current = {
+                key: resolvedKey,
+                index: resolvedIndex,
+            };
             setActiveKey(resolvedKey);
-
-            window.requestAnimationFrame(() => {
-                galleryRef.current?.openGallery();
-            });
         };
 
         window.addEventListener(OPEN_CONNECTED_PROJECT_GALLERY_EVENT, handleOpen);
@@ -192,7 +215,24 @@ export const ProjectGalleryHub = ({
         return () => {
             window.removeEventListener(OPEN_CONNECTED_PROJECT_GALLERY_EVENT, handleOpen);
         };
-    }, [categories, categoriesByKey]);
+    }, [categories, categoriesByKey, safeActiveKey]);
+
+    useEffect(() => {
+        const pendingRequest = pendingOpenRequestRef.current;
+        if (!pendingRequest || pendingRequest.key !== safeActiveKey) {
+            return;
+        }
+
+        pendingOpenRequestRef.current = null;
+        window.requestAnimationFrame(() => {
+            if (pendingRequest.index === null) {
+                galleryRef.current?.openGallery();
+                return;
+            }
+
+            galleryRef.current?.openAt(pendingRequest.index);
+        });
+    }, [safeActiveKey]);
 
     const activeCategory = categoriesByKey.get(safeActiveKey) || categories[0];
 

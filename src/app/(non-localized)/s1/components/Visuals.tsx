@@ -19,6 +19,10 @@ import {
 import { dispatchOpenConnectedProjectGallery } from "./project-gallery-events";
 import { hasSocialGalleryImages } from "./media-layout";
 import { getPeekingCarouselTranslatePx } from "./peeking-carousel-math";
+import {
+    buildPeekingPreviewItems,
+    type PeekingPreviewCard,
+} from "./peeking-preview-items";
 
 interface VisualsProps {
     exteriorVisuals?: S1ExteriorVisualsData;
@@ -59,16 +63,20 @@ const pickSymmetricGridClass = (itemCount: number) => {
 
 
 function PeekingCarouselStrip({
-    items,
+    cards,
     onImageClick,
+    onViewAllClick,
     cardWidthPercent,
+    viewAllCardWidthPercent,
     gap,
     translatePx,
     reverse = false,
 }: {
-    items: ListingGalleryItem[];
-    onImageClick?: () => void;
+    cards: PeekingPreviewCard[];
+    onImageClick?: (index: number) => void;
+    onViewAllClick?: () => void;
     cardWidthPercent: number;
+    viewAllCardWidthPercent: number;
     gap: number;
     translatePx: number;
     reverse?: boolean;
@@ -85,25 +93,42 @@ function PeekingCarouselStrip({
                 gap: `${gap}px`,
             }}
         >
-            {items.map((item, index) => (
+            {cards.map((card, index) => (
                 <button
-                    key={item.id}
+                    key={card.type === "image" ? card.item.id : card.id}
                     type="button"
-                    onClick={onImageClick}
+                    onClick={
+                        card.type === "image"
+                            ? () => onImageClick?.(index)
+                            : onViewAllClick
+                    }
                     className="relative shrink-0 cursor-pointer overflow-hidden rounded-[1.6rem] border border-gray-200 bg-gray-100"
-                    style={{ width: `${cardWidthPercent}%` }}
-                    aria-label={`Görsel ${index + 1}`}
+                    style={{
+                        width: `${card.type === "view-all" ? viewAllCardWidthPercent : cardWidthPercent}%`,
+                    }}
+                    aria-label={
+                        card.type === "image"
+                            ? `Görsel ${index + 1}`
+                            : "Tüm görselleri aç"
+                    }
                 >
-                    <div className="relative aspect-[16/9]">
-                        <Image
-                            src={item.src}
-                            alt={item.alt || `Görsel ${index + 1}`}
-                            fill
-                            loading="lazy"
-                            className="object-cover"
-                            sizes="(min-width: 1280px) 50vw, (min-width: 768px) 65vw, 100vw"
-                        />
-                    </div>
+                    {card.type === "image" ? (
+                        <div className="relative aspect-[16/9]">
+                            <Image
+                                src={card.item.src}
+                                alt={card.item.alt || `Görsel ${index + 1}`}
+                                fill
+                                loading="lazy"
+                                className="object-cover"
+                                sizes="(min-width: 1280px) 50vw, (min-width: 768px) 65vw, 100vw"
+                            />
+                        </div>
+                    ) : (
+                        <div className="flex h-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-gray-900 to-gray-700 text-white">
+                            <Images className="h-8 w-8" />
+                            <span className="text-lg font-semibold">{card.label}</span>
+                        </div>
+                    )}
                 </button>
             ))}
         </div>
@@ -124,7 +149,7 @@ function PeekingVisualSection({
     title: string;
     items: ListingGalleryItem[];
     bgClass: string;
-    onImageClick: () => void;
+    onImageClick: (index: number) => void;
     reverse?: boolean;
     onViewAllClick: () => void;
     titleAlign?: "left" | "right";
@@ -133,7 +158,8 @@ function PeekingVisualSection({
     const [carouselViewportWidth, setCarouselViewportWidth] = useState(0);
     const touchStartXRef = useRef<number | null>(null);
     const carouselViewportRef = useRef<HTMLDivElement | null>(null);
-    const total = items.length;
+    const previewCards = useMemo(() => buildPeekingPreviewItems(items), [items]);
+    const total = previewCards.length;
     const canNavigate = total > 1;
     const showViewAll = true;
     const SWIPE_THRESHOLD_PX = 42;
@@ -183,7 +209,15 @@ function PeekingVisualSection({
     };
 
     const cardWidthPercent = 75;
+    const viewAllCardWidthPercent = cardWidthPercent / 4;
     const gap = 20;
+    const previewCardWidthsPercent = useMemo(
+        () =>
+            previewCards.map((card) =>
+                card.type === "view-all" ? viewAllCardWidthPercent : cardWidthPercent
+            ),
+        [cardWidthPercent, previewCards, viewAllCardWidthPercent]
+    );
     const translatePx = useMemo(
         () =>
             getPeekingCarouselTranslatePx({
@@ -191,8 +225,15 @@ function PeekingVisualSection({
                 viewportWidthPx: carouselViewportWidth,
                 cardWidthPercent,
                 gapPx: gap,
+                itemWidthsPercent: previewCardWidthsPercent,
             }),
-        [cardWidthPercent, currentIndex, gap, carouselViewportWidth]
+        [
+            cardWidthPercent,
+            currentIndex,
+            gap,
+            carouselViewportWidth,
+            previewCardWidthsPercent,
+        ]
     );
 
     useEffect(() => {
@@ -226,19 +267,19 @@ function PeekingVisualSection({
         <div className="flex items-center gap-3">
             <button
                 type="button"
-                onClick={goToPrev}
+                onClick={reverse ? goToNext : goToPrev}
                 className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
-                aria-label="Önceki görsel"
+                aria-label={reverse ? "Sonraki görsel" : "Önceki görsel"}
             >
-                <ChevronLeft className="h-5 w-5" />
+                {reverse ? <ChevronLeft className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
             </button>
             <button
                 type="button"
-                onClick={goToNext}
+                onClick={reverse ? goToPrev : goToNext}
                 className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
-                aria-label="Sonraki görsel"
+                aria-label={reverse ? "Önceki görsel" : "Sonraki görsel"}
             >
-                <ChevronRight className="h-5 w-5" />
+                {reverse ? <ChevronRight className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
             </button>
             {showViewAll && (
                 <button
@@ -271,9 +312,11 @@ function PeekingVisualSection({
     const carouselColumn = (
         <div ref={carouselViewportRef} className={carouselWrapperClass}>
             <PeekingCarouselStrip
-                items={items}
+                cards={previewCards}
                 onImageClick={onImageClick}
+                onViewAllClick={onViewAllClick}
                 cardWidthPercent={cardWidthPercent}
+                viewAllCardWidthPercent={viewAllCardWidthPercent}
                 gap={gap}
                 translatePx={translatePx}
                 reverse={reverse}
@@ -318,19 +361,19 @@ function PeekingVisualSection({
                 <div className="mx-auto mt-4 flex max-w-7xl items-center gap-3 px-4 md:hidden">
                     <button
                         type="button"
-                        onClick={goToPrev}
+                        onClick={reverse ? goToNext : goToPrev}
                         className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400"
-                        aria-label="Önceki görsel"
+                        aria-label={reverse ? "Sonraki görsel" : "Önceki görsel"}
                     >
-                        <ChevronLeft className="h-5 w-5" />
+                        {reverse ? <ChevronLeft className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
                     </button>
                     <button
                         type="button"
-                        onClick={goToNext}
+                        onClick={reverse ? goToPrev : goToNext}
                         className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400"
-                        aria-label="Sonraki görsel"
+                        aria-label={reverse ? "Önceki görsel" : "Sonraki görsel"}
                     >
-                        <ChevronRight className="h-5 w-5" />
+                        {reverse ? <ChevronRight className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
                     </button>
                     {showViewAll && (
                         <button
@@ -432,8 +475,13 @@ export const Visuals = ({
                                             title={socialFacilities.title}
                                             layout="carousel"
                                             galleryButtonLabel="Sosyal Galeri"
-                                            onRequestOpenGallery={() =>
-                                                dispatchOpenConnectedProjectGallery({ key: "social" })
+                                            showViewAllAsLastSlide
+                                            viewAllSlideLabel="Tümünü Gör"
+                                            onRequestOpenGallery={(index) =>
+                                                dispatchOpenConnectedProjectGallery({
+                                                    key: "social",
+                                                    index,
+                                                })
                                             }
                                         />
                                     </div>
@@ -470,8 +518,11 @@ export const Visuals = ({
                     onViewAllClick={() =>
                         dispatchOpenConnectedProjectGallery({ key: "exterior" })
                     }
-                    onImageClick={() =>
-                        dispatchOpenConnectedProjectGallery({ key: "exterior" })
+                    onImageClick={(index) =>
+                        dispatchOpenConnectedProjectGallery({
+                            key: "exterior",
+                            index,
+                        })
                     }
                 />
             ) : null}
@@ -485,8 +536,11 @@ export const Visuals = ({
                     onViewAllClick={() =>
                         dispatchOpenConnectedProjectGallery({ key: "interior" })
                     }
-                    onImageClick={() =>
-                        dispatchOpenConnectedProjectGallery({ key: "interior" })
+                    onImageClick={(index) =>
+                        dispatchOpenConnectedProjectGallery({
+                            key: "interior",
+                            index,
+                        })
                     }
                 />
             ) : null}
@@ -514,9 +568,10 @@ export const Visuals = ({
                                 )}
                                 title={gallery.title}
                                 layout="carousel"
-                                onRequestOpenGallery={() =>
+                                onRequestOpenGallery={(index) =>
                                     dispatchOpenConnectedProjectGallery({
                                         key: `custom-${gallery.id}`,
+                                        index,
                                     })
                                 }
                             />
@@ -529,7 +584,7 @@ export const Visuals = ({
                 <section className="bg-white py-24">
                     <div className="mx-auto flex max-w-7xl flex-col gap-16 px-4 lg:flex-row">
                         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:w-2/3">
-                            {floorPlans.plans.map((plan) => (
+                            {floorPlans.plans.map((plan, planIndex) => (
                                 <div
                                     key={plan.id}
                                     className="rounded-3xl border border-gray-100 bg-gray-50 p-6"
@@ -539,6 +594,7 @@ export const Visuals = ({
                                         onClick={() =>
                                             dispatchOpenConnectedProjectGallery({
                                                 key: "floor",
+                                                index: planIndex,
                                             })
                                         }
                                         className="relative mb-4 block h-64 w-full cursor-pointer overflow-hidden rounded-xl group"

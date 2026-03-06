@@ -2,6 +2,7 @@ export const OPEN_CONNECTED_PROJECT_GALLERY_EVENT = "open-connected-project-gall
 
 export interface OpenConnectedProjectGalleryDetail {
     key?: string;
+    index?: number;
 }
 
 export const dispatchOpenConnectedProjectGallery = (

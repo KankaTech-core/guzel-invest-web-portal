@@ -30,6 +30,7 @@ import { dispatchOpenConnectedProjectGallery } from "./project-gallery-events";
 import { getMapSectionLayout } from "./media-layout";
 import { ProjectVideoSection } from "./ProjectVideoSection";
 import { getDocumentCta } from "./document-cta";
+import { buildProjectsPortfolioHref } from "./project-portfolio-link";
 
 interface MapAndCTAProps {
     documents: S1DocumentItem[];
@@ -89,7 +90,7 @@ export const MapAndCTA = ({
         {
             icon: Search,
             title: "Diğer Projeleri Keşfet",
-            href: `/${locale}/projeler`,
+            href: buildProjectsPortfolioHref(locale),
             external: false,
         },
         {
@@ -343,9 +344,14 @@ export const MapAndCTA = ({
                                                 title="Harita Görselleri"
                                                 layout="carousel"
                                                 galleryButtonLabel="Harita Galerisi"
+                                                showViewAllAsLastSlide
+                                                viewAllSlideLabel="Tümünü Gör"
                                                 desktopHeightClass={mapEmbedHeightClass}
-                                                onRequestOpenGallery={() =>
-                                                    dispatchOpenConnectedProjectGallery({ key: "map" })
+                                                onRequestOpenGallery={(index) =>
+                                                    dispatchOpenConnectedProjectGallery({
+                                                        key: "map",
+                                                        index,
+                                                    })
                                                 }
                                             />
                                         </div>

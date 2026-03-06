@@ -35,3 +35,27 @@ test("returns zero translate for index zero", () => {
         0
     );
 });
+
+test("supports variable card widths and keeps translation within track bounds", () => {
+    assert.equal(
+        getPeekingCarouselTranslatePx({
+            currentIndex: 2,
+            viewportWidthPx: 900,
+            cardWidthPercent: 75,
+            gapPx: 20,
+            itemWidthsPercent: [75, 75, 75, 75, 18.75],
+        }),
+        1390
+    );
+
+    assert.equal(
+        getPeekingCarouselTranslatePx({
+            currentIndex: 4,
+            viewportWidthPx: 900,
+            cardWidthPercent: 75,
+            gapPx: 20,
+            itemWidthsPercent: [75, 75, 75, 75, 18.75],
+        }),
+        2048.75
+    );
+});

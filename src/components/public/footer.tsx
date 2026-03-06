@@ -182,7 +182,7 @@ export function Footer({ locale }: { locale: string }) {
                         {t("footer.copyright")}
                     </p>
                     <p className="text-gray-400 text-sm text-center">
-                        Made with{" "}
+                        Designed &amp; Developed by{" "}
                         <a
                             href="https://kankatech.com/"
                             target="_blank"

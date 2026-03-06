@@ -20,6 +20,8 @@ import {
     useSyncExternalStore,
 } from "react";
 import { createPortal } from "react-dom";
+import { buildGalleryPreviewSlides } from "./gallery-preview-slides";
+import { resolveFloorPlanOverlayLabel } from "./floor-plan-caption";
 
 export interface ListingGalleryItem {
     id: string;
@@ -44,7 +46,9 @@ interface ListingDetailGalleryProps {
     desktopHeightClass?: string;
     className?: string;
     galleryButtonLabel?: string;
-    onRequestOpenGallery?: () => void;
+    showViewAllAsLastSlide?: boolean;
+    viewAllSlideLabel?: string;
+    onRequestOpenGallery?: (index?: number) => void;
     galleryTabs?: Array<{ key: string; label: string }>;
     activeGalleryTabKey?: string;
     onGalleryTabChange?: (key: string) => void;
@@ -68,6 +72,8 @@ export function ListingDetailGallery({
     desktopHeightClass = "h-[clamp(330px,42vw,510px)]",
     className,
     galleryButtonLabel = "Galeri",
+    showViewAllAsLastSlide = false,
+    viewAllSlideLabel = "Tümünü Gör",
     onRequestOpenGallery,
     galleryTabs,
     activeGalleryTabKey,
@@ -79,6 +85,7 @@ export function ListingDetailGallery({
     const [desktopCarouselIndex, setDesktopCarouselIndex] = useState<number | null>(
         null
     );
+    const [isDesktopImageLoading, setIsDesktopImageLoading] = useState(false);
     const [inlineCarouselIndex, setInlineCarouselIndex] = useState(0);
     const [activeReelIndex, setActiveReelIndex] = useState(0);
 
@@ -88,8 +95,24 @@ export function ListingDetailGallery({
     const didSwipeRef = useRef(false);
 
     const total = items.length;
-    const carouselItems = useMemo(() => items.slice(0, 4), [items]);
-    const carouselTotal = carouselItems.length;
+    const carouselSlides = useMemo(
+        () =>
+            buildGalleryPreviewSlides(items, {
+                maxSlides: 4,
+                includeViewAllSlide: showViewAllAsLastSlide,
+                viewAllLabel: viewAllSlideLabel,
+            }),
+        [items, showViewAllAsLastSlide, viewAllSlideLabel]
+    );
+    const carouselImageSlides = useMemo(
+        () =>
+            carouselSlides.filter(
+                (slide): slide is { type: "image"; item: ListingGalleryItem } =>
+                    slide.type === "image"
+            ),
+        [carouselSlides]
+    );
+    const carouselTotal = carouselSlides.length;
     const hasItems = total > 0;
     const canNavigate = total > 1;
     const canNavigateCarousel = carouselTotal > 1;
@@ -103,6 +126,10 @@ export function ListingDetailGallery({
     }, [activeReelIndex, hasItems, total]);
     const activeDesktopItem =
         desktopCarouselIndex !== null ? items[desktopCarouselIndex] : null;
+    const activeDesktopFloorPlanLabel = resolveFloorPlanOverlayLabel({
+        activeGalleryTabKey,
+        itemAlt: activeDesktopItem?.alt,
+    });
     const desktopCarouselCounter = useMemo(() => {
         if (desktopCarouselIndex === null) {
             return "";
@@ -180,19 +207,6 @@ export function ListingDetailGallery({
         pushOverlayState("gallery");
     }, [hasItems, pushOverlayState]);
 
-    const openGalleryFromPreview = useCallback(() => {
-        if (!hasItems) {
-            return;
-        }
-
-        if (onRequestOpenGallery) {
-            onRequestOpenGallery();
-            return;
-        }
-
-        openGallery();
-    }, [hasItems, onRequestOpenGallery, openGallery]);
-
     const openReels = useCallback(
         (index: number) => {
             if (!hasItems) {
@@ -232,13 +246,17 @@ export function ListingDetailGallery({
         setIsGalleryOpen(false);
     }, [consumeMobileOverlayBack]);
 
-    const closeDesktopCarousel = () => setDesktopCarouselIndex(null);
+    const closeDesktopCarousel = () => {
+        setDesktopCarouselIndex(null);
+        setIsDesktopImageLoading(false);
+    };
 
     const openDesktopCarousel = useCallback(
         (index: number) => {
             if (!hasItems) {
                 return;
             }
+            setIsDesktopImageLoading(true);
             setDesktopCarouselIndex(normalizeIndex(index));
         },
         [hasItems, normalizeIndex]
@@ -263,10 +281,57 @@ export function ListingDetailGallery({
         [hasItems, normalizeIndex, openDesktopCarousel, openReels]
     );
 
+    const openGalleryFromPreview = useCallback((previewIndex?: number) => {
+        if (!hasItems) {
+            return;
+        }
+
+        if (onRequestOpenGallery) {
+            onRequestOpenGallery(previewIndex);
+            return;
+        }
+
+        if (typeof previewIndex === "number" && Number.isFinite(previewIndex)) {
+            openAt(previewIndex);
+            return;
+        }
+
+        openGallery();
+    }, [hasItems, onRequestOpenGallery, openAt, openGallery]);
+
+    const openPreviewImageFromCarousel = useCallback(() => {
+        const activeSlide = carouselSlides[currentCarouselInlineIndex];
+        if (!activeSlide || activeSlide.type !== "image") {
+            openGalleryFromPreview();
+            return;
+        }
+
+        const imageIndex = items.findIndex((item) => item.id === activeSlide.item.id);
+        if (imageIndex < 0) {
+            openGalleryFromPreview();
+            return;
+        }
+
+        if (onRequestOpenGallery) {
+            openGalleryFromPreview(imageIndex);
+            return;
+        }
+
+        openAt(imageIndex);
+    }, [
+        carouselSlides,
+        currentCarouselInlineIndex,
+        items,
+        onRequestOpenGallery,
+        openAt,
+        openGalleryFromPreview,
+    ]);
+
     const goToDesktopPrevious = useCallback(() => {
         if (!canNavigate) {
             return;
         }
+        setIsDesktopImageLoading(true);
         setDesktopCarouselIndex((previous) => {
             if (previous === null) {
                 return previous;
@@ -279,6 +344,7 @@ export function ListingDetailGallery({
         if (!canNavigate) {
             return;
         }
+        setIsDesktopImageLoading(true);
         setDesktopCarouselIndex((previous) => {
             if (previous === null) {
                 return previous;
@@ -587,7 +653,7 @@ export function ListingDetailGallery({
                                         didSwipeRef.current = false;
                                         return;
                                     }
-                                    openGalleryFromPreview();
+                                    openPreviewImageFromCarousel();
                                 }}
                             >
                                 <div
@@ -596,19 +662,35 @@ export function ListingDetailGallery({
                                         transform: `translateX(-${currentCarouselInlineIndex * 100}%)`,
                                     }}
                                 >
-                                    {carouselItems.map((item, index) => (
+                                    {carouselSlides.map((slide, index) => (
                                         <div
-                                            key={item.id}
+                                            key={
+                                                slide.type === "image"
+                                                    ? slide.item.id
+                                                    : slide.id
+                                            }
                                             className="relative h-full w-full shrink-0"
                                         >
-                                            <Image
-                                                src={item.src}
-                                                alt={item.alt || `${title} ${index + 1}`}
-                                                fill
-                                                loading="lazy"
-                                                className="object-cover"
-                                                sizes="100vw"
-                                            />
+                                            {slide.type === "image" ? (
+                                                <Image
+                                                    src={slide.item.src}
+                                                    alt={
+                                                        slide.item.alt ||
+                                                        `${title} ${index + 1}`
+                                                    }
+                                                    fill
+                                                    loading="lazy"
+                                                    className="object-cover"
+                                                    sizes="100vw"
+                                                />
+                                            ) : (
+                                                <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-900 to-gray-700 text-white">
+                                                    <Images className="h-8 w-8" />
+                                                    <span className="text-base font-semibold">
+                                                        {slide.label}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -650,7 +732,11 @@ export function ListingDetailGallery({
                         <div className="hidden gap-3 md:grid md:h-[clamp(330px,45vw,520px)] md:grid-cols-4">
                             <button
                                 type="button"
-                                onClick={openGalleryFromPreview}
+                                onClick={() =>
+                                    openGalleryFromPreview(
+                                        items.findIndex((item) => item.id === coverImage.id)
+                                    )
+                                }
                                 className="relative overflow-hidden rounded-[1.8rem] border border-gray-200 bg-gray-100 text-left md:col-span-3 md:h-full"
                                 aria-label="Fotoğraf galerisini aç"
                             >
@@ -671,7 +757,11 @@ export function ListingDetailGallery({
                             <div className="grid gap-3 md:h-full md:grid-rows-2">
                                 <button
                                     type="button"
-                                    onClick={openGalleryFromPreview}
+                                    onClick={() =>
+                                        openGalleryFromPreview(
+                                            items.findIndex((item) => item.id === secondImage.id)
+                                        )
+                                    }
                                     className="relative overflow-hidden rounded-[1.4rem] border border-gray-200 bg-gray-100 md:h-full"
                                     aria-label="Fotoğraf galerisini aç"
                                 >
@@ -690,7 +780,11 @@ export function ListingDetailGallery({
                                 <div className="relative overflow-hidden rounded-[1.4rem] border border-gray-200 bg-gray-100 md:h-full">
                                     <button
                                         type="button"
-                                        onClick={openGalleryFromPreview}
+                                        onClick={() =>
+                                            openGalleryFromPreview(
+                                                items.findIndex((item) => item.id === thirdImage.id)
+                                            )
+                                        }
                                         className="relative h-full w-full text-left"
                                         aria-label="Fotoğraf galerisini aç"
                                     >
@@ -708,7 +802,7 @@ export function ListingDetailGallery({
 
                                     <button
                                         type="button"
-                                        onClick={openGalleryFromPreview}
+                                        onClick={() => openGalleryFromPreview()}
                                         className="absolute bottom-3 right-3 flex items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3.5 py-2 text-xs font-semibold text-[#111828] transition hover:bg-white"
                                     >
                                         <Images className="h-3.5 w-3.5" />
@@ -722,7 +816,7 @@ export function ListingDetailGallery({
                             <div className="relative overflow-hidden rounded-[1.8rem] border border-gray-200 bg-gray-100">
                                 <button
                                     type="button"
-                                    onClick={openGalleryFromPreview}
+                                    onClick={openPreviewImageFromCarousel}
                                     className={`relative block w-full overflow-hidden text-left ${desktopHeightClass}`}
                                     aria-label="Fotoğraf galerisini aç"
                                 >
@@ -733,19 +827,35 @@ export function ListingDetailGallery({
                                                 transform: `translateX(-${currentCarouselInlineIndex * 100}%)`,
                                             }}
                                         >
-                                            {carouselItems.map((item, index) => (
+                                            {carouselSlides.map((slide, index) => (
                                                 <div
-                                                    key={`${item.id}-desktop-slide`}
+                                                    key={
+                                                        slide.type === "image"
+                                                            ? `${slide.item.id}-desktop-slide`
+                                                            : `${slide.id}-desktop-slide`
+                                                    }
                                                     className="relative h-full w-full shrink-0"
                                                 >
-                                                    <Image
-                                                        src={item.src}
-                                                        alt={item.alt || `${title} ${index + 1}`}
-                                                        fill
-                                                        loading="lazy"
-                                                        className="object-cover"
-                                                        sizes="(min-width: 1280px) 54vw, (min-width: 768px) 70vw, 100vw"
-                                                    />
+                                                    {slide.type === "image" ? (
+                                                        <Image
+                                                            src={slide.item.src}
+                                                            alt={
+                                                                slide.item.alt ||
+                                                                `${title} ${index + 1}`
+                                                            }
+                                                            fill
+                                                            loading="lazy"
+                                                            className="object-cover"
+                                                            sizes="(min-width: 1280px) 54vw, (min-width: 768px) 70vw, 100vw"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-gray-900 to-gray-700 text-white">
+                                                            <Images className="h-10 w-10" />
+                                                            <span className="text-xl font-semibold">
+                                                                {slide.label}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             ))}
                                         </div>
@@ -785,7 +895,7 @@ export function ListingDetailGallery({
 
                                 <button
                                     type="button"
-                                    onClick={openGalleryFromPreview}
+                                    onClick={() => openGalleryFromPreview()}
                                     className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3.5 py-2 text-xs font-semibold text-[#111828] transition hover:bg-white"
                                 >
                                     <Images className="h-3.5 w-3.5" />
@@ -793,11 +903,11 @@ export function ListingDetailGallery({
                                 </button>
                             </div>
 
-                            {showInlineThumbnails && carouselTotal > 1 ? (
+                            {showInlineThumbnails && carouselImageSlides.length > 1 ? (
                                 <div className="mt-3 grid grid-cols-4 gap-3">
-                                    {carouselItems.map((item, index) => (
+                                    {carouselImageSlides.map((slide, index) => (
                                         <button
-                                            key={`${item.id}-thumb`}
+                                            key={`${slide.item.id}-thumb`}
                                             type="button"
                                             onClick={() => setInlineCarouselIndex(index)}
                                             className={`relative aspect-[4/3] overflow-hidden rounded-xl border ${index === currentCarouselInlineIndex
@@ -807,8 +917,8 @@ export function ListingDetailGallery({
                                             aria-label={`Fotoğraf ${index + 1} seç`}
                                         >
                                             <Image
-                                                src={item.src}
-                                                alt={item.alt || `${title} ${index + 1}`}
+                                                src={slide.item.src}
+                                                alt={slide.item.alt || `${title} ${index + 1}`}
                                                 fill
                                                 loading="lazy"
                                                 className="object-cover"
@@ -951,14 +1061,32 @@ export function ListingDetailGallery({
                                     className="relative h-[84vh] w-[82vw] max-w-[1320px]"
                                     onClick={(event) => event.stopPropagation()}
                                 >
+                                    {isDesktopImageLoading ? (
+                                        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/45">
+                                            <span className="h-10 w-10 animate-spin rounded-full border-2 border-white/25 border-t-white" />
+                                            <span className="text-sm font-medium text-white/90">
+                                                Yükleniyor...
+                                            </span>
+                                        </div>
+                                    ) : null}
                                     <Image
+                                        key={`desktop-image-${activeDesktopItem.id}`}
                                         src={activeDesktopItem.src}
                                         alt={activeDesktopItem.alt || title}
                                         fill
                                         className="object-contain"
                                         sizes="100vw"
                                         priority
+                                        onLoadingComplete={() => {
+                                            setIsDesktopImageLoading(false);
+                                        }}
                                     />
+
+                                    {activeDesktopFloorPlanLabel ? (
+                                        <p className="pointer-events-none absolute bottom-4 left-4 z-20 rounded-full border border-white/25 bg-black/55 px-4 py-1.5 text-sm font-semibold text-white">
+                                            {activeDesktopFloorPlanLabel}
+                                        </p>
+                                    ) : null}
                                 </div>
 
                                 <p className="absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full border border-white/25 bg-black/45 px-4 py-1.5 text-sm font-medium text-white">
@@ -1032,6 +1160,10 @@ export function ListingDetailGallery({
                                 >
                                     {items.map((item, index) => {
                                         const isNearActive = Math.abs(index - activeReelIndex) <= 2;
+                                        const reelFloorPlanLabel = resolveFloorPlanOverlayLabel({
+                                            activeGalleryTabKey,
+                                            itemAlt: item.alt,
+                                        });
                                         return (
                                             <section
                                                 key={`${item.id}-reel`}
@@ -1049,6 +1181,11 @@ export function ListingDetailGallery({
                                                             priority={index === activeReelIndex}
                                                             loading={index === activeReelIndex ? "eager" : "lazy"}
                                                         />
+                                                    ) : null}
+                                                    {index === activeReelIndex && reelFloorPlanLabel ? (
+                                                        <p className="pointer-events-none absolute bottom-5 left-4 z-20 rounded-full border border-white/25 bg-black/55 px-3.5 py-1.5 text-xs font-semibold text-white">
+                                                            {reelFloorPlanLabel}
+                                                        </p>
                                                     ) : null}
                                                 </div>
                                             </section>
