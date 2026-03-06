@@ -1660,12 +1660,22 @@ export default function HomePage() {
                                         onClick={() => setIsHeroVideoModalOpen(true)}
                                         className="group absolute inset-0 block h-full w-full cursor-pointer overflow-hidden"
                                     >
-                                        {heroVideo.source === "youtube" && heroVideo.autoplayEmbedUrl ? (
+                                        {heroVideo.source === "youtube" && heroVideo.thumbnailUrl ? (
+                                            <Image
+                                                src={heroVideo.thumbnailUrl}
+                                                alt="Hero video preview"
+                                                fill
+                                                sizes="(min-width: 1280px) 40vw, (min-width: 1024px) 50vw, 100vw"
+                                                priority
+                                                className="pointer-events-none absolute inset-0 h-full w-full origin-center scale-[2.3] transform-gpu object-cover"
+                                            />
+                                        ) : heroVideo.source === "youtube" && heroVideo.autoplayEmbedUrl ? (
                                             <iframe
                                                 className="pointer-events-none absolute inset-0 h-full w-full origin-center scale-[2.3] transform-gpu"
                                                 src={heroVideo.autoplayEmbedUrl}
                                                 title="Hero video player"
                                                 frameBorder="0"
+                                                loading="lazy"
                                                 allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                                 referrerPolicy="strict-origin-when-cross-origin"
                                                 allowFullScreen

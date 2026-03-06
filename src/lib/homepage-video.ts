@@ -130,12 +130,16 @@ export const buildHomepageHeroAutoplayEmbedUrl = (videoId: string): string =>
 export const buildHomepageHeroPopupEmbedUrl = (videoId: string): string =>
     `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0&loop=1&playlist=${videoId}&controls=1&rel=0&playsinline=1`;
 
+export const buildHomepageHeroThumbnailUrl = (videoId: string): string =>
+    `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
 export type HomepageHeroVideoSource = "youtube" | "file";
 
 export interface HomepageHeroVideoConfig {
     source: HomepageHeroVideoSource;
     rawInput: string;
     videoId: string | null;
+    thumbnailUrl: string | null;
     embedBaseUrl: string | null;
     watchUrl: string | null;
     autoplayEmbedUrl: string | null;
@@ -154,6 +158,7 @@ export const resolveHomepageHeroVideo = (
             source: "youtube",
             rawInput,
             videoId: extractedId,
+            thumbnailUrl: buildHomepageHeroThumbnailUrl(extractedId),
             embedBaseUrl: `https://www.youtube.com/embed/${extractedId}`,
             watchUrl: `https://www.youtube.com/watch?v=${extractedId}`,
             autoplayEmbedUrl: buildHomepageHeroAutoplayEmbedUrl(extractedId),
@@ -167,6 +172,7 @@ export const resolveHomepageHeroVideo = (
             source: "file",
             rawInput,
             videoId: null,
+            thumbnailUrl: null,
             embedBaseUrl: null,
             watchUrl: null,
             autoplayEmbedUrl: null,
@@ -181,6 +187,7 @@ export const resolveHomepageHeroVideo = (
         source: "youtube",
         rawInput: `https://www.youtube.com/embed/${fallbackVideoId}`,
         videoId: fallbackVideoId,
+        thumbnailUrl: buildHomepageHeroThumbnailUrl(fallbackVideoId),
         embedBaseUrl: `https://www.youtube.com/embed/${fallbackVideoId}`,
         watchUrl: `https://www.youtube.com/watch?v=${fallbackVideoId}`,
         autoplayEmbedUrl: buildHomepageHeroAutoplayEmbedUrl(fallbackVideoId),

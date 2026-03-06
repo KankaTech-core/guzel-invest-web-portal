@@ -47,6 +47,10 @@ test("resolveHomepageHeroVideo returns fallback video for invalid input", () => 
     const resolved = resolveHomepageHeroVideo("not-a-youtube-url");
 
     assert.equal(resolved.videoId, DEFAULT_HOMEPAGE_VIDEO_ID);
+    assert.equal(
+        resolved.thumbnailUrl,
+        `https://i.ytimg.com/vi/${DEFAULT_HOMEPAGE_VIDEO_ID}/hqdefault.jpg`
+    );
     assert.ok(resolved.autoplayEmbedUrl);
     assert.match(
         resolved.autoplayEmbedUrl,
@@ -80,6 +84,7 @@ test("resolveHomepageHeroVideo supports uploaded video files", () => {
 
     assert.equal(resolved.source, "file");
     assert.equal(resolved.videoId, null);
+    assert.equal(resolved.thumbnailUrl, null);
     assert.equal(resolved.watchUrl, null);
     assert.equal(resolved.autoplayEmbedUrl, null);
     assert.equal(resolved.popupEmbedUrl, null);
