@@ -22,6 +22,7 @@ import {
 import { createPortal } from "react-dom";
 import { buildGalleryPreviewSlides } from "./gallery-preview-slides";
 import { resolveFloorPlanOverlayLabel } from "./floor-plan-caption";
+import { buildViewAllLabelClassName } from "./view-all-label-classes";
 
 export interface ListingGalleryItem {
     id: string;
@@ -686,7 +687,11 @@ export function ListingDetailGallery({
                                             ) : (
                                                 <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-900 to-gray-700 text-white">
                                                     <Images className="h-8 w-8" />
-                                                    <span className="text-base font-semibold">
+                                                    <span
+                                                        className={buildViewAllLabelClassName("text-base font-semibold", {
+                                                            hideOnMobile: true,
+                                                        })}
+                                                    >
                                                         {slide.label}
                                                     </span>
                                                 </div>
@@ -851,7 +856,11 @@ export function ListingDetailGallery({
                                                     ) : (
                                                         <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-gray-900 to-gray-700 text-white">
                                                             <Images className="h-10 w-10" />
-                                                            <span className="text-xl font-semibold">
+                                                            <span
+                                                                className={buildViewAllLabelClassName("text-xl font-semibold", {
+                                                                    hideOnMobile: true,
+                                                                })}
+                                                            >
                                                                 {slide.label}
                                                             </span>
                                                         </div>

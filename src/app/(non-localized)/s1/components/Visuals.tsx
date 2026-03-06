@@ -16,6 +16,7 @@ import {
     ListingDetailGallery,
     type ListingGalleryItem,
 } from "@/components/public/listing-detail-gallery";
+import { buildViewAllLabelClassName } from "@/components/public/view-all-label-classes";
 import { dispatchOpenConnectedProjectGallery } from "./project-gallery-events";
 import { hasSocialGalleryImages } from "./media-layout";
 import { getPeekingCarouselTranslatePx } from "./peeking-carousel-math";
@@ -126,7 +127,13 @@ function PeekingCarouselStrip({
                     ) : (
                         <div className="flex h-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-gray-900 to-gray-700 text-white">
                             <Images className="h-8 w-8" />
-                            <span className="text-lg font-semibold">{card.label}</span>
+                            <span
+                                className={buildViewAllLabelClassName("text-lg font-semibold", {
+                                    hideOnMobile: true,
+                                })}
+                            >
+                                {card.label}
+                            </span>
                         </div>
                     )}
                 </button>
