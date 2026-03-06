@@ -4,6 +4,7 @@ import {
     isCategoryFieldVisibleForTypes,
     normalizeZoningStatus,
 } from "@/lib/listing-type-rules";
+import { buildPortfolioTypeCounts } from "@/lib/portfolio-type-counts";
 import { buildListingsRoomScope } from "@/lib/public-listings";
 import {
     ListingStatus,
@@ -73,6 +74,10 @@ export async function GET(req: NextRequest) {
         const hasWaterSource = parseBooleanParam(searchParams.get("hasWaterSource"));
         const hasFruitTrees = parseBooleanParam(searchParams.get("hasFruitTrees"));
         const onlyProjects = parseBooleanParam(searchParams.get("onlyProjects"));
+        const includePriceHistogram =
+            parseBooleanParam(searchParams.get("includePriceHistogram")) === true;
+        const includeTypeCounts =
+            parseBooleanParam(searchParams.get("includeTypeCounts")) === true;
         const sort = searchParams.get("sort") as SortOption | null;
 
         const page = parseNumberParam(searchParams.get("page")) || 1;
@@ -88,38 +93,38 @@ export async function GET(req: NextRequest) {
             Object.values(SaleType).includes(value as SaleType)
         );
 
-        const where: Prisma.ListingWhereInput = {
+        const baseWhere: Prisma.ListingWhereInput = {
             status: ListingStatus.PUBLISHED,
         };
 
         if (types.length === 1) {
-            where.type = types[0];
+            baseWhere.type = types[0];
         } else if (types.length > 1) {
-            where.type = { in: types };
+            baseWhere.type = { in: types };
         }
 
         if (saleTypes.length === 1) {
-            where.saleType = saleTypes[0];
+            baseWhere.saleType = saleTypes[0];
         } else if (saleTypes.length > 1) {
-            where.saleType = { in: saleTypes };
+            baseWhere.saleType = { in: saleTypes };
         }
 
         if (city) {
-            where.city = {
+            baseWhere.city = {
                 equals: city,
                 mode: "insensitive",
             };
         }
 
         if (district) {
-            where.district = {
+            baseWhere.district = {
                 equals: district,
                 mode: "insensitive",
             };
         }
 
         if (neighborhood) {
-            where.neighborhood = {
+            baseWhere.neighborhood = {
                 equals: neighborhood,
                 mode: "insensitive",
             };
@@ -145,25 +150,25 @@ export async function GET(req: NextRequest) {
         });
 
         if (roomScope) {
-            const existingAnd = where.AND;
+            const existingAnd = baseWhere.AND;
             if (existingAnd) {
-                where.AND = Array.isArray(existingAnd)
+                baseWhere.AND = Array.isArray(existingAnd)
                     ? [...existingAnd, roomScope]
                     : [existingAnd, roomScope];
             } else {
-                where.AND = [roomScope];
+                baseWhere.AND = [roomScope];
             }
         }
 
         if (canUseLandFilters && zoningStatus) {
-            where.zoningStatus = {
+            baseWhere.zoningStatus = {
                 equals: zoningStatus,
                 mode: "insensitive",
             };
         }
 
         if (canUseLandFilters && parcelNo?.trim()) {
-            where.parcelNo = {
+            baseWhere.parcelNo = {
                 contains: parcelNo.trim(),
                 mode: "insensitive",
             };
@@ -173,7 +178,7 @@ export async function GET(req: NextRequest) {
             const emsalFilter: Prisma.FloatNullableFilter<"Listing"> = {};
             if (minEmsal !== undefined) emsalFilter.gte = minEmsal;
             if (maxEmsal !== undefined) emsalFilter.lte = maxEmsal;
-            where.emsal = emsalFilter;
+            baseWhere.emsal = emsalFilter;
         }
 
         if (
@@ -187,7 +192,7 @@ export async function GET(req: NextRequest) {
             if (maxGroundFloorArea !== undefined) {
                 groundFloorAreaFilter.lte = Math.trunc(maxGroundFloorArea);
             }
-            where.groundFloorArea = groundFloorAreaFilter;
+            baseWhere.groundFloorArea = groundFloorAreaFilter;
         }
 
         if (
@@ -201,20 +206,31 @@ export async function GET(req: NextRequest) {
             if (maxBasementArea !== undefined) {
                 basementAreaFilter.lte = Math.trunc(maxBasementArea);
             }
-            where.basementArea = basementAreaFilter;
+            baseWhere.basementArea = basementAreaFilter;
         }
 
         if (canUseFarmFilters && hasWaterSource !== undefined) {
-            where.hasWaterSource = hasWaterSource;
+            baseWhere.hasWaterSource = hasWaterSource;
         }
 
         if (canUseFarmFilters && hasFruitTrees !== undefined) {
-            where.hasFruitTrees = hasFruitTrees;
+            baseWhere.hasFruitTrees = hasFruitTrees;
         }
 
         if (onlyProjects) {
-            where.isProject = true;
+            baseWhere.isProject = true;
         }
+
+        if (minArea || maxArea) {
+            const areaFilter: Prisma.IntFilter = {};
+            if (minArea) areaFilter.gte = parseInt(minArea, 10);
+            if (maxArea) areaFilter.lte = parseInt(maxArea, 10);
+            baseWhere.area = areaFilter;
+        }
+
+        const where: Prisma.ListingWhereInput = {
+            ...baseWhere,
+        };
 
         if (minPrice || maxPrice) {
             const priceFilter: Prisma.DecimalFilter = {};
@@ -223,12 +239,8 @@ export async function GET(req: NextRequest) {
             where.price = priceFilter;
         }
 
-        if (minArea || maxArea) {
-            const areaFilter: Prisma.IntFilter = {};
-            if (minArea) areaFilter.gte = parseInt(minArea, 10);
-            if (maxArea) areaFilter.lte = parseInt(maxArea, 10);
-            where.area = areaFilter;
-        }
+        const typeCountsWhere: Prisma.ListingWhereInput = { ...where };
+        delete typeCountsWhere.type;
 
         const localeFallbacks = Array.from(new Set([locale, "tr"]));
 
@@ -241,7 +253,8 @@ export async function GET(req: NextRequest) {
                         ? { area: "desc" }
                         : { createdAt: "desc" };
 
-        const [totalCount, listings] = await Promise.all([
+        const [totalCount, listings, priceHistogramRows, typeCountRows] =
+            await Promise.all([
             prisma.listing.count({ where }),
             prisma.listing.findMany({
                 where,
@@ -314,9 +327,47 @@ export async function GET(req: NextRequest) {
                     },
                 },
                 orderBy,
-            })]);
+            }),
+            includePriceHistogram
+                ? prisma.listing.findMany({
+                    where: baseWhere,
+                    select: {
+                        price: true,
+                    },
+                })
+                : Promise.resolve([] as Array<{ price: Prisma.Decimal }>),
+            includeTypeCounts
+                ? prisma.listing.groupBy({
+                    by: ["type"],
+                    where: typeCountsWhere,
+                    _count: {
+                        _all: true,
+                    },
+                })
+                : Promise.resolve(
+                    [] as Array<{ type: PropertyType; _count: { _all: number } }>
+                ),
+            ]);
 
-        return NextResponse.json({ listings, totalCount });
+        const priceHistogramValues = includePriceHistogram
+            ? priceHistogramRows
+                .map((row) => Number(row.price))
+                .filter((value) => Number.isFinite(value))
+            : undefined;
+        const typeCounts = includeTypeCounts
+            ? buildPortfolioTypeCounts(typeCountRows)
+            : undefined;
+
+        return NextResponse.json({
+            listings,
+            totalCount,
+            ...(typeCounts
+                ? { typeCounts }
+                : {}),
+            ...(priceHistogramValues
+                ? { priceHistogramValues }
+                : {}),
+        });
     } catch (error) {
         console.error("Public listings API error:", error);
         return NextResponse.json(

@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
     useEffect,
+    type MouseEvent as ReactMouseEvent,
     useMemo,
     useRef,
     useState,
@@ -44,6 +45,11 @@ import {
     PROPERTY_TYPE_OPTIONS,
     ZONING_STATUS_OPTIONS,
 } from "@/lib/listing-type-rules";
+import {
+    getImageSwipeDirection,
+    shouldIgnoreImageTapAfterSwipe,
+    shouldSwipeImageCarousel,
+} from "@/lib/portfolio-image-gesture";
 import type { MapListing as LeafletMapListing } from "@/components/admin/listings-leaflet-map";
 
 type ListingStatusValue = "DRAFT" | "PUBLISHED" | "ARCHIVED" | "REMOVED";
@@ -171,6 +177,7 @@ const EMSAL_MIN = 0;
 const EMSAL_MAX = 5;
 const EMSAL_STEP = 0.05;
 const IMAGE_SWIPE_THRESHOLD_PX = 48;
+const IMAGE_TAP_SWIPE_COOLDOWN_MS = 400;
 
 const propertyTypes = PROPERTY_TYPE_OPTIONS;
 
@@ -428,7 +435,8 @@ export function PortfolioMapView({ locale }: { locale: string }) {
     const [availableCities, setAvailableCities] = useState<string[]>([]);
     const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
     const [availableNeighborhoods, setAvailableNeighborhoods] = useState<string[]>([]);
-    const swipeStartXRef = useRef<Record<string, number>>({});
+    const swipeStartPointRef = useRef<Record<string, { x: number; y: number }>>({});
+    const lastImageSwipeAtRef = useRef<Record<string, number>>({});
     const [filters, setFilters] = useState<FiltersState>(() =>
         readInitialFilters(new URLSearchParams(searchKey))
     );
@@ -792,7 +800,6 @@ export function PortfolioMapView({ locale }: { locale: string }) {
     const activeImageIndex = activeListing
         ? Math.min(activeImageIndexes[activeListing.id] ?? 0, maxImageIndex)
         : 0;
-
     const toggleType = (type: string) => {
         setFilters((previous) => ({
             ...previous,
@@ -844,7 +851,10 @@ export function PortfolioMapView({ locale }: { locale: string }) {
     ) => {
         const point = event.touches[0];
         if (!point) return;
-        swipeStartXRef.current[listingId] = point.clientX;
+        swipeStartPointRef.current[listingId] = {
+            x: point.clientX,
+            y: point.clientY,
+        };
     };
 
     const handleImageTouchEnd = (
@@ -852,22 +862,44 @@ export function PortfolioMapView({ locale }: { locale: string }) {
         mediaLength: number,
         event: ReactTouchEvent<HTMLDivElement>
     ) => {
-        if (mediaLength <= 1) return;
-
-        const startX = swipeStartXRef.current[listingId];
+        const startPoint = swipeStartPointRef.current[listingId];
         const point = event.changedTouches[0];
-        if (startX === undefined || !point) return;
+        delete swipeStartPointRef.current[listingId];
+        if (!startPoint || !point || mediaLength <= 1) return;
 
-        const deltaX = point.clientX - startX;
-        delete swipeStartXRef.current[listingId];
+        const deltaX = point.clientX - startPoint.x;
+        const deltaY = point.clientY - startPoint.y;
+        const shouldSwipe = shouldSwipeImageCarousel({
+            deltaX,
+            deltaY,
+            thresholdPx: IMAGE_SWIPE_THRESHOLD_PX,
+        });
+        if (!shouldSwipe) return;
 
-        if (Math.abs(deltaX) < IMAGE_SWIPE_THRESHOLD_PX) return;
-
-        updateImageIndex(listingId, mediaLength, deltaX < 0 ? "next" : "prev");
+        lastImageSwipeAtRef.current[listingId] = Date.now();
+        updateImageIndex(listingId, mediaLength, getImageSwipeDirection(deltaX));
     };
 
     const handleImageTouchCancel = (listingId: string) => {
-        delete swipeStartXRef.current[listingId];
+        delete swipeStartPointRef.current[listingId];
+    };
+
+    const handleImageClick = (
+        listingId: string,
+        href: string,
+        event: ReactMouseEvent<HTMLDivElement>
+    ) => {
+        const target = event.target as HTMLElement | null;
+        if (target?.closest("a,button")) return;
+
+        const shouldIgnoreClick = shouldIgnoreImageTapAfterSwipe({
+            lastSwipeAt: lastImageSwipeAtRef.current[listingId],
+            now: Date.now(),
+            cooldownMs: IMAGE_TAP_SWIPE_COOLDOWN_MS,
+        });
+        if (shouldIgnoreClick) return;
+
+        router.push(href);
     };
 
     const handleMinPriceInput = (event: ChangeEvent<HTMLInputElement>) => {
@@ -1135,17 +1167,17 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                             </button>
                             <div className="grid grid-cols-1 md:grid-cols-[300px_1fr_200px]">
                                 <div className="relative min-h-[220px] overflow-hidden bg-gray-100">
-                                    {activeListing.isProject ? (
-                                        <Link
-                                            href={`/${locale}/proje/${activeListing.slug}`}
-                                            aria-label={`${getListingTitle(activeListing, locale)} projesini incele`}
-                                            className="absolute inset-0 z-[5] md:hidden"
-                                        />
-                                    ) : null}
                                     {gallerySlides.length > 0 ? (
                                         <div
-                                            className="absolute inset-0 overflow-hidden"
+                                            className="absolute inset-0 cursor-pointer overflow-hidden"
                                             style={{ touchAction: "pan-y" }}
+                                            onClick={(event) =>
+                                                handleImageClick(
+                                                    activeListing.id,
+                                                    listingDetailHref,
+                                                    event
+                                                )
+                                            }
                                             onTouchStart={(event) =>
                                                 handleImageTouchStart(activeListing.id, event)
                                             }

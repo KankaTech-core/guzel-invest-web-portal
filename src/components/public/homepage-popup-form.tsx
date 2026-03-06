@@ -8,6 +8,10 @@ import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import {
+    isHomepagePopupDismissedForSession,
+    markHomepagePopupDismissedForSession,
+} from "@/lib/homepage-popup-session";
 
 interface HomepagePopupFormProps {
     locale?: string;
@@ -20,6 +24,7 @@ const DEFAULT_COUNTRY_BY_LOCALE: Partial<Record<string, CountryCode>> = {
     ru: "RU",
     ar: "AE",
 };
+const POPUP_AUTO_OPEN_DELAY_MS = 10_000;
 
 function getDefaultCountryForLocale(locale?: string): CountryCode {
     const baseLocale = locale?.toLowerCase().split("-")[0];
@@ -78,6 +83,8 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
     }, []);
 
     const handleClose = useCallback((fromPopState = false) => {
+        markHomepagePopupDismissedForSession(window.sessionStorage);
+
         const historyMarker = popupHistoryMarkerRef.current;
         popupHistoryMarkerRef.current = null;
 
@@ -94,12 +101,18 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
     }, []);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            openPopup();
-        }, 5000);
-
         const handleOpenEvent = () => openPopup();
         window.addEventListener("open-homepage-popup", handleOpenEvent);
+
+        if (isHomepagePopupDismissedForSession(window.sessionStorage)) {
+            return () => {
+                window.removeEventListener("open-homepage-popup", handleOpenEvent);
+            };
+        }
+
+        const timer = setTimeout(() => {
+            openPopup();
+        }, POPUP_AUTO_OPEN_DELAY_MS);
 
         return () => {
             clearTimeout(timer);

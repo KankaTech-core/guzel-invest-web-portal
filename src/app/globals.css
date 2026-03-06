@@ -249,6 +249,13 @@ select:disabled {
   font-size: 1rem;
 }
 
+html.mobile-menu-open,
+body.mobile-menu-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
 /* ============================================
    CARD STYLES
    ============================================ */
@@ -656,7 +663,7 @@ select.input {
   display: inline-block;
   color: #ffffff;
   will-change: color, text-shadow;
-  animation: promo-text-blink 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: promo-text-blink 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .animate-slide-next {

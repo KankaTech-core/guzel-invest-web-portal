@@ -47,6 +47,7 @@ import {
     getImageSwipeDirection,
     shouldSwipeImageCarousel,
 } from "@/lib/portfolio-image-gesture";
+import { buildPortfolioTypeCounts } from "@/lib/portfolio-type-counts";
 import {
     isCategoryFieldVisibleForTypes,
     normalizeZoningStatus,
@@ -837,6 +838,9 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
     const [listings, setListings] = useState<Listing[]>([]);
     const [fallbackListings, setFallbackListings] = useState<Listing[]>([]);
+    const [typeCounts, setTypeCounts] = useState<Record<string, number>>(() =>
+        buildPortfolioTypeCounts([])
+    );
     const [priceHistogramValues, setPriceHistogramValues] = useState<number[]>([]);
     const [activeImageIndexes, setActiveImageIndexes] = useState<Record<string, number>>({});
     const [activeMobilePanel, setActiveMobilePanel] = useState<MobilePanel | null>(null);
@@ -1347,6 +1351,17 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         isRoomsFilterVisible,
         locale,
     ]);
+    const priceHistogramQueryString = useMemo(() => {
+        const params = new URLSearchParams(queryString);
+        params.delete("minPrice");
+        params.delete("maxPrice");
+        params.delete("sort");
+        params.set("includePriceHistogram", "true");
+        params.set("page", "1");
+        params.set("limit", "1");
+
+        return params.toString();
+    }, [queryString]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -1386,6 +1401,70 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         const params = new URLSearchParams(queryString);
         return ACTIVE_FILTER_QUERY_KEYS.some((key) => params.has(key));
     }, [queryString]);
+    const categoryBadgeCount = useMemo(() => {
+        const activeTypes =
+            filters.types.length > 0
+                ? filters.types
+                : propertyTypes.map((type) => type.value);
+
+        return activeTypes.reduce(
+            (total, type) => total + (typeCounts[type] || 0),
+            0
+        );
+    }, [filters.types, typeCounts]);
+
+    useEffect(() => {
+        const controller = new AbortController();
+
+        const loadPriceHistogram = async () => {
+            try {
+                const response = await fetch(
+                    `/api/public/listings?${priceHistogramQueryString}`,
+                    {
+                        signal: controller.signal,
+                        cache: "no-store",
+                        headers: {
+                            "Cache-Control": "no-store",
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    setPriceHistogramValues([]);
+                    return;
+                }
+
+                const payload = (await response.json()) as {
+                    priceHistogramValues?: number[];
+                };
+
+                if (controller.signal.aborted) {
+                    return;
+                }
+
+                const nextHistogramValues = Array.isArray(payload.priceHistogramValues)
+                    ? payload.priceHistogramValues.filter(
+                        (value): value is number =>
+                            typeof value === "number" && Number.isFinite(value)
+                    )
+                    : [];
+
+                setPriceHistogramValues(nextHistogramValues);
+            } catch (fetchError) {
+                if (isAbortFetchError(fetchError)) {
+                    return;
+                }
+
+                setPriceHistogramValues([]);
+            }
+        };
+
+        void loadPriceHistogram();
+
+        return () => {
+            controller.abort();
+        };
+    }, [priceHistogramQueryString]);
 
     const {
         visibleListings,
@@ -1486,7 +1565,12 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 const fetchLimit = (mode === "background" || mode === "initial") ? currentPage * limit : limit;
                 const fetchPage = mode === "nextPage" ? currentPage : 1;
 
-                const url = `/api/public/listings?${queryString}&page=${fetchPage}&limit=${fetchLimit}`;
+                const params = new URLSearchParams(queryString);
+                params.set("page", String(fetchPage));
+                params.set("limit", String(fetchLimit));
+                params.set("includeTypeCounts", "true");
+
+                const url = `/api/public/listings?${params.toString()}`;
 
                 const response = await fetch(url, {
                     signal: controller.signal,
@@ -1504,9 +1588,23 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                     throw new Error(apiError);
                 }
 
-                const data = (await response.json()) as { listings: Listing[], totalCount?: number };
+                const data = (await response.json()) as {
+                    listings: Listing[];
+                    totalCount?: number;
+                    typeCounts?: Record<string, unknown>;
+                };
                 const nextListings = Array.isArray(data.listings) ? data.listings : [];
-                const nextPriceHistogramValues = buildPriceHistogramValues(nextListings);
+                if (data.typeCounts && typeof data.typeCounts === "object") {
+                    const normalizedTypeCounts = buildPortfolioTypeCounts(
+                        Object.entries(data.typeCounts).map(([type, rawCount]) => ({
+                            type,
+                            _count: {
+                                _all: typeof rawCount === "number" ? rawCount : 0,
+                            },
+                        }))
+                    );
+                    setTypeCounts(normalizedTypeCounts);
+                }
                 const nextSnapshot = nextListings
                     .map((listing) => {
                         const mediaSignature = listing.media.map((media) => media.url).join(",");
@@ -1540,10 +1638,6 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         }
                         return nextIndexes;
                     });
-
-                    if (nextPriceHistogramValues.length > 0) {
-                        setPriceHistogramValues(nextPriceHistogramValues);
-                    }
                     snapshotRef.current = nextSnapshot;
                 }
 
@@ -1664,13 +1758,6 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             observer.unobserve(target);
         };
     }, [hasMore, isFetchingNextPage]);
-
-    const typeCounts = useMemo(() => {
-        return listings.reduce<Record<string, number>>((accumulator, listing) => {
-            accumulator[listing.type] = (accumulator[listing.type] || 0) + 1;
-            return accumulator;
-        }, {});
-    }, [listings]);
 
     useEffect(() => {
         setActiveImageIndexes((previous) => {
@@ -2013,7 +2100,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 </div>
             </div>
 
-            <div className="mb-6 hidden">
+            <div className="mb-6">
                 <button
                     type="button"
                     onClick={() => setIsCategoryExpanded((previous) => !previous)}
@@ -2042,7 +2129,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 : "bg-gray-100 text-gray-500"
                                 }`}
                         >
-                            {filters.types.length}
+                            {categoryBadgeCount}
                         </span>
                         <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition group-hover:border-gray-300 group-hover:text-gray-700">
                             <ChevronDown
@@ -2661,63 +2748,42 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             className="max-w-[1400px] mx-auto px-4 pb-28 sm:px-6 sm:pb-32 lg:px-8 lg:pb-16"
             style={{ fontFamily: "var(--font-ibm-plex-sans)" }}
         >
-            <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-                <div>
-                    <div className="mb-2 flex items-center gap-2 text-xs text-gray-400" style={monoStyle}>
-                        <span>/</span>
-                        <span className="text-gray-600">portföy</span>
-                    </div>
-                    <h1 className="text-3xl font-bold text-gray-900">Gayrimenkul Portföyü</h1>
-                </div>
-
-                <Link
-                    href={mapHref}
-                    className="group relative hidden w-[192px] aspect-video overflow-hidden rounded-2xl border border-gray-200 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_10px_24px_rgba(30,40,57,0.22)] lg:block"
-                >
-                    <Image
-                        src="/images/testimonials/portfolio-map-banner-image.webp"
-                        alt="Harita görünümü arka planı"
-                        fill
-                        className="object-cover transition duration-300 ease-out group-hover:brightness-110 group-hover:saturate-110"
-                        sizes="192px"
-                    />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/0 via-white/0 to-white/0 opacity-0 transition-opacity duration-300 group-hover:from-white/10 group-hover:via-white/4 group-hover:to-transparent group-hover:opacity-100" />
-                    <div className="relative z-10 flex h-full items-center justify-center p-2.5">
-                        <span className="rounded-full px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors duration-300 group-hover:bg-[#16202f]" style={{ backgroundColor: "#1E2839" }}>
-                            Harita
-                        </span>
-                    </div>
-                </Link>
-            </div>
-
-            <div className="mb-6 hidden rounded-xl border border-gray-200 bg-white p-4 lg:block">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm text-gray-500">Filtreler:</span>
-                        {filters.types.length === 0 ? (
-                            <span className="rounded-md bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-500">
-                                Tüm Kategoriler
-                            </span>
-                        ) : (
-                            filters.types.map((type) => {
-                                const typeLabel = propertyTypes.find((option) => option.value === type)?.label || type;
-                                return (
-                                    <button
-                                        key={type}
-                                        type="button"
-                                        onClick={() => toggleType(type)}
-                                        className="cursor-pointer rounded-md bg-orange-500 px-3 py-1.5 text-xs font-medium text-white"
-                                    >
-                                        {typeLabel}
-                                    </button>
-                                );
-                            })
-                        )}
+            <div className="mb-6 hidden rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 lg:block">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="text-sm text-gray-500">
+                        Toplam sonuç:{" "}
+                        <span className="font-semibold text-gray-900" style={monoStyle}>
+                            {resolvePortfolioResultCount({
+                                totalCount,
+                                loadedCount: listings.length,
+                            })}
+                        </span>{" "}
+                        ilan
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2.5">
+                        <Link
+                            href={mapHref}
+                            className="group relative inline-flex h-10 w-[122px] overflow-hidden rounded-lg border border-gray-200 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_8px_20px_rgba(30,40,57,0.2)]"
+                        >
+                            <Image
+                                src="/images/testimonials/portfolio-map-banner-image.webp"
+                                alt="Harita görünümü arka planı"
+                                fill
+                                className="object-cover transition duration-300 ease-out group-hover:brightness-110 group-hover:saturate-110"
+                                sizes="122px"
+                            />
+                            <div className="relative z-10 flex h-full w-full items-center justify-center p-1.5">
+                                <span
+                                    className="rounded-full px-3 py-1 text-xs font-semibold text-white shadow-sm transition-colors duration-300 group-hover:bg-[#16202f]"
+                                    style={{ backgroundColor: "#1E2839" }}
+                                >
+                                    Harita
+                                </span>
+                            </div>
+                        </Link>
                         <InlineDropdown
-                            widthClassName="w-[220px]"
+                            widthClassName="w-[210px]"
                             value={filters.sort}
                             onChange={(value) =>
                                 setFilters((previous) => ({
@@ -2735,7 +2801,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 </div>
             </div>
 
-            <div className="mb-6 flex items-center justify-between gap-3 text-sm text-gray-500">
+            <div className="mb-6 flex items-center justify-between gap-3 text-sm text-gray-500 lg:hidden">
                 <div>
                     Toplam sonuç:{" "}
                     <span className="font-semibold text-gray-900" style={monoStyle}>
@@ -2758,8 +2824,12 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
-                <aside className="sticky top-28 hidden h-fit rounded-xl border border-gray-200 bg-white p-5 lg:block">
-                    {renderFilterPanelContent(false)}
+                <aside className="sticky top-28 hidden self-start lg:block">
+                    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                        <div className="max-h-[calc(100vh-10.5rem)] overflow-y-auto p-5">
+                            {renderFilterPanelContent(false)}
+                        </div>
+                    </div>
                 </aside>
 
                 <div className="space-y-4">
@@ -3059,7 +3129,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                             </span>
                                                         )}
                                                         {projectPromoText && (
-                                                            <span className="rounded-md border border-red-500 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                                                            <span className="text-[10px] font-bold uppercase tracking-wider text-red-600">
                                                                 <span className="promo-text-blink">
                                                                     {projectPromoText}
                                                                 </span>

@@ -14,6 +14,7 @@ import {
     Facebook,
     Loader2,
     MapPin,
+    Building2,
 } from "lucide-react";
 import { useCallback, useEffect, useState, useRef } from "react";
 import {
@@ -202,9 +203,11 @@ export function Navbar({ locale }: { locale: string }) {
                 detail: { isOpen },
             })
         );
+        document.documentElement.classList.toggle("mobile-menu-open", isOpen);
         document.body.classList.toggle("mobile-menu-open", isOpen);
 
         return () => {
+            document.documentElement.classList.remove("mobile-menu-open");
             document.body.classList.remove("mobile-menu-open");
         };
     }, [isOpen]);
@@ -531,6 +534,18 @@ export function Navbar({ locale }: { locale: string }) {
                             </Link>
                         );
                     })}
+
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setIsOpen(false);
+                            window.dispatchEvent(new Event("open-homepage-popup"));
+                        }}
+                        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-3 text-base font-medium text-white transition-colors hover:bg-gray-800"
+                    >
+                        <Building2 className="h-4 w-4" />
+                        {t("homepage.ctaMap")}
+                    </button>
 
                     <div className="mt-6 pt-6 border-t border-gray-100">
                         <p className="text-sm text-gray-400 mb-3">Sosyal Medya</p>

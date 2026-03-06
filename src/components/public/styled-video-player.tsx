@@ -12,6 +12,7 @@ interface StyledVideoPlayerProps {
     autoPlay?: boolean;
     loop?: boolean;
     mutedByDefault?: boolean;
+    unmuteOnPlay?: boolean;
     playButtonPlacement?: PlayButtonPlacement;
     toggleOnVideoClick?: boolean;
     showPlayButtonOnlyWhenPaused?: boolean;
@@ -24,6 +25,7 @@ export function StyledVideoPlayer({
     autoPlay = false,
     loop = false,
     mutedByDefault = false,
+    unmuteOnPlay = false,
     playButtonPlacement = "corner",
     toggleOnVideoClick = false,
     showPlayButtonOnlyWhenPaused = false,
@@ -57,6 +59,10 @@ export function StyledVideoPlayer({
         if (!video) return;
 
         if (video.paused) {
+            if (unmuteOnPlay && video.muted) {
+                video.muted = false;
+                setIsMuted(false);
+            }
             void video
                 .play()
                 .then(() => setIsPlaying(true))

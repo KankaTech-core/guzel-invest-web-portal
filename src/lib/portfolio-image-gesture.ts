@@ -4,6 +4,12 @@ interface ShouldSwipeImageCarouselInput {
     thresholdPx: number;
 }
 
+interface ShouldIgnoreImageTapAfterSwipeInput {
+    lastSwipeAt?: number;
+    now: number;
+    cooldownMs: number;
+}
+
 export function shouldSwipeImageCarousel({
     deltaX,
     deltaY,
@@ -17,4 +23,13 @@ export function shouldSwipeImageCarousel({
 
 export function getImageSwipeDirection(deltaX: number): "prev" | "next" {
     return deltaX < 0 ? "next" : "prev";
+}
+
+export function shouldIgnoreImageTapAfterSwipe({
+    lastSwipeAt,
+    now,
+    cooldownMs,
+}: ShouldIgnoreImageTapAfterSwipeInput): boolean {
+    if (typeof lastSwipeAt !== "number") return false;
+    return now - lastSwipeAt < cooldownMs;
 }

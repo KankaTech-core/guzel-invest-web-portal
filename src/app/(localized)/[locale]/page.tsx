@@ -292,6 +292,7 @@ function TestimonialMedia({
             autoPlay={false}
             loop={false}
             mutedByDefault={true}
+            unmuteOnPlay={true}
             playButtonPlacement="center"
             toggleOnVideoClick={true}
             showPlayButtonOnlyWhenPaused={true}
@@ -1088,7 +1089,7 @@ export default function HomePage() {
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                         {/* Main Content */}
                         <div className="lg:col-span-5 pt-2 sm:pt-4 lg:pt-8">
-                            <div className="reveal flex items-center justify-center lg:justify-start gap-2 bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm mb-6 lg:mb-6 w-fit mx-auto lg:mx-0">
+                            <div className="reveal hidden lg:flex items-center justify-center lg:justify-start gap-2 bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm mb-6 lg:mb-6 w-fit mx-auto lg:mx-0">
                                 <Globe className="w-4 h-4" />
                                 Alanya Satış & Yatırım Merkezi
                             </div>
@@ -1101,26 +1102,6 @@ export default function HomePage() {
                             <p className="reveal text-lg text-gray-500 mb-8 leading-relaxed max-w-md text-center lg:text-left mx-auto lg:mx-0">
                                 2001&apos;den bu yana Alanya&apos;da güvenilir gayrimenkul platformu. Satılık, kiralık mülkler ve profesyonel danışmanlık hizmetleriyle yanınızdayız.
                             </p>
-
-                            {/* Mobile Buttons - After subtitle */}
-                            <div className="reveal flex lg:hidden items-center gap-4 mb-8">
-                                <Link
-                                    href={`/${locale}/portfoy`}
-                                    className="inline-flex items-center gap-2 bg-gray-900 text-white px-7 py-4 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors"
-                                >
-                                    {th("ctaPortfolio")}
-                                    <ChevronRight className="w-4 h-4" />
-                                </Link>
-                                <button
-                                    onClick={() => window.dispatchEvent(new Event("open-homepage-popup"))}
-                                    className="inline-flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors text-sm"
-                                >
-                                    <span className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 transition-colors">
-                                        <Building2 className="w-4 h-4" />
-                                    </span>
-                                    {th("ctaMap")}
-                                </button>
-                            </div>
 
                             {/* Mobile Mixed Slider (Projects + Listings) */}
                             <div className="lg:hidden mb-8">
@@ -1149,7 +1130,7 @@ export default function HomePage() {
                                                                     href={`/${locale}/portfoy`}
                                                                     className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-6 py-3 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
                                                                 >
-                                                                    Hepsini Gör
+                                                                    Portföyü Gör
                                                                     <ChevronRight className="h-4 w-4" />
                                                                 </Link>
                                                             </div>
@@ -1447,7 +1428,7 @@ export default function HomePage() {
                                                             href={`/${locale}/portfoy`}
                                                             className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-6 py-3 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
                                                         >
-                                                            Hepsini Gör
+                                                            Portföyü Gör
                                                             <ChevronRight className="h-4 w-4" />
                                                         </Link>
                                                     </div>
@@ -1575,7 +1556,7 @@ export default function HomePage() {
                                                                 href={`/${locale}/portfoy`}
                                                                 className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
                                                             >
-                                                                Hepsini Gör
+                                                                Portföyü Gör
                                                                 <ChevronRight className="h-4 w-4" />
                                                             </Link>
                                                         </div>

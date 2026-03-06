@@ -177,9 +177,22 @@ export function Footer({ locale }: { locale: string }) {
 
             {/* Bottom Bar */}
             <div className="border-t border-gray-200 bg-white">
-                <div className="container-custom py-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <p className="text-gray-400 text-sm">{t("footer.copyright")}</p>
-                    <div className="flex gap-6 text-sm">
+                <div className="container-custom grid grid-cols-1 md:grid-cols-3 items-center gap-4 py-6">
+                    <p className="text-gray-400 text-sm text-center md:text-left">
+                        {t("footer.copyright")}
+                    </p>
+                    <p className="text-gray-400 text-sm text-center">
+                        Made with{" "}
+                        <a
+                            href="https://kankatech.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-black hover:text-black"
+                        >
+                            KankaTech
+                        </a>
+                    </p>
+                    <div className="flex gap-6 text-sm justify-center md:justify-end">
                         <Link
                             href={`/${locale}/gizlilik`}
                             className="text-gray-400 hover:text-orange-500 transition-colors"

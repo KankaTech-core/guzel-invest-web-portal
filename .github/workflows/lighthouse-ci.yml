@@ -1,15 +1,14 @@
 name: Lighthouse CI
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
   lhci:
     runs-on: ubuntu-latest
+    env:
+      # Prisma runs on `npm ci` via postinstall and requires DATABASE_URL to be present.
+      DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://ci:ci@localhost:5432/lhci?schema=public' }}
 
     steps:
       - name: Checkout
