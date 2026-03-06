@@ -418,6 +418,7 @@ export default function HomePage() {
     const [projectSlideIndex, setProjectSlideIndex] = useState(0);
     const [mobileCarouselSlideIndex, setMobileCarouselSlideIndex] = useState(0);
     const [heroVideo, setHeroVideo] = useState<HomepageHeroVideo>(HERO_VIDEO_FALLBACK);
+    const [heroAutoplayReadyUrl, setHeroAutoplayReadyUrl] = useState<string | null>(null);
     const [isHeroVideoModalOpen, setIsHeroVideoModalOpen] = useState(false);
     const [testimonials, setTestimonials] = useState(TESTIMONIALS_FALLBACK);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -626,6 +627,27 @@ export default function HomePage() {
             controller.abort();
         };
     }, []);
+
+    useEffect(() => {
+        if (heroVideo.source !== "youtube" || !heroVideo.autoplayEmbedUrl) {
+            return;
+        }
+
+        // Keep first paint lightweight, then start autoplaying the embed.
+        const targetAutoplayUrl = heroVideo.autoplayEmbedUrl;
+        const timer = window.setTimeout(() => {
+            setHeroAutoplayReadyUrl(targetAutoplayUrl);
+        }, 1200);
+
+        return () => {
+            window.clearTimeout(timer);
+        };
+    }, [heroVideo.source, heroVideo.autoplayEmbedUrl]);
+
+    const shouldAutoplayHeroPreview =
+        heroVideo.source === "youtube" &&
+        Boolean(heroVideo.autoplayEmbedUrl) &&
+        heroVideo.autoplayEmbedUrl === heroAutoplayReadyUrl;
 
     useEffect(() => {
         let isMounted = true;
@@ -1660,7 +1682,17 @@ export default function HomePage() {
                                         onClick={() => setIsHeroVideoModalOpen(true)}
                                         className="group absolute inset-0 block h-full w-full cursor-pointer overflow-hidden"
                                     >
-                                        {heroVideo.source === "youtube" && heroVideo.thumbnailUrl ? (
+                                        {heroVideo.source === "youtube" && shouldAutoplayHeroPreview && heroVideo.autoplayEmbedUrl ? (
+                                            <iframe
+                                                className="pointer-events-none absolute inset-0 h-full w-full origin-center scale-[2.3] transform-gpu"
+                                                src={heroVideo.autoplayEmbedUrl}
+                                                title="Hero video player"
+                                                frameBorder="0"
+                                                allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                referrerPolicy="strict-origin-when-cross-origin"
+                                                allowFullScreen
+                                            ></iframe>
+                                        ) : heroVideo.source === "youtube" && heroVideo.thumbnailUrl ? (
                                             <Image
                                                 src={heroVideo.thumbnailUrl}
                                                 alt="Hero video preview"
@@ -1675,7 +1707,6 @@ export default function HomePage() {
                                                 src={heroVideo.autoplayEmbedUrl}
                                                 title="Hero video player"
                                                 frameBorder="0"
-                                                loading="lazy"
                                                 allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                                 referrerPolicy="strict-origin-when-cross-origin"
                                                 allowFullScreen
