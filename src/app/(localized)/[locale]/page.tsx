@@ -8,6 +8,10 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { LastUnitsCornerRibbon } from "@/components/public/last-units-corner-ribbon";
+import {
+    HomepageArticlesSection,
+    type HomepageArticlePreview,
+} from "@/components/public/homepage-articles-section";
 import { shouldShowLastUnitsRibbon } from "@/lib/last-units-ribbon";
 import {
     getMediaUrl,
@@ -421,6 +425,7 @@ export default function HomePage() {
     const [heroAutoplayReadyUrl, setHeroAutoplayReadyUrl] = useState<string | null>(null);
     const [isHeroVideoModalOpen, setIsHeroVideoModalOpen] = useState(false);
     const [testimonials, setTestimonials] = useState(TESTIMONIALS_FALLBACK);
+    const [articles, setArticles] = useState<HomepageArticlePreview[]>([]);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobileSearchSticky, setIsMobileSearchSticky] = useState(false);
     const desktopBannerRef = useRef<HTMLFormElement>(null);
@@ -442,7 +447,6 @@ export default function HomePage() {
     const highlightRevealRef = useScrollReveal<HTMLElement>();
     const testimonialsRevealRef = useScrollReveal<HTMLElement>();
     const ctaRevealRef = useScrollReveal<HTMLElement>();
-    const blogRevealRef = useScrollReveal<HTMLElement>();
     const faqRevealRef = useScrollReveal<HTMLElement>();
     const selectedPropertyType = propertyTypes.find((propertyTypeOption) => propertyTypeOption.value === propertyType);
 
@@ -648,6 +652,39 @@ export default function HomePage() {
         heroVideo.source === "youtube" &&
         Boolean(heroVideo.autoplayEmbedUrl) &&
         heroVideo.autoplayEmbedUrl === heroAutoplayReadyUrl;
+
+    useEffect(() => {
+        let isMounted = true;
+        const controller = new AbortController();
+
+        const loadHomepageArticles = async () => {
+            try {
+                const response = await fetch("/api/public/articles", {
+                    signal: controller.signal,
+                    cache: "no-store",
+                });
+                if (!response.ok) return;
+
+                const data = (await response.json()) as {
+                    articles?: HomepageArticlePreview[];
+                };
+                if (!isMounted) return;
+
+                setArticles(Array.isArray(data?.articles) ? data.articles : []);
+            } catch {
+                if (isMounted) {
+                    setArticles([]);
+                }
+            }
+        };
+
+        loadHomepageArticles();
+
+        return () => {
+            isMounted = false;
+            controller.abort();
+        };
+    }, []);
 
     useEffect(() => {
         let isMounted = true;
@@ -2221,8 +2258,8 @@ export default function HomePage() {
                                 {[
                                     { value: "300+", label: "Güneşli gün/yıl" },
                                     { value: "25°C", label: "Ortalama sıcaklık" },
-                                    { value: "2.8K €", label: "m² ortalama fiyat" },
-                                    { value: "15%", label: "Yıllık değer artışı" },
+                                    { value: "8M+", label: "Üzerinde turist" },
+                                    { value: "110+", label: "Ülkeden yatırımcı" },
                                 ].map((stat) => (
                                     <div key={stat.label} className="bg-gray-800 rounded-lg p-4">
                                         <p className="text-2xl font-bold text-orange-500">{stat.value}</p>
@@ -2235,7 +2272,7 @@ export default function HomePage() {
                                 href={`/${locale}/iletisim`}
                                 className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
                             >
-                                Detaylı Rapor İndir
+                                Daha Fazla Bilgi
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                         </div>
@@ -2260,7 +2297,6 @@ export default function HomePage() {
                                         <p className="text-sm font-semibold text-gray-900">
                                             Yatırım Getirisi
                                         </p>
-                                        <p className="text-xs text-gray-500">Son 5 yıl: +78%</p>
                                     </div>
                                 </div>
                             </div>
@@ -2434,100 +2470,7 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* ════════════════════════════════════════════
-                BLOG – SON MAKALELER
-            ════════════════════════════════════════════ */}
-            <section ref={blogRevealRef} className="py-20 px-4 sm:px-6 bg-white">
-                <div className="max-w-7xl mx-auto">
-                    {/* Section Header */}
-                    <div className="reveal flex items-end justify-between mb-12 pb-6 border-b border-gray-100">
-                        <div>
-                            <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
-                                Blog
-                            </span>
-                            <h2 className="text-3xl font-bold text-gray-900 mt-2">
-                                Son Makaleler
-                            </h2>
-                        </div>
-                        <Link
-                            href={`/${locale}/blog`}
-                            className="hidden sm:inline-flex items-center gap-2 text-sm text-gray-500 hover:text-orange-500 transition-colors font-medium"
-                        >
-                            Tüm Makaleleri Gör
-                            <ArrowRight className="w-4 h-4" />
-                        </Link>
-                    </div>
-
-                    {/* Articles Grid */}
-                    <div className="reveal-stagger grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {[
-                            {
-                                image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=600&h=400&fit=crop",
-                                date: "5 Şubat 2025",
-                                title: "2025'te Alanya'da Gayrimenkul Yatırımı: Neler Beklenmeli?",
-                                summary: "Alanya gayrimenkul piyasasının 2025 trendleri, bölgesel fiyat analizleri ve yatırımcılar için fırsat noktalarını ele aldık.",
-                            },
-                            {
-                                image: "https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=600&h=400&fit=crop",
-                                date: "18 Ocak 2025",
-                                title: "Yabancıların Türkiye'de Mülk Satın Alma Rehberi",
-                                summary: "Tapu işlemlerinden vatandaşlık başvurusuna kadar yabancı yatırımcıların bilmesi gereken tüm adımlar.",
-                            },
-                            {
-                                image: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=600&h=400&fit=crop",
-                                date: "3 Ocak 2025",
-                                title: "Kargıcak vs Mahmutlar: Hangi Bölge Daha Karlı?",
-                                summary: "İki popüler Alanya bölgesinin kira getirisi, değer artışı ve yaşam kalitesi karşılaştırması.",
-                            },
-                        ].map((article, idx) => (
-                            <Link
-                                key={idx}
-                                href={`/${locale}/blog`}
-                                className="reveal group rounded-xl border border-gray-100 overflow-hidden hover:border-orange-200 hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-300 bg-white"
-                            >
-                                {/* Image */}
-                                <div className="relative h-48 overflow-hidden">
-                                    <Image
-                                        src={article.image}
-                                        alt={article.title}
-                                        fill
-                                        sizes="(max-width: 767px) 100vw, (min-width: 1280px) 411px, 33vw"
-                                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                    />
-                                </div>
-
-                                {/* Content */}
-                                <div className="p-5">
-                                    <span className="text-[11px] text-gray-400 font-medium">
-                                        {article.date}
-                                    </span>
-                                    <h3 className="text-base font-semibold text-gray-900 mt-2 mb-2 group-hover:text-orange-600 transition-colors leading-snug">
-                                        {article.title}
-                                    </h3>
-                                    <p className="text-sm text-gray-400 leading-relaxed line-clamp-2">
-                                        {article.summary}
-                                    </p>
-                                    <div className="mt-4 flex items-center gap-1.5 text-orange-500 text-sm font-medium opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-300">
-                                        Devamını Oku
-                                        <ArrowRight className="w-3.5 h-3.5" />
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-
-                    {/* Mobile CTA */}
-                    <div className="mt-8 text-center sm:hidden">
-                        <Link
-                            href={`/${locale}/blog`}
-                            className="inline-flex items-center gap-2 text-sm text-orange-500 font-semibold"
-                        >
-                            Tüm Makaleleri Gör
-                            <ArrowRight className="w-4 h-4" />
-                        </Link>
-                    </div>
-                </div>
-            </section>
+            <HomepageArticlesSection locale={locale} articles={articles} />
 
             {/* ════════════════════════════════════════════
                 FAQ – SIKÇA SORULAN SORULAR
@@ -2583,7 +2526,7 @@ export default function HomePage() {
                         ].map((faq, idx) => (
                             <div
                                 key={idx}
-                                className="reveal border-b border-gray-100"
+                                className="reveal is-visible border-b border-gray-100"
                             >
                                 <button
                                     type="button"

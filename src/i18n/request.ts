@@ -1,23 +1,17 @@
 import { getRequestConfig } from "next-intl/server";
 import { hasLocale } from "next-intl";
 
-export const locales = ["tr", "en", "de", "ru"] as const;
+export const locales = ["tr"] as const;
 export type Locale = (typeof locales)[number];
 
 export const defaultLocale: Locale = "tr";
 
 export const localeNames: Record<Locale, string> = {
     tr: "Türkçe",
-    en: "English",
-    de: "Deutsch",
-    ru: "Русский",
 };
 
 export const localeFlags: Record<Locale, string> = {
     tr: "🇹🇷",
-    en: "🇬🇧",
-    de: "🇩🇪",
-    ru: "🇷🇺",
 };
 
 // RTL languages

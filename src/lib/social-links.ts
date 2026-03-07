@@ -1,5 +1,6 @@
 export const SOCIAL_LINKS = {
     instagram: "https://www.instagram.com/guzelinvest",
+    instagramDm: "https://ig.me/m/guzelinvest",
     youtube: "https://www.youtube.com/@G%C3%9CZEL%C4%B0NVEST",
     facebook: "https://www.facebook.com/guzelinvestalanya",
 } as const;

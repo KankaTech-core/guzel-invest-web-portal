@@ -147,18 +147,18 @@ export function Footer({ locale }: { locale: string }) {
                             <li className="flex gap-3">
                                 <MapPin className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
                                 <span className="text-gray-500">
-                                    Kestel Mah. Sahil Cad. No:123
+                                    Saray, Sugözü Cd. Akdoğan Tokuş Apt No: 15/B,
                                     <br />
-                                    Alanya / Antalya
+                                    07400 Alanya/Antalya
                                 </span>
                             </li>
                             <li className="flex gap-3">
                                 <Phone className="w-5 h-5 text-orange-500 shrink-0" />
                                 <a
-                                    href="tel:+902421234567"
+                                    href="tel:+905384751111"
                                     className="text-gray-500 hover:text-orange-500 transition-colors"
                                 >
-                                    +90 242 123 45 67
+                                    +90 538 475 11 11
                                 </a>
                             </li>
                             <li className="flex gap-3">

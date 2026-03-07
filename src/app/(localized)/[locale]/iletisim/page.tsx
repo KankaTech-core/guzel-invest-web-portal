@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Clock3, Instagram, Mail, MapPin, MessageCircle, Phone, Send } from "lucide-react";
+import { Clock3, Instagram, Mail, MapPin, Phone, Send } from "lucide-react";
 import { useParams } from "next/navigation";
 import type { CountryCode } from "libphonenumber-js";
 import { Button, Checkbox, Input } from "@/components/ui";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { SOCIAL_LINKS } from "@/lib/social-links";
 
 const DEFAULT_COUNTRY_BY_LOCALE: Partial<Record<string, CountryCode>> = {
     tr: "TR",
@@ -31,17 +32,30 @@ type ContactCard = {
     dark: boolean;
 };
 
+function WhatsAppIcon({ className }: { className?: string }) {
+    return (
+        <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+            className={className}
+        >
+            <path d="M19.05 4.91A9.82 9.82 0 0 0 12.03 2C6.6 2 2.17 6.42 2.17 11.86c0 1.74.45 3.44 1.31 4.95L2 22l5.35-1.4a9.8 9.8 0 0 0 4.67 1.19h.01c5.43 0 9.86-4.42 9.86-9.86a9.8 9.8 0 0 0-2.84-7.02Zm-7.02 15.21h-.01a8.13 8.13 0 0 1-4.14-1.13l-.3-.18-3.18.83.85-3.1-.2-.32a8.16 8.16 0 0 1-1.25-4.36c0-4.5 3.66-8.16 8.17-8.16 2.18 0 4.23.85 5.77 2.39a8.1 8.1 0 0 1 2.39 5.77c0 4.5-3.67 8.16-8.1 8.16Zm4.48-6.1c-.24-.12-1.42-.7-1.65-.78-.22-.08-.38-.12-.54.12-.16.23-.62.78-.76.94-.14.16-.27.18-.5.06-.24-.12-1-.37-1.9-1.18-.7-.62-1.18-1.39-1.31-1.62-.14-.23-.01-.35.1-.47.1-.1.24-.28.36-.42.12-.14.16-.23.24-.39.08-.16.04-.29-.02-.41-.06-.12-.54-1.3-.74-1.79-.2-.47-.4-.41-.54-.41h-.46c-.16 0-.41.06-.62.29-.22.23-.84.82-.84 2s.86 2.31.98 2.47c.12.16 1.68 2.57 4.08 3.6.57.25 1.02.39 1.37.5.58.18 1.1.15 1.51.09.46-.07 1.42-.58 1.62-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.27Z" />
+        </svg>
+    );
+}
+
 const contactCards = [
     {
         title: "Adres",
-        value: "Kestel Mah. Sahil Cad. No:123\nAlanya / Antalya",
+        value: "Saray, Sugözü Cd. Akdoğan Tokuş Apt No: 15/B,\n07400 Alanya/Antalya",
         icon: MapPin,
         dark: false,
     },
     {
         title: "Telefon",
-        value: "+90 242 123 45 67",
-        href: "tel:+902421234567",
+        value: "+90 538 475 11 11",
+        href: "tel:+905384751111",
         icon: Phone,
         dark: true,
     },
@@ -54,7 +68,7 @@ const contactCards = [
     },
     {
         title: "Çalışma Saatleri",
-        value: "Pazartesi - Cumartesi\n09:00 - 18:00",
+        value: "Pazar günleri kapalı\nDiğer günler 09:00 - 19:00",
         icon: Clock3,
         dark: true,
     },
@@ -76,6 +90,18 @@ export default function ContactPage() {
     const phoneError = hasPhoneValue && !phoneIsValid
         ? "Geçerli bir telefon numarası girin."
         : undefined;
+
+    const contactInfoIntro = (
+        <>
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
+                İletişim Bilgileri
+            </h2>
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-gray-600 sm:text-base">
+                Farklı iletişim kanallarından bize ulaşabilir, ihtiyaçlarınıza uygun
+                danışmanlık sürecini hemen başlatabilirsiniz.
+            </p>
+        </>
+    );
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -154,7 +180,7 @@ export default function ContactPage() {
                     </p>
                     <div className="mt-7 flex flex-wrap gap-3">
                         <a
-                            href="tel:+902421234567"
+                            href="tel:+905384751111"
                             className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-orange-400"
                         >
                             <Phone className="h-4 w-4" />
@@ -173,15 +199,8 @@ export default function ContactPage() {
 
             <section className="bg-white px-4 py-16 sm:px-6">
                 <div className="container-custom grid grid-cols-1 gap-10 lg:grid-cols-12">
-                    <div className="lg:col-span-5">
-                        <h2 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
-                            İletişim Bilgileri
-                        </h2>
-                        <p className="mt-4 max-w-md text-sm leading-relaxed text-gray-600 sm:text-base">
-                            Farklı iletişim kanallarından bize ulaşabilir, ihtiyaçlarınıza uygun
-                            danışmanlık sürecini hemen başlatabilirsiniz.
-                        </p>
-
+                    <div className="order-2 lg:order-1 lg:col-span-5">
+                        <div className="hidden lg:block">{contactInfoIntro}</div>
                         <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-3">
                             <div className="grid grid-cols-2 gap-3">
                                 {contactCards.map((card) => {
@@ -202,7 +221,7 @@ export default function ContactPage() {
                                             {card.href ? (
                                                 <a
                                                     href={card.href}
-                                                    className="mt-1 block whitespace-pre-line text-sm font-semibold text-gray-900 transition-colors hover:text-orange-500"
+                                                    className="mt-1 block whitespace-pre-line break-all text-sm font-semibold text-gray-900 transition-colors hover:text-orange-500"
                                                 >
                                                     {card.value}
                                                 </a>
@@ -229,19 +248,20 @@ export default function ContactPage() {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-7">
+                    <div className="order-1 flex flex-col lg:order-2 lg:col-span-7">
+                        <div className="mb-6 lg:hidden">{contactInfoIntro}</div>
                         <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <a
-                                href="https://wa.me/902421234567"
+                                href="https://wa.me/905384751111"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                             >
-                                <MessageCircle className="h-4 w-4" />
+                                <WhatsAppIcon className="h-4 w-4" />
                                 WhatsApp&apos;tan Yaz
                             </a>
                             <a
-                                href="https://ig.me/m/guzelinvest"
+                                href={SOCIAL_LINKS.instagramDm}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-black"

@@ -1,0 +1,239 @@
+{
+  "checkedAt": "2026-03-07",
+  "policy": {
+    "licenseUrl": "https://unsplash.com/license",
+    "commercialUseAllowed": true,
+    "attributionRequired": false,
+    "apiGuidelinesUrl": "https://help.unsplash.com/en/articles/2511245-unsplash-api-guidelines",
+    "apiIntegrationDetected": false,
+    "summary": [
+      "Standard Unsplash website usage is covered by the Unsplash License and allows commercial use without mandatory attribution.",
+      "API-specific rules such as mandatory hotlinking and attribution apply only when the Unsplash API is integrated.",
+      "This repo currently uses direct images.unsplash.com URLs and does not contain an Unsplash access key or API integration."
+    ]
+  },
+  "photos": [
+    {
+      "id": "photo-1454165804606-c3d57bc86b40",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1460317442991-0ec209397118",
+      "files": [
+        "src/data/sample-article.ts"
+      ]
+    },
+    {
+      "id": "photo-1460925895917-afdab827c52f",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1472099645785-5658abf4ff4e",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1484154218962-a197022b5858",
+      "files": [
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1486406146926-c627a92ad1ab",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx",
+        "src/app/(localized)/[locale]/iletisim/page.tsx",
+        "src/app/(localized)/[locale]/page.tsx",
+        "src/components/ui/interactive-image-accordion.tsx"
+      ]
+    },
+    {
+      "id": "photo-1487412720507-e7ab37603c6f",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1494790108377-be9c29b29330",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1497366216548-37526070297c",
+      "files": [
+        "src/components/ui/interactive-image-accordion.tsx"
+      ]
+    },
+    {
+      "id": "photo-1497366811353-6870744d04b2",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1500382017468-9049fed747ef",
+      "files": [
+        "src/app/(localized)/[locale]/page.tsx",
+        "src/components/ui/interactive-image-accordion.tsx",
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1500648767791-00dcc994a43e",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1502672260266-1c1ef2d93688",
+      "files": [
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1507003211169-0a1dd7228f2d",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1512917774080-9991f1c4c750",
+      "files": [
+        "src/app/(localized)/[locale]/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1520607162513-77705c0f0d4a",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1521737604893-d14cc237f11d",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1522708323590-d24dbb6b0267",
+      "files": [
+        "src/components/ui/interactive-image-accordion.tsx",
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1544005313-94ddf0286df2",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1552664730-d307ca884978",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1554995207-c18c203602cb",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1560448204-e02f11c3d0e2",
+      "files": [
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1560518883-ce09059eeffa",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1566073771259-6a8506099945",
+      "files": [
+        "src/app/(localized)/[locale]/page.tsx",
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1582719508461-905c673771fd",
+      "files": [
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1589829545856-d10d557cf95f",
+      "files": [
+        "src/app/(localized)/[locale]/hakkimizda/page.tsx"
+      ]
+    },
+    {
+      "id": "photo-1600047509807-ba8f99d2cdde",
+      "files": [
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1600566753086-00f18fb6b3ea",
+      "files": [
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1600566753190-17f0baa2a6c3",
+      "files": [
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1600573472550-8090b5e0745e",
+      "files": [
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1600585154340-be6161a56a0c",
+      "files": [
+        "src/app/(localized)/[locale]/page.tsx",
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1600596542815-ffad4c1539a9",
+      "files": [
+        "src/app/(localized)/[locale]/page.tsx",
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1600607687644-aac4c3eac7f4",
+      "files": [
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1600607687939-ce8a6c25118c",
+      "files": [
+        "src/app/(localized)/[locale]/page.tsx",
+        "src/app/(non-localized)/s1/components/HeroSection.tsx",
+        "src/data/mockListings.ts"
+      ]
+    },
+    {
+      "id": "photo-1613490493576-7fde63acd811",
+      "files": [
+        "src/components/ui/interactive-image-accordion.tsx",
+        "src/data/mockListings.ts"
+      ]
+    }
+  ]
+}

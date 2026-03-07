@@ -7,7 +7,6 @@ import { useTranslations } from "next-intl";
 import {
     Menu,
     X,
-    Globe,
     ChevronDown,
     Instagram,
     Youtube,
@@ -464,12 +463,6 @@ export function Navbar({ locale }: { locale: string }) {
                                 </a>
                             );
                         })}
-                    </div>
-
-                    {/* Language: TR only */}
-                    <div className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5">
-                        <Globe className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm font-medium text-gray-600">TR</span>
                     </div>
 
                     {/* Para Birimi Toggle - sadece portföy/ilan/harita sayfalarında */}
