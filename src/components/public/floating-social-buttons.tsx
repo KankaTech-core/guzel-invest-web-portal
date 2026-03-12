@@ -1,9 +1,11 @@
 "use client";
 
+import { SOCIAL_LINKS } from "@/lib/social-links";
+
 const socialButtons = [
     {
         label: "Telegram",
-        href: "https://t.me",
+        href: SOCIAL_LINKS.telegram,
         bgClass: "bg-[#229ED9]",
         hoverClass: "hover:bg-[#1B8CBF]",
         icon: (
@@ -14,7 +16,7 @@ const socialButtons = [
     },
     {
         label: "WhatsApp",
-        href: "https://wa.me",
+        href: SOCIAL_LINKS.whatsapp,
         bgClass: "bg-[#25D366]",
         hoverClass: "hover:bg-[#1DA851]",
         icon: (

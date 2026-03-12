@@ -3,6 +3,8 @@ export const SOCIAL_LINKS = {
     instagramDm: "https://ig.me/m/guzelinvest",
     youtube: "https://www.youtube.com/@G%C3%9CZEL%C4%B0NVEST",
     facebook: "https://www.facebook.com/guzelinvestalanya",
+    telegram: "https://t.me/+905324994007",
+    whatsapp: "https://wa.me/905384751111",
 } as const;
 
 export const SOCIAL_LINK_ITEMS = [

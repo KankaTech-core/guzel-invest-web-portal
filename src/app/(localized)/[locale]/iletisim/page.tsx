@@ -252,7 +252,7 @@ export default function ContactPage() {
                         <div className="mb-6 lg:hidden">{contactInfoIntro}</div>
                         <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <a
-                                href="https://wa.me/905384751111"
+                                href={SOCIAL_LINKS.whatsapp}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"

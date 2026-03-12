@@ -8,7 +8,6 @@ import {
     Globe,
     Globe2,
     Handshake,
-    Home,
     Settings,
     ShieldCheck,
     Users2,
@@ -17,57 +16,50 @@ import Image from "next/image";
 import { ScrollRevealSection } from "@/components/ui/scroll-reveal-section";
 
 const stats = [
-    { icon: Clock3, label: "Deneyim", value: "20+ Yıl" },
-    { icon: Building2, label: "Satılan Mülk", value: "500+" },
-    { icon: Users2, label: "Müşteri", value: "1.200+" },
-    { icon: Award, label: "Ödül", value: "15+" },
-    { icon: Home, label: "Toplam Konut", value: "2.800+" },
+    { icon: Clock3, label: "Deneyim", value: "30+ Yıl" },
+    { icon: Award, label: "Başarılı Proje", value: "28" },
+    { icon: Building2, label: "Geliştirme ve İnşaat", value: "7 Proje" },
+    { icon: Globe2, label: "Yatırım Merkezi", value: "Alanya" },
+    { icon: ShieldCheck, label: "İş Ortağı", value: "Güvenilir" },
 ] as const;
 
-const teamMembers = [
+type TeamMember = {
+    name: string;
+    role: string;
+    image: string;
+    imagePosition?: string;
+};
+
+const teamMembers: readonly TeamMember[] = [
     {
-        name: "Ayşe Demir",
-        role: "Kıdemli Portföy Danışmanı",
-        image:
-            "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=640&h=640&fit=crop",
+        name: "Deniz Yılmaz",
+        role: "Gayrimenkul Danışmanı",
+        image: "/images/about-us/deniz-yilmaz-profile.webp",
+        imagePosition: "center 40%",
     },
     {
-        name: "Mert Kaya",
-        role: "Yatırım Analisti",
-        image:
-            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=640&h=640&fit=crop",
+        name: "Hatice Çoban",
+        role: "Gayrimenkul Danışmanı",
+        image: "/images/about-us/hatice-coban-profile.webp",
+        imagePosition: "center 40%",
     },
     {
-        name: "Elif Yıldız",
-        role: "Uluslararası Müşteri Uzmanı",
-        image:
-            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=640&h=640&fit=crop",
+        name: "Ahmet Bilen",
+        role: "Gayrimenkul Danışmanı",
+        image: "/images/about-us/ahmet-bilen-profile.webp",
     },
     {
-        name: "Can Aksu",
-        role: "Satış Operasyonları",
-        image:
-            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=640&h=640&fit=crop",
+        name: "Gürkan Kara",
+        role: "Gayrimenkul Danışmanı",
+        image: "/images/about-us/gurkan-kara-profile.webp",
     },
-    {
-        name: "Derya Şahin",
-        role: "Müşteri İlişkileri",
-        image:
-            "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=640&h=640&fit=crop",
-    },
-    {
-        name: "Kerem Arslan",
-        role: "Proje Geliştirme",
-        image:
-            "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=640&h=640&fit=crop",
-    },
-] as const;
+];
 
 const principles = [
     {
         id: "misyonumuz",
         title: "Misyonumuz",
-        text: "Müşterilerimize doğru veriye dayalı, şeffaf ve güvenilir gayrimenkul danışmanlığı sunarak karar süreçlerini sadeleştirmek. Satış öncesinden teslim sonrasına kadar her adımda ölçülebilir kalite standardı ile ilerleriz.",
+        text: "Yatırımcılarımıza doğru lokasyonlarda, yüksek değer potansiyeline sahip projeler sunarak şeffaf, güvenilir ve profesyonel hizmet anlayışı ile uzun vadeli değer yaratmak.",
         image:
             "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=900&h=650&fit=crop",
         reverse: false,
@@ -75,7 +67,7 @@ const principles = [
     {
         id: "vizyonumuz",
         title: "Vizyonumuz",
-        text: "Alanya gayrimenkul pazarında güven ve netlik denildiğinde ilk akla gelen marka olmak. Yerel uzmanlığı uluslararası servis kalitesiyle birleştirerek yatırımcılar için uzun vadeli ve sürdürülebilir değer üretmeyi hedefliyoruz.",
+        text: "Gayrimenkul sektöründe kalite, güven ve sürdürülebilir yatırım anlayışı ile uluslararası yatırımcıların tercih ettiği lider markalardan biri olmak.",
         image:
             "https://images.unsplash.com/photo-1552664730-d307ca884978?w=900&h=650&fit=crop",
         reverse: true,
@@ -191,13 +183,13 @@ export default async function AboutPage({ params }: PageProps) {
 
                 <div className="container-custom relative z-10 flex min-h-[430px] flex-col items-center justify-center text-center sm:min-h-[520px]">
                     <span className="reveal inline-flex items-center rounded-full border border-orange-300/65 bg-orange-500/20 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-100">
-                        Güzel Invest • 2001&apos;den beri
+                        Güzel Invest • 30 Yıllık Deneyim
                     </span>
                     <h1 className="reveal mt-5 text-5xl font-bold text-white sm:text-6xl">Hakkımızda</h1>
                     <p className="reveal mt-5 max-w-3xl text-base leading-relaxed text-gray-200 sm:text-lg">
-                        Alanya&apos;da gayrimenkul danışmanlığını güven, veri ve net süreçlerle
-                        birleştiriyoruz. Yerel uzmanlığımızı uluslararası yatırımcı beklentileriyle
-                        aynı çizgide yönetiyoruz.
+                        Güzel Invest, Antalya’nın en önemli yatırım merkezlerinden biri olan
+                        Alanya’da faaliyet gösteren, güçlü geçmişi ve uluslararası vizyonu ile
+                        gayrimenkul sektöründe güvenilir bir marka olarak konumlanmıştır.
                     </p>
                 </div>
             </ScrollRevealSection>
@@ -249,34 +241,39 @@ export default async function AboutPage({ params }: PageProps) {
                         <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
                             Kurumsal Profil
                         </span>
-                        <h2 className="mt-3 text-3xl font-bold text-gray-900">Firmanın Hikayesi</h2>
+                        <h2 className="mt-3 text-3xl font-bold text-gray-900">
+                            30 Yıllık Deneyim, Güçlü Projeler ve Güvenilir Yatırımlar.
+                        </h2>
                         <p className="mt-4 text-sm leading-relaxed text-gray-600 sm:text-base">
-                            Güzel Invest, 2001 yılında Alanya&apos;daki gayrimenkul işlemlerinde daha
-                            güvenilir bir danışmanlık standardı oluşturmak için kuruldu. İlk
-                            günden itibaren odağımız; doğru fiyatlama, şeffaf süreç yönetimi ve
-                            sürdürülebilir müşteri memnuniyeti oldu.
+                            Güzel Invest, Antalya’nın en önemli yatırım merkezlerinden biri olan
+                            Alanya’da faaliyet gösteren, güçlü geçmişi ve uluslararası vizyonu ile
+                            gayrimenkul sektöründe güvenilir bir marka olarak konumlanmıştır.
                         </p>
                         <p className="mt-4 text-sm leading-relaxed text-gray-600 sm:text-base">
-                            Bugün yerli ve yabancı yatırımcılara portföy yönetimi, satış,
-                            kiralama, değerleme ve satış sonrası destek alanlarında bütüncül hizmet
-                            veriyoruz. Ekibimiz, her müşteriye aynı netlikte raporlama ve aynı
-                            hızda çözüm sunan operasyon disipliniyle çalışır.
+                            Şirketimiz, kurucumuz Yusuf Güzel’in 30 yılı aşkın sektör tecrübesi ve
+                            bilgi birikimi üzerine inşa edilmiştir.
+                        </p>
+                        <p className="mt-4 text-sm leading-relaxed text-gray-600 sm:text-base">
+                            Kurulduğumuz günden bu yana amacımız yalnızca gayrimenkul satışı
+                            yapmak değil; yatırımcılarımıza doğru lokasyonlarda, yüksek değer
+                            potansiyeline sahip ve sürdürülebilir kazanç sağlayan projeler
+                            sunmaktır.
                         </p>
                         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                                    Uyum ve Güvenlik
+                                    Tamamlanan Projeler
                                 </p>
                                 <p className="mt-1 text-sm font-semibold text-gray-900">
-                                    Hukuki süreçlerde kontrollü ilerleme
+                                    28 başarılı proje
                                 </p>
                             </div>
                             <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
                                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                                    Operasyon Netliği
+                                    Geliştirme ve İnşaat Süreci
                                 </p>
                                 <p className="mt-1 text-sm font-semibold text-gray-900">
-                                    Her işlemde adım adım görünür takip
+                                    7 farklı proje
                                 </p>
                             </div>
                         </div>
@@ -288,18 +285,18 @@ export default async function AboutPage({ params }: PageProps) {
                 <div className="mx-auto max-w-7xl">
                     <h2 className="reveal text-3xl font-bold text-gray-900">Neden Biz?</h2>
                     <p className="reveal mt-4 max-w-5xl text-sm leading-relaxed text-gray-600 sm:text-base">
-                        Gayrimenkulde güven, sadece doğru mülkü bulmakla değil; süreç boyunca
-                        şeffaf, anlaşılır ve hızlı ilerlemekle sağlanır. Bu nedenle tüm
-                        danışmanlık akışımızı veri destekli analiz, açık iletişim ve düzenli
-                        raporlama üzerine kuruyoruz. Müşterilerimizin her aşamada net bilgiye
-                        ulaşmasını sağlayarak riskleri azaltıyor, karar kalitesini artırıyoruz.
+                        Güzel Invest aynı zamanda alanında uzman, deneyimli ve profesyonel
+                        gayrimenkul danışmanlarından oluşan güçlü bir ekibe sahiptir. Ekibimiz,
+                        yatırımcılarımızın ihtiyaçlarını doğru analiz ederek en uygun gayrimenkul
+                        seçeneklerini sunmakta ve sürecin her aşamasında profesyonel danışmanlık
+                        sağlamaktadır.
                     </p>
                     <div className="reveal-stagger mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                         {[
-                            { icon: ShieldCheck, label: "Şeffaf süreç yönetimi" },
-                            { icon: Globe2, label: "Çok dilli danışmanlık" },
-                            { icon: Building2, label: "Doğrulanmış portföy yapısı" },
-                            { icon: Users2, label: "Satış sonrası aktif destek" },
+                            { icon: ShieldCheck, label: "Şeffaflık" },
+                            { icon: Globe2, label: "Uluslararası vizyon" },
+                            { icon: Building2, label: "Geniş portföy" },
+                            { icon: Users2, label: "Profesyonel hizmet" },
                         ].map((item) => (
                             <div
                                 key={item.label}
@@ -412,13 +409,15 @@ export default async function AboutPage({ params }: PageProps) {
                 </div>
                 <div className="mx-auto max-w-7xl">
                     <div className="reveal mb-8">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
-                            Ekip
-                        </span>
-                        <h2 className="mt-2 text-3xl font-bold text-gray-900">Çalışanlarımız</h2>
+                        <h2 className="mt-2 text-3xl font-bold text-gray-900">Ekibimiz</h2>
+                        <p className="mt-4 max-w-4xl text-sm leading-relaxed text-gray-600 sm:text-base">
+                            Ekibimiz, yatırımcılarımızın ihtiyaçlarını doğru analiz ederek en uygun
+                            gayrimenkul seçeneklerini sunmakta ve sürecin her aşamasında
+                            profesyonel danışmanlık sağlamaktadır.
+                        </p>
                     </div>
 
-                    <div className="reveal-stagger grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="reveal-stagger grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
                         {teamMembers.map((member) => (
                             <article
                                 key={member.name}
@@ -431,7 +430,12 @@ export default async function AboutPage({ params }: PageProps) {
                                         width={640}
                                         height={480}
                                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                        className="aspect-[4/3] h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        className="aspect-[4/3] h-full w-full object-cover"
+                                        style={
+                                            member.imagePosition
+                                                ? { objectPosition: member.imagePosition }
+                                                : undefined
+                                        }
                                     />
                                 </div>
                                 <div className="border-t border-gray-100 bg-gray-50 px-4 py-3">
@@ -492,15 +496,16 @@ export default async function AboutPage({ params }: PageProps) {
                         }}
                     >
                         <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-300">
-                            Sonraki Adım
+                            Güzel Invest
                         </span>
                         <h2 className="mt-3 max-w-3xl text-3xl font-bold text-white sm:text-4xl">
-                            Gayrimenkul Hedefinizi Birlikte Planlayalım
+                            Şeffaflık, güven ve profesyonel hizmet anlayışımız ile yatırımcılarımız
+                            için güvenilir bir iş ortağı olmaya devam ediyoruz.
                         </h2>
                         <p className="mt-4 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
-                            İster yaşam için ister yatırım için olsun, ihtiyaçlarınıza uygun yol
-                            haritasını uzman ekibimizle netleştirin. Kısa bir ön görüşme ile doğru
-                            başlangıcı yapabilirsiniz.
+                            Yatırımcılarımıza doğru lokasyonlarda, yüksek değer potansiyeline sahip
+                            projeler sunarak şeffaf, güvenilir ve profesyonel hizmet anlayışı ile
+                            uzun vadeli değer yaratmak.
                         </p>
 
                         <div className="mt-8 flex flex-wrap gap-3">
