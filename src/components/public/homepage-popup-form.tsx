@@ -258,11 +258,18 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
                                 />
                             </div>
                             <h3 className="text-2xl font-bold leading-tight">
-                                {t("title")}
+                                {t("title").split("\n").map((line, i, arr) => (
+                                    <span key={i}>
+                                        {line}
+                                        {i < arr.length - 1 && <><br /><br /></>}
+                                    </span>
+                                ))}
                             </h3>
-                            <p className="mt-4 text-sm text-gray-300 leading-relaxed">
-                                {t("subtitle")}
-                            </p>
+                            {t("subtitle") && (
+                                <p className="mt-4 text-sm text-gray-300 leading-relaxed">
+                                    {t("subtitle")}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -271,11 +278,18 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
                         {/* Mobile Header (visible only on small screens) */}
                         <div className="mb-6 md:hidden text-center">
                             <h3 className="text-2xl font-bold text-gray-900">
-                                {t("title")}
+                                {t("title").split("\n").map((line, i, arr) => (
+                                    <span key={i}>
+                                        {line}
+                                        {i < arr.length - 1 && <><br /><br /></>}
+                                    </span>
+                                ))}
                             </h3>
-                            <p className="mt-2 text-sm text-gray-500">
-                                {t("subtitle")}
-                            </p>
+                            {t("subtitle") && (
+                                <p className="mt-2 text-sm text-gray-500">
+                                    {t("subtitle")}
+                                </p>
+                            )}
                         </div>
 
                         {isSuccess ? (

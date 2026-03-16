@@ -51,7 +51,7 @@ const propertyTypes = [
     { value: "RESIDENTIAL", label: "Konut" },
     { value: "LAND", label: "Arsa" },
     { value: "COMMERCIAL_CLUSTER", label: "Ticari" },
-    { value: "PENTHOUSE", label: "Özel Statü" },
+    { value: "VILLA", label: "Villa" },
 ] as const;
 
 const searchTypeQueryMap: Record<string, string[]> = {
@@ -170,7 +170,7 @@ const categories = [
     { type: "APARTMENT", label: "Konut", image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=280&fit=crop" },
     { type: "LAND", label: "Arsa", image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&h=280&fit=crop" },
     { type: "COMMERCIAL", label: "Ticari", image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=280&fit=crop" },
-    { type: "PENTHOUSE", label: "Özel Statü", image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&h=280&fit=crop" },
+    { type: "VILLA", label: "Villa", image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=280&fit=crop" },
 ];
 
 const services = [

@@ -364,8 +364,8 @@
         "description": "Alanya'da satılık villa, daire ve arsa. 2001'den beri güvenilir gayrimenkul danışmanlığı."
     },
     "homepagePopup": {
-        "title": "Dairenizi Satmak İster Misiniz?",
-        "subtitle": "Güzel Invest güvencesi ve uzman danışmanlarımızla gayrimenkulünüzü en doğru değerinde değerlendirelim.",
+        "title": "Dairenizi almak mı istersiniz?\nSatmak mı istersiniz?\nBiz her iki durumda da yanınızdayız.",
+        "subtitle": "",
         "name": "Adınız",
         "surname": "Soyadınız",
         "email": "E-posta",
