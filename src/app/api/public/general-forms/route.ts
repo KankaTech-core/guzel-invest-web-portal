@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { sendTelegramContactSubmissionNotification } from "@/lib/telegram-contact-submission";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        await prisma.contactSubmission.create({
+        const submission = await prisma.contactSubmission.create({
             data: {
                 name: normalizeText(parsed.data.name),
                 surname: normalizeText(parsed.data.surname),
@@ -51,6 +52,8 @@ export async function POST(request: NextRequest) {
                 projectSlug: parsed.data.url, // Storing URL or context here for tracking
             },
         });
+
+        await sendTelegramContactSubmissionNotification(submission);
 
         return NextResponse.json({ success: true }, { status: 201 });
     } catch (error) {

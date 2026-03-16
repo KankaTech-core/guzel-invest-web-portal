@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { sendTelegramContactSubmissionNotification } from "@/lib/telegram-contact-submission";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
             select: {
                 id: true,
                 slug: true,
+                sku: true,
                 translations: {
                     where: {
                         locale: {
@@ -75,7 +77,7 @@ export async function POST(request: NextRequest) {
             listing.translations.find((item) => item.locale === "tr")?.title ||
             listing.slug;
 
-        await prisma.contactSubmission.create({
+        const submission = await prisma.contactSubmission.create({
             data: {
                 listingId: listing.id,
                 projectSlug: listing.slug,
@@ -88,6 +90,11 @@ export async function POST(request: NextRequest) {
                 locale,
                 source: "listing-form",
             },
+        });
+
+        await sendTelegramContactSubmissionNotification({
+            ...submission,
+            sku: listing.sku,
         });
 
         return NextResponse.json({ success: true }, { status: 201 });

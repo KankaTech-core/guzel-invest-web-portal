@@ -150,7 +150,7 @@ export const HeroContactForm = ({
                     <label className="mb-1.5 block text-sm font-medium text-white/90">
                         Telefon Numaranız
                     </label>
-                    <div className="[&_.PhoneInput]:!bg-white/10 [&_.PhoneInput]:!border-white/20 [&_.PhoneInput]:!rounded-lg [&_.PhoneInput]:!px-3 [&_.PhoneInput]:!focus-within:border-white/50 [&_input.PhoneInputInput]:!bg-transparent [&_input.PhoneInputInput]:!border-none [&_input.PhoneInputInput]:!px-2 [&_input.PhoneInputInput]:!focus:ring-0">
+                    <div className="[&_.phone-input-wrapper]:!rounded-lg [&_.phone-input-wrapper]:!border-white/20 [&_.phone-input-wrapper]:!bg-white/10 [&_.phone-input-wrapper]:!px-3 [&_.phone-input-wrapper:focus-within]:!border-white/50 [&_.phone-input-country-btn]:!text-white [&_.phone-input-chevron]:!text-white/80 [&_.phone-input-code]:!text-white [&_.phone-input-divider]:!bg-white/20 [&_.phone-input-field]:!border-none [&_.phone-input-field]:!bg-transparent [&_.phone-input-field]:!px-2 [&_.phone-input-field]:!text-white [&_.phone-input-field]:!focus:ring-0 [&_.phone-input-field::placeholder]:!text-white/50">
                         <PhoneInput
                             key={`phone-${defaultPhoneCountry}`}
                             value={formData.phone}

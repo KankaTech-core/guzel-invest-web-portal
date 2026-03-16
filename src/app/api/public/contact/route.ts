@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendTelegramContactSubmissionNotification } from "@/lib/telegram-contact-submission";
 
 export async function POST(request: Request) {
     try {
@@ -26,6 +27,8 @@ export async function POST(request: Request) {
                 locale: locale || "tr",
             },
         });
+
+        await sendTelegramContactSubmissionNotification(submission);
 
         return NextResponse.json({ success: true, id: submission.id });
     } catch (error) {
