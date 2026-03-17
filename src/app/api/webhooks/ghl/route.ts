@@ -7,15 +7,24 @@ export const dynamic = "force-dynamic";
  * GHL (GoHighLevel) sends Facebook lead form data to this endpoint.
  * We store it as a ContactSubmission with source "facebook".
  *
- * GHL template variables (e.g. {{contact.first_name}}) may resolve to
- * undefined, null, or empty strings — so every field is treated as optional
- * and coerced to a safe string before saving.
+ * GHL sends data in multiple places — we check in priority order:
+ * 1. Top-level standard fields (first_name, last_name, email, phone)
+ * 2. customData (the key-value pairs configured in the GHL webhook action)
+ * 3. Fallback: Form Message field
  */
 
 const toString = (value: unknown): string =>
     typeof value === "string" ? value.trim() : "";
 
 const normalizeText = (value: string) => value.replace(/\s+/g, " ").trim();
+
+const pick = (...values: unknown[]): string => {
+    for (const v of values) {
+        const s = toString(v);
+        if (s) return s;
+    }
+    return "";
+};
 
 export async function POST(request: NextRequest) {
     try {
@@ -34,11 +43,33 @@ export async function POST(request: NextRequest) {
             JSON.stringify(payload)
         );
 
-        const name = normalizeText(toString(payload.name));
-        const surname = normalizeText(toString(payload.surname));
-        const email = toString(payload.email).toLowerCase();
-        const phone = normalizeText(toString(payload.phone));
-        const message = normalizeText(toString(payload.message));
+        const custom =
+            payload.customData && typeof payload.customData === "object"
+                ? (payload.customData as Record<string, unknown>)
+                : {};
+
+        const name = normalizeText(
+            pick(
+                payload.first_name,
+                custom.name,
+                payload.full_name,
+                payload.name
+            )
+        );
+        const surname = normalizeText(
+            pick(payload.last_name, custom.surname)
+        );
+        const email = pick(payload.email, custom.email).toLowerCase();
+        const phone = normalizeText(
+            pick(payload.phone, custom.phone)
+        );
+        const message = normalizeText(
+            pick(
+                custom.message,
+                payload["Form Message"],
+                payload.Message
+            )
+        );
 
         const submission = await prisma.contactSubmission.create({
             data: {
