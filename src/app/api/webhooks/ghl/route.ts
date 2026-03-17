@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -7,27 +6,20 @@ export const dynamic = "force-dynamic";
 /**
  * GHL (GoHighLevel) sends Facebook lead form data to this endpoint.
  * We store it as a ContactSubmission with source "facebook".
+ *
+ * GHL template variables (e.g. {{contact.first_name}}) may resolve to
+ * undefined, null, or empty strings — so every field is treated as optional
+ * and coerced to a safe string before saving.
  */
 
-const GhlWebhookSchema = z.object({
-    name: z.string().trim().min(1, "Ad zorunludur.").max(200),
-    surname: z.string().trim().max(200).optional().default(""),
-    email: z
-        .string()
-        .trim()
-        .email("Geçerli bir e-posta adresi girin.")
-        .max(190)
-        .optional()
-        .default(""),
-    phone: z.string().trim().max(30).optional().default(""),
-    message: z.string().trim().max(5000).optional().default(""),
-});
+const toString = (value: unknown): string =>
+    typeof value === "string" ? value.trim() : "";
 
-const normalizeText = (value: string) => value.trim().replace(/\s+/g, " ");
+const normalizeText = (value: string) => value.replace(/\s+/g, " ").trim();
 
 export async function POST(request: NextRequest) {
     try {
-        let payload: unknown;
+        let payload: Record<string, unknown>;
         try {
             payload = await request.json();
         } catch {
@@ -37,28 +29,26 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        console.info("[ghl-webhook-incoming] Payload received:", JSON.stringify(payload));
+        console.info(
+            "[ghl-webhook-incoming] Payload received:",
+            JSON.stringify(payload)
+        );
 
-        const parsed = GhlWebhookSchema.safeParse(payload);
-
-        if (!parsed.success) {
-            const firstIssue = parsed.error.issues[0];
-            console.error("[ghl-webhook-incoming] Validation failed:", parsed.error.issues);
-            return NextResponse.json(
-                { error: firstIssue?.message || "Veri doğrulama hatası." },
-                { status: 400 }
-            );
-        }
-
-        const { name, surname, email, phone, message } = parsed.data;
+        const name = normalizeText(toString(payload.name));
+        const surname = normalizeText(toString(payload.surname));
+        const email = toString(payload.email).toLowerCase();
+        const phone = normalizeText(toString(payload.phone));
+        const message = normalizeText(toString(payload.message));
 
         const submission = await prisma.contactSubmission.create({
             data: {
-                name: normalizeText(name),
-                surname: surname ? normalizeText(surname) : null,
-                email: email ? email.toLowerCase() : "",
-                phone: phone ? normalizeText(phone) : null,
-                message: message || "Facebook formu üzerinden iletişim talebi alındı.",
+                name: name || "İsimsiz",
+                surname: surname || null,
+                email: email || "",
+                phone: phone || null,
+                message:
+                    message ||
+                    "Facebook formu üzerinden iletişim talebi alındı.",
                 locale: "tr",
                 source: "facebook",
             },
