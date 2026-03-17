@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendTelegramContactSubmissionNotification } from "@/lib/telegram-contact-submission";
+import { sendGhlWebhookNotification } from "@/lib/ghl-webhook";
 
 export const dynamic = "force-dynamic";
 
@@ -92,10 +93,11 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        await sendTelegramContactSubmissionNotification({
-            ...submission,
-            sku: listing.sku,
-        });
+        const submissionWithSku = { ...submission, sku: listing.sku };
+        await Promise.all([
+            sendTelegramContactSubmissionNotification(submissionWithSku),
+            sendGhlWebhookNotification(submissionWithSku),
+        ]);
 
         return NextResponse.json({ success: true }, { status: 201 });
     } catch (error) {

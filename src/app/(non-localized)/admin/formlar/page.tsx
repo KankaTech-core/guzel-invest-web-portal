@@ -14,6 +14,7 @@ const getSourceLabel = (source: string) => {
     if (source === "listing-form") return "İlan Formu";
     if (source === "website") return "İletişim Formu";
     if (source === "homepage-popup") return "Daireni Sat Formu";
+    if (source === "facebook") return "Facebook Formu";
     return source;
 };
 

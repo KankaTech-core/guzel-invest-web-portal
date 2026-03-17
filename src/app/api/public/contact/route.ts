@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendTelegramContactSubmissionNotification } from "@/lib/telegram-contact-submission";
+import { sendGhlWebhookNotification } from "@/lib/ghl-webhook";
 
 export async function POST(request: Request) {
     try {
@@ -28,7 +29,10 @@ export async function POST(request: Request) {
             },
         });
 
-        await sendTelegramContactSubmissionNotification(submission);
+        await Promise.all([
+            sendTelegramContactSubmissionNotification(submission),
+            sendGhlWebhookNotification(submission),
+        ]);
 
         return NextResponse.json({ success: true, id: submission.id });
     } catch (error) {
