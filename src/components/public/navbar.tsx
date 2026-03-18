@@ -8,6 +8,7 @@ import {
     Menu,
     X,
     ChevronDown,
+    Globe,
     Instagram,
     Youtube,
     Facebook,
@@ -21,6 +22,8 @@ import {
     defaultLocale,
     localeDisplayNames,
     localeDisplayOrder,
+    localeFlags,
+    localeNames,
     publicLocales,
     type Locale,
 } from "@/i18n/public-locales";
@@ -500,36 +503,43 @@ export function Navbar({ locale }: { locale: string }) {
                             aria-expanded={isLocaleMenuOpen}
                             onClick={() => setIsLocaleMenuOpen((value) => !value)}
                             className={cn(
-                                "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all",
+                                "inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all",
                                 isLocaleMenuOpen
-                                    ? "border-orange-200 bg-orange-50 text-orange-600"
-                                    : "border-gray-200 bg-white text-gray-700 hover:border-orange-200 hover:text-orange-600"
+                                    ? "bg-gray-100 text-gray-900"
+                                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                             )}
                         >
-                            {localeDisplayNames[currentLocale]}
+                            <Globe className="h-4 w-4" />
+                            <span>{localeDisplayNames[currentLocale]}</span>
                             <ChevronDown
                                 className={cn(
-                                    "h-4 w-4 transition-transform duration-200",
+                                    "h-3.5 w-3.5 opacity-50 transition-transform duration-200",
                                     isLocaleMenuOpen && "rotate-180"
                                 )}
                             />
                         </button>
 
                         {isLocaleMenuOpen ? (
-                            <div className="absolute right-0 top-full z-50 mt-2 min-w-32 rounded-2xl border border-gray-200 bg-white p-2 shadow-2xl shadow-gray-200/60">
+                            <div className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-xl shadow-gray-200/50">
                                 {localeDisplayOrder.map((option) => (
                                     <button
                                         key={option}
                                         type="button"
                                         onClick={() => handleLocaleChange(option)}
                                         className={cn(
-                                            "flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                                            "flex w-full items-center gap-3 px-3 py-2.5 text-sm transition-colors",
                                             option === currentLocale
-                                                ? "bg-orange-50 text-orange-600"
-                                                : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                                                ? "bg-orange-50 font-medium text-orange-600"
+                                                : "text-gray-700 hover:bg-gray-50"
                                         )}
                                     >
-                                        <span>{localeDisplayNames[option]}</span>
+                                        <span className="text-base leading-none">{localeFlags[option]}</span>
+                                        <span className="flex-1 text-left">{localeNames[option]}</span>
+                                        {option === currentLocale ? (
+                                            <svg className="h-4 w-4 text-orange-500" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                        ) : null}
                                     </button>
                                 ))}
                             </div>
@@ -601,13 +611,14 @@ export function Navbar({ locale }: { locale: string }) {
                                     type="button"
                                     onClick={() => handleLocaleChange(option)}
                                     className={cn(
-                                        "rounded-xl border px-3 py-2 text-sm font-semibold uppercase transition-colors",
+                                        "flex flex-col items-center gap-1 rounded-xl border px-3 py-2.5 text-xs font-medium transition-colors",
                                         option === currentLocale
                                             ? "border-orange-500 bg-orange-50 text-orange-600"
                                             : "border-gray-200 bg-white text-gray-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
                                     )}
                                 >
-                                    {localeDisplayNames[option]}
+                                    <span className="text-lg leading-none">{localeFlags[option]}</span>
+                                    <span>{localeDisplayNames[option]}</span>
                                 </button>
                             ))}
                         </div>

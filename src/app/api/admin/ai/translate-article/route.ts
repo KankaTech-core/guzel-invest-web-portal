@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { articleId, title, excerpt, content, category, tags } = await req.json();
+        const { articleId, title, excerpt, content, category, tags, force } = await req.json();
 
         if (!articleId || typeof articleId !== "string") {
             return NextResponse.json(
@@ -43,23 +43,25 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Check if translations already exist
-        const existingTranslation = await prisma.articleTranslation.findFirst({
-            where: {
-                articleId,
-                locale: { in: [...LOCALES] },
-                OR: [
-                    { title: { not: "" } },
-                    { content: { not: null } },
-                ],
-            },
-        });
+        // Check if translations already exist (skip if force=true)
+        if (!force) {
+            const existingTranslation = await prisma.articleTranslation.findFirst({
+                where: {
+                    articleId,
+                    locale: { in: [...LOCALES] },
+                    OR: [
+                        { title: { not: "" } },
+                        { content: { not: null } },
+                    ],
+                },
+            });
 
-        if (existingTranslation) {
-            return NextResponse.json(
-                { error: "Translations already exist" },
-                { status: 409 }
-            );
+            if (existingTranslation) {
+                return NextResponse.json(
+                    { error: "Translations already exist" },
+                    { status: 409 }
+                );
+            }
         }
 
         // Translate for each locale

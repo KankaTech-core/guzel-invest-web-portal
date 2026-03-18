@@ -3,7 +3,6 @@ import Image from "next/image";
 import { ArrowRight, CalendarDays, Newspaper } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@/generated/prisma";
-import { translateBatch } from "@/lib/ai-translate";
 import { formatDate, getMediaUrl } from "@/lib/utils";
 import {
     SAMPLE_ARTICLE_PREVIEW,
@@ -75,33 +74,6 @@ export default async function BlogPage({ params }: BlogPageProps) {
         };
     });
 
-    // AI-translate articles without DB translations
-    if (locale !== "tr" && listedArticles.length > 0) {
-        const allMixedArr = [newestMixed, ...allMixed.filter((a) => a.slug !== newestMixed.slug)];
-        const batchItems: { key: string; text: string }[] = [];
-        allMixedArr.forEach((a, i) => {
-            const dbTr = "translations" in a && Array.isArray((a as Record<string, unknown>).translations) ? (a as unknown as { translations: { title: string }[] }).translations[0] : null;
-            if (dbTr?.title) return;
-            batchItems.push({ key: `title-${i}`, text: a.title as string });
-            if (a.excerpt) batchItems.push({ key: `excerpt-${i}`, text: a.excerpt as string });
-            if (a.category) batchItems.push({ key: `cat-${i}`, text: a.category as string });
-        });
-
-        if (batchItems.length > 0) {
-            const translated = await translateBatch(batchItems, locale);
-            listedArticles = listedArticles.map((article, i) => {
-                if (translated[`title-${i}`]) {
-                    return {
-                        ...article,
-                        title: translated[`title-${i}`] || article.title,
-                        excerpt: article.excerpt ? (translated[`excerpt-${i}`] || article.excerpt) : article.excerpt,
-                        category: article.category ? (translated[`cat-${i}`] || article.category) : article.category,
-                    };
-                }
-                return article;
-            });
-        }
-    }
 
     return (
         <main className="relative isolate overflow-hidden bg-white pb-24 pt-24">

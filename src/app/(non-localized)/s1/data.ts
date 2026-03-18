@@ -7,8 +7,7 @@ import {
     pickLocalizedEntry,
 } from "@/lib/public-content-localization";
 import { prisma } from "@/lib/prisma";
-import { translateBatch } from "@/lib/ai-translate";
-import { isInDictionary, translateFeature } from "@/lib/feature-translation-dictionary";
+import { translateFeature } from "@/lib/feature-translation-dictionary";
 import { getMediaUrl, getProjectCategoryLabel } from "@/lib/utils";
 import {
     S1CustomGalleryData,
@@ -287,33 +286,6 @@ export async function getS1ProjectPageData({
         .map((item) => item.trim())
         .filter(Boolean);
 
-    // Step 2: AI-translate any labels the dictionary can't handle
-    if (locale !== DEFAULT_LOCALE) {
-        const untranslated: { key: string; text: string }[] = [];
-        generalRaw.forEach((f, i) => {
-            if (!isInDictionary(f.raw, locale)) untranslated.push({ key: `gen-${i}`, text: f.raw });
-        });
-        socialRaw.forEach((f, i) => {
-            if (!isInDictionary(f.raw, locale)) untranslated.push({ key: `soc-${i}`, text: f.raw });
-        });
-        rawSummaryTags.forEach((tag, i) => {
-            if (!isInDictionary(tag, locale)) untranslated.push({ key: `tag-${i}`, text: tag });
-        });
-
-        if (untranslated.length > 0) {
-            const aiResults = await translateBatch(untranslated, locale);
-            generalRaw.forEach((f, i) => {
-                if (aiResults[`gen-${i}`]) f.raw = aiResults[`gen-${i}`];
-            });
-            socialRaw.forEach((f, i) => {
-                if (aiResults[`soc-${i}`]) f.raw = aiResults[`soc-${i}`];
-            });
-            rawSummaryTags.forEach((tag, i) => {
-                if (aiResults[`tag-${i}`]) rawSummaryTags[i] = aiResults[`tag-${i}`];
-            });
-        }
-    }
-
     const generalFeatures: S1RibbonItem[] = generalRaw.map((f) => ({
         icon: f.icon,
         label: translateFeature(f.raw, locale),
@@ -431,31 +403,8 @@ export async function getS1ProjectPageData({
         })
         .filter(isPresent);
 
-    // AI-translate FAQs and promo video title for non-Turkish locales
-    let faqs: S1FaqItem[] = rawFaqs;
-    let videoTitle: string | undefined = translation?.promoVideoTitle || undefined;
-
-    if (locale !== DEFAULT_LOCALE && (rawFaqs.length > 0 || videoTitle)) {
-        const batchItems: { key: string; text: string }[] = [];
-        for (const faq of rawFaqs) {
-            batchItems.push({ key: `faq-q-${faq.id}`, text: faq.question });
-            batchItems.push({ key: `faq-a-${faq.id}`, text: faq.answer });
-        }
-        if (videoTitle) {
-            batchItems.push({ key: "videoTitle", text: videoTitle });
-        }
-
-        const translated = await translateBatch(batchItems, locale);
-
-        faqs = rawFaqs.map((faq) => ({
-            id: faq.id,
-            question: translated[`faq-q-${faq.id}`] || faq.question,
-            answer: translated[`faq-a-${faq.id}`] || faq.answer,
-        }));
-        if (videoTitle) {
-            videoTitle = translated["videoTitle"] || videoTitle;
-        }
-    }
+    const faqs: S1FaqItem[] = rawFaqs;
+    const videoTitle: string | undefined = translation?.promoVideoTitle || undefined;
 
     const otherProjectsRaw = await prisma.listing.findMany({
         where: {

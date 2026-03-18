@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { title, description, listingId, tags } = await req.json();
+        const { title, description, listingId, tags, force } = await req.json();
         const safeTitle = normalizeText(title);
         const safeDescription = normalizeText(description);
         const safeTags: { id: string; name: string }[] = Array.isArray(tags)
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        if (listingId && typeof listingId === "string") {
+        if (!force && listingId && typeof listingId === "string") {
             const existingTranslation = await prisma.listingTranslation.findFirst({
                 where: {
                     listingId,

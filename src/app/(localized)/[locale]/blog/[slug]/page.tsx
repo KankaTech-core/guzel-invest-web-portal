@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, BookOpen, CalendarDays, Clock3, Tag } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { ArticleStatus } from "@/generated/prisma";
-import { translateBatch, translateText } from "@/lib/ai-translate";
 import { estimateReadingStats } from "@/lib/articles";
 import { formatDate, getMediaUrl } from "@/lib/utils";
 import {
@@ -62,42 +61,17 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
         createdAt: rawArticleResult.createdAt as Date,
     };
 
-    // Use DB translation if available, otherwise AI-translate
+    // Use DB translation if available, otherwise fall back to Turkish
     let article = rawArticle;
-    if (locale !== "tr") {
-        if (dbTranslation?.title) {
-            article = {
-                ...rawArticle,
-                title: dbTranslation.title,
-                excerpt: dbTranslation.excerpt ?? rawArticle.excerpt,
-                content: dbTranslation.content ?? rawArticle.content,
-                category: dbTranslation.category ?? rawArticle.category,
-                tags: dbTranslation.tags.length > 0 ? dbTranslation.tags : rawArticle.tags,
-            };
-        } else {
-            const batchItems: { key: string; text: string }[] = [
-                { key: "title", text: rawArticle.title },
-            ];
-            if (rawArticle.excerpt) batchItems.push({ key: "excerpt", text: rawArticle.excerpt });
-            if (rawArticle.category) batchItems.push({ key: "category", text: rawArticle.category });
-            rawArticle.tags.forEach((tag, i) => {
-                batchItems.push({ key: `tag-${i}`, text: tag });
-            });
-
-            const translated = await translateBatch(batchItems, locale);
-            const translatedContent = rawArticle.content
-                ? await translateText(rawArticle.content, locale, { html: true })
-                : rawArticle.content;
-
-            article = {
-                ...rawArticle,
-                title: translated["title"] || rawArticle.title,
-                excerpt: rawArticle.excerpt ? (translated["excerpt"] || rawArticle.excerpt) : rawArticle.excerpt,
-                content: translatedContent,
-                category: rawArticle.category ? (translated["category"] || rawArticle.category) : rawArticle.category,
-                tags: rawArticle.tags.map((tag, i) => translated[`tag-${i}`] || tag),
-            };
-        }
+    if (locale !== "tr" && dbTranslation?.title) {
+        article = {
+            ...rawArticle,
+            title: dbTranslation.title,
+            excerpt: dbTranslation.excerpt ?? rawArticle.excerpt,
+            content: dbTranslation.content ?? rawArticle.content,
+            category: dbTranslation.category ?? rawArticle.category,
+            tags: dbTranslation.tags.length > 0 ? dbTranslation.tags : rawArticle.tags,
+        };
     }
 
     const coverImage = getMediaUrl(article.coverImageUrl || article.coverThumbnailUrl);
@@ -153,32 +127,6 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
         };
     });
 
-    // AI-translate any without DB translations
-    if (locale !== "tr" && relatedArticles.length > 0) {
-        const relBatch: { key: string; text: string }[] = [];
-        rawRelatedMixed.forEach((ra, i) => {
-            const dbTr = "translations" in ra ? ra.translations?.[0] : null;
-            if (dbTr?.title) return;
-            relBatch.push({ key: `rel-title-${i}`, text: ra.title as string });
-            if (ra.excerpt) relBatch.push({ key: `rel-excerpt-${i}`, text: ra.excerpt as string });
-            if (ra.category) relBatch.push({ key: `rel-cat-${i}`, text: ra.category as string });
-        });
-
-        if (relBatch.length > 0) {
-            const relTranslated = await translateBatch(relBatch, locale);
-            relatedArticles = relatedArticles.map((ra, i) => {
-                if (relTranslated[`rel-title-${i}`]) {
-                    return {
-                        ...ra,
-                        title: relTranslated[`rel-title-${i}`] || ra.title,
-                        excerpt: ra.excerpt ? (relTranslated[`rel-excerpt-${i}`] || ra.excerpt) : ra.excerpt,
-                        category: ra.category ? (relTranslated[`rel-cat-${i}`] || ra.category) : ra.category,
-                    };
-                }
-                return ra;
-            });
-        }
-    }
 
     return (
         <main className="relative isolate overflow-hidden bg-white pb-24 pt-16">

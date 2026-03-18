@@ -69,9 +69,13 @@ const DICTIONARY: FeatureTranslations = {
     // --- Security & Building ---
     güvenlik: { en: "Security", ru: "Охрана", de: "Sicherheit" },
     "7/24 güvenlik": { en: "24/7 Security", ru: "Охрана 24/7", de: "24/7 Sicherheit" },
+    "24/7 güvenlik": { en: "24/7 Security", ru: "Охрана 24/7", de: "24/7 Sicherheit" },
+    "24 saat güvenlik": { en: "24/7 Security", ru: "Охрана 24/7", de: "24/7 Sicherheit" },
     "güvenlik kamerası": { en: "Security Camera", ru: "Камера наблюдения", de: "Überwachungskamera" },
+    "kamera sistemi": { en: "Camera System", ru: "Система камер", de: "Kamerasystem" },
     asansör: { en: "Elevator", ru: "Лифт", de: "Aufzug" },
     jeneratör: { en: "Generator", ru: "Генератор", de: "Generator" },
+    "elektrik jeneratörü": { en: "Electric Generator", ru: "Электрогенератор", de: "Stromgenerator" },
     "yangın merdiveni": { en: "Fire Escape", ru: "Пожарная лестница", de: "Feuertreppe" },
     "depreme dayanıklı": { en: "Earthquake Resistant", ru: "Сейсмостойкий", de: "Erdbebensicher" },
 
@@ -181,6 +185,14 @@ const DICTIONARY: FeatureTranslations = {
     "metroya yakın": { en: "Close to Metro", ru: "Рядом с метро", de: "Nahe zur U-Bahn" },
     "havaalanı": { en: "Airport", ru: "Аэропорт", de: "Flughafen" },
     "dolmuş": { en: "Minibus", ru: "Долмуш", de: "Dolmuş" },
+
+    // --- Energy ---
+    "güneş enerjisi": { en: "Solar Energy", ru: "Солнечная энергия", de: "Solarenergie" },
+    "güneş paneli": { en: "Solar Panel", ru: "Солнечная панель", de: "Solarpanel" },
+    "ısı yalıtımı": { en: "Thermal Insulation", ru: "Теплоизоляция", de: "Wärmedämmung" },
+    "ses yalıtımı": { en: "Sound Insulation", ru: "Звукоизоляция", de: "Schalldämmung" },
+    "su deposu": { en: "Water Tank", ru: "Водяной бак", de: "Wassertank" },
+    "hidrofor": { en: "Hydrophore", ru: "Гидрофор", de: "Hydrophor" },
 
     // --- Miscellaneous ---
     "peyzaj": { en: "Landscaping", ru: "Ландшафтный дизайн", de: "Landschaftsgestaltung" },

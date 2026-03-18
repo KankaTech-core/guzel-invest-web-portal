@@ -52,6 +52,8 @@ import {
     Trash2,
     Upload,
     X,
+    RefreshCw,
+    Check,
 } from "lucide-react";
 import { Select } from "@/components/ui";
 import { CompanyOptionSelect } from "@/components/admin/company-option-select";
@@ -175,6 +177,24 @@ interface MediaGridProps {
     onRemove: (id: string) => void;
     onReorder?: (items: UploadedMedia[]) => void;
     emptyMessage: string;
+}
+
+function TranslationTimeAgo({ date }: { date: Date }) {
+    const [label, setLabel] = useState("");
+    useEffect(() => {
+        const update = () => {
+            const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+            if (diff < 60) setLabel("az önce");
+            else if (diff < 3600) setLabel(`${Math.floor(diff / 60)} dk önce`);
+            else if (diff < 86400) setLabel(`${Math.floor(diff / 3600)} saat önce`);
+            else setLabel(`${Math.floor(diff / 86400)} gün önce`);
+        };
+        update();
+        const id = setInterval(update, 30_000);
+        return () => clearInterval(id);
+    }, [date]);
+    if (!label) return null;
+    return <span className="text-[10px] text-slate-400 whitespace-nowrap">{label}</span>;
 }
 
 interface NewProjectFormProps {
@@ -1034,6 +1054,8 @@ export default function NewProjectForm({
         useState<TranslationFormRow[]>(buildDefaultTranslations);
     const [activeLocale, setActiveLocale] = useState<LocaleCode>("tr");
     const [isTranslating, setIsTranslating] = useState(false);
+    const [translationSuccess, setTranslationSuccess] = useState(false);
+    const [lastTranslatedAt, setLastTranslatedAt] = useState<Date | null>(null);
     const [translationsLocked, setTranslationsLocked] = useState(false);
     const [isAiFillModalOpen, setIsAiFillModalOpen] = useState(false);
     const [hasLastUnitsBanner, setHasLastUnitsBanner] = useState(false);
@@ -1067,6 +1089,7 @@ export default function NewProjectForm({
     const [socialMedia, setSocialMedia] = useState<UploadedMedia[]>([]);
     const [interiorMedia, setInteriorMedia] = useState<UploadedMedia[]>([]);
     const [projectUnits, setProjectUnits] = useState<ProjectUnitRow[]>([]);
+    const [unitTranslationsMap, setUnitTranslationsMap] = useState<Record<string, { locale: string; title: string }[]>>({});
     const [roomOptions, setRoomOptions] = useState<string[]>([
         ...DEFAULT_ROOM_OPTIONS,
     ]);
@@ -1740,8 +1763,9 @@ export default function NewProjectForm({
         }
     };
 
-    const handleTranslate = async () => {
-        if (isTranslating || translationsLocked) return;
+    const handleTranslate = async (options?: { force?: boolean }) => {
+        if (isTranslating) return;
+        if (!options?.force && translationsLocked) return;
 
         const title = turkishTranslation?.title?.trim() || "";
         const description = turkishTranslation?.description?.trim() || "";
@@ -1757,7 +1781,10 @@ export default function NewProjectForm({
         try {
             const featureTags = [
                 ...generalFeatures.map(f => ({ id: `gen_${f.id}`, name: f.title })),
-                ...socialFeatures.map(f => ({ id: `soc_${f.id}`, name: f.title }))
+                ...socialFeatures.map(f => ({ id: `soc_${f.id}`, name: f.title })),
+                ...projectUnits
+                    .filter(u => u.detailType === "PROMO" || u.detailType === "PAYMENT")
+                    .map(u => ({ id: `unit_${u.id}`, name: u.rooms })),
             ].filter(t => t.name);
 
             const response = await fetch("/api/admin/ai/translate-listing", {
@@ -1768,6 +1795,7 @@ export default function NewProjectForm({
                     description,
                     listingId: projectId || null,
                     tags: featureTags,
+                    force: options?.force || false,
                 }),
             });
 
@@ -1837,7 +1865,29 @@ export default function NewProjectForm({
             setGeneralFeatures((prev) => extractFeatureTranslations(prev, "gen_"));
             setSocialFeatures((prev) => extractFeatureTranslations(prev, "soc_"));
 
+            // Update PROMO/PAYMENT unit translations
+            setUnitTranslationsMap((prev) => {
+                const next = { ...prev };
+                for (const unit of projectUnits) {
+                    if (unit.detailType !== "PROMO" && unit.detailType !== "PAYMENT") continue;
+                    const tagId = `unit_${unit.id}`;
+                    const translations = (["en", "de", "ru"] as const)
+                        .map((loc) => {
+                            const t = aiTranslations[loc]?.tags?.find((t: any) => t.id === tagId);
+                            return { locale: loc, title: t?.name?.trim() || null };
+                        })
+                        .filter((t) => t.title) as { locale: string; title: string }[];
+                    if (translations.length > 0) {
+                        next[unit.id] = translations;
+                    }
+                }
+                return next;
+            });
+
             setTranslationsLocked(true);
+            setLastTranslatedAt(new Date());
+            setTranslationSuccess(true);
+            setTimeout(() => setTranslationSuccess(false), 3000);
             setActiveLocale("en");
         } catch (errorValue) {
             setError(
@@ -1977,12 +2027,25 @@ export default function NewProjectForm({
                     })
                     .filter((item) => item.imageUrl || item.title);
                 const projectUnitRows = (project.projectUnits || [])
-                    .map((unit) => ({
-                        id: createRowId(),
-                        rooms: unit.rooms?.trim() || "",
-                        detailType: (unit.detailType === "PAYMENT" || unit.detailType === "PROMO" ? unit.detailType : "ROOM") as ProjectDetailType,
-                    }))
+                    .map((unit) => {
+                        const rowId = createRowId();
+                        return {
+                            id: rowId,
+                            originalId: unit.id,
+                            rooms: unit.rooms?.trim() || "",
+                            detailType: (unit.detailType === "PAYMENT" || unit.detailType === "PROMO" ? unit.detailType : "ROOM") as ProjectDetailType,
+                            _translations: (unit.translations || [])
+                                .filter((t) => t.locale !== "tr" && t.title)
+                                .map((t) => ({ locale: t.locale, title: t.title || "" })),
+                        };
+                    })
                     .filter((item) => item.rooms.length > 0);
+                const hydratedUnitTranslationsMap: Record<string, { locale: string; title: string }[]> = {};
+                for (const row of projectUnitRows) {
+                    if (row._translations.length > 0) {
+                        hydratedUnitTranslationsMap[row.id] = row._translations;
+                    }
+                }
 
                 const faqRows = (project.faqs || [])
                     .map((faq) => {
@@ -2051,7 +2114,8 @@ export default function NewProjectForm({
                         toUploadedDocument(item, `Belge ${index + 1}`)
                     )
                 );
-                setProjectUnits(projectUnitRows);
+                setProjectUnits(projectUnitRows.map(({ _translations, originalId, ...rest }) => rest));
+                setUnitTranslationsMap(hydratedUnitTranslationsMap);
                 setRoomOptions(
                     mergeRoomOptions(
                         [...DEFAULT_ROOM_OPTIONS],
@@ -2393,19 +2457,20 @@ export default function NewProjectForm({
             }))
             .filter((item) => item.imageUrl && item.translations[0].title);
         const projectUnitsPayload = projectUnits
-            .map((item) => ({
-                rooms: item.rooms.trim(),
-                detailType: item.detailType,
-                area: null,
-                price: null,
-                mediaIds: [],
-                translations: [
-                    {
-                        locale: "tr",
-                        title: null,
-                    },
-                ],
-            }))
+            .map((item) => {
+                const extraTranslations = unitTranslationsMap[item.id] || [];
+                return {
+                    rooms: item.rooms.trim(),
+                    detailType: item.detailType,
+                    area: null,
+                    price: null,
+                    mediaIds: [],
+                    translations: [
+                        { locale: "tr", title: null },
+                        ...extraTranslations.map((t) => ({ locale: t.locale, title: t.title })),
+                    ],
+                };
+            })
             .filter((item) => item.rooms.length > 0);
 
         const faqPayload = faqs
@@ -3047,25 +3112,51 @@ export default function NewProjectForm({
                                     Son Daireler
                                 </button>
                                 {translationsLocked ? (
-                                    LOCALES.map((locale) => (
+                                    <>
+                                        {LOCALES.map((locale) => (
+                                            <button
+                                                key={locale.code}
+                                                type="button"
+                                                onClick={() => setActiveLocale(locale.code)}
+                                                className={cn(
+                                                    "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+                                                    activeLocale === locale.code
+                                                        ? "bg-slate-900 text-white border-slate-900"
+                                                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                                                )}
+                                            >
+                                                {locale.code.toUpperCase()}
+                                            </button>
+                                        ))}
                                         <button
-                                            key={locale.code}
                                             type="button"
-                                            onClick={() => setActiveLocale(locale.code)}
+                                            onClick={() => handleTranslate({ force: true })}
+                                            disabled={isTranslating || isHydrating || isSaving || isUploading}
                                             className={cn(
-                                                "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
-                                                activeLocale === locale.code
-                                                    ? "bg-slate-900 text-white border-slate-900"
-                                                    : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                                                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+                                                isTranslating
+                                                    ? "border-slate-200 text-slate-400 bg-slate-50"
+                                                    : "border-orange-200 text-orange-600 hover:bg-orange-50"
                                             )}
+                                            title="Çevirileri yeniden oluştur"
                                         >
-                                            {locale.code.toUpperCase()}
+                                            <RefreshCw className={cn("w-3.5 h-3.5", isTranslating && "animate-spin")} />
+                                            {isTranslating ? "Çeviriliyor..." : "Yenile"}
                                         </button>
-                                    ))
+                                        {translationSuccess && (
+                                            <span className="flex items-center gap-1 text-xs font-medium text-green-600 animate-in fade-in">
+                                                <Check className="w-3.5 h-3.5" />
+                                                Tamamlandı
+                                            </span>
+                                        )}
+                                        {lastTranslatedAt && !translationSuccess && (
+                                            <TranslationTimeAgo date={lastTranslatedAt} />
+                                        )}
+                                    </>
                                 ) : (
                                     <button
                                         type="button"
-                                        onClick={handleTranslate}
+                                        onClick={() => handleTranslate()}
                                         disabled={
                                             isHydrating ||
                                             isSaving ||

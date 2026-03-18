@@ -4,8 +4,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { ListingStatus } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
-import { translateBatch, translateText } from "@/lib/ai-translate";
-import { isInDictionary, translateFeatures } from "@/lib/feature-translation-dictionary";
+import { translateFeatures } from "@/lib/feature-translation-dictionary";
 import {
     formatArea,
     formatPrice,
@@ -96,28 +95,12 @@ export default async function ListingDetailPage({
 
     const translation = pickLocalizedEntry(listing.translations, locale);
 
-    const rawTitle = translation?.title?.trim() || t("fallbackTitle");
-    const rawDescription =
+    const title = translation?.title?.trim() || t("fallbackTitle");
+    const description =
         translation?.description?.trim() ||
         t("fallbackDescription");
 
-    // AI-translate title and description for non-Turkish locales when falling back to Turkish
-    const isFallbackLocale = locale !== "tr" && translation?.locale !== locale;
-    const title = isFallbackLocale ? await translateText(rawTitle, locale) : rawTitle;
-    const description = isFallbackLocale ? await translateText(rawDescription, locale) : rawDescription;
     const rawFeatures = (translation?.features || []).map((f) => f.trim()).filter(Boolean);
-    // AI-translate features not in dictionary
-    if (locale !== "tr") {
-        const missing = rawFeatures
-            .map((text, i) => ({ key: `feat-${i}`, text, i }))
-            .filter((item) => !isInDictionary(item.text, locale));
-        if (missing.length > 0) {
-            const aiResults = await translateBatch(missing, locale);
-            for (const item of missing) {
-                if (aiResults[item.key]) rawFeatures[item.i] = aiResults[item.key];
-            }
-        }
-    }
     const listedFeatures = translateFeatures(rawFeatures, locale);
 
     const priceValue =
