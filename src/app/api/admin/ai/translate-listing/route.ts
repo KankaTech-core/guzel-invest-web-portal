@@ -8,9 +8,9 @@ const openai = new OpenAI({
 });
 
 const SYSTEM_PROMPT = `You are a professional real estate translator.
-Translate the provided Turkish listing title and description into English, German, Russian, and Arabic.
+Translate the provided Turkish listing title and description into English, German, and Russian.
 If tags are provided, translate each tag name and keep the tag "id" exactly the same.
-Return a JSON object with keys "en", "de", "ru", "ar". Each key should contain:
+Return a JSON object with keys "en", "de", "ru". Each key should contain:
 {
   "title": "...",
   "description": "...",
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
             const existingTranslation = await prisma.listingTranslation.findFirst({
                 where: {
                     listingId,
-                    locale: { in: ["en", "de", "ru", "ar"] },
+                    locale: { in: ["en", "de", "ru"] },
                     OR: [
                         { title: { not: "" } },
                         { description: { not: "" } },
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
             ],
             response_format: { type: "json_object" },
             temperature: 0.3,
-            max_tokens: 2000,
+            max_tokens: 4096,
         });
 
         const responseText = completion.choices[0]?.message?.content;
@@ -106,7 +106,6 @@ export async function POST(req: NextRequest) {
             en?: { title?: string; description?: string; tags?: unknown };
             de?: { title?: string; description?: string; tags?: unknown };
             ru?: { title?: string; description?: string; tags?: unknown };
-            ar?: { title?: string; description?: string; tags?: unknown };
         };
 
         try {
@@ -143,7 +142,6 @@ export async function POST(req: NextRequest) {
             en: normalizeTranslation(parsedResponse.en),
             de: normalizeTranslation(parsedResponse.de),
             ru: normalizeTranslation(parsedResponse.ru),
-            ar: normalizeTranslation(parsedResponse.ar),
         };
 
         return NextResponse.json({
