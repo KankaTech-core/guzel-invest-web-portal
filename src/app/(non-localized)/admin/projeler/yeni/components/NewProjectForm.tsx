@@ -1090,6 +1090,7 @@ export default function NewProjectForm({
     const [interiorMedia, setInteriorMedia] = useState<UploadedMedia[]>([]);
     const [projectUnits, setProjectUnits] = useState<ProjectUnitRow[]>([]);
     const [unitTranslationsMap, setUnitTranslationsMap] = useState<Record<string, { locale: string; title: string }[]>>({});
+    const [faqTranslationsMap, setFaqTranslationsMap] = useState<Record<string, { locale: string; question: string; answer: string }[]>>({});
     const [roomOptions, setRoomOptions] = useState<string[]>([
         ...DEFAULT_ROOM_OPTIONS,
     ]);
@@ -1785,6 +1786,10 @@ export default function NewProjectForm({
                 ...projectUnits
                     .filter(u => u.detailType === "PROMO" || u.detailType === "PAYMENT")
                     .map(u => ({ id: `unit_${u.id}`, name: u.rooms })),
+                ...faqs.flatMap(f => [
+                    { id: `faq_q_${f.id}`, name: f.question },
+                    { id: `faq_a_${f.id}`, name: f.answer },
+                ]),
             ].filter(t => t.name);
 
             const response = await fetch("/api/admin/ai/translate-listing", {
@@ -1879,6 +1884,27 @@ export default function NewProjectForm({
                         .filter((t) => t.title) as { locale: string; title: string }[];
                     if (translations.length > 0) {
                         next[unit.id] = translations;
+                    }
+                }
+                return next;
+            });
+
+            // Update FAQ translations
+            setFaqTranslationsMap((prev) => {
+                const next = { ...prev };
+                for (const faq of faqs) {
+                    const translations = (["en", "de", "ru"] as const)
+                        .map((loc) => {
+                            const qTag = aiTranslations[loc]?.tags?.find((t: any) => t.id === `faq_q_${faq.id}`);
+                            const aTag = aiTranslations[loc]?.tags?.find((t: any) => t.id === `faq_a_${faq.id}`);
+                            const question = qTag?.name?.trim() || "";
+                            const answer = aTag?.name?.trim() || "";
+                            if (!question && !answer) return null;
+                            return { locale: loc, question, answer };
+                        })
+                        .filter((t) => t !== null) as { locale: string; question: string; answer: string }[];
+                    if (translations.length > 0) {
+                        next[faq.id] = translations;
                     }
                 }
                 return next;
@@ -2047,6 +2073,7 @@ export default function NewProjectForm({
                     }
                 }
 
+                const hydratedFaqTranslationsMap: Record<string, { locale: string; question: string; answer: string }[]> = {};
                 const faqRows = (project.faqs || [])
                     .map((faq) => {
                         const translation = getTurkishTranslation(faq.translations);
@@ -2054,8 +2081,15 @@ export default function NewProjectForm({
                         const question = translation.question?.trim() || "";
                         const answer = translation.answer?.trim() || "";
                         if (!question && !answer) return null;
+                        const rowId = createRowId();
+                        const nonTrTranslations = (faq.translations || [])
+                            .filter((t) => t.locale !== "tr" && (t.question || t.answer))
+                            .map((t) => ({ locale: t.locale, question: t.question || "", answer: t.answer || "" }));
+                        if (nonTrTranslations.length > 0) {
+                            hydratedFaqTranslationsMap[rowId] = nonTrTranslations;
+                        }
                         return {
-                            id: createRowId(),
+                            id: rowId,
                             question,
                             answer,
                         };
@@ -2138,6 +2172,7 @@ export default function NewProjectForm({
                         ]
                 );
                 setFaqs(faqRows);
+                setFaqTranslationsMap(hydratedFaqTranslationsMap);
             } catch (errorValue) {
                 if (!active) return;
                 setError(
@@ -2474,16 +2509,24 @@ export default function NewProjectForm({
             .filter((item) => item.rooms.length > 0);
 
         const faqPayload = faqs
-            .map((item, index) => ({
-                order: index,
-                translations: [
-                    {
-                        locale: "tr",
-                        question: item.question.trim(),
-                        answer: item.answer.trim(),
-                    },
-                ],
-            }))
+            .map((item, index) => {
+                const extraTranslations = faqTranslationsMap[item.id] || [];
+                return {
+                    order: index,
+                    translations: [
+                        {
+                            locale: "tr",
+                            question: item.question.trim(),
+                            answer: item.answer.trim(),
+                        },
+                        ...extraTranslations.map((t) => ({
+                            locale: t.locale,
+                            question: t.question,
+                            answer: t.answer,
+                        })),
+                    ],
+                };
+            })
             .filter(
                 (item) =>
                     item.translations[0].question.length > 0 &&

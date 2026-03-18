@@ -431,6 +431,14 @@ export async function getS1ProjectPageData({
             projectUnits: {
                 select: {
                     rooms: true,
+                    detailType: true,
+                    translations: {
+                        where: {
+                            locale: {
+                                in: localeFallbacks,
+                            },
+                        },
+                    },
                 },
             },
         },
@@ -449,6 +457,20 @@ export async function getS1ProjectPageData({
             if (!image) {
                 return null;
             }
+            const roomUnits = item.projectUnits
+                .filter((unit) => unit.detailType === "ROOM" || unit.detailType === null)
+                .map((unit) => unit.rooms);
+            const promoPaymentParts = item.projectUnits
+                .filter((unit) => unit.detailType === "PROMO" || unit.detailType === "PAYMENT")
+                .map((unit) => {
+                    const unitTr = pickLocalizedEntry(unit.translations, locale);
+                    return unitTr?.title?.trim() || unit.rooms?.trim() || "";
+                })
+                .filter(Boolean);
+            const summaryParts = [
+                toRoomSummary(roomUnits),
+                ...promoPaymentParts,
+            ].filter(Boolean);
             return {
                 id: item.id,
                 slug: item.slug,
@@ -456,7 +478,7 @@ export async function getS1ProjectPageData({
                 location: [item.district, item.city].filter(Boolean).join(", "),
                 status: getStatusLabel(item.status),
                 image,
-                roomSummary: toRoomSummary(item.projectUnits.map((unit) => unit.rooms)),
+                roomSummary: summaryParts.join(" • ") || undefined,
             };
         })
         .filter(isPresent);
