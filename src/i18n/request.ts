@@ -1,29 +1,24 @@
 import { getRequestConfig } from "next-intl/server";
 import { hasLocale } from "next-intl";
+import {
+    defaultLocale,
+    isRtl,
+    localeFlags,
+    localeNames,
+    normalizeLocaleTag,
+    publicLocales,
+    type Locale,
+} from "@/i18n/public-locales";
 
-export const locales = ["tr"] as const;
-export type Locale = (typeof locales)[number];
-
-export const defaultLocale: Locale = "tr";
-
-export const localeNames: Record<Locale, string> = {
-    tr: "Türkçe",
-};
-
-export const localeFlags: Record<Locale, string> = {
-    tr: "🇹🇷",
-};
-
-// RTL languages
-export const rtlLocales: Locale[] = [];
-
-export function isRtl(locale: Locale): boolean {
-    return rtlLocales.includes(locale);
-}
+export { defaultLocale, isRtl, localeFlags, localeNames, publicLocales as locales };
+export type { Locale };
 
 export default getRequestConfig(async ({ requestLocale }) => {
     const requested = await requestLocale;
-    const locale = hasLocale(locales, requested) ? requested : defaultLocale;
+    const normalizedRequested = normalizeLocaleTag(requested);
+    const locale = hasLocale(publicLocales, normalizedRequested)
+        ? (normalizedRequested as Locale)
+        : defaultLocale;
 
     return {
         locale,

@@ -160,6 +160,36 @@ export function getProjectCategoryLabel(
             HOTEL: "Hotel Project",
             OTHER: "Other",
         },
+        de: {
+            RESIDENCE: "Residenz",
+            SITE: "Wohnanlage",
+            VILLA_COMPLEX: "Villenkomplex",
+            VILLA_COMPLEKS: "Villenkomplex",
+            COMMERCIAL_PROJECT: "Gewerbeprojekt",
+            MIXED_USE: "Mischnutzung",
+            HOTEL: "Hotelprojekt",
+            OTHER: "Andere",
+        },
+        ru: {
+            RESIDENCE: "Резиденция",
+            SITE: "Жилой комплекс",
+            VILLA_COMPLEX: "Вилла комплекс",
+            VILLA_COMPLEKS: "Вилла комплекс",
+            COMMERCIAL_PROJECT: "Коммерческий проект",
+            MIXED_USE: "Смешанное использование",
+            HOTEL: "Проект отеля",
+            OTHER: "Другое",
+        },
+        ar: {
+            RESIDENCE: "سكن",
+            SITE: "مجمع سكني",
+            VILLA_COMPLEX: "مجمع فلل",
+            VILLA_COMPLEKS: "مجمع فلل",
+            COMMERCIAL_PROJECT: "مشروع تجاري",
+            MIXED_USE: "متعدد الاستخدامات",
+            HOTEL: "مشروع فندق",
+            OTHER: "أخرى",
+        },
     };
 
     const localized = labels[locale]?.[normalized] || labels.tr[normalized];

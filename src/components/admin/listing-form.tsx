@@ -1691,6 +1691,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             const enTagEntries = buildTagTranslationEntries(translations.en?.tags);
             const deTagEntries = buildTagTranslationEntries(translations.de?.tags);
             const ruTagEntries = buildTagTranslationEntries(translations.ru?.tags);
+            const arTagEntries = buildTagTranslationEntries(translations.ar?.tags);
 
             setFormData((prev) => ({
                 ...prev,
@@ -1717,6 +1718,14 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                             title: translations.ru?.title ?? t.title,
                             description: translations.ru?.description ?? t.description,
                             features: mergeTagTranslationEntries(t.features, ruTagEntries),
+                        };
+                    }
+                    if (t.locale === "ar") {
+                        return {
+                            ...t,
+                            title: translations.ar?.title ?? t.title,
+                            description: translations.ar?.description ?? t.description,
+                            features: mergeTagTranslationEntries(t.features, arTagEntries),
                         };
                     }
                     return t;

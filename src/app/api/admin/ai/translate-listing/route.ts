@@ -8,9 +8,9 @@ const openai = new OpenAI({
 });
 
 const SYSTEM_PROMPT = `You are a professional real estate translator.
-Translate the provided Turkish listing title and description into English, German, and Russian.
+Translate the provided Turkish listing title and description into English, German, Russian, and Arabic.
 If tags are provided, translate each tag name and keep the tag "id" exactly the same.
-Return a JSON object with keys "en", "de", "ru". Each key should contain:
+Return a JSON object with keys "en", "de", "ru", "ar". Each key should contain:
 {
   "title": "...",
   "description": "...",
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
             const existingTranslation = await prisma.listingTranslation.findFirst({
                 where: {
                     listingId,
-                    locale: { in: ["en", "de", "ru"] },
+                    locale: { in: ["en", "de", "ru", "ar"] },
                     OR: [
                         { title: { not: "" } },
                         { description: { not: "" } },
@@ -103,9 +103,10 @@ export async function POST(req: NextRequest) {
         }
 
         let parsedResponse: {
-            en?: { title?: string; description?: string };
-            de?: { title?: string; description?: string };
-            ru?: { title?: string; description?: string };
+            en?: { title?: string; description?: string; tags?: unknown };
+            de?: { title?: string; description?: string; tags?: unknown };
+            ru?: { title?: string; description?: string; tags?: unknown };
+            ar?: { title?: string; description?: string; tags?: unknown };
         };
 
         try {
@@ -142,6 +143,7 @@ export async function POST(req: NextRequest) {
             en: normalizeTranslation(parsedResponse.en),
             de: normalizeTranslation(parsedResponse.de),
             ru: normalizeTranslation(parsedResponse.ru),
+            ar: normalizeTranslation(parsedResponse.ar),
         };
 
         return NextResponse.json({

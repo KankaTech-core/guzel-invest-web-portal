@@ -55,6 +55,8 @@ import {
     ZONING_STATUS_OPTIONS,
 } from "@/lib/listing-type-rules";
 import { Select } from "@/components/ui";
+import { translateFeature } from "@/lib/feature-translation-dictionary";
+import { getPortfolioCopy, type PublicLocale } from "@/lib/public-copy";
 
 interface PortfolioClientProps {
     locale: string;
@@ -191,10 +193,7 @@ const PORTFOLIO_SCROLL_LISTING_ID_KEY = "portfolio:scroll:listing-id";
 
 const propertyTypes = PROPERTY_TYPE_OPTIONS;
 
-const saleTypes = [
-    { value: "SALE", label: "Satılık" },
-    { value: "RENT", label: "Kiralık" },
-] as const;
+const saleTypes = ["SALE", "RENT"] as const;
 
 const roomOptions = [
     "1+0",
@@ -209,12 +208,7 @@ const roomOptions = [
     "8+",
 ] as const;
 
-const sortOptions: { value: SortOption; label: string }[] = [
-    { value: "newest", label: "En Yeni" },
-    { value: "priceAsc", label: "Fiyat (Artan)" },
-    { value: "priceDesc", label: "Fiyat (Azalan)" },
-    { value: "areaDesc", label: "m² (Büyükten Küçüğe)" },
-];
+const sortOptions = ["newest", "priceAsc", "priceDesc", "areaDesc"] as const;
 
 const ACTIVE_FILTER_QUERY_KEYS = [
     "type",
@@ -553,7 +547,7 @@ function buildCanonicalSearchKey(rawSearch: string) {
 
 function readInitialFilters(searchParams: URLSearchParams): FiltersState {
     const validTypeValues = new Set<string>(propertyTypes.map((type) => type.value));
-    const validSaleTypeValues = new Set<string>(saleTypes.map((type) => type.value));
+    const validSaleTypeValues = new Set<string>(saleTypes);
     const validRoomValues = new Set(roomOptions);
 
     const rawTypes = parseMultiParam(searchParams, "type");
@@ -588,7 +582,7 @@ function readInitialFilters(searchParams: URLSearchParams): FiltersState {
         validRoomValues.has(value as (typeof roomOptions)[number])
     );
 
-    const selectedSort = sortOptions.some((option) => option.value === rawSort)
+    const selectedSort = rawSort && sortOptions.includes(rawSort as (typeof sortOptions)[number])
         ? (rawSort as SortOption)
         : DEFAULT_SORT;
 
@@ -701,7 +695,11 @@ function getListingTitle(listing: Listing, locale: string) {
         (translation) => translation.locale === "tr"
     );
 
-    return requested?.title || fallback?.title || "Başlık belirtilmedi";
+    return (
+        requested?.title ||
+        fallback?.title ||
+        getPortfolioCopy(locale).labels.missingTitle
+    );
 }
 
 function getListingDescription(listing: Listing, locale: string) {
@@ -712,7 +710,11 @@ function getListingDescription(listing: Listing, locale: string) {
         (translation) => translation.locale === "tr"
     );
 
-    return requested?.description || fallback?.description || "Açıklama bulunamadı.";
+    return (
+        requested?.description ||
+        fallback?.description ||
+        getPortfolioCopy(locale).labels.missingDescription
+    );
 }
 
 function getProjectRoomOptions(listing: Listing) {
@@ -762,12 +764,12 @@ function getProjectGeneralFeatures(listing: Listing, locale: string) {
             const fallback = feature.translations.find(
                 (translation) => translation.locale === "tr"
             );
-            const label = (requested?.title || fallback?.title || "").trim();
-            if (!label) return null;
+            const rawLabel = (requested?.title || fallback?.title || "").trim();
+            if (!rawLabel) return null;
 
             return {
                 icon: feature.icon || "Building2",
-                label,
+                label: translateFeature(rawLabel, locale),
             };
         })
         .filter(
@@ -805,6 +807,142 @@ function buildPriceHistogramValues(listings: Listing[]) {
 }
 
 export function PortfolioClient({ locale }: PortfolioClientProps) {
+    const copy = getPortfolioCopy(locale);
+    const loadListingsError = copy.errors.loadListings;
+    const refreshListingsError = copy.errors.refreshListings;
+    const refreshListingsNetworkError = copy.errors.refreshListingsNetwork;
+    const localeKey =
+        locale === "en" || locale === "ru" || locale === "de" ? locale : "tr";
+    const uiTextByLocale: Record<
+        PublicLocale,
+        {
+            panelTitle: string;
+            projects: string;
+            searchCity: string;
+            searchDistrict: string;
+            searchNeighborhood: string;
+            areaHeading: string;
+            noResultsHint: string;
+            totalSuffix: string;
+            mapAlt: string;
+            minPrice: string;
+            maxPrice: string;
+            minArea: string;
+            maxArea: string;
+            landAreaPrefix: string;
+            priceLabelPrefix: string;
+            groundFloor: string;
+            basement: string;
+            rooms: string;
+            bathroom: string;
+            perMonth: string;
+            orLabel: string;
+        }
+    > = {
+        tr: {
+            panelTitle: "Filtreler",
+            projects: "Projeler",
+            searchCity: "İl yazın",
+            searchDistrict: "İlçe yazın",
+            searchNeighborhood: "Mahalle yazın",
+            areaHeading: "Alan",
+            noResultsHint: "Filtreleri temizleyip tekrar deneyebilirsiniz.",
+            totalSuffix: "ilan",
+            mapAlt: "Harita görünümü arka planı",
+            minPrice: "Min",
+            maxPrice: "Max",
+            minArea: "Min",
+            maxArea: "Max",
+            landAreaPrefix: "m²",
+            priceLabelPrefix: "Sırala:",
+            groundFloor: "Zemin",
+            basement: "Bodrum",
+            rooms: "oda",
+            bathroom: "banyo",
+            perMonth: "/ ay",
+            orLabel: "— VEYA —",
+        },
+        en: {
+            panelTitle: "Filters",
+            projects: "Projects",
+            searchCity: "Type city",
+            searchDistrict: "Type district",
+            searchNeighborhood: "Type neighborhood",
+            areaHeading: "Area",
+            noResultsHint: "Try clearing the filters and search again.",
+            totalSuffix: "listings",
+            mapAlt: "Map view background",
+            minPrice: "Min",
+            maxPrice: "Max",
+            minArea: "Min",
+            maxArea: "Max",
+            landAreaPrefix: "m²",
+            priceLabelPrefix: "Sort:",
+            groundFloor: "Ground floor",
+            basement: "Basement",
+            rooms: "rooms",
+            bathroom: "bathrooms",
+            perMonth: "/ month",
+            orLabel: "— OR —",
+        },
+        ru: {
+            panelTitle: "Фильтры",
+            projects: "Проекты",
+            searchCity: "Введите город",
+            searchDistrict: "Введите район",
+            searchNeighborhood: "Введите квартал",
+            areaHeading: "Площадь",
+            noResultsHint: "Попробуйте очистить фильтры и повторить поиск.",
+            totalSuffix: "объявлений",
+            mapAlt: "Фон карты",
+            minPrice: "Мин",
+            maxPrice: "Макс",
+            minArea: "Мин",
+            maxArea: "Макс",
+            landAreaPrefix: "m²",
+            priceLabelPrefix: "Сортировать:",
+            groundFloor: "Первый этаж",
+            basement: "Подвал",
+            rooms: "комнат",
+            bathroom: "ванная",
+            perMonth: "/ месяц",
+            orLabel: "— ИЛИ —",
+        },
+        de: {
+            panelTitle: "Filter",
+            projects: "Projekte",
+            searchCity: "Stadt eingeben",
+            searchDistrict: "Bezirk eingeben",
+            searchNeighborhood: "Stadtteil eingeben",
+            areaHeading: "Fläche",
+            noResultsHint: "Bitte löschen Sie die Filter und versuchen Sie es erneut.",
+            totalSuffix: "Anzeigen",
+            mapAlt: "Hintergrund der Kartenansicht",
+            minPrice: "Min",
+            maxPrice: "Max",
+            minArea: "Min",
+            maxArea: "Max",
+            landAreaPrefix: "m²",
+            priceLabelPrefix: "Sortieren:",
+            groundFloor: "Erdgeschoss",
+            basement: "Keller",
+            rooms: "Zimmer",
+            bathroom: "Bad",
+            perMonth: "/ Monat",
+            orLabel: "— ODER —",
+        },
+    };
+    const uiText = uiTextByLocale[localeKey];
+    const saleTypes = [
+        { value: "SALE", label: copy.saleTypes.sale },
+        { value: "RENT", label: copy.saleTypes.rent },
+    ] as const;
+    const sortOptions: { value: SortOption; label: string }[] = [
+        { value: "newest", label: copy.sortOptions.newest },
+        { value: "priceAsc", label: copy.sortOptions.priceAsc },
+        { value: "priceDesc", label: copy.sortOptions.priceDesc },
+        { value: "areaDesc", label: copy.sortOptions.areaDesc },
+    ];
     const { convertPrice } = useCurrency();
     const router = useRouter();
     const pathname = usePathname();
@@ -1583,7 +1721,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 if (!response.ok) {
                     const apiError = await parseApiErrorMessage(
                         response,
-                        "İlanlar alınamadı."
+                        loadListingsError
                     );
                     throw new Error(apiError);
                 }
@@ -1654,10 +1792,9 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 setError(
                     getFriendlyFetchErrorMessage(
                         fetchError,
-                        "İlanlar yenilenirken bir hata oluştu.",
+                        refreshListingsError,
                         {
-                            networkMessage:
-                                "İlanlar yenilenirken bağlantı kesildi (Load failed). İnternet/proxy bağlantınızı kontrol edip tekrar deneyin.",
+                            networkMessage: refreshListingsNetworkError,
                         }
                     )
                 );
@@ -1670,7 +1807,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 }
             }
         },
-        [queryString]
+        [loadListingsError, queryString, refreshListingsError, refreshListingsNetworkError]
     );
 
     useEffect(() => {
@@ -2046,13 +2183,13 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     const renderFilterPanelContent = (isMobile: boolean) => (
         <>
             <div className={`mb-5 flex ${isMobile ? "justify-end" : "items-center justify-between"}`}>
-                {!isMobile && <h3 className="font-semibold text-gray-900">Filtreler</h3>}
+                {!isMobile && <h3 className="font-semibold text-gray-900">{uiText.panelTitle}</h3>}
                 <button
                     type="button"
                     onClick={clearFilters}
                     className="cursor-pointer text-xs font-semibold text-orange-500 transition hover:text-orange-600"
                 >
-                    Temizle
+                    {copy.filters.clear}
                 </button>
             </div>
 
@@ -2080,7 +2217,9 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         </button>
                     ))}
                 </div>
-                <div className="mt-2 text-center text-xs font-semibold text-gray-500">— VEYA —</div>
+                <div className="mt-2 text-center text-xs font-semibold text-gray-500">
+                    {uiText.orLabel}
+                </div>
                 <div className="mt-2">
                     <button
                         type="button"
@@ -2095,7 +2234,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                             : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
                             }`}
                     >
-                        Projeler
+                        {uiText.projects}
                     </button>
                 </div>
             </div>
@@ -2113,12 +2252,12 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         </span>
                         <div>
                             <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-600">
-                                Kategori
+                                {copy.filters.categories}
                             </h4>
                             <p className="text-[11px] text-gray-400">
                                 {filters.types.length > 0
-                                    ? `${filters.types.length} seçim aktif`
-                                    : "Tüm kategoriler"}
+                                    ? copy.filters.selectedCategories(filters.types.length)
+                                    : copy.filters.allCategories}
                             </p>
                         </div>
                     </div>
@@ -2179,7 +2318,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
             <div className="mb-6">
                 <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    Fiyat Aralığı
+                    {copy.filters.priceRange}
                 </h4>
                 <div className="mb-3 px-1">
                     <InlineRangeSlider
@@ -2215,7 +2354,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                     : undefined,
                             }))
                         }
-                        placeholder="Min EUR"
+                        placeholder={uiText.minPrice}
                         min={PRICE_MIN}
                         max={PRICE_MAX}
                         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
@@ -2236,7 +2375,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                     : undefined,
                             }))
                         }
-                        placeholder="Max EUR"
+                        placeholder={uiText.maxPrice}
                         min={PRICE_MIN}
                         max={PRICE_MAX}
                         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
@@ -2247,7 +2386,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
             <div className="mb-6 hidden">
                 <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    Konum
+                    {copy.filters.location}
                 </h4>
                 <Select
                     value={filters.city}
@@ -2260,14 +2399,14 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         }))
                     }
                     options={[
-                        { value: "", label: "Tüm İller" },
+                        { value: "", label: copy.filters.allCities },
                         ...cityOptions.map((option) => ({
                             value: option,
                             label: option,
                         })),
                     ]}
                     searchable
-                    searchPlaceholder="İl yazın"
+                    searchPlaceholder={uiText.searchCity}
                     searchMatchMode="startsWith"
                 />
 
@@ -2281,14 +2420,14 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         }))
                     }
                     options={[
-                        { value: "", label: "Tüm İlçeler" },
+                        { value: "", label: copy.filters.allDistricts },
                         ...districtOptions.map((option) => ({
                             value: option,
                             label: option,
                         })),
                     ]}
                     searchable
-                    searchPlaceholder="İlçe yazın"
+                    searchPlaceholder={uiText.searchDistrict}
                     searchMatchMode="startsWith"
                 />
 
@@ -2301,21 +2440,21 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         }))
                     }
                     options={[
-                        { value: "", label: "Tüm Mahalleler" },
+                        { value: "", label: copy.filters.allNeighborhoods },
                         ...neighborhoodOptions.map((option) => ({
                             value: option,
                             label: option,
                         })),
                     ]}
                     searchable
-                    searchPlaceholder="Mahalle yazın"
+                    searchPlaceholder={uiText.searchNeighborhood}
                     searchMatchMode="startsWith"
                 />
             </div>
 
             <div className="mb-6">
                 <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                    Alan (<span className="normal-case">m<sup>2</sup></span>)
+                    {uiText.areaHeading} (<span className="normal-case">m<sup>2</sup></span>)
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
                     <input
@@ -2333,7 +2472,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                     : undefined,
                             }))
                         }
-                        placeholder="Min m²"
+                        placeholder={copy.filters.min}
                         min={AREA_MIN}
                         max={AREA_MAX}
                         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
@@ -2354,7 +2493,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                     : undefined,
                             }))
                         }
-                        placeholder="Max m²"
+                        placeholder={copy.filters.max}
                         min={AREA_MIN}
                         max={AREA_MAX}
                         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
@@ -2366,7 +2505,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             {isLandFiltersVisible && (
                 <div className="mb-6 hidden space-y-3">
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        Arsa Detayları
+                        {copy.filters.landDetails}
                     </h4>
                     <Select
                         value={filters.zoningStatus}
@@ -2377,7 +2516,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                             }))
                         }
                         options={[
-                            { value: "", label: "İmar Durumu (Tümü)" },
+                            { value: "", label: copy.filters.zoningAll },
                             ...ZONING_STATUS_OPTIONS.map((option) => ({
                                 value: option.value,
                                 label: option.label,
@@ -2393,12 +2532,12 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 parcelNo: event.target.value,
                             }))
                         }
-                        placeholder="Ada / Parsel"
+                        placeholder={copy.filters.parcelNoPlaceholder}
                         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
                     />
                     <div className="space-y-2 rounded-lg border border-gray-200 p-3">
                         <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Emsal
+                            {copy.filters.emsal}
                         </h5>
                         <div className="grid grid-cols-2 gap-2">
                             <input
@@ -2467,12 +2606,12 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             {isCommercialFiltersVisible && (
                 <div className="mb-6 hidden space-y-3">
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        Ticari Detaylar
+                        {copy.filters.commercial}
                     </h4>
                     <div className="space-y-3">
                         <div className="space-y-2 rounded-lg border border-gray-200 p-3">
                             <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Zemin <span className="normal-case">(m²)</span>
+                                {uiText.groundFloor} <span className="normal-case">(m²)</span>
                             </h5>
                             <div className="grid grid-cols-2 gap-2">
                                 <input
@@ -2546,7 +2685,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
                         <div className="space-y-2 rounded-lg border border-gray-200 p-3">
                             <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Bodrum <span className="normal-case">(m²)</span>
+                                {uiText.basement} <span className="normal-case">(m²)</span>
                             </h5>
                             <div className="grid grid-cols-2 gap-2">
                                 <input
@@ -2624,7 +2763,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             {isFarmFiltersVisible && (
                 <div className="mb-6 hidden">
                     <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        Çiftlik Detayları
+                        {copy.filters.farmDetails}
                     </h4>
                     <div className="grid grid-cols-1 gap-2">
                         <button
@@ -2641,7 +2780,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                                 }`}
                         >
-                            Su Kaynağı Olanlar
+                            {copy.filters.waterSource}
                         </button>
                         <button
                             type="button"
@@ -2657,7 +2796,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                                 }`}
                         >
-                            Meyve Ağacı Olanlar
+                            {copy.filters.fruitTrees}
                         </button>
                     </div>
                 </div>
@@ -2666,7 +2805,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             {isRoomsFilterVisible && (
                 <div className="mb-6">
                     <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        Oda Sayısı
+                        {copy.filters.roomCount}
                     </h4>
                     <div className="grid grid-cols-4 gap-1.5">
                         {roomOptions.map((room) => (
@@ -2691,7 +2830,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     const renderSortDrawerContent = () => (
         <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Sıralama
+                {copy.labels.sort}
             </p>
             <div className="space-y-2">
                 {sortOptions.map((option) => {
@@ -2727,7 +2866,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-gray-200 bg-white py-20">
                     <Loader2 className="h-10 w-10 animate-spin text-orange-500" />
-                    <p className="text-sm font-medium text-gray-500">İlanlar yükleniyor...</p>
+                    <p className="text-sm font-medium text-gray-500">{copy.labels.loadingListings}</p>
                 </div>
             </div>
         );
@@ -2751,14 +2890,14 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             <div className="mb-6 hidden rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 lg:block">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="text-sm text-gray-500">
-                        Toplam sonuç:{" "}
+                        {copy.labels.totalResults}:{" "}
                         <span className="font-semibold text-gray-900" style={monoStyle}>
                             {resolvePortfolioResultCount({
                                 totalCount,
                                 loadedCount: listings.length,
                             })}
                         </span>{" "}
-                        ilan
+                        {uiText.totalSuffix}
                     </div>
 
                     <div className="flex items-center gap-2.5">
@@ -2768,7 +2907,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         >
                             <Image
                                 src="/images/testimonials/portfolio-map-banner-image.webp"
-                                alt="Harita görünümü arka planı"
+                                alt={uiText.mapAlt}
                                 fill
                                 className="object-cover transition duration-300 ease-out group-hover:brightness-110 group-hover:saturate-110"
                                 sizes="122px"
@@ -2778,7 +2917,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                     className="rounded-full px-3 py-1 text-xs font-semibold text-white shadow-sm transition-colors duration-300 group-hover:bg-[#16202f]"
                                     style={{ backgroundColor: "#1E2839" }}
                                 >
-                                    Harita
+                                    {copy.labels.map}
                                 </span>
                             </div>
                         </Link>
@@ -2791,10 +2930,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                     sort: value as SortOption,
                                 }))
                             }
-                            placeholder="Sırala"
+                            placeholder={copy.labels.sort}
                             options={sortOptions.map((option) => ({
                                 value: option.value,
-                                label: `Sırala: ${option.label}`,
+                                label: `${uiText.priceLabelPrefix} ${option.label}`,
                             }))}
                         />
                     </div>
@@ -2803,14 +2942,14 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
             <div className="mb-6 flex items-center justify-between gap-3 text-sm text-gray-500 lg:hidden">
                 <div>
-                    Toplam sonuç:{" "}
+                    {copy.labels.totalResults}:{" "}
                     <span className="font-semibold text-gray-900" style={monoStyle}>
                         {resolvePortfolioResultCount({
                             totalCount,
                             loadedCount: listings.length,
                         })}
                     </span>{" "}
-                    ilan
+                    {uiText.totalSuffix}
                 </div>
                 {hasActiveFilters && (
                     <button
@@ -2818,7 +2957,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         onClick={clearFilters}
                         className="cursor-pointer text-xs font-semibold text-orange-500 transition hover:text-orange-600 lg:hidden"
                     >
-                        Temizle
+                        {copy.filters.clear}
                     </button>
                 )}
             </div>
@@ -2843,10 +2982,10 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
                             <Search className="mx-auto h-8 w-8 text-gray-300" />
                             <p className="mt-3 font-semibold text-gray-700">
-                                Aradığınız kriterlere uygun ilan bulunamadı.
+                                {copy.labels.noResults}
                             </p>
                             <p className="mt-1 text-sm text-gray-500">
-                                Filtreleri temizleyip tekrar deneyebilirsiniz.
+                                {uiText.noResultsHint}
                             </p>
                         </div>
                     )}
@@ -2855,7 +2994,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         <div className="flex items-center gap-3 py-1">
                             <span className="h-px flex-1 bg-gray-200" />
                             <span className="text-xs font-semibold uppercase tracking-[0.1em] text-gray-500">
-                                Diğer İlanlar
+                                {copy.labels.otherListings}
                             </span>
                             <span className="h-px flex-1 bg-gray-200" />
                         </div>
@@ -3004,7 +3143,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                                                 }}
                                                                                 className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
                                                                             >
-                                                                                Hepsini Gör
+                                                                                {copy.labels.viewAll}
                                                                                 <ChevronRight className="h-4 w-4" />
                                                                             </Link>
                                                                         </div>
@@ -3037,7 +3176,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                 </div>
                                             ) : (
                                                 <div className="absolute inset-0 flex items-center justify-center text-sm font-medium text-gray-400">
-                                                    Görsel yok
+                                                    {copy.labels.noImage}
                                                 </div>
                                             )}
 
@@ -3059,7 +3198,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                             ? "cursor-not-allowed opacity-45"
                                                             : "hover:bg-slate-100"
                                                             }`}
-                                                        aria-label="Önceki görsel"
+                                                        aria-label={copy.aria.previousImage}
                                                     >
                                                         <ChevronLeft className="h-4 w-4" />
                                                     </button>
@@ -3079,7 +3218,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                             ? "cursor-not-allowed opacity-45"
                                                             : "hover:bg-slate-100"
                                                             }`}
-                                                        aria-label="Sonraki görsel"
+                                                        aria-label={copy.aria.nextImage}
                                                     >
                                                         <ChevronRight className="h-4 w-4" />
                                                     </button>
@@ -3120,12 +3259,12 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                         )}
                                                         {listing.citizenshipEligible && (
                                                             <span className="rounded bg-green-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-green-700">
-                                                                Vatandaşlık
+                                                                {copy.labels.citizenship}
                                                             </span>
                                                         )}
                                                         {listing.residenceEligible && (
                                                             <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-700">
-                                                                İkamet
+                                                                {copy.labels.residence}
                                                             </span>
                                                         )}
                                                         {projectPromoText && (
@@ -3143,7 +3282,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
                                                     <p className="mb-3 flex items-center gap-1 text-sm text-gray-400">
                                                         <MapPin className="h-3.5 w-3.5" />
-                                                        {locationLabel || "Konum belirtilmedi"}
+                                                        {locationLabel || copy.labels.noLocation}
                                                     </p>
 
                                                     <p
@@ -3166,7 +3305,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                             : "invisible"
                                                             }`}
                                                     >
-                                                        Devamını oku
+                                                        {copy.labels.continueReading}
                                                     </span>
 
                                                 </div>
@@ -3205,7 +3344,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                                 <span className="text-sm font-semibold text-gray-900" style={monoStyle}>
                                                                     {listing.rooms || listing.bedrooms}
                                                                 </span>
-                                                                <span className="text-xs text-gray-400">oda</span>
+                                                                <span className="text-xs text-gray-400">{uiText.rooms}</span>
                                                             </div>
                                                         )}
 
@@ -3214,7 +3353,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                                 <span className="text-sm font-semibold text-gray-900" style={monoStyle}>
                                                                     {listing.bathrooms}
                                                                 </span>
-                                                                <span className="text-xs text-gray-400">banyo</span>
+                                                                <span className="text-xs text-gray-400">{uiText.bathroom}</span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -3248,7 +3387,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                             )}
                                                         </div>
                                                         <span className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-orange-600 md:mt-4 md:gap-2 md:px-5 md:py-2.5 md:text-sm">
-                                                            Projeyi İncele
+                                                            {copy.labels.inspectProject}
                                                         </span>
                                                     </div>
                                                 ) : (
@@ -3262,14 +3401,14 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                                     })()}
                                                                 </p>
                                                                 {listing.saleType === "RENT" && (
-                                                                    <p className="text-xs text-gray-400">/ ay</p>
+                                                                    <p className="text-xs text-gray-400">{uiText.perMonth}</p>
                                                                 )}
                                                             </div>
                                                         ) : (
                                                             <div />
                                                         )}
                                                         <span className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800 md:mt-4 md:w-full md:gap-2 md:px-5 md:py-2.5 md:text-sm">
-                                                            İncele
+                                                            {copy.labels.inspect}
                                                             <span aria-hidden="true">{"->"}</span>
                                                         </span>
                                                     </>
@@ -3297,7 +3436,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 >
                     <button
                         type="button"
-                        aria-label="Çekmeceyi kapat"
+                        aria-label={copy.aria.closeDrawer}
                         onClick={closeMobilePanel}
                         className={`absolute inset-0 bg-slate-900/45 transition-opacity duration-300 ${isMobileDrawerOpen ? "opacity-100" : "opacity-0"
                             }`}
@@ -3312,13 +3451,13 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                             <span className="mx-auto mb-2 block h-1.5 w-12 rounded-full bg-gray-300" />
                             <div className="flex items-center justify-between">
                                 <h3 className="text-sm font-semibold text-gray-900">
-                                    {activeMobilePanel === "filter" ? "Filtreler" : "Sıralama"}
+                                    {activeMobilePanel === "filter" ? uiText.panelTitle : copy.labels.sort}
                                 </h3>
                                 <button
                                     type="button"
                                     onClick={closeMobilePanel}
                                     className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:bg-gray-50"
-                                    aria-label="Kapat"
+                                    aria-label={copy.labels.cardClose}
                                 >
                                     <X className="h-4 w-4" />
                                 </button>
@@ -3342,7 +3481,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                             className="inline-flex -translate-y-1.5 items-center justify-center gap-1.5 rounded-l-xl border border-orange-300 bg-white px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-gray-700 shadow-[0_3px_14px_rgba(15,23,42,0.08)] transition hover:border-orange-400 hover:bg-orange-50/30"
                         >
                             <MapPin className="h-3.5 w-3.5" />
-                            Harita
+                            {copy.labels.map}
                         </Link>
                         <button
                             type="button"
@@ -3353,7 +3492,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 }`}
                         >
                             <SlidersHorizontal className="h-3.5 w-3.5" />
-                            Filtre
+                            {copy.labels.filter}
                         </button>
                         <button
                             type="button"
@@ -3364,7 +3503,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 }`}
                         >
                             <ArrowUpDown className="h-3.5 w-3.5" />
-                            Sırala
+                            {copy.labels.sort}
                         </button>
                     </div>
                 </div>

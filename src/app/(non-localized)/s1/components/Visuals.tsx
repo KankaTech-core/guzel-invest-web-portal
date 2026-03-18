@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, ZoomIn, Images } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { S1SectionVisibility } from "../section-visibility";
@@ -39,13 +40,13 @@ const BIG_SECTION_TITLE_CLASS =
 
 const buildGalleryItems = (
     images: string[],
-    title: string,
-    section: string
+    section: string,
+    buildAlt: (index: number) => string
 ): ListingGalleryItem[] =>
     images.map((src, index) => ({
         id: `${section}-${index + 1}`,
         src,
-        alt: `${title} - Görsel ${index + 1}`,
+        alt: buildAlt(index + 1),
     }));
 
 const pickSymmetricGridClass = (itemCount: number) => {
@@ -82,6 +83,7 @@ function PeekingCarouselStrip({
     translatePx: number;
     reverse?: boolean;
 }) {
+    const t = useTranslations("gallery");
     const translateValue = reverse
         ? `translateX(${translatePx}px)`
         : `translateX(-${translatePx}px)`;
@@ -109,15 +111,15 @@ function PeekingCarouselStrip({
                     }}
                     aria-label={
                         card.type === "image"
-                            ? `Görsel ${index + 1}`
-                            : "Tüm görselleri aç"
+                            ? t("imageAltShort", { index: index + 1 })
+                            : t("openAllImages")
                     }
                 >
                     {card.type === "image" ? (
                         <div className="relative aspect-[16/9]">
                             <Image
                                 src={card.item.src}
-                                alt={card.item.alt || `Görsel ${index + 1}`}
+                                alt={card.item.alt || t("imageAltShort", { index: index + 1 })}
                                 fill
                                 loading="lazy"
                                 className="object-cover"
@@ -161,11 +163,15 @@ function PeekingVisualSection({
     onViewAllClick: () => void;
     titleAlign?: "left" | "right";
 }) {
+    const t = useTranslations("gallery");
     const [currentIndex, setCurrentIndex] = useState(0);
     const [carouselViewportWidth, setCarouselViewportWidth] = useState(0);
     const touchStartXRef = useRef<number | null>(null);
     const carouselViewportRef = useRef<HTMLDivElement | null>(null);
-    const previewCards = useMemo(() => buildPeekingPreviewItems(items), [items]);
+    const previewCards = useMemo(
+        () => buildPeekingPreviewItems(items, t("viewAll")),
+        [items, t]
+    );
     const total = previewCards.length;
     const canNavigate = total > 1;
     const showViewAll = true;
@@ -276,7 +282,7 @@ function PeekingVisualSection({
                 type="button"
                 onClick={reverse ? goToNext : goToPrev}
                 className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
-                aria-label={reverse ? "Sonraki görsel" : "Önceki görsel"}
+                aria-label={reverse ? t("nextImage") : t("previousImage")}
             >
                 {reverse ? <ChevronLeft className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
             </button>
@@ -284,7 +290,7 @@ function PeekingVisualSection({
                 type="button"
                 onClick={reverse ? goToPrev : goToNext}
                 className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
-                aria-label={reverse ? "Önceki görsel" : "Sonraki görsel"}
+                aria-label={reverse ? t("previousImage") : t("nextImage")}
             >
                 {reverse ? <ChevronRight className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
             </button>
@@ -293,7 +299,7 @@ function PeekingVisualSection({
                     type="button"
                     onClick={onViewAllClick}
                     className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400 hover:bg-gray-50"
-                    aria-label="Galeriyi gör"
+                    aria-label={t("openGallery")}
                 >
                     <Images className="h-5 w-5" />
                 </button>
@@ -332,7 +338,7 @@ function PeekingVisualSection({
     );
 
     return (
-        <section className={`${bgClass} py-16`}>
+        <section className={`${bgClass} overflow-hidden py-16`}>
             {/* Mobile: title above */}
             <div className="mx-auto max-w-7xl px-4 md:hidden">
                 <h2
@@ -370,7 +376,7 @@ function PeekingVisualSection({
                         type="button"
                         onClick={reverse ? goToNext : goToPrev}
                         className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400"
-                        aria-label={reverse ? "Sonraki görsel" : "Önceki görsel"}
+                        aria-label={reverse ? t("nextImage") : t("previousImage")}
                     >
                         {reverse ? <ChevronLeft className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
                     </button>
@@ -378,7 +384,7 @@ function PeekingVisualSection({
                         type="button"
                         onClick={reverse ? goToPrev : goToNext}
                         className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400"
-                        aria-label={reverse ? "Önceki görsel" : "Sonraki görsel"}
+                        aria-label={reverse ? t("previousImage") : t("nextImage")}
                     >
                         {reverse ? <ChevronRight className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
                     </button>
@@ -387,7 +393,7 @@ function PeekingVisualSection({
                             type="button"
                             onClick={onViewAllClick}
                             className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-700 transition hover:border-gray-400"
-                            aria-label="Galeriyi gör"
+                            aria-label={t("openGallery")}
                         >
                             <Images className="h-5 w-5" />
                         </button>
@@ -406,6 +412,8 @@ export const Visuals = ({
     floorPlans,
     visibility,
 }: VisualsProps) => {
+    const t = useTranslations("projectDetail");
+    const galleryT = useTranslations("gallery");
     const socialImages = useMemo(() => {
         if (!socialFacilities) {
             return [];
@@ -422,10 +430,10 @@ export const Visuals = ({
         () =>
             buildGalleryItems(
                 exteriorVisuals?.images || [],
-                "Dış Görseller",
-                "project-exterior"
+                "project-exterior",
+                (index) => t("galleryImageAlt", { index })
             ),
-        [exteriorVisuals?.images]
+        [exteriorVisuals?.images, t]
     );
 
     const exteriorDisplayItems = useMemo(
@@ -437,10 +445,10 @@ export const Visuals = ({
         () =>
             buildGalleryItems(
                 socialImages,
-                socialFacilities?.title || "Sosyal İmkanlar",
-                "project-social"
+                "project-social",
+                (index) => t("galleryImageAlt", { index })
             ),
-        [socialFacilities?.title, socialImages]
+        [socialImages, t]
     );
     const shouldShowSocialGallery = hasSocialGalleryImages(socialImages);
 
@@ -448,10 +456,10 @@ export const Visuals = ({
         () =>
             buildGalleryItems(
                 interiorVisuals?.images || [],
-                "İç Görseller",
-                "project-interior"
+                "project-interior",
+                (index) => t("galleryImageAlt", { index })
             ),
-        [interiorVisuals?.images]
+        [interiorVisuals?.images, t]
     );
 
     const interiorDisplayItems = useMemo(
@@ -481,9 +489,9 @@ export const Visuals = ({
                                             items={socialGalleryItems}
                                             title={socialFacilities.title}
                                             layout="carousel"
-                                            galleryButtonLabel="Sosyal Galeri"
+                                            galleryButtonLabel={t("socialGallery")}
                                             showViewAllAsLastSlide
-                                            viewAllSlideLabel="Tümünü Gör"
+                                            viewAllSlideLabel={galleryT("viewAll")}
                                             onRequestOpenGallery={(index) =>
                                                 dispatchOpenConnectedProjectGallery({
                                                     key: "social",
@@ -518,7 +526,7 @@ export const Visuals = ({
 
             {visibility.exteriorVisuals && exteriorVisuals && exteriorGalleryItems.length > 0 ? (
                 <PeekingVisualSection
-                    title="Dış Görseller"
+                    title={t("exteriorImages")}
                     items={exteriorDisplayItems}
                     bgClass="bg-white"
                     titleAlign="right"
@@ -536,7 +544,7 @@ export const Visuals = ({
 
             {visibility.interiorVisuals && interiorVisuals && interiorGalleryItems.length > 0 ? (
                 <PeekingVisualSection
-                    title="İç Görseller"
+                    title={t("interiorImages")}
                     items={interiorDisplayItems}
                     bgClass="bg-gray-50"
                     reverse
@@ -570,8 +578,8 @@ export const Visuals = ({
                             <ListingDetailGallery
                                 items={buildGalleryItems(
                                     gallery.images,
-                                    gallery.title,
-                                    `custom-${gallery.id}`
+                                    `custom-${gallery.id}`,
+                                    (index) => t("galleryImageAlt", { index })
                                 )}
                                 title={gallery.title}
                                 layout="carousel"
@@ -605,8 +613,8 @@ export const Visuals = ({
                                             })
                                         }
                                         className="relative mb-4 block h-64 w-full cursor-pointer overflow-hidden rounded-xl group"
-                                        title={`${plan.title} planını aç`}
-                                        aria-label={`${plan.title} planını aç`}
+                                        title={t("openFloorPlan", { title: plan.title })}
+                                        aria-label={t("openFloorPlan", { title: plan.title })}
                                     >
                                         <Image
                                             src={plan.image}
@@ -643,7 +651,7 @@ export const Visuals = ({
                                 className="flex items-center justify-center gap-3 rounded-xl bg-gray-900 py-4 font-bold text-white transition-colors hover:bg-gray-800"
                             >
                                 <ZoomIn className="h-5 w-5" />
-                                Tüm Planları İncele
+                                {t("browseAllFloorPlans")}
                             </button>
                         </div>
                     </div>

@@ -1,7 +1,14 @@
 import { ListingStatus } from "@/generated/prisma";
+import { getTranslations } from "next-intl/server";
 import { getDocumentNameFromMedia } from "@/lib/project-document-name";
 import { selectProjectDocumentMedia } from "@/lib/project-document-selection";
+import {
+    getLocalizedFallbackLocales,
+    pickLocalizedEntry,
+} from "@/lib/public-content-localization";
 import { prisma } from "@/lib/prisma";
+import { translateBatch } from "@/lib/ai-translate";
+import { isInDictionary, translateFeature } from "@/lib/feature-translation-dictionary";
 import { getMediaUrl, getProjectCategoryLabel } from "@/lib/utils";
 import {
     S1CustomGalleryData,
@@ -35,31 +42,12 @@ const toUniqueRooms = (rooms: string[]) =>
 
 const toRoomSummary = (rooms: string[]) => toUniqueRooms(rooms).join(" • ");
 
-const getStatusLabel = (status: ListingStatus) => {
-    if (status === ListingStatus.PUBLISHED) return "SATIŞTA";
-    if (status === ListingStatus.ARCHIVED) return "ARŞİV";
-    if (status === ListingStatus.REMOVED) return "KALDIRILDI";
-    return "TASLAK";
-};
-
 const hasCoordinates = (lat: number | null, lng: number | null) =>
     lat !== null &&
     lng !== null &&
     Number.isFinite(lat) &&
     Number.isFinite(lng) &&
     !(lat === 0 && lng === 0);
-
-const pickLocalized = <T extends { locale: string }>(
-    items: T[],
-    locale: string
-): T | null => {
-    if (!items.length) return null;
-    return (
-        items.find((item) => item.locale === locale) ||
-        items.find((item) => item.locale === DEFAULT_LOCALE) ||
-        items[0]
-    );
-};
 
 const buildMapData = ({
     latitude,
@@ -113,7 +101,28 @@ export async function getS1ProjectPageData({
     slug,
     locale = DEFAULT_LOCALE,
 }: GetS1ProjectDataOptions = {}): Promise<S1ProjectPageData | null> {
-    const localeFallbacks = Array.from(new Set([locale, DEFAULT_LOCALE]));
+    const t = await getTranslations({ locale, namespace: "projectDetail" });
+    const defaultLocaleTranslations =
+        locale === DEFAULT_LOCALE
+            ? t
+            : await getTranslations({
+                  locale: DEFAULT_LOCALE,
+                  namespace: "projectDetail",
+              });
+    const localeFallbacks = getLocalizedFallbackLocales(locale, DEFAULT_LOCALE);
+    const socialGalleryTitleCandidates = new Set(
+        [
+            SOCIAL_GALLERY_TITLE,
+            t("socialFacilities"),
+            defaultLocaleTranslations("socialFacilities"),
+        ].map((value) => value.toLocaleLowerCase().trim())
+    );
+    const getStatusLabel = (status: ListingStatus) => {
+        if (status === ListingStatus.PUBLISHED) return t("statusPublished");
+        if (status === ListingStatus.ARCHIVED) return t("statusArchived");
+        if (status === ListingStatus.REMOVED) return t("statusRemoved");
+        return t("statusDraft");
+    };
 
     const project = await prisma.listing.findFirst({
         where: {
@@ -207,8 +216,9 @@ export async function getS1ProjectPageData({
         return null;
     }
 
-    const translation = pickLocalized(project.translations, locale);
-    const projectTitle = translation?.title?.trim() || project.projectType || "Proje";
+    const translation = pickLocalizedEntry(project.translations, locale);
+    const projectTitle =
+        translation?.title?.trim() || project.projectType || t("fallbackProjectTitle");
     const projectDescription =
         translation?.description?.trim() ||
         [project.district, project.city].filter(Boolean).join(", ");
@@ -228,7 +238,7 @@ export async function getS1ProjectPageData({
         .filter((media) => media.category === "MAP")
         .map((media, index) => ({
             id: media.id,
-            title: `Harita ${index + 1}`,
+            title: t("mapImageAlt", { index: index + 1 }),
             image: getMediaUrl(media.url),
         }))
         .filter((item) => isNonEmptyString(item.image));
@@ -243,7 +253,7 @@ export async function getS1ProjectPageData({
         name: getDocumentNameFromMedia({
             url: media.url,
             aiTags: media.aiTags,
-            fallback: `Belge ${index + 1}`,
+            fallback: t("documentFallback", { index: index + 1 }),
         }),
         url: getMediaUrl(media.url),
     }))
@@ -254,44 +264,73 @@ export async function getS1ProjectPageData({
     const heroImage =
         exteriorImages[0] || interiorImages[0] || getMediaUrl(imageMedia[0]?.url);
 
-    const generalFeatures: S1RibbonItem[] = project.projectFeatures
+    // Step 1: Extract raw Turkish labels and dictionary-translate
+    const generalRaw = project.projectFeatures
         .filter((feature) => feature.category === "GENERAL")
         .map((feature) => {
-            const featureTranslation = pickLocalized(feature.translations, locale);
-            return {
-                icon: feature.icon || "Building2",
-                label: featureTranslation?.title?.trim() || "",
-                value: null,
-            };
+            const featureTranslation = pickLocalizedEntry(feature.translations, locale);
+            const raw = featureTranslation?.title?.trim() || "";
+            return { icon: feature.icon || "Building2", raw };
         })
-        .filter((item) => item.label);
-    const projectRoomFeatures: S1RibbonItem[] = toUniqueRooms(
-        project.projectUnits.map((unit) => unit.rooms)
-    ).map((room) => ({
-        icon: "Building",
-        label: room,
-        value: null,
-    }));
+        .filter((item) => item.raw);
 
-    const metaRibbon: S1RibbonItem[] = [
-        project.projectType
-            ? {
-                icon: "Building2",
-                label: "Proje Tipi",
-                value: projectCategoryLabel,
-            }
-            : null,
-    ].filter(isPresent);
+    const socialRaw = project.projectFeatures
+        .filter((feature) => feature.category === "SOCIAL")
+        .map((feature) => {
+            const featureTranslation = pickLocalizedEntry(feature.translations, locale);
+            const raw = featureTranslation?.title?.trim() || "";
+            return { icon: feature.icon || "Sparkles", raw };
+        })
+        .filter((item) => item.raw);
 
-    const propertiesRibbon = generalFeatures;
-
-    const summaryTags = (translation?.features || [])
+    const rawSummaryTags = (translation?.features || [])
         .map((item) => item.trim())
         .filter(Boolean);
+
+    // Step 2: AI-translate any labels the dictionary can't handle
+    if (locale !== DEFAULT_LOCALE) {
+        const untranslated: { key: string; text: string }[] = [];
+        generalRaw.forEach((f, i) => {
+            if (!isInDictionary(f.raw, locale)) untranslated.push({ key: `gen-${i}`, text: f.raw });
+        });
+        socialRaw.forEach((f, i) => {
+            if (!isInDictionary(f.raw, locale)) untranslated.push({ key: `soc-${i}`, text: f.raw });
+        });
+        rawSummaryTags.forEach((tag, i) => {
+            if (!isInDictionary(tag, locale)) untranslated.push({ key: `tag-${i}`, text: tag });
+        });
+
+        if (untranslated.length > 0) {
+            const aiResults = await translateBatch(untranslated, locale);
+            generalRaw.forEach((f, i) => {
+                if (aiResults[`gen-${i}`]) f.raw = aiResults[`gen-${i}`];
+            });
+            socialRaw.forEach((f, i) => {
+                if (aiResults[`soc-${i}`]) f.raw = aiResults[`soc-${i}`];
+            });
+            rawSummaryTags.forEach((tag, i) => {
+                if (aiResults[`tag-${i}`]) rawSummaryTags[i] = aiResults[`tag-${i}`];
+            });
+        }
+    }
+
+    const generalFeatures: S1RibbonItem[] = generalRaw.map((f) => ({
+        icon: f.icon,
+        label: translateFeature(f.raw, locale),
+        value: null,
+    }));
+    const propertiesRibbon = generalFeatures;
+
+    const summaryTags = rawSummaryTags.map((item) => translateFeature(item, locale));
+
+    const socialFacilities: S1SocialFacilityItem[] = socialRaw.map((f) => ({
+        icon: f.icon,
+        name: translateFeature(f.raw, locale),
+    }));
     const summary: S1SummaryData | undefined =
         projectDescription || summaryTags.length > 0 || project.deliveryDate
             ? {
-                title: "Proje Özeti",
+                title: t("summaryTitle"),
                 description: projectDescription,
                 tags: summaryTags,
                 deliveryDate: project.deliveryDate,
@@ -299,21 +338,10 @@ export async function getS1ProjectPageData({
             }
             : undefined;
 
-    const socialFacilities: S1SocialFacilityItem[] = project.projectFeatures
-        .filter((feature) => feature.category === "SOCIAL")
-        .map((feature) => {
-            const featureTranslation = pickLocalized(feature.translations, locale);
-            return {
-                icon: feature.icon || "Sparkles",
-                name: featureTranslation?.title?.trim() || "",
-            };
-        })
-        .filter((item) => item.name);
-
     let socialGalleryImages: string[] = [];
     const customGalleries: S1CustomGalleryData[] = [];
     project.customGalleries.forEach((gallery) => {
-        const galleryTranslation = pickLocalized(gallery.translations, locale);
+        const galleryTranslation = pickLocalizedEntry(gallery.translations, locale);
         const galleryTitle = galleryTranslation?.title?.trim() || "";
         const images = gallery.media
             .filter((media) => media.type === "IMAGE")
@@ -325,7 +353,7 @@ export async function getS1ProjectPageData({
         }
 
         if (
-            galleryTitle.toLocaleLowerCase("tr-TR").trim() === SOCIAL_GALLERY_TITLE
+            socialGalleryTitleCandidates.has(galleryTitle.toLocaleLowerCase().trim())
         ) {
             socialGalleryImages = images;
             return;
@@ -333,15 +361,17 @@ export async function getS1ProjectPageData({
 
         customGalleries.push({
             id: gallery.id,
-            title: galleryTitle,
-            subtitle: galleryTranslation?.subtitle?.trim() || null,
+            title: translateFeature(galleryTitle, locale),
+            subtitle: galleryTranslation?.subtitle?.trim()
+                ? translateFeature(galleryTranslation.subtitle.trim(), locale)
+                : null,
             images,
         });
     });
 
     const unitGalleries: S1CustomGalleryData[] = project.projectUnits
         .map((unit) => {
-            const unitTranslation = pickLocalized(unit.translations, locale);
+            const unitTranslation = pickLocalizedEntry(unit.translations, locale);
             const title = unitTranslation?.title?.trim() || unit.rooms.trim();
             const images = unit.media
                 .filter((media) => media.type === "IMAGE")
@@ -353,7 +383,7 @@ export async function getS1ProjectPageData({
             }
 
             const subtitleParts = [
-                unit.rooms?.trim() ? `${unit.rooms} Daire Tipi` : null,
+                unit.rooms?.trim() ? t("unitTypeLabel", { rooms: unit.rooms }) : null,
                 unit.area ? `${unit.area} m²` : null,
             ].filter(Boolean) as string[];
 
@@ -374,8 +404,9 @@ export async function getS1ProjectPageData({
 
     const floorPlanItems: S1FloorPlanItem[] = project.floorPlans
         .map((plan) => {
-            const floorPlanTranslation = pickLocalized(plan.translations, locale);
-            const title = floorPlanTranslation?.title?.trim() || plan.area?.trim() || "";
+            const floorPlanTranslation = pickLocalizedEntry(plan.translations, locale);
+            const rawTitle = floorPlanTranslation?.title?.trim() || plan.area?.trim() || "";
+            const title = rawTitle ? translateFeature(rawTitle, locale) : "";
             if (!title || !plan.imageUrl?.trim()) {
                 return null;
             }
@@ -388,21 +419,43 @@ export async function getS1ProjectPageData({
         })
         .filter(isPresent);
 
-    const faqs: S1FaqItem[] = project.faqs
+    const rawFaqs = project.faqs
         .map((faq) => {
-            const faqTranslation = pickLocalized(faq.translations, locale);
+            const faqTranslation = pickLocalizedEntry(faq.translations, locale);
             const question = faqTranslation?.question?.trim() || "";
             const answer = faqTranslation?.answer?.trim() || "";
             if (!question || !answer) {
                 return null;
             }
-            return {
-                id: faq.id,
-                question,
-                answer,
-            };
+            return { id: faq.id, question, answer };
         })
         .filter(isPresent);
+
+    // AI-translate FAQs and promo video title for non-Turkish locales
+    let faqs: S1FaqItem[] = rawFaqs;
+    let videoTitle: string | undefined = translation?.promoVideoTitle || undefined;
+
+    if (locale !== DEFAULT_LOCALE && (rawFaqs.length > 0 || videoTitle)) {
+        const batchItems: { key: string; text: string }[] = [];
+        for (const faq of rawFaqs) {
+            batchItems.push({ key: `faq-q-${faq.id}`, text: faq.question });
+            batchItems.push({ key: `faq-a-${faq.id}`, text: faq.answer });
+        }
+        if (videoTitle) {
+            batchItems.push({ key: "videoTitle", text: videoTitle });
+        }
+
+        const translated = await translateBatch(batchItems, locale);
+
+        faqs = rawFaqs.map((faq) => ({
+            id: faq.id,
+            question: translated[`faq-q-${faq.id}`] || faq.question,
+            answer: translated[`faq-a-${faq.id}`] || faq.answer,
+        }));
+        if (videoTitle) {
+            videoTitle = translated["videoTitle"] || videoTitle;
+        }
+    }
 
     const otherProjectsRaw = await prisma.listing.findMany({
         where: {
@@ -438,8 +491,11 @@ export async function getS1ProjectPageData({
 
     const otherProjects: S1OtherProjectItem[] = otherProjectsRaw
         .map((item) => {
-            const itemTranslation = pickLocalized(item.translations, locale);
-            const title = itemTranslation?.title?.trim() || item.projectType || "Proje";
+            const itemTranslation = pickLocalizedEntry(item.translations, locale);
+            const title =
+                itemTranslation?.title?.trim() ||
+                item.projectType ||
+                t("fallbackProjectTitle");
             const image = getMediaUrl(item.media[0]?.url);
             if (!image) {
                 return null;
@@ -469,32 +525,31 @@ export async function getS1ProjectPageData({
     return {
         slug: project.slug,
         hero: {
-            badge: projectCategoryLabel || "Yeni Proje",
+            badge: projectCategoryLabel || t("newProjectBadge"),
             title: projectTitle,
             description: projectDescription,
             backgroundImage: heroImage,
-            ctaTitle: "Özel Sunum Talebi",
-            ctaDescription:
-                "Proje hakkında detaylı bilgi ve özel ödeme planları için uzman ekibimizle iletişime geçin.",
-            ctaButtonText: "Hemen İletişime Geç",
+            ctaTitle: t("heroCtaTitle"),
+            ctaDescription: t("heroCtaDescription"),
+            ctaButtonText: t("heroCtaButtonText"),
             ctaHref: map?.mapsLink,
         },
         propertiesRibbon,
         summary,
         videoUrl,
-        videoTitle: translation?.promoVideoTitle || undefined,
+        videoTitle,
         exteriorVisuals:
             exteriorImages.length > 0
                 ? {
-                    title: "Projenin Vaziyet Planı ve Dış Görselleri",
+                    title: t("exteriorSectionTitle"),
                     images: exteriorImages,
                 }
                 : undefined,
         socialFacilities:
             socialFacilities.length > 0
                 ? {
-                    title: "Sosyal İmkanlar",
-                    description: "Projeye ait sosyal yaşam alanları ve olanaklar.",
+                    title: t("socialFacilities"),
+                    description: t("socialFacilitiesDescription"),
                     image: interiorImages[0] || exteriorImages[0] || heroImage,
                     images: resolvedSocialImages,
                     facilities: socialFacilities,
@@ -503,7 +558,7 @@ export async function getS1ProjectPageData({
         interiorVisuals:
             interiorImages.length > 0
                 ? {
-                    title: "Projenin İç Görselleri",
+                    title: t("interiorSectionTitle"),
                     images: interiorImages,
                 }
                 : undefined,
@@ -511,9 +566,8 @@ export async function getS1ProjectPageData({
         floorPlans:
             floorPlanItems.length > 0
                 ? {
-                    title: "Kat Planları",
-                    description:
-                        "Farklı ihtiyaçlara göre tasarlanmış plan tiplerini inceleyin.",
+                    title: t("floorPlansTitle"),
+                    description: t("floorPlansDescription"),
                     plans: floorPlanItems,
                 }
                 : undefined,

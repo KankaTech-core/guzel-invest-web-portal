@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import {
     ChevronDown,
     ChevronLeft,
@@ -72,15 +73,16 @@ export function ListingDetailGallery({
     showInlineThumbnails = false,
     desktopHeightClass = "h-[clamp(330px,42vw,510px)]",
     className,
-    galleryButtonLabel = "Galeri",
+    galleryButtonLabel,
     showViewAllAsLastSlide = false,
-    viewAllSlideLabel = "Tümünü Gör",
+    viewAllSlideLabel,
     onRequestOpenGallery,
     galleryTabs,
     activeGalleryTabKey,
     onGalleryTabChange,
     onApiReady,
 }: ListingDetailGalleryProps) {
+    const t = useTranslations("gallery");
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
     const [isReelOpen, setIsReelOpen] = useState(false);
     const [desktopCarouselIndex, setDesktopCarouselIndex] = useState<number | null>(
@@ -96,14 +98,16 @@ export function ListingDetailGallery({
     const didSwipeRef = useRef(false);
 
     const total = items.length;
+    const resolvedGalleryButtonLabel = galleryButtonLabel || t("galleryButton");
+    const resolvedViewAllSlideLabel = viewAllSlideLabel || t("viewAll");
     const carouselSlides = useMemo(
         () =>
             buildGalleryPreviewSlides(items, {
                 maxSlides: 4,
                 includeViewAllSlide: showViewAllAsLastSlide,
-                viewAllLabel: viewAllSlideLabel,
+                viewAllLabel: resolvedViewAllSlideLabel,
             }),
-        [items, showViewAllAsLastSlide, viewAllSlideLabel]
+        [items, resolvedViewAllSlideLabel, showViewAllAsLastSlide]
     );
     const carouselImageSlides = useMemo(
         () =>
@@ -155,6 +159,10 @@ export function ListingDetailGallery({
     const coverImage = items[0];
     const secondImage = items[1] ?? items[0];
     const thirdImage = items[2] ?? items[1] ?? items[0];
+    const getFallbackImageAlt = useCallback(
+        (index: number) => t("imageAltShort", { index: index + 1 }),
+        [t]
+    );
     const currentCarouselInlineIndex = Math.max(
         0,
         Math.min(carouselTotal - 1, inlineCarouselIndex)
@@ -614,7 +622,7 @@ export function ListingDetailGallery({
         return (
             <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center p-4">
                 <div className="rounded-xl border border-red-300 bg-red-600/95 px-5 py-3 text-center text-sm font-semibold text-white shadow-[0_10px_30px_rgba(220,38,38,0.35)] md:text-base">
-                    Bu İlan Kaldırıldı
+                    {t("listingRemoved")}
                 </div>
             </div>
         );
@@ -630,7 +638,7 @@ export function ListingDetailGallery({
                 <div className="relative overflow-hidden rounded-[2rem] border border-gray-200 bg-gray-100">
                     <div className="aspect-[16/10] flex flex-col items-center justify-center gap-3 text-gray-400">
                         <ImageOff className="h-10 w-10" />
-                        <p className="text-sm font-medium">Bu ilan için görsel yüklenmemiş</p>
+                        <p className="text-sm font-medium">{t("noImages")}</p>
                     </div>
                 </div>
             </div>
@@ -677,7 +685,7 @@ export function ListingDetailGallery({
                                                     src={slide.item.src}
                                                     alt={
                                                         slide.item.alt ||
-                                                        `${title} ${index + 1}`
+                                                        getFallbackImageAlt(index)
                                                     }
                                                     fill
                                                     loading="lazy"
@@ -712,7 +720,7 @@ export function ListingDetailGallery({
                                             updateInlineImageIndex("prev");
                                         }}
                                         className="inline-flex h-8 w-8 items-center justify-center text-slate-700 transition hover:bg-slate-100"
-                                        aria-label="Önceki görsel"
+                                        aria-label={t("previousImage")}
                                     >
                                         <ChevronLeft className="h-4 w-4" />
                                     </button>
@@ -724,7 +732,7 @@ export function ListingDetailGallery({
                                             updateInlineImageIndex("next");
                                         }}
                                         className="inline-flex h-8 w-8 items-center justify-center text-slate-700 transition hover:bg-slate-100"
-                                        aria-label="Sonraki görsel"
+                                        aria-label={t("nextImage")}
                                     >
                                         <ChevronRight className="h-4 w-4" />
                                     </button>
@@ -743,7 +751,7 @@ export function ListingDetailGallery({
                                     )
                                 }
                                 className="relative overflow-hidden rounded-[1.8rem] border border-gray-200 bg-gray-100 text-left md:col-span-3 md:h-full"
-                                aria-label="Fotoğraf galerisini aç"
+                                aria-label={t("openPhotoGallery")}
                             >
                                 <div className="relative aspect-[16/10] md:h-full md:aspect-auto">
                                     <Image
@@ -768,12 +776,12 @@ export function ListingDetailGallery({
                                         )
                                     }
                                     className="relative overflow-hidden rounded-[1.4rem] border border-gray-200 bg-gray-100 md:h-full"
-                                    aria-label="Fotoğraf galerisini aç"
+                                    aria-label={t("openPhotoGallery")}
                                 >
                                     <div className="relative aspect-[16/9] md:h-full md:aspect-auto">
                                         <Image
                                             src={secondImage.src}
-                                            alt={secondImage.alt || `${title} ikinci görsel`}
+                                            alt={secondImage.alt || getFallbackImageAlt(1)}
                                             fill
                                             loading="lazy"
                                             className="object-cover"
@@ -791,12 +799,12 @@ export function ListingDetailGallery({
                                             )
                                         }
                                         className="relative h-full w-full text-left"
-                                        aria-label="Fotoğraf galerisini aç"
+                                        aria-label={t("openPhotoGallery")}
                                     >
                                         <div className="relative aspect-[16/9] md:h-full md:aspect-auto">
                                             <Image
                                                 src={thirdImage.src}
-                                                alt={thirdImage.alt || `${title} üçüncü görsel`}
+                                                alt={thirdImage.alt || getFallbackImageAlt(2)}
                                                 fill
                                                 loading="lazy"
                                                 className="object-cover"
@@ -811,7 +819,7 @@ export function ListingDetailGallery({
                                         className="absolute bottom-3 right-3 flex items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3.5 py-2 text-xs font-semibold text-[#111828] transition hover:bg-white"
                                     >
                                         <Images className="h-3.5 w-3.5" />
-                                        {galleryButtonLabel}
+                                        {resolvedGalleryButtonLabel}
                                     </button>
                                 </div>
                             </div>
@@ -823,7 +831,7 @@ export function ListingDetailGallery({
                                     type="button"
                                     onClick={openPreviewImageFromCarousel}
                                     className={`relative block w-full overflow-hidden text-left ${desktopHeightClass}`}
-                                    aria-label="Fotoğraf galerisini aç"
+                                    aria-label={t("openPhotoGallery")}
                                 >
                                     <div className="absolute inset-0">
                                         <div
@@ -846,7 +854,7 @@ export function ListingDetailGallery({
                                                             src={slide.item.src}
                                                             alt={
                                                                 slide.item.alt ||
-                                                                `${title} ${index + 1}`
+                                                                getFallbackImageAlt(index)
                                                             }
                                                             fill
                                                             loading="lazy"
@@ -882,8 +890,8 @@ export function ListingDetailGallery({
                                                 event.stopPropagation();
                                                 updateInlineImageIndex("prev");
                                             }}
-                                            className="absolute left-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition hover:border-white/55"
-                                            aria-label="Önceki görsel"
+                                        className="absolute left-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition hover:border-white/55"
+                                            aria-label={t("previousImage")}
                                         >
                                             <ChevronLeft className="h-4 w-4" />
                                         </button>
@@ -894,8 +902,8 @@ export function ListingDetailGallery({
                                                 event.stopPropagation();
                                                 updateInlineImageIndex("next");
                                             }}
-                                            className="absolute right-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition hover:border-white/55"
-                                            aria-label="Sonraki görsel"
+                                        className="absolute right-4 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition hover:border-white/55"
+                                            aria-label={t("nextImage")}
                                         >
                                             <ChevronRight className="h-4 w-4" />
                                         </button>
@@ -905,11 +913,11 @@ export function ListingDetailGallery({
                                 <button
                                     type="button"
                                     onClick={() => openGalleryFromPreview()}
-                                    className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3.5 py-2 text-xs font-semibold text-[#111828] transition hover:bg-white"
-                                >
-                                    <Images className="h-3.5 w-3.5" />
-                                    {galleryButtonLabel}
-                                </button>
+                                className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full border border-gray-200 bg-white/95 px-3.5 py-2 text-xs font-semibold text-[#111828] transition hover:bg-white"
+                            >
+                                <Images className="h-3.5 w-3.5" />
+                                {resolvedGalleryButtonLabel}
+                            </button>
                             </div>
 
                             {showInlineThumbnails && carouselImageSlides.length > 1 ? (
@@ -923,11 +931,11 @@ export function ListingDetailGallery({
                                                 ? "border-orange-500"
                                                 : "border-gray-200"
                                                 } bg-gray-100`}
-                                            aria-label={`Fotoğraf ${index + 1} seç`}
+                                            aria-label={t("selectPhoto", { index: index + 1 })}
                                         >
                                             <Image
                                                 src={slide.item.src}
-                                                alt={slide.item.alt || `${title} ${index + 1}`}
+                                                alt={slide.item.alt || getFallbackImageAlt(index)}
                                                 fill
                                                 loading="lazy"
                                                 className="object-cover"
@@ -956,14 +964,14 @@ export function ListingDetailGallery({
                                 >
                                     <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 text-gray-900">
                                         <div>
-                                            <h3 className="text-lg font-semibold">Galeri</h3>
-                                            <p className="text-sm text-gray-500">{total} fotoğraf</p>
+                                            <h3 className="text-lg font-semibold">{t("galleryTitle")}</h3>
+                                            <p className="text-sm text-gray-500">{t("photoCount", { count: total })}</p>
                                         </div>
                                         <button
                                             type="button"
                                             onClick={closeGallery}
                                             className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition hover:border-gray-400 hover:text-gray-800"
-                                            aria-label="Galeriyi kapat"
+                                            aria-label={t("closeGallery")}
                                         >
                                             <X className="h-4 w-4" />
                                         </button>
@@ -1004,11 +1012,13 @@ export function ListingDetailGallery({
                                                         openDesktopCarousel(index);
                                                     }}
                                                     className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-gray-200 bg-gray-100"
-                                                    aria-label={`Fotoğraf ${index + 1} tam ekran aç`}
+                                                    aria-label={t("openPhotoFullscreen", {
+                                                        index: index + 1,
+                                                    })}
                                                 >
                                                     <Image
                                                         src={item.src}
-                                                        alt={item.alt || `${title} ${index + 1}`}
+                                                        alt={item.alt || getFallbackImageAlt(index)}
                                                         fill
                                                         loading="lazy"
                                                         className="object-cover"
@@ -1034,7 +1044,7 @@ export function ListingDetailGallery({
                                         closeDesktopCarousel();
                                     }}
                                     className="absolute right-5 top-5 z-[10001] flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition hover:border-white/55"
-                                    aria-label="Tam ekran görseli kapat"
+                                    aria-label={t("closeFullscreen")}
                                 >
                                     <X className="h-5 w-5" />
                                 </button>
@@ -1048,7 +1058,7 @@ export function ListingDetailGallery({
                                                 goToDesktopPrevious();
                                             }}
                                             className="absolute left-4 top-1/2 z-[10001] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition hover:border-white/55"
-                                            aria-label="Önceki görsel"
+                                            aria-label={t("previousImage")}
                                         >
                                             <ChevronLeft className="h-5 w-5" />
                                         </button>
@@ -1059,7 +1069,7 @@ export function ListingDetailGallery({
                                                 goToDesktopNext();
                                             }}
                                             className="absolute right-4 top-1/2 z-[10001] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition hover:border-white/55"
-                                            aria-label="Sonraki görsel"
+                                            aria-label={t("nextImage")}
                                         >
                                             <ChevronRight className="h-5 w-5" />
                                         </button>
@@ -1074,7 +1084,7 @@ export function ListingDetailGallery({
                                         <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-black/45">
                                             <span className="h-10 w-10 animate-spin rounded-full border-2 border-white/25 border-t-white" />
                                             <span className="text-sm font-medium text-white/90">
-                                                Yükleniyor...
+                                                {t("loading")}
                                             </span>
                                         </div>
                                     ) : null}
@@ -1116,7 +1126,7 @@ export function ListingDetailGallery({
                                         type="button"
                                         onClick={closeReels}
                                         className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition hover:border-white/50"
-                                        aria-label="Tam ekran görseli kapat"
+                                        aria-label={t("closeFullscreen")}
                                     >
                                         <X className="h-5 w-5" />
                                     </button>
@@ -1129,7 +1139,7 @@ export function ListingDetailGallery({
                                             onClick={() => scrollReels(-1)}
                                             disabled={activeReelIndex === 0}
                                             className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition enabled:hover:border-white/50 disabled:cursor-not-allowed disabled:opacity-35"
-                                            aria-label="Önceki görsel"
+                                            aria-label={t("previousImage")}
                                         >
                                             <ChevronUp className="h-5 w-5" />
                                         </button>
@@ -1138,7 +1148,7 @@ export function ListingDetailGallery({
                                             onClick={() => scrollReels(1)}
                                             disabled={activeReelIndex === total - 1}
                                             className="flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white transition enabled:hover:border-white/50 disabled:cursor-not-allowed disabled:opacity-35"
-                                            aria-label="Sonraki görsel"
+                                            aria-label={t("nextImage")}
                                         >
                                             <ChevronDown className="h-5 w-5" />
                                         </button>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import type { CountryCode } from "libphonenumber-js";
+import { useTranslations } from "next-intl";
 import {
     Mail,
     MessageCircleMore,
@@ -44,7 +45,6 @@ const DEFAULT_COUNTRY_BY_LOCALE: Partial<Record<string, CountryCode>> = {
     en: "AE",
     de: "DE",
     ru: "RU",
-    ar: "AE",
 };
 
 const subscribeNoop = () => () => { };
@@ -57,23 +57,23 @@ function getDefaultCountryForLocale(locale?: string): CountryCode {
     return DEFAULT_COUNTRY_BY_LOCALE[baseLocale] ?? "AE";
 }
 
-function buildDefaultMessage(title: string, listingCode?: string | null) {
-    const codeLabel = listingCode?.trim();
-    return codeLabel
-        ? `Merhaba, "${title} (${codeLabel})" ilanı hakkında bilgi almak istiyorum.`
-        : `Merhaba, "${title}" ilanı hakkında bilgi almak istiyorum.`;
-}
-
 function ContactFormFields({
     title,
     listingSlug,
     locale,
     listingCode,
 }: ContactFormFieldsProps) {
+    const t = useTranslations("leadForm");
     const defaultPhoneCountry = getDefaultCountryForLocale(locale);
     const defaultMessage = useMemo(
-        () => buildDefaultMessage(title, listingCode),
-        [listingCode, title]
+        () =>
+            listingCode?.trim()
+                ? t("defaultMessageWithCode", {
+                    title,
+                    code: listingCode.trim(),
+                })
+                : t("defaultMessage", { title }),
+        [listingCode, t, title]
     );
 
     const [formData, setFormData] = useState<ListingContactFormState>({
@@ -90,7 +90,7 @@ function ContactFormFields({
     const hasPhoneValue = formData.phone.trim().length > 0;
     const phoneIsValid = /^\+\d{8,15}$/.test(formData.phone);
     const phoneError = hasPhoneValue && !phoneIsValid
-        ? "Geçerli bir telefon numarası girin."
+        ? t("invalidPhone")
         : undefined;
 
     useEffect(() => {
@@ -112,12 +112,12 @@ function ContactFormFields({
         setIsSuccess(false);
 
         if (!formData.acceptedTerms) {
-            setSubmitError("Lütfen koşulları kabul ettiğinizi onaylayın.");
+            setSubmitError(t("acceptTermsRequired"));
             return;
         }
 
         if (!phoneIsValid) {
-            setSubmitError("Lütfen geçerli bir telefon numarası girin.");
+            setSubmitError(t("invalidPhone"));
             return;
         }
 
@@ -144,7 +144,7 @@ function ContactFormFields({
                 const body = (await response.json().catch(() => null)) as {
                     error?: string;
                 } | null;
-                throw new Error(body?.error || "Form gönderimi sırasında bir hata oluştu.");
+                throw new Error(body?.error || t("submitError"));
             }
 
             setIsSuccess(true);
@@ -160,7 +160,7 @@ function ContactFormFields({
             setSubmitError(
                 error instanceof Error
                     ? error.message
-                    : "Form gönderimi sırasında bir hata oluştu."
+                    : t("submitError")
             );
         } finally {
             setIsSubmitting(false);
@@ -175,7 +175,7 @@ function ContactFormFields({
                     data-contact-field="true"
                     type="text"
                     required
-                    placeholder="Adınız *"
+                    placeholder={t("namePlaceholderRequired")}
                     value={formData.name}
                     onChange={(event) =>
                         setFormData((current) => ({
@@ -192,7 +192,7 @@ function ContactFormFields({
                     data-contact-field="true"
                     type="text"
                     required
-                    placeholder="Soyadınız *"
+                    placeholder={t("surnamePlaceholderRequired")}
                     value={formData.surname}
                     onChange={(event) =>
                         setFormData((current) => ({
@@ -209,7 +209,7 @@ function ContactFormFields({
                     data-contact-field="true"
                     type="email"
                     required
-                    placeholder="E-posta Adresiniz *"
+                    placeholder={t("emailPlaceholderRequired")}
                     value={formData.email}
                     onChange={(event) =>
                         setFormData((current) => ({
@@ -222,7 +222,7 @@ function ContactFormFields({
             </div>
             <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Telefon Numaranız
+                    {t("phoneLabel")}
                 </label>
                 <PhoneInput
                     key={`phone-${defaultPhoneCountry}`}
@@ -245,7 +245,7 @@ function ContactFormFields({
                 <textarea
                     rows={5}
                     required
-                    placeholder="Mesajınız"
+                    placeholder={t("messagePlaceholder")}
                     value={formData.message}
                     onChange={(event) =>
                         setFormData((current) => ({
@@ -258,7 +258,7 @@ function ContactFormFields({
             </div>
             <div className="flex justify-center py-2 px-1">
                 <Checkbox
-                    label={<span className="text-xs text-gray-500">Kullanıcı metnini okudum, iletişim kurulmasını kabul ediyorum.</span>}
+                    label={<span className="text-xs text-gray-500">{t("termsCheckbox")}</span>}
                     checked={formData.acceptedTerms}
                     onChange={(checked) =>
                         setFormData((current) => ({
@@ -274,7 +274,11 @@ function ContactFormFields({
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#5099ff] px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-[#3f86e4] disabled:cursor-not-allowed disabled:opacity-80"
             >
                 <Send className="h-4 w-4" />
-                {isSubmitting ? "Gönderiliyor..." : isSuccess ? "Gönderildi" : "Gönder"}
+                {isSubmitting
+                    ? t("submitting")
+                    : isSuccess
+                        ? t("submitted")
+                        : t("submit")}
             </button>
 
             {submitError ? (
@@ -292,6 +296,8 @@ export function ListingContactPanel({
     phoneNumber,
     phoneLabel,
 }: ListingContactPanelProps) {
+    const t = useTranslations("listingDetail");
+    const leadT = useTranslations("leadForm");
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const isHydrated = useSyncExternalStore(
         subscribeNoop,
@@ -324,10 +330,9 @@ export function ListingContactPanel({
         <>
             <aside className="sticky top-28 hidden self-start xl:block">
                 <div className="max-h-[calc(100vh-8rem)] overflow-y-auto rounded-[2rem] border border-gray-200 bg-white p-6">
-                    <h2 className="text-2xl font-semibold text-[#111828]">İletişime Geçin</h2>
+                    <h2 className="text-2xl font-semibold text-[#111828]">{t("contactTitle")}</h2>
                     <p className="mt-2 text-sm text-gray-500">
-                        Uzman danışmanlarımız bu ilan için aynı gün içinde geri dönüş
-                        sağlar.
+                        {t("contactSubtitle")}
                     </p>
                     <div className="mt-5">
                         <ContactFormFields
@@ -360,7 +365,7 @@ export function ListingContactPanel({
                                 className="flex w-full touch-manipulation items-center justify-center gap-2 rounded-2xl bg-[#111828] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(17,24,40,0.36)] transition hover:bg-[#1d2740]"
                             >
                                 <Send className="h-4 w-4" />
-                                Bilgi Talep Formu
+                                {t("contactMobileCta")}
                             </button>
                         </div>
 
@@ -373,9 +378,9 @@ export function ListingContactPanel({
                                     type="button"
                                     onClick={() => setIsMobileOpen(false)}
                                     className="sr-only"
-                                    aria-label="Formu kapat"
+                                    aria-label={leadT("closeFormAria")}
                                 >
-                                    Kapat
+                                    {leadT("close")}
                                 </button>
 
                                 <div
@@ -384,16 +389,16 @@ export function ListingContactPanel({
                                 >
                                     <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
                                         <div>
-                                            <h3 className="text-lg font-semibold text-[#111828]">İletişime Geçin</h3>
+                                            <h3 className="text-lg font-semibold text-[#111828]">{t("contactTitle")}</h3>
                                             <p className="text-sm text-gray-500">
-                                                Formu doldurun, sizi aynı gün arayalım.
+                                                {t("contactMobileSubtitle")}
                                             </p>
                                         </div>
                                         <button
                                             type="button"
                                             onClick={() => setIsMobileOpen(false)}
                                             className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-600 transition hover:bg-gray-50"
-                                            aria-label="Formu kapat"
+                                            aria-label={leadT("closeFormAria")}
                                         >
                                             <X className="h-4 w-4" />
                                         </button>

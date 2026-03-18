@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { StyledVideoPlayer } from "@/components/public/styled-video-player";
 
 interface ProjectVideoSectionProps {
@@ -11,6 +12,7 @@ export const ProjectVideoSection = ({
     videoUrl,
     videoTitle,
 }: ProjectVideoSectionProps) => {
+    const t = useTranslations("projectDetail");
     let embedUrl: string | null = null;
 
     if (
@@ -39,14 +41,14 @@ export const ProjectVideoSection = ({
             <div className="mx-auto max-w-5xl px-4">
                 <div className="mb-10 text-center">
                     <h2 className="text-3xl font-bold text-gray-900">
-                        {videoTitle || "Proje Tanıtım Videosu"}
+                        {videoTitle || t("videoTitle")}
                     </h2>
                 </div>
                 <div className="aspect-video overflow-hidden rounded-3xl border border-gray-100 bg-gray-100 shadow-xl shadow-gray-200/50">
                     {embedUrl ? (
                         <iframe
                             src={embedUrl}
-                            title={videoTitle || "Tanıtım Videosu"}
+                            title={videoTitle || t("videoEmbedTitle")}
                             className="h-full w-full border-0"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
@@ -54,7 +56,7 @@ export const ProjectVideoSection = ({
                     ) : (
                         <StyledVideoPlayer
                             src={videoUrl}
-                            title={videoTitle || "Tanıtım Videosu"}
+                            title={videoTitle || t("videoEmbedTitle")}
                             autoPlay={false}
                             loop={false}
                             mutedByDefault={false}

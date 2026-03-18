@@ -16,7 +16,7 @@ test("buildPeekingPreviewItems appends a view-all card to the end", () => {
         ["image", "image", "view-all"]
     );
     assert.equal(cards[2]?.type, "view-all");
-    assert.equal(cards[2]?.label, "Tümünü Gör");
+    assert.equal(cards[2]?.label, "View All");
 });
 
 test("buildPeekingPreviewItems returns empty list for empty galleries", () => {

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Newspaper } from "lucide-react";
 import { formatDate, getMediaUrl } from "@/lib/utils";
+import { getArticlesCopy } from "@/lib/public-copy";
 
 export type HomepageArticlePreview = {
     id: string;
@@ -26,6 +27,7 @@ export function HomepageArticlesSection({
     locale,
     articles,
 }: HomepageArticlesSectionProps) {
+    const copy = getArticlesCopy(locale);
     const visibleArticles = articles.slice(0, 3);
 
     if (visibleArticles.length === 0) {
@@ -38,17 +40,17 @@ export function HomepageArticlesSection({
                 <div className="reveal is-visible flex items-end justify-between mb-12 pb-6 border-b border-gray-100">
                     <div>
                         <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
-                            Blog
+                            {copy.label}
                         </span>
                         <h2 className="text-3xl font-bold text-gray-900 mt-2">
-                            Son Makaleler
+                            {copy.title}
                         </h2>
                     </div>
                     <Link
                         href={`/${locale}/blog`}
                         className="hidden sm:inline-flex items-center gap-2 text-sm text-gray-500 hover:text-orange-500 transition-colors font-medium"
                     >
-                        Tüm Makaleleri Gör
+                        {copy.allArticles}
                         <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>
@@ -88,10 +90,10 @@ export function HomepageArticlesSection({
                                         {article.title}
                                     </h3>
                                     <p className="text-sm text-gray-400 leading-relaxed line-clamp-2">
-                                        {article.excerpt || "Makale özeti yakında eklenecek."}
+                                        {article.excerpt || copy.excerptFallback}
                                     </p>
                                     <div className="mt-4 flex items-center gap-1.5 text-orange-500 text-sm font-medium opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-300">
-                                        Devamını Oku
+                                        {copy.readMore}
                                         <ArrowRight className="w-3.5 h-3.5" />
                                     </div>
                                 </div>
@@ -105,7 +107,7 @@ export function HomepageArticlesSection({
                         href={`/${locale}/blog`}
                         className="inline-flex items-center gap-2 text-sm text-orange-500 font-semibold"
                     >
-                        Tüm Makaleleri Gör
+                        {copy.allArticles}
                         <ArrowRight className="w-4 h-4" />
                     </Link>
                 </div>

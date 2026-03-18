@@ -10,7 +10,7 @@ export type PeekingPreviewCard =
 
 export const buildPeekingPreviewItems = (
     items: PeekingPreviewImageItem[],
-    label = "Tümünü Gör"
+    label = "View All"
 ): PeekingPreviewCard[] => {
     if (items.length === 0) {
         return [];

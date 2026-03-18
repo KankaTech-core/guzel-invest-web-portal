@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { ProjectIcon } from "@/components/single-project/ProjectIcon";
 import { S1RibbonItem } from "../types";
 
@@ -7,9 +10,10 @@ interface ProjectFeaturesSectionProps {
 }
 
 export const ProjectFeaturesSection = ({
-    title = "Genel Özellikler",
+    title,
     items,
 }: ProjectFeaturesSectionProps) => {
+    const t = useTranslations("projectDetail");
     if (!items.length) {
         return null;
     }
@@ -18,7 +22,7 @@ export const ProjectFeaturesSection = ({
         <section className="bg-white py-24">
             <div className="mx-auto max-w-[1440px] px-6">
                 <h2 className="mb-24 text-center text-5xl font-black uppercase leading-none tracking-tighter text-gray-900">
-                    {title}
+                    {title || t("generalFeaturesTitle")}
                 </h2>
                 <div className="mx-auto mt-12 flex flex-wrap justify-center gap-x-4 gap-y-14 sm:gap-x-8 sm:gap-y-16 lg:gap-x-10 lg:gap-y-20">
                     {items.map((item, idx) => (

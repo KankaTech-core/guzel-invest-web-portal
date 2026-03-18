@@ -115,6 +115,7 @@ interface FeatureRow {
     id: string;
     title: string;
     icon: string;
+    translations?: { locale: string; title: string }[];
 }
 
 interface FaqRow {
@@ -1754,6 +1755,11 @@ export default function NewProjectForm({
         setError("");
 
         try {
+            const featureTags = [
+                ...generalFeatures.map(f => ({ id: `gen_${f.id}`, name: f.title })),
+                ...socialFeatures.map(f => ({ id: `soc_${f.id}`, name: f.title }))
+            ].filter(t => t.name);
+
             const response = await fetch("/api/admin/ai/translate-listing", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1761,7 +1767,7 @@ export default function NewProjectForm({
                     title,
                     description,
                     listingId: projectId || null,
-                    tags: [],
+                    tags: featureTags,
                 }),
             });
 
@@ -1778,8 +1784,8 @@ export default function NewProjectForm({
 
             const data = (await response.json().catch(() => ({}))) as {
                 translations?: Record<
-                    "en" | "de" | "ru",
-                    { title?: string; description?: string; tags?: { name?: string }[] }
+                    "en" | "de" | "ru" | "ar",
+                    { title?: string; description?: string; tags?: { id?: string; name?: string }[] }
                 >;
             };
 
@@ -1799,39 +1805,37 @@ export default function NewProjectForm({
 
             setTranslations((prev) =>
                 prev.map((translation) => {
-                    if (translation.locale === "en") {
+                    const mapped = aiTranslations[translation.locale as "en" | "de" | "ru" | "ar"];
+                    if (mapped) {
                         return {
                             ...translation,
-                            title: aiTranslations.en?.title?.trim() || translation.title,
-                            description:
-                                aiTranslations.en?.description?.trim() ||
-                                translation.description,
-                            features: getTagFeatures(aiTranslations.en?.tags),
-                        };
-                    }
-                    if (translation.locale === "de") {
-                        return {
-                            ...translation,
-                            title: aiTranslations.de?.title?.trim() || translation.title,
-                            description:
-                                aiTranslations.de?.description?.trim() ||
-                                translation.description,
-                            features: getTagFeatures(aiTranslations.de?.tags),
-                        };
-                    }
-                    if (translation.locale === "ru") {
-                        return {
-                            ...translation,
-                            title: aiTranslations.ru?.title?.trim() || translation.title,
-                            description:
-                                aiTranslations.ru?.description?.trim() ||
-                                translation.description,
-                            features: getTagFeatures(aiTranslations.ru?.tags),
+                            title: mapped.title?.trim() || translation.title,
+                            description: mapped.description?.trim() || translation.description,
+                            features: getTagFeatures(mapped.tags),
                         };
                     }
                     return translation;
                 })
             );
+
+            const extractFeatureTranslations = (rows: FeatureRow[], prefix: string) => {
+                return rows.map((row) => {
+                    const tagId = `${prefix}${row.id}`;
+                    return {
+                        ...row,
+                        translations: ["en", "de", "ru", "ar"].map((loc) => {
+                            const t = aiTranslations[loc as "en" | "de" | "ru" | "ar"]?.tags?.find((t: any) => t.id === tagId);
+                            return {
+                                locale: loc,
+                                title: t?.name?.trim() || "",
+                            };
+                        }).filter((t) => t.title),
+                    };
+                });
+            };
+
+            setGeneralFeatures((prev) => extractFeatureTranslations(prev, "gen_"));
+            setSocialFeatures((prev) => extractFeatureTranslations(prev, "soc_"));
 
             setTranslationsLocked(true);
             setActiveLocale("en");
@@ -1925,6 +1929,9 @@ export default function NewProjectForm({
                             icon: feature.icon || "Building2",
                             category:
                                 feature.category === "SOCIAL" ? "SOCIAL" : "GENERAL",
+                            translations: (feature.translations || [])
+                                .filter((t) => t.locale !== "tr")
+                                .map((t) => ({ locale: t.locale, title: t.title })),
                         };
                     })
                     .filter((item) => item.title.length > 0);
@@ -1935,6 +1942,7 @@ export default function NewProjectForm({
                         id: item.id,
                         title: item.title,
                         icon: item.icon,
+                        translations: item.translations,
                     }));
                 const socialRows = featureRows
                     .filter((item) => item.category === "SOCIAL")
@@ -1942,6 +1950,7 @@ export default function NewProjectForm({
                         id: item.id,
                         title: item.title,
                         icon: item.icon,
+                        translations: item.translations,
                     }));
 
                 const socialGalleryMedia = (project.customGalleries || []).flatMap(
@@ -2343,13 +2352,19 @@ export default function NewProjectForm({
                 icon: item.icon,
                 category: "GENERAL",
                 order: index,
-                translations: [{ locale: "tr", title: item.title.trim() }],
+                translations: [
+                    { locale: "tr", title: item.title.trim() },
+                    ...(item.translations || []),
+                ],
             })),
             ...socialFeatures.map((item, index) => ({
                 icon: item.icon,
                 category: "SOCIAL",
                 order: index,
-                translations: [{ locale: "tr", title: item.title.trim() }],
+                translations: [
+                    { locale: "tr", title: item.title.trim() },
+                    ...(item.translations || []),
+                ],
             })),
         ].filter((item) => item.translations[0].title);
 

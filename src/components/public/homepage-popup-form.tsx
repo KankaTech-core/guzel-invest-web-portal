@@ -22,7 +22,6 @@ const DEFAULT_COUNTRY_BY_LOCALE: Partial<Record<string, CountryCode>> = {
     en: "AE",
     de: "DE",
     ru: "RU",
-    ar: "AE",
 };
 const POPUP_AUTO_OPEN_DELAY_MS = 10_000;
 
@@ -239,7 +238,7 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
                 <button
                     onClick={() => handleClose()}
                     className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-900"
-                    aria-label="Close"
+                    aria-label={t("close")}
                 >
                     <X className="h-5 w-5" />
                 </button>
@@ -274,9 +273,9 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
                     </div>
 
                     {/* Form Side */}
-                    <div className="flex-1 overflow-y-auto overscroll-contain p-5 sm:p-8">
+                    <div className="flex-1 overflow-y-auto overscroll-contain p-5 pt-14 sm:p-8 sm:pt-14">
                         {/* Mobile Header (visible only on small screens) */}
-                        <div className="mb-6 md:hidden text-center">
+                        <div className="mb-6 md:hidden text-center px-2">
                             <h3 className="text-2xl font-bold text-gray-900">
                                 {t("title").split("\n").map((line, i, arr) => (
                                     <span key={i}>
@@ -333,7 +332,7 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
                                     <Input
                                         label={t("email")}
                                         type="email"
-                                        placeholder="ornek@email.com"
+                                        placeholder={t("emailPlaceholder")}
                                         required
                                         value={formData.email}
                                         onChange={(e) =>

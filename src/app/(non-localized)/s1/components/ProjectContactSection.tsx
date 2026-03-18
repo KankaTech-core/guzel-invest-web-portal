@@ -3,6 +3,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import type { CountryCode } from "libphonenumber-js";
+import { useTranslations } from "next-intl";
 import { Send, X } from "lucide-react";
 import { Input, Checkbox, Button } from "@/components/ui";
 import { PhoneInput } from "@/components/ui/phone-input";
@@ -17,7 +18,6 @@ const DEFAULT_COUNTRY_BY_LOCALE: Partial<Record<string, CountryCode>> = {
     en: "AE",
     de: "DE",
     ru: "RU",
-    ar: "AE",
 };
 
 const subscribeNoop = () => () => { };
@@ -35,6 +35,8 @@ export const ProjectContactSection = ({
     locale,
     projectSlug,
 }: ProjectContactSectionProps) => {
+    const t = useTranslations("leadForm");
+    const tp = useTranslations("projectDetail");
     const defaultPhoneCountry = getDefaultCountryForLocale(locale);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [formData, setFormData] = useState({
@@ -57,7 +59,7 @@ export const ProjectContactSection = ({
     const hasPhoneValue = formData.phone.trim().length > 0;
     const phoneIsValid = /^\+\d{8,15}$/.test(formData.phone);
     const phoneError = hasPhoneValue && !phoneIsValid
-        ? "Geçerli bir telefon numarası girin."
+        ? t("invalidPhone")
         : undefined;
 
     useEffect(() => {
@@ -110,11 +112,11 @@ export const ProjectContactSection = ({
         setIsSuccess(false);
 
         if (!formData.acceptedTerms) {
-            setSubmitError("Lütfen koşulları kabul ettiğinizi onaylayın.");
+            setSubmitError(t("acceptTermsRequired"));
             return;
         }
         if (!phoneIsValid) {
-            setSubmitError("Lütfen geçerli bir telefon numarası girin.");
+            setSubmitError(t("invalidPhone"));
             return;
         }
 
@@ -140,7 +142,7 @@ export const ProjectContactSection = ({
                     error?: string;
                 } | null;
                 throw new Error(
-                    body?.error || "Form gönderimi sırasında bir hata oluştu."
+                    body?.error || t("submitError")
                 );
             }
 
@@ -157,7 +159,7 @@ export const ProjectContactSection = ({
             const message =
                 error instanceof Error
                     ? error.message
-                    : "Form gönderimi sırasında bir hata oluştu.";
+                    : t("submitError");
             setSubmitError(message);
         } finally {
             setIsSubmitting(false);
@@ -183,7 +185,7 @@ export const ProjectContactSection = ({
                                 className="flex w-full touch-manipulation items-center justify-center gap-2 rounded-2xl bg-[#111828] px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(17,24,40,0.36)] transition hover:bg-[#1d2740]"
                             >
                                 <Send className="h-4 w-4" />
-                                Bilgi Talep Formu
+                                {tp("contactMobileCta")}
                             </button>
                         </div>
 
@@ -196,9 +198,9 @@ export const ProjectContactSection = ({
                                     type="button"
                                     onClick={() => setIsMobileOpen(false)}
                                     className="sr-only"
-                                    aria-label="Formu kapat"
+                                    aria-label={t("closeFormAria")}
                                 >
-                                    Kapat
+                                    {t("close")}
                                 </button>
 
                                 <div
@@ -207,16 +209,16 @@ export const ProjectContactSection = ({
                                 >
                                     <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
                                         <div>
-                                            <h3 className="text-lg font-semibold text-[#111828]">Bilgi Alın</h3>
+                                            <h3 className="text-lg font-semibold text-[#111828]">{tp("heroFormTitle")}</h3>
                                             <p className="text-sm text-gray-500">
-                                                Formu doldurun, uzmanlarımız sizi arasın.
+                                                {tp("contactMobileSubtitle")}
                                             </p>
                                         </div>
                                         <button
                                             type="button"
                                             onClick={() => setIsMobileOpen(false)}
                                             className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-600 transition hover:bg-gray-50"
-                                            aria-label="Formu kapat"
+                                            aria-label={t("closeFormAria")}
                                         >
                                             <X className="h-4 w-4" />
                                         </button>
@@ -225,8 +227,8 @@ export const ProjectContactSection = ({
                                     <div className="overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+1.1rem)] pt-4">
                                         <form onSubmit={handleSubmit} className="space-y-4">
                                             <Input
-                                                label="Adınız"
-                                                placeholder="Adınızı girin"
+                                                label={t("nameLabel")}
+                                                placeholder={t("namePlaceholder")}
                                                 required
                                                 value={formData.name}
                                                 onChange={(event) =>
@@ -237,8 +239,8 @@ export const ProjectContactSection = ({
                                                 }
                                             />
                                             <Input
-                                                label="Soyadınız"
-                                                placeholder="Soyadınızı girin"
+                                                label={t("surnameLabel")}
+                                                placeholder={t("surnamePlaceholder")}
                                                 required
                                                 value={formData.surname}
                                                 onChange={(event) =>
@@ -249,9 +251,9 @@ export const ProjectContactSection = ({
                                                 }
                                             />
                                             <Input
-                                                label="E-posta Adresiniz"
+                                                label={t("emailLabel")}
                                                 type="email"
-                                                placeholder="ornek@email.com"
+                                                placeholder={t("emailPlaceholder")}
                                                 required
                                                 value={formData.email}
                                                 onChange={(event) =>
@@ -264,7 +266,7 @@ export const ProjectContactSection = ({
 
                                             <div>
                                                 <label className="mb-2 block text-sm font-medium text-gray-700">
-                                                    Telefon Numaranız
+                                                    {t("phoneLabel")}
                                                 </label>
                                                 <PhoneInput
                                                     key={`phone-${defaultPhoneCountry}`}
@@ -287,7 +289,7 @@ export const ProjectContactSection = ({
                                                 <Checkbox
                                                     label={
                                                         <span className="text-xs text-gray-500">
-                                                            Kullanıcı metnini okudum, iletişim kurulmasını kabul ediyorum.
+                                                            {t("termsCheckbox")}
                                                         </span>
                                                     }
                                                     checked={formData.acceptedTerms}
@@ -307,7 +309,7 @@ export const ProjectContactSection = ({
                                                 disabled={!formData.acceptedTerms || isSubmitting}
                                                 loading={isSubmitting}
                                             >
-                                                {isSuccess ? "Gönderildi!" : "Gönder"}
+                                                {isSuccess ? t("submittedWithBang") : t("submit")}
                                             </Button>
 
                                             {submitError ? (

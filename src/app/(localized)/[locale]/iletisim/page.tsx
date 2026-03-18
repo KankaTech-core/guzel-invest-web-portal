@@ -7,13 +7,13 @@ import type { CountryCode } from "libphonenumber-js";
 import { Button, Checkbox, Input } from "@/components/ui";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { SOCIAL_LINKS } from "@/lib/social-links";
+import { getContactCopy } from "./copy";
 
 const DEFAULT_COUNTRY_BY_LOCALE: Partial<Record<string, CountryCode>> = {
     tr: "TR",
     en: "AE",
     de: "DE",
     ru: "RU",
-    ar: "AE",
 };
 
 function getDefaultCountryForLocale(locale?: string): CountryCode {
@@ -34,50 +34,30 @@ type ContactCard = {
 
 function WhatsAppIcon({ className }: { className?: string }) {
     return (
-        <svg
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            aria-hidden="true"
-            className={className}
-        >
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
             <path d="M19.05 4.91A9.82 9.82 0 0 0 12.03 2C6.6 2 2.17 6.42 2.17 11.86c0 1.74.45 3.44 1.31 4.95L2 22l5.35-1.4a9.8 9.8 0 0 0 4.67 1.19h.01c5.43 0 9.86-4.42 9.86-9.86a9.8 9.8 0 0 0-2.84-7.02Zm-7.02 15.21h-.01a8.13 8.13 0 0 1-4.14-1.13l-.3-.18-3.18.83.85-3.1-.2-.32a8.16 8.16 0 0 1-1.25-4.36c0-4.5 3.66-8.16 8.17-8.16 2.18 0 4.23.85 5.77 2.39a8.1 8.1 0 0 1 2.39 5.77c0 4.5-3.67 8.16-8.1 8.16Zm4.48-6.1c-.24-.12-1.42-.7-1.65-.78-.22-.08-.38-.12-.54.12-.16.23-.62.78-.76.94-.14.16-.27.18-.5.06-.24-.12-1-.37-1.9-1.18-.7-.62-1.18-1.39-1.31-1.62-.14-.23-.01-.35.1-.47.1-.1.24-.28.36-.42.12-.14.16-.23.24-.39.08-.16.04-.29-.02-.41-.06-.12-.54-1.3-.74-1.79-.2-.47-.4-.41-.54-.41h-.46c-.16 0-.41.06-.62.29-.22.23-.84.82-.84 2s.86 2.31.98 2.47c.12.16 1.68 2.57 4.08 3.6.57.25 1.02.39 1.37.5.58.18 1.1.15 1.51.09.46-.07 1.42-.58 1.62-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.27Z" />
         </svg>
     );
 }
 
-const contactCards = [
-    {
-        title: "Adres",
-        value: "Saray, Sugözü Cd. Akdoğan Tokuş Apt No: 15/B,\n07400 Alanya/Antalya",
-        icon: MapPin,
-        dark: false,
-    },
-    {
-        title: "Telefon",
-        value: "+90 538 475 11 11",
-        href: "tel:+905384751111",
-        icon: Phone,
-        dark: true,
-    },
-    {
-        title: "E-posta",
-        value: "info@guzelinvest.com",
-        href: "mailto:info@guzelinvest.com",
-        icon: Mail,
-        dark: false,
-    },
-    {
-        title: "Çalışma Saatleri",
-        value: "Pazar günleri kapalı\nDiğer günler 09:00 - 19:00",
-        icon: Clock3,
-        dark: true,
-    },
-] satisfies ReadonlyArray<ContactCard>;
-
 export default function ContactPage() {
     const { locale } = useParams();
     const localeStr = Array.isArray(locale) ? locale[0] : locale;
+    const copy = getContactCopy(localeStr || "tr");
     const defaultPhoneCountry = getDefaultCountryForLocale(localeStr);
+
+    const contactCards = copy.cards.map((card, index) => ({
+        title: card.title,
+        value: card.value,
+        href:
+            index === 1
+                ? "tel:+905384751111"
+                : index === 2
+                    ? "mailto:info@guzelinvest.com"
+                    : undefined,
+        icon: [MapPin, Phone, Mail, Clock3][index],
+        dark: index % 2 === 1,
+    })) satisfies ReadonlyArray<ContactCard>;
 
     const [loading, setLoading] = useState(false);
     const [submitted, setSubmitted] = useState(false);
@@ -87,18 +67,15 @@ export default function ContactPage() {
 
     const hasPhoneValue = phone.trim().length > 0;
     const phoneIsValid = /^\+\d{8,15}$/.test(phone);
-    const phoneError = hasPhoneValue && !phoneIsValid
-        ? "Geçerli bir telefon numarası girin."
-        : undefined;
+    const phoneError = hasPhoneValue && !phoneIsValid ? copy.phoneError : undefined;
 
     const contactInfoIntro = (
         <>
             <h2 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
-                İletişim Bilgileri
+                {copy.introTitle}
             </h2>
             <p className="mt-4 max-w-md text-sm leading-relaxed text-gray-600 sm:text-base">
-                Farklı iletişim kanallarından bize ulaşabilir, ihtiyaçlarınıza uygun
-                danışmanlık sürecini hemen başlatabilirsiniz.
+                {copy.introText}
             </p>
         </>
     );
@@ -108,12 +85,12 @@ export default function ContactPage() {
         const formElement = event.currentTarget;
 
         if (!acceptedTerms) {
-            setError("Lütfen koşulları kabul ettiğinizi onaylayın.");
+            setError(copy.acceptTermsError);
             return;
         }
 
         if (hasPhoneValue && !phoneIsValid) {
-            setError("Lütfen geçerli bir telefon numarası girin.");
+            setError(copy.phoneError);
             return;
         }
 
@@ -127,7 +104,7 @@ export default function ContactPage() {
                 name: formData.get("name"),
                 surname: formData.get("surname"),
                 email: formData.get("email"),
-                phone: phone, // Changed from formData.get("phone")
+                phone,
                 subject: formData.get("subject"),
                 message: formData.get("message"),
                 locale: localeStr || "tr",
@@ -147,9 +124,9 @@ export default function ContactPage() {
             setAcceptedTerms(false);
             setPhone("");
             formElement.reset();
-        } catch (error) {
-            console.error("Error submitting form:", error);
-            setError("Mesajınız gönderilirken bir hata oluştu. Lütfen tekrar deneyin.");
+        } catch (submitError) {
+            console.error("Error submitting form:", submitError);
+            setError(copy.submitError);
         } finally {
             setLoading(false);
         }
@@ -160,38 +137,30 @@ export default function ContactPage() {
             <section className="relative isolate min-h-[340px] overflow-hidden bg-gray-900 pt-24 sm:min-h-[410px]">
                 <div
                     className="absolute inset-0 bg-cover bg-center"
-                    style={{
-                        backgroundImage:
-                            "url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=2000&h=1200&fit=crop')",
-                    }}
+                    style={{ backgroundImage: "url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=2000&h=1200&fit=crop')" }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-gray-900/60 via-gray-900/82 to-gray-900/88" />
 
                 <div className="container-custom relative z-10 flex min-h-[340px] flex-col justify-center sm:min-h-[410px]">
                     <span className="inline-flex w-fit items-center rounded-full border border-orange-300/60 bg-orange-500/15 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-200">
-                        İletişim • Güzel Invest
+                        {copy.heroBadge}
                     </span>
-                    <h1 className="mt-4 max-w-3xl text-4xl font-bold text-white sm:text-5xl">
-                        İletişime Geçin
-                    </h1>
-                    <p className="mt-4 max-w-2xl text-base leading-relaxed text-gray-200 sm:text-lg">
-                        Sorularınız, portföy talepleriniz ve yatırım hedefleriniz için bizimle
-                        doğrudan iletişime geçin. Ekibimiz size kısa sürede net bir geri dönüş sağlar.
-                    </p>
+                    <h1 className="mt-4 max-w-3xl text-4xl font-bold text-white sm:text-5xl">{copy.heroTitle}</h1>
+                    <p className="mt-4 max-w-2xl text-base leading-relaxed text-gray-200 sm:text-lg">{copy.heroText}</p>
                     <div className="mt-7 flex flex-wrap gap-3">
                         <a
                             href="tel:+905384751111"
                             className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-orange-400"
                         >
                             <Phone className="h-4 w-4" />
-                            Hemen Ara
+                            {copy.heroCallPhone}
                         </a>
                         <a
                             href="mailto:info@guzelinvest.com"
                             className="inline-flex items-center gap-2 rounded-lg border border-gray-600 px-5 py-3 text-sm font-semibold text-gray-200 transition-colors hover:border-orange-300 hover:text-orange-300"
                         >
                             <Mail className="h-4 w-4" />
-                            E-posta Gönder
+                            {copy.heroSendEmail}
                         </a>
                     </div>
                 </div>
@@ -210,25 +179,16 @@ export default function ContactPage() {
                                             key={card.title}
                                             className="rounded-xl border border-gray-100 bg-white p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-lg hover:shadow-orange-500/5"
                                         >
-                                            <span
-                                                className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg ${card.dark ? "bg-gray-900 text-white" : "bg-orange-500 text-white"}`}
-                                            >
+                                            <span className={`mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg ${card.dark ? "bg-gray-900 text-white" : "bg-orange-500 text-white"}`}>
                                                 <Icon className="h-4 w-4" />
                                             </span>
-                                            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                                                {card.title}
-                                            </h3>
+                                            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{card.title}</h3>
                                             {card.href ? (
-                                                <a
-                                                    href={card.href}
-                                                    className="mt-1 block whitespace-pre-line break-all text-sm font-semibold text-gray-900 transition-colors hover:text-orange-500"
-                                                >
+                                                <a href={card.href} className="mt-1 block whitespace-pre-line break-all text-sm font-semibold text-gray-900 transition-colors hover:text-orange-500">
                                                     {card.value}
                                                 </a>
                                             ) : (
-                                                <p className="mt-1 whitespace-pre-line text-sm font-semibold text-gray-900">
-                                                    {card.value}
-                                                </p>
+                                                <p className="mt-1 whitespace-pre-line text-sm font-semibold text-gray-900">{card.value}</p>
                                             )}
                                         </article>
                                     );
@@ -238,7 +198,7 @@ export default function ContactPage() {
 
                         <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
                             <iframe
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d585.909184440398!2d31.993719477737574!3d36.548971536174825!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x14dc91820fd978db%3A0xde9e989f4fdcb3c7!2sG%C3%BCzel%20Invest!5e0!3m2!1sen!2str!4v1770997678937!5m2!1sen!2str"
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d585.909184440398!2d31.993719477737574!3d36.548971536174825!2m3!1f0!2f0!3f0!2m3!1i1024!2i768!4f13.1!3m3!1m2!1s0x14dc91820fd978db%3A0xde9e989f4fdcb3c7!2sG%C3%BCzel%20Invest!5e0!3m2!1sen!2str!4v1770997678937!5m2!1sen!2str"
                                 className="h-[220px] w-full sm:h-[260px] lg:h-[250px]"
                                 style={{ border: 0 }}
                                 allowFullScreen
@@ -258,7 +218,7 @@ export default function ContactPage() {
                                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#25D366] px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                             >
                                 <WhatsAppIcon className="h-4 w-4" />
-                                WhatsApp&apos;tan Yaz
+                                {copy.whatsapp}
                             </a>
                             <a
                                 href={SOCIAL_LINKS.instagramDm}
@@ -267,48 +227,28 @@ export default function ContactPage() {
                                 className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-black"
                             >
                                 <Instagram className="h-4 w-4" />
-                                Instagram DM
+                                {copy.instagram}
                             </a>
                         </div>
 
                         <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
                             <div className="border-b border-gray-100 bg-gray-50 px-6 py-5 sm:px-8">
-                                <h2 className="text-2xl font-bold text-gray-900">Bize Mesaj Gönderin</h2>
-                                <p className="mt-2 text-sm text-gray-500">
-                                    Formu doldurun, uzman ekibimiz size en kısa sürede dönüş yapsın.
-                                </p>
+                                <h2 className="text-2xl font-bold text-gray-900">{copy.formTitle}</h2>
+                                <p className="mt-2 text-sm text-gray-500">{copy.formSubtitle}</p>
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-6 px-6 py-6 sm:px-8 sm:py-8">
                                 <div className="grid gap-6 md:grid-cols-2">
-                                    <Input
-                                        label="Adınız"
-                                        name="name"
-                                        placeholder="Adınızı girin"
-                                        required
-                                    />
-                                    <Input
-                                        label="Soyadınız"
-                                        name="surname"
-                                        placeholder="Soyadınızı girin"
-                                        required
-                                    />
+                                    <Input label={copy.nameLabel} name="name" placeholder={copy.namePlaceholder} required />
+                                    <Input label={copy.surnameLabel} name="surname" placeholder={copy.surnamePlaceholder} required />
                                 </div>
                                 <div className="grid gap-6 md:grid-cols-1">
-                                    <Input
-                                        label="E-posta Adresiniz"
-                                        name="email"
-                                        type="email"
-                                        placeholder="ornek@email.com"
-                                        required
-                                    />
+                                    <Input label={copy.emailLabel} name="email" type="email" placeholder={copy.emailPlaceholder} required />
                                 </div>
 
                                 <div className="grid gap-6 md:grid-cols-2">
                                     <div>
-                                        <label className="mb-2 block text-sm font-medium text-gray-700">
-                                            Telefon Numaranız
-                                        </label>
+                                        <label className="mb-2 block text-sm font-medium text-gray-700">{copy.phoneLabel}</label>
                                         <PhoneInput
                                             key={`phone-${defaultPhoneCountry}`}
                                             value={phone}
@@ -316,31 +256,25 @@ export default function ContactPage() {
                                             placeholder=""
                                             defaultCountry={defaultPhoneCountry}
                                         />
-                                        {phoneError && (
-                                            <p className="mt-1.5 text-xs text-red-500">{phoneError}</p>
-                                        )}
+                                        {phoneError ? <p className="mt-1.5 text-xs text-red-500">{phoneError}</p> : null}
                                     </div>
-                                    <Input
-                                        label="Konu"
-                                        name="subject"
-                                        placeholder="Mesaj konusu"
-                                    />
+                                    <Input label={copy.subjectLabel} name="subject" placeholder={copy.subjectPlaceholder} />
                                 </div>
 
                                 <div>
-                                    <label className="mb-2 block text-sm font-medium text-gray-700">Mesajınız</label>
+                                    <label className="mb-2 block text-sm font-medium text-gray-700">{copy.messageLabel}</label>
                                     <textarea
                                         name="message"
                                         rows={5}
                                         className="input resize-none"
-                                        placeholder="Mesajınızı buraya yazın..."
+                                        placeholder={copy.messagePlaceholder}
                                         required
                                     />
                                 </div>
 
-                                <div className="border-t border-gray-100 pt-4 flex justify-start pl-1">
+                                <div className="flex justify-start border-t border-gray-100 pt-4 pl-1">
                                     <Checkbox
-                                        label={<span className="text-xs text-gray-500">Kullanıcı metnini okudum, iletişim kurulmasını kabul ediyorum.</span>}
+                                        label={<span className="text-xs text-gray-500">{copy.terms}</span>}
                                         checked={acceptedTerms}
                                         onChange={setAcceptedTerms}
                                     />
@@ -355,13 +289,13 @@ export default function ContactPage() {
                                         loading={loading}
                                         icon={<Send className="h-4 w-4" />}
                                     >
-                                        Mesaj Gönder
+                                        {copy.submit}
                                     </Button>
                                 </div>
 
                                 {submitted ? (
                                     <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
-                                        Mesajınız alındı. Ekibimiz en kısa sürede sizinle iletişime geçecektir.
+                                        {copy.submitted}
                                     </div>
                                 ) : null}
 
@@ -375,7 +309,6 @@ export default function ContactPage() {
                     </div>
                 </div>
             </section>
-
         </main>
     );
 }

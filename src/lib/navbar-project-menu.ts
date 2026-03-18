@@ -1,3 +1,4 @@
+import { translateFeature } from "@/lib/feature-translation-dictionary";
 import { getProjectCategoryLabel } from "@/lib/utils";
 
 export type PublicProjectTranslation = {
@@ -144,10 +145,11 @@ export function mapPublicProjectsToMenuItems(
             .filter((feature) => feature.category === "GENERAL")
             .sort((left, right) => (left.order ?? Number.MAX_SAFE_INTEGER) - (right.order ?? Number.MAX_SAFE_INTEGER))
             .map((feature) => {
-                const title =
+                const rawTitle =
                     feature.translations?.find((t) => t.locale === locale)?.title ||
                     feature.translations?.find((t) => t.locale === "tr")?.title ||
                     "";
+                const title = rawTitle ? translateFeature(rawTitle, locale) : "";
                 return title ? { icon: feature.icon || "Building2", label: title } : null;
             })
             .filter((item): item is NavbarProjectFeature => item !== null)

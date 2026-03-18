@@ -1,8 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { ListingStatus } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
+import { translateBatch, translateText } from "@/lib/ai-translate";
+import { isInDictionary, translateFeatures } from "@/lib/feature-translation-dictionary";
 import {
     formatArea,
     formatPrice,
@@ -10,6 +13,10 @@ import {
     getPropertyTypeLabel,
     getSaleTypeLabel,
 } from "@/lib/utils";
+import {
+    getLocalizedFallbackLocales,
+    pickLocalizedEntry,
+} from "@/lib/public-content-localization";
 import {
     isCategoryFieldVisibleForTypes,
     normalizeZoningStatus,
@@ -32,10 +39,6 @@ import { ListingContactPanel } from "@/components/public/listing-contact-panel";
 import { ListingPriceDisplay } from "@/components/public/listing-price-display";
 
 const WHATSAPP_NUMBER = "902421234567";
-
-function formatBoolean(value: boolean) {
-    return value ? "Var" : "Yok";
-}
 
 function toNumber(value: unknown) {
     return typeof value === "number" && Number.isFinite(value) ? value : null;
@@ -61,7 +64,8 @@ export default async function ListingDetailPage({
     params: Promise<{ locale: string; slug: string }>;
 }) {
     const { locale, slug } = await params;
-    const localeFallbacks = Array.from(new Set(["tr", locale]));
+    const t = await getTranslations({ locale, namespace: "listingDetail" });
+    const localeFallbacks = getLocalizedFallbackLocales(locale);
 
     const listing = await prisma.listing.findFirst({
         where: {
@@ -90,17 +94,31 @@ export default async function ListingDetailPage({
 
     const isRemovedListing = listing.status === ListingStatus.REMOVED;
 
-    const translation =
-        listing.translations.find((item) => item.locale === "tr") ||
-        listing.translations[0];
+    const translation = pickLocalizedEntry(listing.translations, locale);
 
-    const title = translation?.title?.trim() || "İlan Başlığı";
-    const description =
+    const rawTitle = translation?.title?.trim() || t("fallbackTitle");
+    const rawDescription =
         translation?.description?.trim() ||
-        "Bu ilan için detaylı açıklama henüz eklenmemiştir.";
-    const listedFeatures = (translation?.features || [])
-        .map((feature) => feature.trim())
-        .filter(Boolean);
+        t("fallbackDescription");
+
+    // AI-translate title and description for non-Turkish locales when falling back to Turkish
+    const isFallbackLocale = locale !== "tr" && translation?.locale !== locale;
+    const title = isFallbackLocale ? await translateText(rawTitle, locale) : rawTitle;
+    const description = isFallbackLocale ? await translateText(rawDescription, locale) : rawDescription;
+    const rawFeatures = (translation?.features || []).map((f) => f.trim()).filter(Boolean);
+    // AI-translate features not in dictionary
+    if (locale !== "tr") {
+        const missing = rawFeatures
+            .map((text, i) => ({ key: `feat-${i}`, text, i }))
+            .filter((item) => !isInDictionary(item.text, locale));
+        if (missing.length > 0) {
+            const aiResults = await translateBatch(missing, locale);
+            for (const item of missing) {
+                if (aiResults[item.key]) rawFeatures[item.i] = aiResults[item.key];
+            }
+        }
+    }
+    const listedFeatures = translateFeatures(rawFeatures, locale);
 
     const priceValue =
         typeof listing.price === "object" &&
@@ -113,8 +131,8 @@ export default async function ListingDetailPage({
         (typeof listing.bedrooms === "number" ? `${listing.bedrooms}+0` : "-");
     const bathroomValue =
         typeof listing.bathrooms === "number" ? `${listing.bathrooms}` : "-";
-    const saleTypeLabel = getSaleTypeLabel(listing.saleType, "tr");
-    const propertyTypeLabel = getPropertyTypeLabel(listing.type, "tr");
+    const saleTypeLabel = getSaleTypeLabel(listing.saleType, locale);
+    const propertyTypeLabel = getPropertyTypeLabel(listing.type, locale);
     const locationLabel = [listing.neighborhood, listing.district, listing.city]
         .filter(Boolean)
         .join(", ");
@@ -179,19 +197,21 @@ export default async function ListingDetailPage({
         .map((item, index) => ({
             id: item.id,
             src: getMediaUrl(item.url),
-            alt: `${title} - Görsel ${index + 1}`,
+            alt: t("imageAlt", { title, index: index + 1 }),
         }));
 
+    const formatBoolean = (value: boolean) => (value ? t("yes") : t("no"));
+
     const detailItems = [
-        { label: "İlan Kodu", value: listing.sku || "-" },
-        { label: "İlan Tipi", value: saleTypeLabel },
-        { label: "Kategori", value: propertyTypeLabel },
-        { label: "Brüt Alan", value: formatArea(listing.area) },
-        ...(showRooms ? [{ label: "Oda Düzeni", value: roomValue }] : []),
+        { label: t("details.listingCode"), value: listing.sku || "-" },
+        { label: t("details.listingType"), value: saleTypeLabel },
+        { label: t("details.category"), value: propertyTypeLabel },
+        { label: t("details.grossArea"), value: formatArea(listing.area) },
+        ...(showRooms ? [{ label: t("details.roomLayout"), value: roomValue }] : []),
         ...(showBathrooms
             ? [
                 {
-                    label: "Banyo",
+                    label: t("details.bathroom"),
                     value:
                         typeof listing.bathrooms === "number"
                             ? `${listing.bathrooms}`
@@ -202,7 +222,7 @@ export default async function ListingDetailPage({
         ...(isVisible("wcCount")
             ? [
                 {
-                    label: "WC",
+                    label: t("details.wc"),
                     value:
                         typeof listing.wcCount === "number"
                             ? `${listing.wcCount}`
@@ -213,7 +233,7 @@ export default async function ListingDetailPage({
         ...(showFloor
             ? [
                 {
-                    label: "Bulunduğu Kat",
+                    label: t("details.floor"),
                     value:
                         typeof listing.floor === "number"
                             ? `${listing.floor}`
@@ -224,7 +244,7 @@ export default async function ListingDetailPage({
         ...(showTotalFloors
             ? [
                 {
-                    label: "Toplam Kat",
+                    label: t("details.totalFloors"),
                     value:
                         typeof listing.totalFloors === "number"
                             ? `${listing.totalFloors}`
@@ -235,7 +255,7 @@ export default async function ListingDetailPage({
         ...(showBuildYear
             ? [
                 {
-                    label: "Bina Yaşı",
+                    label: t("details.buildingAge"),
                     value:
                         typeof listing.buildYear === "number"
                             ? `${new Date().getFullYear() - listing.buildYear}`
@@ -243,17 +263,17 @@ export default async function ListingDetailPage({
                 },
             ]
             : []),
-        ...(showHeating ? [{ label: "Isıtma", value: listing.heating || "-" }] : []),
+        ...(showHeating ? [{ label: t("details.heating"), value: listing.heating || "-" }] : []),
         ...(listing.furnished !== null
-            ? [{ label: "Eşya Durumu", value: listing.furnished ? "Eşyalı" : "Eşyasız" }]
+            ? [{ label: t("details.furnished"), value: listing.furnished ? t("furnishedYes") : t("furnishedNo") }]
             : []),
         // Land Specific
-        ...(showZoning ? [{ label: "İmar Durumu", value: zoningLabel }] : []),
-        ...(showParcel ? [{ label: "Ada / Parsel", value: listing.parcelNo || "-" }] : []),
+        ...(showZoning ? [{ label: t("details.zoningStatus"), value: zoningLabel }] : []),
+        ...(showParcel ? [{ label: t("details.parcel"), value: listing.parcelNo || "-" }] : []),
         ...(showEmsal
             ? [
                 {
-                    label: "Emsal (Kaks)",
+                    label: t("details.emsal"),
                     value:
                         typeof listing.emsal === "number" ? `${listing.emsal}` : "-",
                 },
@@ -261,31 +281,31 @@ export default async function ListingDetailPage({
             : []),
         // Commercial Specific
         ...(showGroundArea && listing.groundFloorArea
-            ? [{ label: "Zemin Alanı", value: formatArea(listing.groundFloorArea) }]
+            ? [{ label: t("details.groundFloorArea"), value: formatArea(listing.groundFloorArea) }]
             : []),
         ...(showBasementArea && listing.basementArea
-            ? [{ label: "Bodrum Alanı", value: formatArea(listing.basementArea) }]
+            ? [{ label: t("details.basementArea"), value: formatArea(listing.basementArea) }]
             : []),
 
-        { label: "Asansör", value: formatBoolean(listing.elevator) },
-        { label: "Otopark", value: formatBoolean(listing.parking) },
-        { label: "Havuz", value: formatBoolean(listing.pool) },
-        { label: "Bahçe", value: formatBoolean(listing.garden) },
-        { label: "Güvenlik", value: formatBoolean(listing.security) },
-        { label: "Deniz Manzarası", value: formatBoolean(listing.seaView) },
+        { label: t("details.elevator"), value: formatBoolean(listing.elevator) },
+        { label: t("details.parking"), value: formatBoolean(listing.parking) },
+        { label: t("details.pool"), value: formatBoolean(listing.pool) },
+        { label: t("details.garden"), value: formatBoolean(listing.garden) },
+        { label: t("details.security"), value: formatBoolean(listing.security) },
+        { label: t("details.seaView"), value: formatBoolean(listing.seaView) },
         ...(isVisible("citizenshipEligible")
             ? [
                 {
-                    label: "Vatandaşlığa Uygunluk",
-                    value: listing.citizenshipEligible ? "Uygun" : "Uygun değil",
+                    label: t("details.citizenshipEligible"),
+                    value: listing.citizenshipEligible ? t("eligibleYes") : t("eligibleNo"),
                 },
             ]
             : []),
         ...(isVisible("residenceEligible")
             ? [
                 {
-                    label: "İkamete Uygunluk",
-                    value: listing.residenceEligible ? "Uygun" : "Uygun değil",
+                    label: t("details.residenceEligible"),
+                    value: listing.residenceEligible ? t("eligibleYes") : t("eligibleNo"),
                 },
             ]
             : []),
@@ -390,11 +410,9 @@ export default async function ListingDetailPage({
                 score += 12;
             }
 
-            const candidateTranslation =
-                candidate.translations.find((item) => item.locale === "tr") ||
-                candidate.translations[0];
+            const candidateTranslation = pickLocalizedEntry(candidate.translations, locale);
             const candidateTitle =
-                candidateTranslation?.title?.trim() || "Benzer İlan";
+                candidateTranslation?.title?.trim() || t("similarFallbackTitle");
             const candidateLocationLabel = [
                 candidate.neighborhood,
                 candidate.district,
@@ -426,8 +444,8 @@ export default async function ListingDetailPage({
                 currency: candidate.currency,
                 areaLabel: formatArea(candidate.area),
                 roomLabel: candidateRoomValue,
-                typeLabel: getPropertyTypeLabel(candidate.type, "tr"),
-                saleTypeLabel: getSaleTypeLabel(candidate.saleType, "tr"),
+                typeLabel: getPropertyTypeLabel(candidate.type, locale),
+                saleTypeLabel: getSaleTypeLabel(candidate.saleType, locale),
                 areaDelta,
                 score,
                 createdAt: candidate.createdAt,
@@ -461,14 +479,14 @@ export default async function ListingDetailPage({
                         href={`/${locale}`}
                         className="transition-colors hover:text-[#ff6900]"
                     >
-                        Ana Sayfa
+                        {t("breadcrumbs.home")}
                     </Link>
                     <ChevronRight className="h-4 w-4 text-[#94a1bb]" />
                     <Link
                         href={`/${locale}/portfoy`}
                         className="transition-colors hover:text-[#ff6900]"
                     >
-                        Portföy
+                        {t("breadcrumbs.portfolio")}
                     </Link>
                     <ChevronRight className="h-4 w-4 text-[#94a1bb]" />
                     <span className="truncate font-medium text-[#111828]">{title}</span>
@@ -504,12 +522,12 @@ export default async function ListingDetailPage({
 
                                     <p className="flex items-start gap-2 text-sm text-[#5b667f] sm:text-base">
                                         <MapPin className="h-4 w-4 shrink-0 text-[#5099ff]" />
-                                        <span>{locationLabel || "Konum belirtilmedi"}</span>
+                                        <span>{locationLabel || t("locationMissing")}</span>
                                     </p>
                                 </div>
 
                                 <div className="hidden min-w-[210px] rounded-[1.25rem] border border-gray-200 bg-white px-5 py-4 text-right md:block">
-                                    <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Fiyat</p>
+                                    <p className="text-xs uppercase tracking-[0.18em] text-gray-500">{t("price")}</p>
                                     <p className="mt-1 text-3xl font-semibold leading-none text-[#111828]">
                                         <ListingPriceDisplay price={priceValue} currency={listing.currency} />
                                     </p>
@@ -524,13 +542,13 @@ export default async function ListingDetailPage({
                                 {showRooms && roomValue && roomValue !== "-" && (
                                     <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
                                         <BedDouble className="h-4 w-4 text-gray-400" />
-                                        {roomValue} Oda
+                                        {t("roomValue", { value: roomValue })}
                                     </span>
                                 )}
                                 {showBathrooms && bathroomValue && bathroomValue !== "-" && (
                                     <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
                                         <Bath className="h-4 w-4 text-gray-400" />
-                                        {bathroomValue} Banyo
+                                        {t("bathroomValue", { value: bathroomValue })}
                                     </span>
                                 )}
                                 <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
@@ -555,13 +573,13 @@ export default async function ListingDetailPage({
                                 {showRooms && roomValue && roomValue !== "-" && (
                                     <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
                                         <BedDouble className="h-4 w-4 text-gray-400" />
-                                        {roomValue} Oda
+                                        {t("roomValue", { value: roomValue })}
                                     </span>
                                 )}
                                 {showBathrooms && bathroomValue && bathroomValue !== "-" && (
                                     <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
                                         <Bath className="h-4 w-4 text-gray-400" />
-                                        {bathroomValue} Banyo
+                                        {t("bathroomValue", { value: bathroomValue })}
                                     </span>
                                 )}
                                 <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-4 py-2 text-[#111828]">
@@ -578,7 +596,7 @@ export default async function ListingDetailPage({
                         </header>
 
                         <section className="rounded-[1.9rem] border border-gray-200 bg-white p-6">
-                            <h2 className="text-2xl font-semibold text-[#111828]">Açıklama</h2>
+                            <h2 className="text-2xl font-semibold text-[#111828]">{t("descriptionTitle")}</h2>
                             <p className="mt-4 whitespace-pre-line text-[1.02rem] leading-relaxed text-[#3d4962]">
                                 {description}
                             </p>
@@ -586,7 +604,7 @@ export default async function ListingDetailPage({
                             {listedFeatures.length > 0 ? (
                                 <div className="mt-7 border-t border-gray-100 pt-6">
                                     <h3 className="text-xl font-semibold text-[#111828]">
-                                        Öne Çıkan Özellikler
+                                        {t("featuredFeaturesTitle")}
                                     </h3>
                                     <ul className="mt-4 grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
                                         {listedFeatures.map((feature) => (
@@ -604,7 +622,7 @@ export default async function ListingDetailPage({
                         </section>
 
                         <section className="rounded-[1.9rem] border border-gray-200 bg-white p-6">
-                            <h2 className="text-2xl font-semibold text-[#111828]">İlan Detayları</h2>
+                            <h2 className="text-2xl font-semibold text-[#111828]">{t("detailsTitle")}</h2>
                             <dl className="mt-5 grid gap-x-8 gap-y-3 md:grid-cols-2">
                                 {visibleDetailItems.map((item) => (
                                     <div
@@ -621,7 +639,7 @@ export default async function ListingDetailPage({
                         {mapEmbedSrc ? (
                             <section className="overflow-hidden rounded-[1.9rem] border border-gray-200 bg-white">
                                 <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5">
-                                    <h2 className="text-2xl font-semibold text-[#111828]">Harita</h2>
+                                    <h2 className="text-2xl font-semibold text-[#111828]">{t("mapTitle")}</h2>
                                     {mapsLink ? (
                                         <a
                                             href={mapsLink}
@@ -630,13 +648,13 @@ export default async function ListingDetailPage({
                                             className="inline-flex items-center gap-2 rounded-full bg-[#ff6900] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#e85f00]"
                                         >
                                             <MapPin className="h-4 w-4" />
-                                            Google Maps&apos;te Aç
+                                            {t("openInGoogleMaps")}
                                         </a>
                                     ) : null}
                                 </div>
                                 <div className="aspect-[16/8] w-full bg-gray-100">
                                     <iframe
-                                        title="İlan haritası"
+                                        title={t("mapFrameTitle")}
                                         src={mapEmbedSrc}
                                         className="h-full w-full pointer-events-none md:pointer-events-auto"
                                         loading="lazy"
@@ -650,13 +668,13 @@ export default async function ListingDetailPage({
                             <section className="space-y-4">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <h2 className="text-2xl font-semibold text-[#111828]">
-                                        Benzer İlanlar
+                                        {t("similarListingsTitle")}
                                     </h2>
                                     <Link
                                         href={moreListingsHref}
                                         className="inline-flex items-center rounded-xl bg-[#111f3a] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#0c1830]"
                                     >
-                                        Daha fazla göster
+                                        {t("showMore")}
                                     </Link>
                                 </div>
 
@@ -681,7 +699,7 @@ export default async function ListingDetailPage({
                                                         />
                                                     ) : (
                                                         <div className="absolute inset-0 flex items-center justify-center text-sm font-medium text-gray-400">
-                                                            Görsel yok
+                                                            {t("noImage")}
                                                         </div>
                                                     )}
 
@@ -711,7 +729,7 @@ export default async function ListingDetailPage({
                                                         <p className="mt-1 flex items-center gap-1 text-sm text-gray-500">
                                                             <MapPin className="h-3.5 w-3.5" />
                                                             <span className="line-clamp-1 min-w-0">
-                                                                {similar.locationLabel || "Konum belirtilmedi"}
+                                                                {similar.locationLabel || t("locationMissing")}
                                                             </span>
                                                         </p>
 
@@ -723,7 +741,7 @@ export default async function ListingDetailPage({
                                                                 href={`/${locale}/ilan/${similar.slug}`}
                                                                 className="inline-flex items-center rounded-[1.35rem] bg-[#111f3a] px-5 py-3 text-base font-semibold text-white"
                                                             >
-                                                                incele -&gt;
+                                                                {t("inspect")} -&gt;
                                                             </Link>
                                                         </div>
                                                     </div>
@@ -731,7 +749,7 @@ export default async function ListingDetailPage({
                                                     <div className="mt-4 hidden grid-cols-3 gap-2 border-t border-gray-100 pt-3 text-xs md:grid">
                                                         <div>
                                                             <p className="text-[10px] uppercase tracking-[0.14em] text-gray-400">
-                                                                Oda
+                                                                {t("room")}
                                                             </p>
                                                             <p className="mt-1 font-semibold text-gray-700">
                                                                 {similar.roomLabel}
@@ -739,7 +757,7 @@ export default async function ListingDetailPage({
                                                         </div>
                                                         <div>
                                                             <p className="text-[10px] uppercase tracking-[0.14em] text-gray-400">
-                                                                Alan
+                                                                {t("area")}
                                                             </p>
                                                             <p className="mt-1 font-semibold text-gray-700">
                                                                 {similar.areaLabel}
@@ -747,7 +765,7 @@ export default async function ListingDetailPage({
                                                         </div>
                                                         <div>
                                                             <p className="text-[10px] uppercase tracking-[0.14em] text-gray-400">
-                                                                İşlem
+                                                                {t("transaction")}
                                                             </p>
                                                             <p className="mt-1 font-semibold text-gray-700">
                                                                 {similar.saleTypeLabel}
@@ -763,7 +781,7 @@ export default async function ListingDetailPage({
                                                             href={`/${locale}/ilan/${similar.slug}`}
                                                             className="inline-flex shrink-0 items-center rounded-xl bg-[#111f3a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0c1830]"
                                                         >
-                                                            incele -&gt;
+                                                            {t("inspect")} -&gt;
                                                         </Link>
                                                     </div>
                                                 </div>

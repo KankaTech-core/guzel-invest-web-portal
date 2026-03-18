@@ -17,6 +17,14 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState, useRef } from "react";
 import {
+    buildLocalizedPath,
+    defaultLocale,
+    localeDisplayNames,
+    localeDisplayOrder,
+    publicLocales,
+    type Locale,
+} from "@/i18n/public-locales";
+import {
     getNavbarProjectMenuColumnCount,
     mapPublicProjectsToMenuItems,
     type NavbarProjectMenuItem,
@@ -29,8 +37,7 @@ import { ProjectIcon } from "@/components/single-project/ProjectIcon";
 
 type NavigationItem = {
     href: string;
-    name?: string;
-    label?: string;
+    name: string;
 };
 
 const socialIconMap: Record<SocialLinkKey, typeof Instagram> = {
@@ -41,19 +48,19 @@ const socialIconMap: Record<SocialLinkKey, typeof Instagram> = {
 
 const navigation = [
     { name: "nav.home", href: "/" },
-    { label: "Projeler", href: "/projeler" },
+    { name: "nav.projects", href: "/projeler" },
     { name: "nav.portfolio", href: "/portfoy" },
-    { label: "Makaleler", href: "/blog" },
+    { name: "nav.blog", href: "/blog" },
     { name: "nav.about", href: "/hakkimizda" },
     { name: "nav.contact", href: "/iletisim" },
 ] satisfies NavigationItem[];
 
 const aboutSectionLinks = [
-    { id: "hikayemiz", label: "Hikayemiz" },
-    { id: "neler-yapiyoruz", label: "Neler Yapıyoruz?" },
-    { id: "ekibimiz", label: "Ekibimiz" },
-    { id: "misyonumuz", label: "Misyonumuz" },
-    { id: "vizyonumuz", label: "Vizyonumuz" },
+    { id: "hikayemiz", labelKey: "nav.aboutSections.story" },
+    { id: "neler-yapiyoruz", labelKey: "nav.aboutSections.services" },
+    { id: "ekibimiz", labelKey: "nav.aboutSections.team" },
+    { id: "misyonumuz", labelKey: "nav.aboutSections.mission" },
+    { id: "vizyonumuz", labelKey: "nav.aboutSections.vision" },
 ] as const;
 
 const appendVersionParam = (url: string, version: string) => {
@@ -67,11 +74,17 @@ export function Navbar({ locale }: { locale: string }) {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const router = useRouter();
+    const currentLocale = publicLocales.includes(locale as Locale)
+        ? (locale as Locale)
+        : defaultLocale;
+    const search = searchParams.toString();
     const [isOpen, setIsOpen] = useState(false);
     const [projectMenuItems, setProjectMenuItems] = useState<NavbarProjectMenuItem[]>([]);
     const [isProjectsMenuLoading, setIsProjectsMenuLoading] = useState(true);
     const [isProjectsMenuOpen, setIsProjectsMenuOpen] = useState(false);
+    const [isLocaleMenuOpen, setIsLocaleMenuOpen] = useState(false);
     const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const localeMenuRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         return () => {
@@ -83,18 +96,52 @@ export function Navbar({ locale }: { locale: string }) {
 
     useEffect(() => {
         setIsProjectsMenuOpen(false);
-    }, [pathname, searchParams]);
+        setIsLocaleMenuOpen(false);
+    }, [pathname, search]);
 
-    const aboutPath = `/${locale}/hakkimizda`;
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                localeMenuRef.current &&
+                !localeMenuRef.current.contains(event.target as Node)
+            ) {
+                setIsLocaleMenuOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
+
+    const aboutPath = `/${currentLocale}/hakkimizda`;
 
     // Döviz butonu sadece portföy, tek ilan ve harita sayfalarında görünür
     const currencyActiveRoutes = [
-        `/${locale}/portfoy`,
-        `/${locale}/harita`,
-        `/${locale}/ilan`,
+        `/${currentLocale}/portfoy`,
+        `/${currentLocale}/harita`,
+        `/${currentLocale}/ilan`,
     ];
     const showCurrencyToggle = currencyActiveRoutes.some((route) =>
         pathname.startsWith(route)
+    );
+
+    const handleLocaleChange = useCallback(
+        (nextLocale: Locale) => {
+            const hash = window.location.hash;
+            const nextPath = buildLocalizedPath({
+                pathname,
+                locale: nextLocale,
+                search,
+                hash,
+            });
+
+            setIsLocaleMenuOpen(false);
+            setIsOpen(false);
+            router.push(nextPath);
+        },
+        [pathname, router, search]
     );
 
     const smoothScrollToSection = useCallback((sectionId: string) => {
@@ -158,7 +205,7 @@ export function Navbar({ locale }: { locale: string }) {
         const loadProjectMenuItems = async () => {
             try {
                 const response = await fetch(
-                    `/api/public/projects?locale=${encodeURIComponent(locale)}`,
+                    `/api/public/projects?locale=${encodeURIComponent(currentLocale)}`,
                     {
                         signal: controller.signal,
                         cache: "no-store",
@@ -175,7 +222,7 @@ export function Navbar({ locale }: { locale: string }) {
 
                 if (!isMounted) return;
                 const projects = Array.isArray(data?.projects) ? data.projects : [];
-                setProjectMenuItems(mapPublicProjectsToMenuItems(projects, locale));
+                setProjectMenuItems(mapPublicProjectsToMenuItems(projects, currentLocale));
             } catch {
                 if (isMounted) {
                     setProjectMenuItems([]);
@@ -194,7 +241,7 @@ export function Navbar({ locale }: { locale: string }) {
             isMounted = false;
             controller.abort();
         };
-    }, [locale]);
+    }, [currentLocale]);
 
     useEffect(() => {
         window.dispatchEvent(
@@ -215,7 +262,7 @@ export function Navbar({ locale }: { locale: string }) {
         <nav className="fixed top-0 w-full z-50 transition-all duration-300 bg-white shadow-sm border-b border-gray-100 py-3">
             <div className="container-custom flex items-center justify-between">
                 {/* Logo */}
-                <Link href={`/${locale}`} className="flex items-center gap-2.5 group">
+                <Link href={`/${currentLocale}`} className="flex items-center gap-2.5 group">
                     <Image
                         src="/images/testimonials/logo-square.svg"
                         alt="Güzel Invest logosu"
@@ -232,7 +279,7 @@ export function Navbar({ locale }: { locale: string }) {
                 {/* Desktop Navigation */}
                 <div className="hidden lg:flex items-center gap-1 bg-gray-100 rounded-full px-1.5 py-1.5">
                     {navigation.map((item) => {
-                        const baseHref = `/${locale}${item.href === "/" ? "" : item.href}`;
+                        const baseHref = `/${currentLocale}${item.href === "/" ? "" : item.href}`;
                         const isActive = pathname === baseHref;
 
                         if (item.href === "/hakkimizda") {
@@ -247,7 +294,7 @@ export function Navbar({ locale }: { locale: string }) {
                                                 : "text-gray-600 hover:text-gray-900"
                                         )}
                                     >
-                                        {item.label ?? t(item.name!)}
+                                    {t(item.name)}
                                         <ChevronDown className="h-4 w-4 opacity-70" />
                                     </Link>
 
@@ -262,7 +309,7 @@ export function Navbar({ locale }: { locale: string }) {
                                                     }
                                                     className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-orange-50 hover:text-orange-600"
                                                 >
-                                                    {section.label}
+                                                    {t(section.labelKey)}
                                                 </a>
                                             ))}
                                         </div>
@@ -272,9 +319,9 @@ export function Navbar({ locale }: { locale: string }) {
                         }
 
                         if (item.href === "/projeler") {
-                            const projectsFilterHref = `/${locale}/portfoy?onlyProjects=true`;
+                            const projectsFilterHref = `/${currentLocale}/portfoy?onlyProjects=true`;
                             const isProjectsFilterActive =
-                                pathname === `/${locale}/portfoy` &&
+                                pathname === `/${currentLocale}/portfoy` &&
                                 searchParams.get("onlyProjects") === "true";
                             const isMenuVisible = isProjectsMenuOpen;
                             const menuColumnCount = getNavbarProjectMenuColumnCount(
@@ -321,7 +368,7 @@ export function Navbar({ locale }: { locale: string }) {
                                                 : "text-gray-600 hover:text-gray-900"
                                         )}
                                     >
-                                        {item.label ?? t(item.name!)}
+                                        {t(item.name)}
                                         <ChevronDown className={cn("h-4 w-4 opacity-70 transition-transform duration-200", isMenuVisible && "rotate-180")} />
                                     </Link>
 
@@ -358,7 +405,7 @@ export function Navbar({ locale }: { locale: string }) {
                                                         return (
                                                         <Link
                                                             key={project.href}
-                                                            href={`/${locale}${project.href}`}
+                                                            href={`/${currentLocale}${project.href}`}
                                                             onClick={() => setIsProjectsMenuOpen(false)}
                                                             className="group/item flex h-full flex-row gap-5 rounded-2xl border border-transparent p-4 transition-all hover:border-orange-100/60 hover:bg-orange-50/40"
                                                         >
@@ -438,14 +485,57 @@ export function Navbar({ locale }: { locale: string }) {
                                         : "text-gray-600 hover:text-gray-900"
                                 )}
                             >
-                                {item.label ?? (item.name ? t(item.name) : "")}
+                                {t(item.name)}
                             </Link>
                         );
                     })}
                 </div>
 
-                {/* Right Side: Social + Language */}
+                {/* Right Side: Locale + Social + Currency */}
                 <div className="hidden lg:flex items-center gap-3">
+                    <div className="relative" ref={localeMenuRef}>
+                        <button
+                            type="button"
+                            aria-haspopup="menu"
+                            aria-expanded={isLocaleMenuOpen}
+                            onClick={() => setIsLocaleMenuOpen((value) => !value)}
+                            className={cn(
+                                "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-all",
+                                isLocaleMenuOpen
+                                    ? "border-orange-200 bg-orange-50 text-orange-600"
+                                    : "border-gray-200 bg-white text-gray-700 hover:border-orange-200 hover:text-orange-600"
+                            )}
+                        >
+                            {localeDisplayNames[currentLocale]}
+                            <ChevronDown
+                                className={cn(
+                                    "h-4 w-4 transition-transform duration-200",
+                                    isLocaleMenuOpen && "rotate-180"
+                                )}
+                            />
+                        </button>
+
+                        {isLocaleMenuOpen ? (
+                            <div className="absolute right-0 top-full z-50 mt-2 min-w-32 rounded-2xl border border-gray-200 bg-white p-2 shadow-2xl shadow-gray-200/60">
+                                {localeDisplayOrder.map((option) => (
+                                    <button
+                                        key={option}
+                                        type="button"
+                                        onClick={() => handleLocaleChange(option)}
+                                        className={cn(
+                                            "flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+                                            option === currentLocale
+                                                ? "bg-orange-50 text-orange-600"
+                                                : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                                        )}
+                                    >
+                                        <span>{localeDisplayNames[option]}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : null}
+                    </div>
+
                     {/* Social Icons */}
                     <div className="flex items-center gap-1 rounded-full bg-gray-100 p-1">
                         {SOCIAL_LINK_ITEMS.map((item) => {
@@ -500,14 +590,37 @@ export function Navbar({ locale }: { locale: string }) {
                 )}
             >
                 <div className="p-6 flex flex-col gap-2">
+                    <div className="mb-4">
+                        <p className="mb-3 text-sm font-medium text-gray-500">
+                            {t("nav.language")}
+                        </p>
+                        <div className="grid grid-cols-4 gap-2">
+                            {localeDisplayOrder.map((option) => (
+                                <button
+                                    key={option}
+                                    type="button"
+                                    onClick={() => handleLocaleChange(option)}
+                                    className={cn(
+                                        "rounded-xl border px-3 py-2 text-sm font-semibold uppercase transition-colors",
+                                        option === currentLocale
+                                            ? "border-orange-500 bg-orange-50 text-orange-600"
+                                            : "border-gray-200 bg-white text-gray-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
+                                    )}
+                                >
+                                    {localeDisplayNames[option]}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {navigation.map((item) => {
                         const isProjeler = item.href === "/projeler";
-                        const baseHref = `/${locale}${item.href === "/" ? "" : item.href}`;
+                        const baseHref = `/${currentLocale}${item.href === "/" ? "" : item.href}`;
                         const href = isProjeler
-                            ? `/${locale}/portfoy?onlyProjects=true`
+                            ? `/${currentLocale}/portfoy?onlyProjects=true`
                             : baseHref;
                         const isActive = isProjeler
-                            ? pathname === `/${locale}/portfoy` &&
+                            ? pathname === `/${currentLocale}/portfoy` &&
                             searchParams.get("onlyProjects") === "true"
                             : pathname === baseHref;
 
@@ -523,7 +636,7 @@ export function Navbar({ locale }: { locale: string }) {
                                         : "text-gray-700 hover:bg-gray-50"
                                 )}
                             >
-                                {item.label ?? (item.name ? t(item.name) : "")}
+                                {t(item.name)}
                             </Link>
                         );
                     })}
@@ -541,7 +654,9 @@ export function Navbar({ locale }: { locale: string }) {
                     </button>
 
                     <div className="mt-6 pt-6 border-t border-gray-100">
-                        <p className="text-sm text-gray-400 mb-3">Sosyal Medya</p>
+                        <p className="text-sm text-gray-400 mb-3">
+                            {t("nav.social")}
+                        </p>
                         <div className="flex items-center gap-3">
                             {SOCIAL_LINK_ITEMS.map((item) => {
                                 const Icon = socialIconMap[item.key];
@@ -562,29 +677,6 @@ export function Navbar({ locale }: { locale: string }) {
                         </div>
                     </div>
 
-                    <div className="mt-6 pt-6 border-t border-gray-100">
-                        <p className="text-sm text-gray-400 mb-3">Dil Seçimi</p>
-                        <div className="flex gap-2">
-                            {["tr"].map((lang) => (
-                                <button
-                                    key={lang}
-                                    className={cn(
-                                        "px-4 py-2 rounded-lg text-sm font-bold uppercase transition-colors",
-                                        locale === lang
-                                            ? "bg-orange-500 text-white"
-                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                    )}
-                                    onClick={() => {
-                                        setIsOpen(false);
-                                        const newPath = pathname.replace(`/${locale}`, `/${lang}`);
-                                        window.location.href = newPath;
-                                    }}
-                                >
-                                    {lang}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
                 </div>
             </div>
         </nav>

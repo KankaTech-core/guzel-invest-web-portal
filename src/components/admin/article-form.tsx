@@ -8,6 +8,7 @@ import {
     Check,
     ChevronDown,
     CloudUpload,
+    Languages,
     Plus,
     Settings2,
     Tag,
@@ -338,6 +339,8 @@ export function ArticleForm({ article, isNew = false, authorName }: ArticleFormP
     const [isCoverDragActive, setIsCoverDragActive] = useState(false);
     const [categoryInput, setCategoryInput] = useState("");
     const [tagInput, setTagInput] = useState("");
+    const [isTranslating, setIsTranslating] = useState(false);
+    const [translateSuccess, setTranslateSuccess] = useState(false);
 
     const [isLeavePromptOpen, setIsLeavePromptOpen] = useState(false);
     const [leaveIntent, setLeaveIntent] = useState<LeaveIntent | null>(null);
@@ -1025,6 +1028,60 @@ export function ArticleForm({ article, isNew = false, authorName }: ArticleFormP
         initialSnapshotRef.current = JSON.stringify(buildUnsavedSnapshot(normalizedForm, null));
     };
 
+    const handleTranslate = async () => {
+        if (isTranslating || translateSuccess) return;
+
+        if (!form.id) {
+            setErrorMessage("Çeviri için önce makaleyi kaydedin.");
+            return;
+        }
+
+        const title = form.title.trim();
+        const content = form.content.trim();
+
+        if (!title && !content) {
+            setErrorMessage("Çeviri için başlık veya içerik gerekli.");
+            return;
+        }
+
+        setIsTranslating(true);
+        setErrorMessage(null);
+
+        try {
+            const response = await fetch("/api/admin/ai/translate-article", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    articleId: form.id,
+                    title,
+                    excerpt: form.excerpt || "",
+                    content,
+                    category: form.category || "",
+                    tags: form.tags,
+                }),
+            });
+
+            if (!response.ok) {
+                if (response.status === 409) {
+                    setTranslateSuccess(true);
+                    return;
+                }
+                const data = await response.json().catch(() => ({}));
+                throw new Error(
+                    typeof data?.error === "string" ? data.error : "Çeviri başarısız."
+                );
+            }
+
+            setTranslateSuccess(true);
+        } catch (err) {
+            setErrorMessage(
+                err instanceof Error ? err.message : "Çeviri sırasında bir hata oluştu."
+            );
+        } finally {
+            setIsTranslating(false);
+        }
+    };
+
     const submit = async (options: {
         statusOverride?: ArticleStatusValue;
         skipRedirect?: boolean;
@@ -1297,6 +1354,35 @@ export function ArticleForm({ article, isNew = false, authorName }: ArticleFormP
                         </div>
 
                         <section className="flex-1 space-y-5 overflow-y-auto p-4">
+                            <div>
+                                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                    AI Çeviri
+                                </h3>
+                                <div className="mt-2">
+                                    {translateSuccess ? (
+                                        <div className="flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2 text-xs font-semibold text-green-700">
+                                            <Check className="h-4 w-4" />
+                                            Çeviriler eklendi
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={handleTranslate}
+                                            disabled={isTranslating || isSaving}
+                                            className={cn(
+                                                "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold border transition-colors",
+                                                isTranslating
+                                                    ? "border-gray-200 text-gray-400 bg-gray-50"
+                                                    : "border-gray-200 text-gray-700 hover:bg-gray-50"
+                                            )}
+                                        >
+                                            <Languages className="h-4 w-4" />
+                                            {isTranslating ? "Çeviriliyor..." : "Çeviri Ekle"}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
                             <div>
                                 <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                                     Kapak Fotoğrafı

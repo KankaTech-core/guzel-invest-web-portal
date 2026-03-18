@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { S1SectionVisibility } from "../section-visibility";
 import type {
     S1CustomGalleryData,
@@ -39,8 +40,8 @@ interface ProjectGalleryHubProps {
 
 const buildGalleryItems = (
     images: string[],
-    title: string,
-    section: string
+    section: string,
+    buildAlt: (index: number) => string
 ): ListingGalleryItem[] =>
     images
         .map((src) => src.trim())
@@ -48,7 +49,7 @@ const buildGalleryItems = (
         .map((src, index) => ({
             id: `${section}-${index + 1}`,
             src,
-            alt: `${title} - Görsel ${index + 1}`,
+            alt: buildAlt(index + 1),
         }));
 
 const dedupeImages = (images: string[]) => Array.from(new Set(images));
@@ -62,6 +63,7 @@ export const ProjectGalleryHub = ({
     mapImages,
     visibility,
 }: ProjectGalleryHubProps) => {
+    const t = useTranslations("projectDetail");
     const galleryRef = useRef<ListingDetailGalleryHandle | null>(null);
     const pendingOpenRequestRef = useRef<{
         key: string;
@@ -82,26 +84,34 @@ export const ProjectGalleryHub = ({
 
     const categories = useMemo<GalleryCategory[]>(() => {
         const exteriorItems = visibility.exteriorVisuals
-            ? buildGalleryItems(exteriorVisuals?.images || [], "Dış Görseller", "exterior")
+            ? buildGalleryItems(
+                  exteriorVisuals?.images || [],
+                  "exterior",
+                  (index) => t("galleryImageAlt", { index })
+              )
             : [];
 
         const socialItems = visibility.socialFacilities
             ? buildGalleryItems(
                   socialImages,
-                  socialFacilities?.title || "Sosyal İmkanlar",
-                  "social"
+                  "social",
+                  (index) => t("galleryImageAlt", { index })
               )
             : [];
 
         const interiorItems = visibility.interiorVisuals
-            ? buildGalleryItems(interiorVisuals?.images || [], "İç Görseller", "interior")
+            ? buildGalleryItems(
+                  interiorVisuals?.images || [],
+                  "interior",
+                  (index) => t("galleryImageAlt", { index })
+              )
             : [];
 
         const mapItems = visibility.mapImages
             ? mapImages.map((item, index) => ({
                   id: item.id,
                   src: item.image,
-                  alt: item.title || `Harita görseli ${index + 1}`,
+                  alt: item.title || t("mapImageAlt", { index: index + 1 }),
               }))
             : [];
 
@@ -109,7 +119,7 @@ export const ProjectGalleryHub = ({
             ? (floorPlans?.plans || []).map((plan, index) => ({
                   id: plan.id,
                   src: plan.image,
-                  alt: plan.title || `Kat planı ${index + 1}`,
+                  alt: plan.title || t("floorPlanAlt", { index: index + 1 }),
               }))
             : [];
 
@@ -117,16 +127,18 @@ export const ProjectGalleryHub = ({
             ? customGalleries.map((gallery) => ({
                   key: `custom-${gallery.id}`,
                   label: gallery.title,
-                  items: buildGalleryItems(gallery.images || [], gallery.title, `custom-${gallery.id}`),
+                  items: buildGalleryItems(gallery.images || [], `custom-${gallery.id}`, (index) =>
+                      t("galleryImageAlt", { index })
+                  ),
               }))
             : [];
 
         const baseCategories: GalleryCategory[] = [
-            { key: "exterior", label: "Dış", items: exteriorItems },
-            { key: "interior", label: "İç", items: interiorItems },
-            { key: "social", label: "Sosyal", items: socialItems },
-            { key: "map", label: "Harita", items: mapItems },
-            { key: "floor", label: "Kat Planı", items: floorPlanItems },
+            { key: "exterior", label: t("galleryCategoryExterior"), items: exteriorItems },
+            { key: "interior", label: t("galleryCategoryInterior"), items: interiorItems },
+            { key: "social", label: t("galleryCategorySocial"), items: socialItems },
+            { key: "map", label: t("galleryCategoryMap"), items: mapItems },
+            { key: "floor", label: t("galleryCategoryFloor"), items: floorPlanItems },
             ...customItems,
         ].filter((category) => category.items.length > 0);
 
@@ -139,18 +151,18 @@ export const ProjectGalleryHub = ({
         ).map((src, index) => ({
             id: `all-${index + 1}`,
             src,
-            alt: `Proje Galerisi - Görsel ${index + 1}`,
+            alt: t("galleryImageAlt", { index: index + 1 }),
         }));
 
-        return [{ key: "all", label: "Tümü", items: allItems }, ...baseCategories];
+        return [{ key: "all", label: t("galleryCategoryAll"), items: allItems }, ...baseCategories];
     }, [
         customGalleries,
         exteriorVisuals?.images,
         floorPlans?.plans,
         interiorVisuals?.images,
         mapImages,
-        socialFacilities?.title,
         socialImages,
+        t,
         visibility.customGalleries,
         visibility.exteriorVisuals,
         visibility.floorPlans,

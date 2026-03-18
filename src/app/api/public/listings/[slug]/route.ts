@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ListingStatus } from "@/generated/prisma";
+import {
+    getLocalizedFallbackLocales,
+    pickLocalizedEntry,
+} from "@/lib/public-content-localization";
 
 export async function GET(
     req: NextRequest,
@@ -10,6 +14,7 @@ export async function GET(
         const { slug } = await params;
         const { searchParams } = new URL(req.url);
         const locale = searchParams.get("locale") || "tr";
+        const localeFallbacks = getLocalizedFallbackLocales(locale);
 
         const listing = await prisma.listing.findFirst({
             where: {
@@ -20,7 +25,11 @@ export async function GET(
             },
             include: {
                 translations: {
-                    where: { locale },
+                    where: {
+                        locale: {
+                            in: localeFallbacks,
+                        },
+                    },
                 },
                 media: {
                     orderBy: { order: "asc" },
@@ -32,7 +41,14 @@ export async function GET(
             return NextResponse.json({ error: "Listing not found" }, { status: 404 });
         }
 
-        return NextResponse.json({ listing });
+        const translation = pickLocalizedEntry(listing.translations, locale);
+
+        return NextResponse.json({
+            listing: {
+                ...listing,
+                translation,
+            },
+        });
     } catch (error) {
         console.error("Public listing detail API error:", error);
         return NextResponse.json(
