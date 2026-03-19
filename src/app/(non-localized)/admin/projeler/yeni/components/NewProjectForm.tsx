@@ -1786,11 +1786,11 @@ export default function NewProjectForm({
                 ...projectUnits
                     .filter(u => u.detailType === "PROMO" || u.detailType === "PAYMENT")
                     .map(u => ({ id: `unit_${u.id}`, name: u.rooms })),
-                ...faqs.flatMap(f => [
-                    { id: `faq_q_${f.id}`, name: f.question },
-                    { id: `faq_a_${f.id}`, name: f.answer },
-                ]),
             ].filter(t => t.name);
+
+            const faqItems = faqs
+                .filter(f => f.question.trim() || f.answer.trim())
+                .map(f => ({ id: f.id, question: f.question.trim(), answer: f.answer.trim() }));
 
             const response = await fetch("/api/admin/ai/translate-listing", {
                 method: "POST",
@@ -1798,8 +1798,10 @@ export default function NewProjectForm({
                 body: JSON.stringify({
                     title,
                     description,
+                    promoVideoTitle: turkishTranslation?.promoVideoTitle?.trim() || "",
                     listingId: projectId || null,
                     tags: featureTags,
+                    faqs: faqItems,
                     force: options?.force || false,
                 }),
             });
@@ -1818,7 +1820,7 @@ export default function NewProjectForm({
             const data = (await response.json().catch(() => ({}))) as {
                 translations?: Record<
                     "en" | "de" | "ru" | "ar",
-                    { title?: string; description?: string; tags?: { id?: string; name?: string }[] }
+                    { title?: string; description?: string; promoVideoTitle?: string; tags?: { id?: string; name?: string }[]; faqs?: { id?: string; question?: string; answer?: string }[] }
                 >;
             };
 
@@ -1844,6 +1846,7 @@ export default function NewProjectForm({
                             ...translation,
                             title: mapped.title?.trim() || translation.title,
                             description: mapped.description?.trim() || translation.description,
+                            promoVideoTitle: mapped.promoVideoTitle?.trim() || translation.promoVideoTitle,
                             features: getTagFeatures(mapped.tags),
                         };
                     }
@@ -1895,10 +1898,9 @@ export default function NewProjectForm({
                 for (const faq of faqs) {
                     const translations = (["en", "de", "ru"] as const)
                         .map((loc) => {
-                            const qTag = aiTranslations[loc]?.tags?.find((t: any) => t.id === `faq_q_${faq.id}`);
-                            const aTag = aiTranslations[loc]?.tags?.find((t: any) => t.id === `faq_a_${faq.id}`);
-                            const question = qTag?.name?.trim() || "";
-                            const answer = aTag?.name?.trim() || "";
+                            const faqTranslation = aiTranslations[loc]?.faqs?.find((t: any) => t.id === faq.id);
+                            const question = faqTranslation?.question?.trim() || "";
+                            const answer = faqTranslation?.answer?.trim() || "";
                             if (!question && !answer) return null;
                             return { locale: loc, question, answer };
                         })

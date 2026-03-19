@@ -717,6 +717,10 @@ function getListingDescription(listing: Listing, locale: string) {
     );
 }
 
+function hasLocaleTranslation(listing: Listing, locale: string) {
+    return listing.translations.some((translation) => translation.locale === locale);
+}
+
 function getProjectRoomOptions(listing: Listing) {
     const unique = new Set<string>();
     const rooms = (listing.projectUnits || [])
@@ -3003,6 +3007,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                     {visibleListings.map((listing) => {
                             const title = getListingTitle(listing, locale);
                             const description = getListingDescription(listing, locale);
+                            const hasLocaleDescription = hasLocaleTranslation(listing, locale);
                             const projectRoomOptions = getProjectRoomOptions(listing);
                             const projectPromoText = getProjectPromoText(listing, locale);
                             const projectPaymentDetails = getProjectPaymentDetails(listing, locale);
@@ -3285,22 +3290,24 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                                         {locationLabel || copy.labels.noLocation}
                                                     </p>
 
-                                                    <p
-                                                        ref={(node) => {
-                                                            descriptionRefs.current[listing.id] = node;
-                                                        }}
-                                                        className="min-h-[3rem] text-sm leading-6 text-gray-500"
-                                                        style={{
-                                                            display: "-webkit-box",
-                                                            overflow: "hidden",
-                                                            WebkitBoxOrient: "vertical",
-                                                            WebkitLineClamp: 2,
-                                                        }}
-                                                    >
-                                                        {description}
-                                                    </p>
+                                                    {hasLocaleDescription && (
+                                                        <p
+                                                            ref={(node) => {
+                                                                descriptionRefs.current[listing.id] = node;
+                                                            }}
+                                                            className="min-h-[3rem] text-sm leading-6 text-gray-500"
+                                                            style={{
+                                                                display: "-webkit-box",
+                                                                overflow: "hidden",
+                                                                WebkitBoxOrient: "vertical",
+                                                                WebkitLineClamp: 2,
+                                                            }}
+                                                        >
+                                                            {description}
+                                                        </p>
+                                                    )}
                                                     <span
-                                                        className={`mt-1 inline-flex h-6 items-center text-xs font-semibold transition ${hasDescriptionOverflow
+                                                        className={`mt-1 inline-flex h-6 items-center text-xs font-semibold transition ${hasLocaleDescription && hasDescriptionOverflow
                                                             ? "text-orange-600 hover:text-orange-700"
                                                             : "invisible"
                                                             }`}

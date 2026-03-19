@@ -9,14 +9,20 @@ const openai = new OpenAI({
 
 const SYSTEM_PROMPT = `You are a professional real estate translator.
 Translate the provided Turkish listing title and description into English, German, and Russian.
+If a promoVideoTitle is provided, translate it as well.
 If tags are provided, translate each tag name and keep the tag "id" exactly the same.
+If FAQs are provided, translate each FAQ question and answer fully into each language. Keep the "id" exactly the same. Do not summarize or shorten the answers.
 Return a JSON object with keys "en", "de", "ru". Each key should contain:
 {
   "title": "...",
   "description": "...",
-  "tags": [{ "id": "...", "name": "..." }]
+  "promoVideoTitle": "...",
+  "tags": [{ "id": "...", "name": "..." }],
+  "faqs": [{ "id": "...", "question": "...", "answer": "..." }]
 }
+If promoVideoTitle is empty, return an empty string for it.
 If there are no tags, return an empty "tags" array.
+If there are no FAQs, return an empty "faqs" array.
 Only return the JSON object. Do not include Turkish text, parentheses, or extra commentary.`;
 
 const normalizeText = (value: unknown): string => {
@@ -38,9 +44,10 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { title, description, listingId, tags, force } = await req.json();
+        const { title, description, listingId, tags, force, promoVideoTitle, faqs } = await req.json();
         const safeTitle = normalizeText(title);
         const safeDescription = normalizeText(description);
+        const safePromoVideoTitle = normalizeText(promoVideoTitle);
         const safeTags: { id: string; name: string }[] = Array.isArray(tags)
             ? tags
                 .map((tag) => ({
@@ -48,6 +55,15 @@ export async function POST(req: NextRequest) {
                     name: typeof tag?.name === "string" ? normalizeText(tag.name) : "",
                 }))
                 .filter((tag) => tag.id && tag.name)
+            : [];
+        const safeFaqs: { id: string; question: string; answer: string }[] = Array.isArray(faqs)
+            ? faqs
+                .map((faq) => ({
+                    id: typeof faq?.id === "string" ? faq.id : "",
+                    question: typeof faq?.question === "string" ? normalizeText(faq.question) : "",
+                    answer: typeof faq?.answer === "string" ? normalizeText(faq.answer) : "",
+                }))
+                .filter((faq) => faq.id && (faq.question || faq.answer))
             : [];
 
         if (!safeTitle && !safeDescription) {
@@ -83,14 +99,14 @@ export async function POST(req: NextRequest) {
                 { role: "system", content: SYSTEM_PROMPT },
                 {
                     role: "user",
-                    content: `Başlık: ${safeTitle}\n\nAçıklama: ${safeDescription}\n\nEtiketler: ${JSON.stringify(
+                    content: `Başlık: ${safeTitle}\n\nAçıklama: ${safeDescription}\n\nPromosyon Video Başlığı: ${safePromoVideoTitle}\n\nEtiketler: ${JSON.stringify(
                         safeTags
-                    )}`,
+                    )}\n\nSSS (FAQ): ${JSON.stringify(safeFaqs)}`,
                 },
             ],
             response_format: { type: "json_object" },
             temperature: 0.3,
-            max_tokens: 4096,
+            max_tokens: 8192,
         });
 
         const responseText = completion.choices[0]?.message?.content;
@@ -103,9 +119,9 @@ export async function POST(req: NextRequest) {
         }
 
         let parsedResponse: {
-            en?: { title?: string; description?: string; tags?: unknown };
-            de?: { title?: string; description?: string; tags?: unknown };
-            ru?: { title?: string; description?: string; tags?: unknown };
+            en?: { title?: string; description?: string; promoVideoTitle?: string; tags?: unknown; faqs?: unknown };
+            de?: { title?: string; description?: string; promoVideoTitle?: string; tags?: unknown; faqs?: unknown };
+            ru?: { title?: string; description?: string; promoVideoTitle?: string; tags?: unknown; faqs?: unknown };
         };
 
         try {
@@ -128,14 +144,29 @@ export async function POST(req: NextRequest) {
                 .filter((tag) => tag.id && tag.name);
         };
 
+        const normalizeFaqs = (value: unknown) => {
+            if (!Array.isArray(value)) return [];
+            return value
+                .map((faq) => ({
+                    id: typeof faq?.id === "string" ? faq.id : "",
+                    question: normalizeText(faq?.question),
+                    answer: normalizeText(faq?.answer),
+                }))
+                .filter((faq) => faq.id && (faq.question || faq.answer));
+        };
+
         const normalizeTranslation = (value: {
             title?: string;
             description?: string;
+            promoVideoTitle?: string;
             tags?: unknown;
+            faqs?: unknown;
         } | undefined) => ({
             title: normalizeText(value?.title),
             description: normalizeText(value?.description),
+            promoVideoTitle: normalizeText(value?.promoVideoTitle),
             tags: normalizeTags(value?.tags),
+            faqs: normalizeFaqs(value?.faqs),
         });
 
         const translations = {
