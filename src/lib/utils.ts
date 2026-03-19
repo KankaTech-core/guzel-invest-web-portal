@@ -106,6 +106,16 @@ export function getPropertyTypeLabel(type: string, locale: string = "tr"): strin
             SHOP: "Laden",
             FARM: "Bauernhof",
         },
+        ru: {
+            APARTMENT: "Квартира",
+            VILLA: "Вилла",
+            PENTHOUSE: "Пентхаус",
+            LAND: "Участок",
+            COMMERCIAL: "Коммерческая",
+            OFFICE: "Офис",
+            SHOP: "Магазин",
+            FARM: "Ферма",
+        },
         ar: {
             APARTMENT: "شقة",
             VILLA: "فيلا",

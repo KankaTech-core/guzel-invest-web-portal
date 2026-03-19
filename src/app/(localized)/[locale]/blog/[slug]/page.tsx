@@ -47,6 +47,9 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
 
     // Extract DB translation and normalize to plain article shape
     const dbTranslation = articleFromDb?.translations?.[0] ?? null;
+
+    // Hide article on non-Turkish locales if no translation exists
+    if (locale !== "tr" && !dbTranslation) notFound();
     const rawArticle = {
         id: rawArticleResult.id as string,
         slug: rawArticleResult.slug as string,
@@ -112,20 +115,26 @@ export default async function ArticleDetailPage({ params }: ArticleDetailPagePro
 
     // Normalize to plain shape and apply DB translations
     type RelatedArticle = { id: string; slug: string; title: string; excerpt: string | null; category: string | null; coverImageUrl: string | null; coverThumbnailUrl: string | null; publishedAt: Date | null; createdAt: Date };
-    let relatedArticles: RelatedArticle[] = rawRelatedMixed.map((ra) => {
-        const dbTr = "translations" in ra ? ra.translations?.[0] : null;
-        return {
-            id: ra.id as string,
-            slug: ra.slug as string,
-            title: (dbTr?.title || ra.title) as string,
-            excerpt: (dbTr?.excerpt ?? ra.excerpt) as string | null,
-            category: (dbTr?.category ?? ra.category) as string | null,
-            coverImageUrl: ra.coverImageUrl as string | null,
-            coverThumbnailUrl: ra.coverThumbnailUrl as string | null,
-            publishedAt: ra.publishedAt as Date | null,
-            createdAt: ra.createdAt as Date,
-        };
-    });
+    let relatedArticles: RelatedArticle[] = rawRelatedMixed
+        .filter((ra) => {
+            if (locale === "tr") return true;
+            const translations = "translations" in ra ? ra.translations : [];
+            return Array.isArray(translations) && translations.length > 0;
+        })
+        .map((ra) => {
+            const dbTr = "translations" in ra ? ra.translations?.[0] : null;
+            return {
+                id: ra.id as string,
+                slug: ra.slug as string,
+                title: (dbTr?.title || ra.title) as string,
+                excerpt: (dbTr?.excerpt ?? ra.excerpt) as string | null,
+                category: (dbTr?.category ?? ra.category) as string | null,
+                coverImageUrl: ra.coverImageUrl as string | null,
+                coverThumbnailUrl: ra.coverThumbnailUrl as string | null,
+                publishedAt: ra.publishedAt as Date | null,
+                createdAt: ra.createdAt as Date,
+            };
+        });
 
 
     return (

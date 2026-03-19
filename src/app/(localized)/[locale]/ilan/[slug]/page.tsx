@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { ListingStatus } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
-import { translateFeatures } from "@/lib/feature-translation-dictionary";
+import { isInDictionary, translateFeatures } from "@/lib/feature-translation-dictionary";
 import {
     formatArea,
     formatPrice,
@@ -14,6 +14,7 @@ import {
 } from "@/lib/utils";
 import {
     getLocalizedFallbackLocales,
+    normalizeLocaleTag,
     pickLocalizedEntry,
 } from "@/lib/public-content-localization";
 import {
@@ -94,6 +95,9 @@ export default async function ListingDetailPage({
     const isRemovedListing = listing.status === ListingStatus.REMOVED;
 
     const translation = pickLocalizedEntry(listing.translations, locale);
+    const hasLocaleDescription = listing.translations.some(
+        (tr) => normalizeLocaleTag(tr.locale) === normalizeLocaleTag(locale) && tr.description?.trim()
+    );
 
     const title = translation?.title?.trim() || t("fallbackTitle");
     const description =
@@ -101,7 +105,8 @@ export default async function ListingDetailPage({
         t("fallbackDescription");
 
     const rawFeatures = (translation?.features || []).map((f) => f.trim()).filter(Boolean);
-    const listedFeatures = translateFeatures(rawFeatures, locale);
+    const translatableFeatures = rawFeatures.filter((f) => isInDictionary(f, locale));
+    const listedFeatures = translateFeatures(translatableFeatures, locale);
 
     const priceValue =
         typeof listing.price === "object" &&
@@ -578,31 +583,37 @@ export default async function ListingDetailPage({
                             </div>
                         </header>
 
-                        <section className="rounded-[1.9rem] border border-gray-200 bg-white p-6">
-                            <h2 className="text-2xl font-semibold text-[#111828]">{t("descriptionTitle")}</h2>
-                            <p className="mt-4 whitespace-pre-line text-[1.02rem] leading-relaxed text-[#3d4962]">
-                                {description}
-                            </p>
+                        {(hasLocaleDescription || listedFeatures.length > 0) && (
+                            <section className="rounded-[1.9rem] border border-gray-200 bg-white p-6">
+                                {hasLocaleDescription && (
+                                    <>
+                                        <h2 className="text-2xl font-semibold text-[#111828]">{t("descriptionTitle")}</h2>
+                                        <p className="mt-4 whitespace-pre-line text-[1.02rem] leading-relaxed text-[#3d4962]">
+                                            {description}
+                                        </p>
+                                    </>
+                                )}
 
-                            {listedFeatures.length > 0 ? (
-                                <div className="mt-7 border-t border-gray-100 pt-6">
-                                    <h3 className="text-xl font-semibold text-[#111828]">
-                                        {t("featuredFeaturesTitle")}
-                                    </h3>
-                                    <ul className="mt-4 grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
-                                        {listedFeatures.map((feature) => (
-                                            <li
-                                                key={feature}
-                                                className="flex items-start gap-3 text-[0.97rem] text-[#111828]"
-                                            >
-                                                <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#ff6900]" />
-                                                <span>{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ) : null}
-                        </section>
+                                {listedFeatures.length > 0 ? (
+                                    <div className={hasLocaleDescription ? "mt-7 border-t border-gray-100 pt-6" : ""}>
+                                        <h3 className="text-xl font-semibold text-[#111828]">
+                                            {t("featuredFeaturesTitle")}
+                                        </h3>
+                                        <ul className="mt-4 grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
+                                            {listedFeatures.map((feature) => (
+                                                <li
+                                                    key={feature}
+                                                    className="flex items-start gap-3 text-[0.97rem] text-[#111828]"
+                                                >
+                                                    <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#ff6900]" />
+                                                    <span>{feature}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ) : null}
+                            </section>
+                        )}
 
                         <section className="rounded-[1.9rem] border border-gray-200 bg-white p-6">
                             <h2 className="text-2xl font-semibold text-[#111828]">{t("detailsTitle")}</h2>

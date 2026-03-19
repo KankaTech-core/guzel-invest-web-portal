@@ -1676,7 +1676,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
 
                         <div className="mb-6">
                             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Emlak Tipi
+                                {copy.sections.propertyType}
                             </h3>
                             <div className="grid grid-cols-2 gap-2">
                                 {propertyTypes.map((item) => {
@@ -1695,7 +1695,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                 filters.onlyProjects && "opacity-50 cursor-not-allowed"
                                             )}
                                         >
-                                            {item.label}
+                                            {getPropertyTypeLabel(item.value, locale)}
                                         </button>
                                     );
                                 })}

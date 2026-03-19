@@ -59,20 +59,28 @@ export default async function BlogPage({ params }: BlogPageProps) {
         createdAt: newestMixed.createdAt as Date,
     };
 
-    let listedArticles: ListArticle[] = [newestArticle, ...allMixed.filter((a) => a.slug !== newestMixed.slug)].map((a) => {
-        const dbTr = "translations" in a && Array.isArray((a as Record<string, unknown>).translations) ? (a as unknown as { translations: { title: string; excerpt: string | null; category: string | null }[] }).translations[0] : null;
-        return {
-            id: a.id as string,
-            slug: a.slug as string,
-            title: (dbTr?.title || a.title) as string,
-            excerpt: (dbTr?.excerpt ?? a.excerpt) as string | null,
-            category: (dbTr?.category ?? a.category) as string | null,
-            coverImageUrl: a.coverImageUrl as string | null,
-            coverThumbnailUrl: a.coverThumbnailUrl as string | null,
-            publishedAt: a.publishedAt as Date | null,
-            createdAt: a.createdAt as Date,
-        };
-    });
+    const isTurkish = locale === "tr";
+
+    let listedArticles: ListArticle[] = [newestArticle, ...allMixed.filter((a) => a.slug !== newestMixed.slug)]
+        .filter((a) => {
+            if (isTurkish) return true;
+            const translations = "translations" in a ? (a as unknown as { translations: unknown[] }).translations : [];
+            return Array.isArray(translations) && translations.length > 0;
+        })
+        .map((a) => {
+            const dbTr = "translations" in a && Array.isArray((a as Record<string, unknown>).translations) ? (a as unknown as { translations: { title: string; excerpt: string | null; category: string | null }[] }).translations[0] : null;
+            return {
+                id: a.id as string,
+                slug: a.slug as string,
+                title: (dbTr?.title || a.title) as string,
+                excerpt: (dbTr?.excerpt ?? a.excerpt) as string | null,
+                category: (dbTr?.category ?? a.category) as string | null,
+                coverImageUrl: a.coverImageUrl as string | null,
+                coverThumbnailUrl: a.coverThumbnailUrl as string | null,
+                publishedAt: a.publishedAt as Date | null,
+                createdAt: a.createdAt as Date,
+            };
+        });
 
 
     return (

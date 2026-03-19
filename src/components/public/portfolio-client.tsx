@@ -2305,7 +2305,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                         >
                                             <Check className="h-3 w-3" />
                                         </span>
-                                        <span className="text-sm text-gray-700">{type.label}</span>
+                                        <span className="text-sm text-gray-700">{getPropertyTypeLabel(type.value, locale)}</span>
                                     </div>
                                     <span
                                         className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-400"
