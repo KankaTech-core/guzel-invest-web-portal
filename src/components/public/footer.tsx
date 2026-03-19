@@ -206,6 +206,12 @@ export function Footer({ locale }: { locale: string }) {
                             {t("footer.privacyPolicy")}
                         </Link>
                         <Link
+                            href={`/${locale}/cerez-politikasi`}
+                            className="text-gray-400 hover:text-orange-500 transition-colors"
+                        >
+                            {t("footer.cookiePolicy")}
+                        </Link>
+                        <Link
                             href={`/${locale}/kullanim-sartlari`}
                             className="text-gray-400 hover:text-orange-500 transition-colors"
                         >

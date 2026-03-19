@@ -10,6 +10,7 @@ import { Footer } from "@/components/public/footer";
 import { FloatingSocialButtons } from "@/components/public/floating-social-buttons";
 import { NavbarHydrated } from "@/components/public/navbar-hydrated";
 import { AdminOverlayControls } from "@/components/public/admin-overlay-controls";
+import { CookieConsent } from "@/components/public/cookie-consent";
 import { VersionProvider } from "@/contexts/VersionContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { getSession } from "@/lib/auth";
@@ -76,6 +77,7 @@ export default async function LocaleLayout({ children, params }: Props) {
                                 <main className="flex-1">{children}</main>
                                 <Footer locale={locale} />
                                 <FloatingSocialButtons />
+                                <CookieConsent />
                                 {isAdminUser ? <AdminOverlayControls /> : null}
                             </div>
                         </CurrencyProvider>

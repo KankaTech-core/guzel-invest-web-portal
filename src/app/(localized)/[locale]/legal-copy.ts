@@ -1,6 +1,6 @@
 import { pickLocaleCopy, type PublicLocale } from "./copy-utils";
 
-export type LegalPageSlug = "privacy" | "terms";
+export type LegalPageSlug = "privacy" | "terms" | "cookies";
 
 type LegalSection = {
     id: string;
@@ -8,8 +8,17 @@ type LegalSection = {
     paragraphs: string[];
 };
 
+export const legalPageRoutes: Record<LegalPageSlug, string> = {
+    privacy: "gizlilik",
+    terms: "kullanim-sartlari",
+    cookies: "cerez-politikasi",
+};
+
+export const legalPageSlugs: LegalPageSlug[] = ["privacy", "cookies", "terms"];
+
 export type LegalPageCopy = {
     badge: string;
+    tabLabel: string;
     title: string;
     description: string;
     sectionCountLabel: string;
@@ -33,6 +42,7 @@ const legalCopy: Record<PublicLocale, LegalLocaleCopy> = {
     tr: {
         privacy: {
             badge: "Yasal",
+            tabLabel: "Gizlilik Politikası",
             title: "Gizlilik Politikası",
             description:
                 "Bu taslak gizlilik politikası, Güzel Invest web sitesi üzerinden toplanabilecek verilerin hangi amaçlarla ele alınabileceğini genel hatlarıyla açıklar. Hukuki inceleme sonrası güncellenmek üzere hazırlanmıştır.",
@@ -102,8 +112,75 @@ const legalCopy: Record<PublicLocale, LegalLocaleCopy> = {
             contactPrimaryCta: "İletişim sayfasına git",
             contactSecondaryCta: "Ana sayfaya dön",
         },
+        cookies: {
+            badge: "Yasal",
+            tabLabel: "Çerez Politikası",
+            title: "Çerez Politikası",
+            description:
+                "Bu çerez politikası, Güzel Invest web sitesinde kullanılan çerez türlerini, amaçlarını ve yönetim seçeneklerini açıklar.",
+            sectionCountLabel: "bölüm",
+            summaryTitle: "Politika Özeti",
+            summaryBody:
+                "Bu sayfa, web sitemizde kullanılan çerezlerin türlerini, hangi amaçlarla kullanıldığını ve tercihlerinizi nasıl yönetebileceğinizi açıklayan taslak bir metindir.",
+            draftNoticeTitle: "Taslak Notu",
+            draftNoticeBody:
+                "Bu metin 19 Mart 2026 tarihinde operasyonel ihtiyaç için oluşturulmuş taslak bir içeriktir. Avukat incelemesi sonrasında güncellenebilir.",
+            lastUpdatedLabel: "Son güncelleme",
+            lastUpdatedDate: "19 Mart 2026",
+            contentsTitle: "İçerik Başlıkları",
+            sections: [
+                {
+                    id: "what-are-cookies",
+                    title: "1. Çerezler nedir?",
+                    paragraphs: [
+                        "Çerezler, web sitelerini ziyaret ettiğinizde cihazınıza yerleştirilen küçük metin dosyalarıdır. Siteyi daha iyi çalıştırmak, kullanıcı deneyimini iyileştirmek ve site kullanımına ilişkin bilgi sağlamak amacıyla yaygın biçimde kullanılır.",
+                        "Çerezler oturumunuzu tanımak, tercihlerinizi hatırlamak ve siteyi nasıl kullandığınızı anlamamıza yardımcı olmak için kullanılabilir.",
+                    ],
+                },
+                {
+                    id: "cookie-types",
+                    title: "2. Kullanılan çerez türleri",
+                    paragraphs: [
+                        "Zorunlu çerezler: Sitenin temel işlevlerinin çalışması için gereklidir. Oturum yönetimi, güvenlik ve dil tercihi gibi işlevleri kapsar. Bu çerezler devre dışı bırakılamaz.",
+                        "Analitik çerezler: Ziyaretçilerin siteyi nasıl kullandığını anlamamıza yardımcı olur. Sayfa görüntülenmeleri, trafik kaynakları ve kullanıcı davranışları hakkında anonim istatistikler toplar.",
+                        "Pazarlama çerezleri: Hedefli reklam ve tanıtımlar sunmak için kullanılır. Üçüncü taraf reklam ağları tarafından yerleştirilebilir.",
+                        "İşlevsel çerezler: Kişiselleştirilmiş özellikler ve tercihler sağlar. Para birimi seçimi, görüntüleme tercihleri gibi ayarlarınızı hatırlar.",
+                    ],
+                },
+                {
+                    id: "cookie-management",
+                    title: "3. Çerez tercihlerinizi yönetme",
+                    paragraphs: [
+                        "İlk ziyaretinizde bir çerez bildirimi aracılığıyla tercihlerinizi belirleyebilirsiniz. 'Tümünü Kabul Et', 'Yalnızca Zorunlu', 'Özelleştir' veya 'Tümünü Reddet' seçenekleri sunulmaktadır.",
+                        "Tercihlerinizi istediğiniz zaman sayfanın sol alt köşesindeki çerez simgesine tıklayarak değiştirebilirsiniz. Ayrıca tarayıcı ayarlarınızdan çerezleri yönetebilir veya silebilirsiniz.",
+                    ],
+                },
+                {
+                    id: "third-party-cookies",
+                    title: "4. Üçüncü taraf çerezleri",
+                    paragraphs: [
+                        "Sitemizde YouTube, Google Maps ve sosyal medya platformları gibi üçüncü taraf hizmetleri yer alabilir. Bu hizmetler kendi çerezlerini ayarlayabilir.",
+                        "Bu üçüncü taraf çerezleri üzerinde doğrudan kontrolümüz bulunmamaktadır. İlgili hizmetlerin gizlilik politikalarını incelemenizi öneririz.",
+                    ],
+                },
+                {
+                    id: "updates",
+                    title: "5. Politika güncellemeleri",
+                    paragraphs: [
+                        "Bu çerez politikası zaman zaman güncellenebilir. Önemli değişiklikler yapıldığında bu sayfada bilgilendirileceksiniz.",
+                        "En son güncelleme tarihini bu sayfanın üst kısmında bulabilirsiniz.",
+                    ],
+                },
+            ],
+            contactTitle: "Sorular ve iletişim",
+            contactBody:
+                "Çerez politikamız hakkında sorularınız varsa bizimle iletişime geçebilirsiniz.",
+            contactPrimaryCta: "İletişim sayfasına git",
+            contactSecondaryCta: "Ana sayfaya dön",
+        },
         terms: {
             badge: "Yasal",
+            tabLabel: "Kullanım Şartları",
             title: "Kullanım Şartları",
             description:
                 "Bu taslak kullanım şartları, Güzel Invest web sitesinin bilgi amaçlı kullanımına ilişkin temel kuralları ve sorumluluk sınırlarını genel bir dille açıklar. Hukuki ekip tarafından daha sonra revize edilmek üzere hazırlanmıştır.",
@@ -177,6 +254,7 @@ const legalCopy: Record<PublicLocale, LegalLocaleCopy> = {
     en: {
         privacy: {
             badge: "Legal",
+            tabLabel: "Privacy Policy",
             title: "Privacy Policy",
             description:
                 "This draft privacy policy outlines in general terms how data collected through the Guzel Invest website may be handled. It is prepared as a starting point and will be updated after legal review.",
@@ -246,8 +324,75 @@ const legalCopy: Record<PublicLocale, LegalLocaleCopy> = {
             contactPrimaryCta: "Go to contact page",
             contactSecondaryCta: "Return to home",
         },
+        cookies: {
+            badge: "Legal",
+            tabLabel: "Cookie Policy",
+            title: "Cookie Policy",
+            description:
+                "This cookie policy explains the types of cookies used on the Guzel Invest website, their purposes, and your management options.",
+            sectionCountLabel: "sections",
+            summaryTitle: "Policy Summary",
+            summaryBody:
+                "This page is a draft explaining the types of cookies used on our website, their purposes, and how you can manage your preferences.",
+            draftNoticeTitle: "Draft Notice",
+            draftNoticeBody:
+                "This text was prepared on March 19, 2026 as an operational draft. It may be updated after legal review.",
+            lastUpdatedLabel: "Last updated",
+            lastUpdatedDate: "March 19, 2026",
+            contentsTitle: "Contents",
+            sections: [
+                {
+                    id: "what-are-cookies",
+                    title: "1. What are cookies?",
+                    paragraphs: [
+                        "Cookies are small text files placed on your device when you visit websites. They are widely used to make websites work better, improve user experience, and provide information about site usage.",
+                        "Cookies may be used to recognize your session, remember your preferences, and help us understand how you use the site.",
+                    ],
+                },
+                {
+                    id: "cookie-types",
+                    title: "2. Types of cookies used",
+                    paragraphs: [
+                        "Essential cookies: Required for the basic functions of the site to work. They cover functions such as session management, security, and language preference. These cookies cannot be disabled.",
+                        "Analytics cookies: Help us understand how visitors use the site. They collect anonymous statistics about page views, traffic sources, and user behavior.",
+                        "Marketing cookies: Used to deliver targeted advertising and promotions. They may be placed by third-party advertising networks.",
+                        "Functional cookies: Provide personalized features and preferences. They remember your settings such as currency selection and display preferences.",
+                    ],
+                },
+                {
+                    id: "cookie-management",
+                    title: "3. Managing your cookie preferences",
+                    paragraphs: [
+                        "On your first visit, you can set your preferences through a cookie notice. Options include 'Accept All', 'Essential Only', 'Customize', or 'Reject All'.",
+                        "You can change your preferences at any time by clicking the cookie icon in the bottom-left corner of the page. You can also manage or delete cookies through your browser settings.",
+                    ],
+                },
+                {
+                    id: "third-party-cookies",
+                    title: "4. Third-party cookies",
+                    paragraphs: [
+                        "Our site may include third-party services such as YouTube, Google Maps, and social media platforms. These services may set their own cookies.",
+                        "We do not have direct control over these third-party cookies. We recommend reviewing the privacy policies of the relevant services.",
+                    ],
+                },
+                {
+                    id: "updates",
+                    title: "5. Policy updates",
+                    paragraphs: [
+                        "This cookie policy may be updated from time to time. You will be notified on this page when significant changes are made.",
+                        "You can find the latest update date at the top of this page.",
+                    ],
+                },
+            ],
+            contactTitle: "Questions and contact",
+            contactBody:
+                "If you have questions about our cookie policy, please contact us.",
+            contactPrimaryCta: "Go to contact page",
+            contactSecondaryCta: "Return to home",
+        },
         terms: {
             badge: "Legal",
+            tabLabel: "Terms of Use",
             title: "Terms of Use",
             description:
                 "These draft terms of use explain the main rules, expectations, and general responsibility boundaries for using the Guzel Invest website for informational purposes. They are prepared for later review by legal counsel.",
@@ -321,6 +466,7 @@ const legalCopy: Record<PublicLocale, LegalLocaleCopy> = {
     ru: {
         privacy: {
             badge: "Legal",
+            tabLabel: "Конфиденциальность",
             title: "Политика конфиденциальности",
             description:
                 "Этот проект политики конфиденциальности в общих чертах описывает, как могут обрабатываться данные, собираемые через сайт Guzel Invest. Текст подготовлен как черновик и будет обновлен после юридической проверки.",
@@ -390,8 +536,75 @@ const legalCopy: Record<PublicLocale, LegalLocaleCopy> = {
             contactPrimaryCta: "Перейти на страницу контактов",
             contactSecondaryCta: "Вернуться на главную",
         },
+        cookies: {
+            badge: "Legal",
+            tabLabel: "Политика cookie",
+            title: "Политика cookie",
+            description:
+                "Эта политика cookie описывает типы файлов cookie, используемых на сайте Guzel Invest, их цели и ваши возможности управления ими.",
+            sectionCountLabel: "разделов",
+            summaryTitle: "Краткое описание",
+            summaryBody:
+                "На этой странице представлен черновой текст, описывающий типы файлов cookie на нашем сайте, их назначение и способы управления настройками.",
+            draftNoticeTitle: "Примечание к черновику",
+            draftNoticeBody:
+                "Этот текст подготовлен 19 марта 2026 года как рабочий черновик. Может быть обновлён после юридической проверки.",
+            lastUpdatedLabel: "Последнее обновление",
+            lastUpdatedDate: "19 марта 2026",
+            contentsTitle: "Содержание",
+            sections: [
+                {
+                    id: "what-are-cookies",
+                    title: "1. Что такое файлы cookie?",
+                    paragraphs: [
+                        "Cookie — это небольшие текстовые файлы, которые сохраняются на вашем устройстве при посещении сайтов. Они широко используются для обеспечения корректной работы сайтов, улучшения пользовательского опыта и получения информации об использовании сайта.",
+                        "Cookie могут использоваться для распознавания вашей сессии, сохранения предпочтений и понимания того, как вы взаимодействуете с сайтом.",
+                    ],
+                },
+                {
+                    id: "cookie-types",
+                    title: "2. Типы используемых файлов cookie",
+                    paragraphs: [
+                        "Необходимые cookie: требуются для базовых функций сайта — управление сессией, безопасность и выбор языка. Эти cookie нельзя отключить.",
+                        "Аналитические cookie: помогают понять, как посетители используют сайт. Собирают анонимную статистику о просмотрах страниц, источниках трафика и поведении пользователей.",
+                        "Маркетинговые cookie: используются для показа целевой рекламы. Могут устанавливаться сторонними рекламными сетями.",
+                        "Функциональные cookie: обеспечивают персонализацию и сохранение настроек, таких как выбор валюты и предпочтения отображения.",
+                    ],
+                },
+                {
+                    id: "cookie-management",
+                    title: "3. Управление настройками cookie",
+                    paragraphs: [
+                        "При первом посещении вы можете настроить предпочтения через уведомление о cookie. Доступны варианты: «Принять все», «Только необходимые», «Настроить» или «Отклонить все».",
+                        "Вы можете изменить настройки в любое время, нажав на значок cookie в нижнем левом углу страницы. Также можно управлять cookie через настройки браузера.",
+                    ],
+                },
+                {
+                    id: "third-party-cookies",
+                    title: "4. Cookie третьих сторон",
+                    paragraphs: [
+                        "На нашем сайте могут использоваться сторонние сервисы: YouTube, Google Maps и социальные сети. Эти сервисы могут устанавливать собственные cookie.",
+                        "Мы не контролируем cookie третьих сторон. Рекомендуем ознакомиться с политиками конфиденциальности соответствующих сервисов.",
+                    ],
+                },
+                {
+                    id: "updates",
+                    title: "5. Обновление политики",
+                    paragraphs: [
+                        "Эта политика cookie может обновляться время от времени. При существенных изменениях вы будете уведомлены на этой странице.",
+                        "Дату последнего обновления можно найти в верхней части этой страницы.",
+                    ],
+                },
+            ],
+            contactTitle: "Вопросы и контакты",
+            contactBody:
+                "Если у вас есть вопросы о нашей политике cookie, свяжитесь с нами.",
+            contactPrimaryCta: "Перейти на страницу контактов",
+            contactSecondaryCta: "Вернуться на главную",
+        },
         terms: {
             badge: "Legal",
+            tabLabel: "Условия использования",
             title: "Условия использования",
             description:
                 "Этот проект условий использования в общих чертах описывает основные правила, ожидания и пределы ответственности при информационном использовании сайта Guzel Invest. Текст подготовлен для последующей юридической доработки.",
@@ -465,6 +678,7 @@ const legalCopy: Record<PublicLocale, LegalLocaleCopy> = {
     de: {
         privacy: {
             badge: "Recht",
+            tabLabel: "Datenschutz",
             title: "Datenschutzerklarung",
             description:
                 "Dieser Entwurf einer Datenschutzerklarung beschreibt in allgemeinen Zugen, wie uber die Website von Guzel Invest erhobene Daten verarbeitet werden konnen. Er dient als Ausgangspunkt und wird nach juristischer Prufung aktualisiert.",
@@ -534,8 +748,75 @@ const legalCopy: Record<PublicLocale, LegalLocaleCopy> = {
             contactPrimaryCta: "Zur Kontaktseite",
             contactSecondaryCta: "Zur Startseite",
         },
+        cookies: {
+            badge: "Recht",
+            tabLabel: "Cookie-Richtlinie",
+            title: "Cookie-Richtlinie",
+            description:
+                "Diese Cookie-Richtlinie erklart die Arten von Cookies, die auf der Guzel Invest Website verwendet werden, deren Zweck und Ihre Verwaltungsmoglichkeiten.",
+            sectionCountLabel: "Abschnitte",
+            summaryTitle: "Zusammenfassung",
+            summaryBody:
+                "Diese Seite ist ein Entwurf, der die auf unserer Website verwendeten Cookie-Typen, ihre Zwecke und die Verwaltung Ihrer Einstellungen beschreibt.",
+            draftNoticeTitle: "Hinweis zum Entwurf",
+            draftNoticeBody:
+                "Dieser Text wurde am 19. Marz 2026 als operativer Entwurf erstellt. Er kann nach juristischer Prufung aktualisiert werden.",
+            lastUpdatedLabel: "Zuletzt aktualisiert",
+            lastUpdatedDate: "19. Marz 2026",
+            contentsTitle: "Inhalt",
+            sections: [
+                {
+                    id: "what-are-cookies",
+                    title: "1. Was sind Cookies?",
+                    paragraphs: [
+                        "Cookies sind kleine Textdateien, die auf Ihrem Gerat gespeichert werden, wenn Sie Websites besuchen. Sie werden haufig verwendet, um Websites besser funktionieren zu lassen, die Benutzererfahrung zu verbessern und Informationen uber die Website-Nutzung bereitzustellen.",
+                        "Cookies konnen verwendet werden, um Ihre Sitzung zu erkennen, Ihre Einstellungen zu speichern und uns zu helfen zu verstehen, wie Sie die Website nutzen.",
+                    ],
+                },
+                {
+                    id: "cookie-types",
+                    title: "2. Verwendete Cookie-Arten",
+                    paragraphs: [
+                        "Notwendige Cookies: Erforderlich fur die grundlegenden Funktionen der Website — Sitzungsverwaltung, Sicherheit und Sprachauswahl. Diese Cookies konnen nicht deaktiviert werden.",
+                        "Analytische Cookies: Helfen uns zu verstehen, wie Besucher die Website nutzen. Sie erfassen anonyme Statistiken uber Seitenaufrufe, Verkehrsquellen und Nutzerverhalten.",
+                        "Marketing-Cookies: Werden fur zielgerichtete Werbung verwendet. Sie konnen von Drittanbieter-Werbenetzwerken gesetzt werden.",
+                        "Funktionale Cookies: Ermoglichen personalisierte Funktionen und Einstellungen wie Wahrungsauswahl und Anzeigepraferenzen.",
+                    ],
+                },
+                {
+                    id: "cookie-management",
+                    title: "3. Verwaltung Ihrer Cookie-Einstellungen",
+                    paragraphs: [
+                        "Bei Ihrem ersten Besuch konnen Sie Ihre Einstellungen uber einen Cookie-Hinweis festlegen. Optionen sind: 'Alle akzeptieren', 'Nur notwendige', 'Anpassen' oder 'Alle ablehnen'.",
+                        "Sie konnen Ihre Einstellungen jederzeit andern, indem Sie auf das Cookie-Symbol unten links auf der Seite klicken. Cookies konnen auch uber die Browsereinstellungen verwaltet werden.",
+                    ],
+                },
+                {
+                    id: "third-party-cookies",
+                    title: "4. Cookies von Drittanbietern",
+                    paragraphs: [
+                        "Auf unserer Website konnen Drittanbieter-Dienste wie YouTube, Google Maps und soziale Medien eingebunden sein. Diese Dienste konnen eigene Cookies setzen.",
+                        "Wir haben keine direkte Kontrolle uber Cookies von Drittanbietern. Wir empfehlen, die Datenschutzrichtlinien der jeweiligen Dienste zu prufen.",
+                    ],
+                },
+                {
+                    id: "updates",
+                    title: "5. Aktualisierung der Richtlinie",
+                    paragraphs: [
+                        "Diese Cookie-Richtlinie kann von Zeit zu Zeit aktualisiert werden. Bei wesentlichen Anderungen werden Sie auf dieser Seite benachrichtigt.",
+                        "Das Datum der letzten Aktualisierung finden Sie oben auf dieser Seite.",
+                    ],
+                },
+            ],
+            contactTitle: "Fragen und Kontakt",
+            contactBody:
+                "Bei Fragen zu unserer Cookie-Richtlinie kontaktieren Sie uns bitte.",
+            contactPrimaryCta: "Zur Kontaktseite",
+            contactSecondaryCta: "Zur Startseite",
+        },
         terms: {
             badge: "Recht",
+            tabLabel: "Nutzungsbedingungen",
             title: "Nutzungsbedingungen",
             description:
                 "Dieser Entwurf der Nutzungsbedingungen beschreibt die wesentlichen Regeln, Erwartungen und allgemeinen Haftungsgrenzen fur die informative Nutzung der Guzel Invest Website. Er wurde fur die spatere juristische Uberarbeitung vorbereitet.",

@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Clock3, FileText, ShieldCheck } from "lucide-react";
 import { ScrollRevealSection } from "@/components/ui/scroll-reveal-section";
-import { getLegalPageCopy, type LegalPageSlug } from "./legal-copy";
+import {
+    getLegalPageCopy,
+    legalPageSlugs,
+    legalPageRoutes,
+    type LegalPageSlug,
+} from "./legal-copy";
 
 export function buildLegalPageMetadata({
     locale,
@@ -58,6 +63,31 @@ export function renderLegalPage({
                     </div>
                 </div>
             </ScrollRevealSection>
+
+            {/* Tab navigation */}
+            <div className="border-b border-gray-200 bg-white">
+                <div className="container-custom">
+                    <nav className="-mb-px flex gap-1 overflow-x-auto py-1 scrollbar-hide">
+                        {legalPageSlugs.map((tabSlug) => {
+                            const tabCopy = getLegalPageCopy(locale, tabSlug);
+                            const isActive = tabSlug === slug;
+                            return (
+                                <Link
+                                    key={tabSlug}
+                                    href={`/${locale}/${legalPageRoutes[tabSlug]}`}
+                                    className={`shrink-0 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+                                        isActive
+                                            ? "bg-orange-50 text-orange-600"
+                                            : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                                    }`}
+                                >
+                                    {tabCopy.tabLabel}
+                                </Link>
+                            );
+                        })}
+                    </nav>
+                </div>
+            </div>
 
             <ScrollRevealSection className="px-4 py-12 sm:px-6 sm:py-16">
                 <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 lg:grid-cols-12">
