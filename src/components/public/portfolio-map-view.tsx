@@ -1397,12 +1397,14 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                 {buildLocationLabel(activeListing) || copy.labels.noLocation}
                                             </p>
 
-                                            <p className="overflow-hidden text-sm text-gray-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] md:[display:block] md:overflow-visible md:[-webkit-line-clamp:unset]">
-                                                {truncateText(
-                                                    getListingDescription(activeListing, locale),
-                                                    190
-                                                )}
-                                            </p>
+                                            {hasLocaleTranslation(activeListing, locale) && (
+                                                <p className="overflow-hidden text-sm text-gray-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] md:[display:block] md:overflow-visible md:[-webkit-line-clamp:unset]">
+                                                    {truncateText(
+                                                        getListingDescription(activeListing, locale),
+                                                        190
+                                                    )}
+                                                </p>
+                                            )}
                                         </div>
 
                                         {activeListing.isProject ? (
@@ -2289,6 +2291,10 @@ function getListingDescription(listing: Listing, locale: string) {
         fallback?.description ||
         getPortfolioCopy(locale).labels.missingDescription
     );
+}
+
+function hasLocaleTranslation(listing: Listing, locale: string) {
+    return listing.translations.some((translation) => translation.locale === locale);
 }
 
 function normalizeCoordinate(value: Listing["latitude"]): number | null {
