@@ -274,7 +274,7 @@ export function PhoneInput({
         @keyframes dropdownFadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
         .phone-input-search-wrapper { display: flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1rem; border-bottom: 1px solid var(--color-accent, #e0cdbf); }
         .phone-input-search-icon { color: #555; flex-shrink: 0; }
-        .phone-input-search { flex: 1; border: none; background: transparent; font-size: 0.95rem; color: #1a1a1a !important; outline: none; }
+        .phone-input-search { flex: 1; border: none; background: transparent; font-size: 0.95rem; color: var(--color-primary, #1a1a1a); outline: none; }
         .phone-input-search::placeholder { color: #666; opacity: 0.8; }
         .phone-input-list { max-height: 280px; overflow-y: auto; }
         .phone-input-list::-webkit-scrollbar { width: 8px; }

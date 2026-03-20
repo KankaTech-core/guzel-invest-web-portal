@@ -111,7 +111,7 @@ export const HeroContactForm = ({
     };
 
     return (
-        <div className="w-full [&_label]:!text-white/90 [&_.checkbox-label]:!text-white/90 [&_input]:!bg-white/10 [&_input]:!border-white/20 [&_input]:!text-white focus:[&_input]:!border-white/50 [&_input::placeholder]:!text-white/50 [&_.PhoneInputCountrySelectArrow]:!text-white/80">
+        <div className="w-full [&_label]:!text-white/90 [&_.checkbox-label]:!text-white/90 [&_input:not(.phone-input-search)]:!bg-white/10 [&_input:not(.phone-input-search)]:!border-white/20 [&_input:not(.phone-input-search)]:!text-white focus:[&_input:not(.phone-input-search)]:!border-white/50 [&_input:not(.phone-input-search)::placeholder]:!text-white/50 [&_.PhoneInputCountrySelectArrow]:!text-white/80">
             <h3 className="mb-6 text-2xl font-bold text-white text-center">
                 {tp("heroFormTitle")}
             </h3>
