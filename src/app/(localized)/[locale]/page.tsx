@@ -20,6 +20,10 @@ import {
     getSaleTypeLabel,
     cn,
 } from "@/lib/utils";
+import {
+    dispatchHomepagePopupOpen,
+    pushGTMEvent,
+} from "@/lib/gtm-events";
 import { resolveHomepageHeroVideo } from "@/lib/homepage-video";
 import {
     getNextHomepageProjectSlideIndex,
@@ -850,6 +854,27 @@ export default function HomePage() {
         router.push(`/${locale}/portfoy?${params.toString()}`);
     };
 
+    const trackPortfolioClick = (ctaLocation: string) => {
+        pushGTMEvent("portfolio_cta_click", {
+            cta_location: ctaLocation,
+            locale,
+            destination_path: `/${locale}/portfoy`,
+        });
+    };
+
+    const submitHomepageSearch = (searchSurface: string) => {
+        pushGTMEvent("hero_search_submit", {
+            search_surface: searchSurface,
+            locale,
+            sale_type: saleType,
+            property_type: propertyType || "ALL",
+            city,
+            district,
+            neighborhood: neighborhood || "ALL",
+        });
+        handleSearch();
+    };
+
     const safeHeroListings =
         heroListings.length > 0 ? heroListings : [heroFallback];
     const getHeroImageUrl = (listing: HomepageHeroListing, index = 0) =>
@@ -997,13 +1022,14 @@ export default function HomePage() {
     const renderCompactSearchBanner = (
         className = "",
         dropdownDirection: "up" | "down" = "down",
-        formRef?: { current: HTMLFormElement | null }
+        formRef?: { current: HTMLFormElement | null },
+        searchSurface: string = "hero_mobile_inline"
     ) => (
         <form
             ref={formRef}
             onSubmit={(event) => {
                 event.preventDefault();
-                handleSearch();
+                submitHomepageSearch(searchSurface);
             }}
             className={`relative z-50 rounded-2xl border border-gray-200 bg-white shadow-sm ${className}`.trim()}
         >
@@ -1158,6 +1184,9 @@ export default function HomePage() {
                                                             <div className="relative z-10 flex h-full items-center justify-center">
                                                                 <Link
                                                                     href={`/${locale}/portfoy`}
+                                                                    onClick={() =>
+                                                                        trackPortfolioClick("hero_mobile_portfolio_slide")
+                                                                    }
                                                                     className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-6 py-3 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
                                                                 >
                                                                     {copy.hero.portfolioCta}
@@ -1392,20 +1421,28 @@ export default function HomePage() {
                                     isMobileSearchSticky ? "pointer-events-none opacity-0" : "opacity-100"
                                 )}
                             >
-                                {renderCompactSearchBanner("", "down", mobileInlineBannerRef)}
+                                {renderCompactSearchBanner(
+                                    "",
+                                    "down",
+                                    mobileInlineBannerRef,
+                                    "hero_mobile_inline"
+                                )}
                             </div>
 
                             {/* Desktop Buttons */}
                             <div className="reveal hidden lg:flex items-center gap-4">
                                 <Link
                                     href={`/${locale}/portfoy`}
+                                    onClick={() => trackPortfolioClick("hero_desktop_primary")}
                                     className="inline-flex items-center gap-2 bg-gray-900 text-white px-7 py-4 rounded-full text-sm font-medium hover:bg-gray-800 transition-colors"
                                 >
                                     {th("ctaPortfolio")}
                                     <ChevronRight className="w-4 h-4" />
                                 </Link>
                                 <button
-                                    onClick={() => window.dispatchEvent(new Event("open-homepage-popup"))}
+                                    onClick={() =>
+                                        dispatchHomepagePopupOpen("hero_desktop_secondary")
+                                    }
                                     className="inline-flex items-center gap-2 text-gray-600 hover:text-orange-500 transition-colors text-sm"
                                 >
                                     <span className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:border-orange-500 hover:text-orange-500 transition-colors">
@@ -1453,6 +1490,9 @@ export default function HomePage() {
                                                     <div className="relative z-10 flex h-full items-center justify-center">
                                                         <Link
                                                             href={`/${locale}/portfoy`}
+                                                            onClick={() =>
+                                                                trackPortfolioClick("hero_desktop_project_portfolio_slide")
+                                                            }
                                                             className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-6 py-3 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
                                                         >
                                                             {copy.hero.portfolioCta}
@@ -1581,6 +1621,9 @@ export default function HomePage() {
                                                         <div className="relative z-10 flex h-full items-center justify-center">
                                                             <Link
                                                                 href={`/${locale}/portfoy`}
+                                                                onClick={() =>
+                                                                    trackPortfolioClick("hero_desktop_listing_portfolio_slide")
+                                                                }
                                                                 className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
                                                             >
                                                                 {copy.hero.portfolioCta}
@@ -1752,7 +1795,8 @@ export default function HomePage() {
                     {renderCompactSearchBanner(
                         "shadow-xl shadow-gray-300/40",
                         "up",
-                        mobileStickyBannerRef
+                        mobileStickyBannerRef,
+                        "hero_mobile_sticky"
                     )}
                 </div>
             </div>
@@ -1809,7 +1853,7 @@ export default function HomePage() {
                         ref={desktopBannerRef}
                         onSubmit={(event) => {
                             event.preventDefault();
-                            handleSearch();
+                            submitHomepageSearch("hero_desktop");
                         }}
                     >
                         <div className="grid grid-cols-2 border-b border-gray-200">
@@ -2385,9 +2429,18 @@ export default function HomePage() {
                     <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-px bg-gray-700/50 rounded-xl overflow-hidden flex-shrink-0">
                         {
                             [
-                                { icon: Search, title: copy.cta.portfolio, href: `/${locale}/portfoy` },
+                                {
+                                    icon: Search,
+                                    title: copy.cta.portfolio,
+                                    href: `/${locale}/portfoy`,
+                                    onClick: () => trackPortfolioClick("homepage_cta_portfolio"),
+                                },
                                 { icon: Handshake, title: copy.cta.contact, href: `/${locale}/iletisim` },
-                                { icon: Building2, title: copy.cta.sell, onClick: () => window.dispatchEvent(new Event("open-homepage-popup")) },
+                                {
+                                    icon: Building2,
+                                    title: copy.cta.sell,
+                                    onClick: () => dispatchHomepagePopupOpen("homepage_cta_sell"),
+                                },
                             ].map((card, idx) => {
                                 const CardIcon = card.icon;
                                 const cardContent = (
@@ -2419,6 +2472,7 @@ export default function HomePage() {
                                     <Link
                                         key={idx}
                                         href={card.href}
+                                        onClick={card.onClick}
                                         className="group w-full sm:w-auto bg-gray-800 px-6 py-5 flex items-center justify-between sm:justify-start gap-4 hover:bg-gray-800/60 transition-colors duration-300"
                                     >
                                         {cardContent}

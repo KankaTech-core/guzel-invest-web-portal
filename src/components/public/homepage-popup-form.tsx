@@ -12,6 +12,10 @@ import {
     isHomepagePopupDismissedForSession,
     markHomepagePopupDismissedForSession,
 } from "@/lib/homepage-popup-session";
+import {
+    HOMEPAGE_POPUP_OPEN_EVENT,
+    pushGTMEvent,
+} from "@/lib/gtm-events";
 
 interface HomepagePopupFormProps {
     locale?: string;
@@ -53,6 +57,7 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
     const [submitError, setSubmitError] = useState<string | null>(null);
     const popupHistoryMarkerRef = useRef<string | null>(null);
     const isOpenRef = useRef(false);
+    const lastOpenSourceRef = useRef("unknown");
 
     const hasPhoneValue = formData.phone.trim().length > 0;
     const phoneIsValid = /^\+\d{8,15}$/.test(formData.phone);
@@ -64,10 +69,21 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
         isOpenRef.current = isOpen;
     }, [isOpen]);
 
-    const openPopup = useCallback(() => {
+    const openPopup = useCallback((source: string, trackOpen: boolean) => {
         if (isOpenRef.current) {
             return;
         }
+
+        lastOpenSourceRef.current = source;
+
+        if (trackOpen) {
+            pushGTMEvent("homepage_popup_open", {
+                locale: locale || "tr",
+                trigger_source: source,
+                page_path: pathname,
+            });
+        }
+
         const historyMarker = `homepage-popup-${Date.now()}`;
         popupHistoryMarkerRef.current = historyMarker;
         window.history.pushState(
@@ -79,7 +95,7 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
             window.location.href
         );
         setIsOpen(true);
-    }, []);
+    }, [locale, pathname]);
 
     const handleClose = useCallback((fromPopState = false) => {
         markHomepagePopupDismissedForSession(window.sessionStorage);
@@ -100,22 +116,31 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
     }, []);
 
     useEffect(() => {
-        const handleOpenEvent = () => openPopup();
-        window.addEventListener("open-homepage-popup", handleOpenEvent);
+        const handleOpenEvent = (event: Event) => {
+            const source =
+                event instanceof CustomEvent &&
+                event.detail &&
+                typeof event.detail.source === "string"
+                    ? event.detail.source
+                    : "external_event";
+            openPopup(source, true);
+        };
+
+        window.addEventListener(HOMEPAGE_POPUP_OPEN_EVENT, handleOpenEvent);
 
         if (isHomepagePopupDismissedForSession(window.sessionStorage)) {
             return () => {
-                window.removeEventListener("open-homepage-popup", handleOpenEvent);
+                window.removeEventListener(HOMEPAGE_POPUP_OPEN_EVENT, handleOpenEvent);
             };
         }
 
         const timer = setTimeout(() => {
-            openPopup();
+            openPopup("auto_timer", false);
         }, POPUP_AUTO_OPEN_DELAY_MS);
 
         return () => {
             clearTimeout(timer);
-            window.removeEventListener("open-homepage-popup", handleOpenEvent);
+            window.removeEventListener(HOMEPAGE_POPUP_OPEN_EVENT, handleOpenEvent);
         };
     }, [openPopup]);
 
@@ -193,6 +218,13 @@ export const HomepagePopupForm = ({ locale }: HomepagePopupFormProps) => {
                     body?.error || t("generalError")
                 );
             }
+
+            pushGTMEvent("homepage_popup_submit", {
+                locale: locale || "tr",
+                trigger_source: lastOpenSourceRef.current,
+                page_path: pathname,
+                has_message: formData.message.trim().length > 0,
+            });
 
             setIsSuccess(true);
             setFormData({
