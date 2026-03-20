@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { S1HeroData } from "../types";
 import { HeroContactForm } from "./HeroContactForm";
 
@@ -12,14 +13,22 @@ interface HeroSectionProps {
     locale?: string;
 }
 
-export const HeroSection = ({ hero, projectSlug, locale }: HeroSectionProps) => {
+export const HeroSection = async ({
+    hero,
+    projectSlug,
+    locale,
+}: HeroSectionProps) => {
+    const t = await getTranslations({
+        locale: locale?.trim() || "tr",
+        namespace: "projectDetail",
+    });
     const backgroundImage = hero.backgroundImage || FALLBACK_HERO_IMAGE;
 
     return (
         <section className="relative h-[100svh] min-h-[560px] w-full overflow-hidden">
             <Image
                 src={backgroundImage}
-                alt={hero.title || "Proje kapak görseli"}
+                alt={hero.title || t("heroImageAlt")}
                 fill
                 priority
                 className="object-cover"

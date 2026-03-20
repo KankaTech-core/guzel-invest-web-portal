@@ -66,7 +66,8 @@
         "apartmentsForSale": "شقق للبيع",
         "landForSale": "أراضي للبيع",
         "commercialProperties": "العقارات التجارية",
-        "citizenshipEligible": "مؤهل للجنسية"
+        "citizenshipEligible": "مؤهل للجنسية",
+        "lastUnits": "آخر الشقق"
     },
     "contact": {
         "title": "اتصل بنا",

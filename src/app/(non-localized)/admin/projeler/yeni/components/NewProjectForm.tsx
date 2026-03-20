@@ -52,6 +52,8 @@ import {
     Trash2,
     Upload,
     X,
+    RefreshCw,
+    Check,
 } from "lucide-react";
 import { Select } from "@/components/ui";
 import { CompanyOptionSelect } from "@/components/admin/company-option-select";
@@ -115,6 +117,7 @@ interface FeatureRow {
     id: string;
     title: string;
     icon: string;
+    translations?: { locale: string; title: string }[];
 }
 
 interface FaqRow {
@@ -174,6 +177,24 @@ interface MediaGridProps {
     onRemove: (id: string) => void;
     onReorder?: (items: UploadedMedia[]) => void;
     emptyMessage: string;
+}
+
+function TranslationTimeAgo({ date }: { date: Date }) {
+    const [label, setLabel] = useState("");
+    useEffect(() => {
+        const update = () => {
+            const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+            if (diff < 60) setLabel("az önce");
+            else if (diff < 3600) setLabel(`${Math.floor(diff / 60)} dk önce`);
+            else if (diff < 86400) setLabel(`${Math.floor(diff / 3600)} saat önce`);
+            else setLabel(`${Math.floor(diff / 86400)} gün önce`);
+        };
+        update();
+        const id = setInterval(update, 30_000);
+        return () => clearInterval(id);
+    }, [date]);
+    if (!label) return null;
+    return <span className="text-[10px] text-slate-400 whitespace-nowrap">{label}</span>;
 }
 
 interface NewProjectFormProps {
@@ -1033,6 +1054,8 @@ export default function NewProjectForm({
         useState<TranslationFormRow[]>(buildDefaultTranslations);
     const [activeLocale, setActiveLocale] = useState<LocaleCode>("tr");
     const [isTranslating, setIsTranslating] = useState(false);
+    const [translationSuccess, setTranslationSuccess] = useState(false);
+    const [lastTranslatedAt, setLastTranslatedAt] = useState<Date | null>(null);
     const [translationsLocked, setTranslationsLocked] = useState(false);
     const [isAiFillModalOpen, setIsAiFillModalOpen] = useState(false);
     const [hasLastUnitsBanner, setHasLastUnitsBanner] = useState(false);
@@ -1066,6 +1089,8 @@ export default function NewProjectForm({
     const [socialMedia, setSocialMedia] = useState<UploadedMedia[]>([]);
     const [interiorMedia, setInteriorMedia] = useState<UploadedMedia[]>([]);
     const [projectUnits, setProjectUnits] = useState<ProjectUnitRow[]>([]);
+    const [unitTranslationsMap, setUnitTranslationsMap] = useState<Record<string, { locale: string; title: string }[]>>({});
+    const [faqTranslationsMap, setFaqTranslationsMap] = useState<Record<string, { locale: string; question: string; answer: string }[]>>({});
     const [roomOptions, setRoomOptions] = useState<string[]>([
         ...DEFAULT_ROOM_OPTIONS,
     ]);
@@ -1739,8 +1764,9 @@ export default function NewProjectForm({
         }
     };
 
-    const handleTranslate = async () => {
-        if (isTranslating || translationsLocked) return;
+    const handleTranslate = async (options?: { force?: boolean }) => {
+        if (isTranslating) return;
+        if (!options?.force && translationsLocked) return;
 
         const title = turkishTranslation?.title?.trim() || "";
         const description = turkishTranslation?.description?.trim() || "";
@@ -1754,14 +1780,29 @@ export default function NewProjectForm({
         setError("");
 
         try {
+            const featureTags = [
+                ...generalFeatures.map(f => ({ id: `gen_${f.id}`, name: f.title })),
+                ...socialFeatures.map(f => ({ id: `soc_${f.id}`, name: f.title })),
+                ...projectUnits
+                    .filter(u => u.detailType === "PROMO" || u.detailType === "PAYMENT")
+                    .map(u => ({ id: `unit_${u.id}`, name: u.rooms })),
+            ].filter(t => t.name);
+
+            const faqItems = faqs
+                .filter(f => f.question.trim() || f.answer.trim())
+                .map(f => ({ id: f.id, question: f.question.trim(), answer: f.answer.trim() }));
+
             const response = await fetch("/api/admin/ai/translate-listing", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     title,
                     description,
+                    promoVideoTitle: turkishTranslation?.promoVideoTitle?.trim() || "",
                     listingId: projectId || null,
-                    tags: [],
+                    tags: featureTags,
+                    faqs: faqItems,
+                    force: options?.force || false,
                 }),
             });
 
@@ -1778,8 +1819,8 @@ export default function NewProjectForm({
 
             const data = (await response.json().catch(() => ({}))) as {
                 translations?: Record<
-                    "en" | "de" | "ru",
-                    { title?: string; description?: string; tags?: { name?: string }[] }
+                    "en" | "de" | "ru" | "ar",
+                    { title?: string; description?: string; promoVideoTitle?: string; tags?: { id?: string; name?: string }[]; faqs?: { id?: string; question?: string; answer?: string }[] }
                 >;
             };
 
@@ -1799,41 +1840,82 @@ export default function NewProjectForm({
 
             setTranslations((prev) =>
                 prev.map((translation) => {
-                    if (translation.locale === "en") {
+                    const mapped = aiTranslations[translation.locale as "en" | "de" | "ru" | "ar"];
+                    if (mapped) {
                         return {
                             ...translation,
-                            title: aiTranslations.en?.title?.trim() || translation.title,
-                            description:
-                                aiTranslations.en?.description?.trim() ||
-                                translation.description,
-                            features: getTagFeatures(aiTranslations.en?.tags),
-                        };
-                    }
-                    if (translation.locale === "de") {
-                        return {
-                            ...translation,
-                            title: aiTranslations.de?.title?.trim() || translation.title,
-                            description:
-                                aiTranslations.de?.description?.trim() ||
-                                translation.description,
-                            features: getTagFeatures(aiTranslations.de?.tags),
-                        };
-                    }
-                    if (translation.locale === "ru") {
-                        return {
-                            ...translation,
-                            title: aiTranslations.ru?.title?.trim() || translation.title,
-                            description:
-                                aiTranslations.ru?.description?.trim() ||
-                                translation.description,
-                            features: getTagFeatures(aiTranslations.ru?.tags),
+                            title: mapped.title?.trim() || translation.title,
+                            description: mapped.description?.trim() || translation.description,
+                            promoVideoTitle: mapped.promoVideoTitle?.trim() || translation.promoVideoTitle,
+                            features: getTagFeatures(mapped.tags),
                         };
                     }
                     return translation;
                 })
             );
 
+            const extractFeatureTranslations = (rows: FeatureRow[], prefix: string) => {
+                return rows.map((row) => {
+                    const tagId = `${prefix}${row.id}`;
+                    return {
+                        ...row,
+                        translations: ["en", "de", "ru", "ar"].map((loc) => {
+                            const t = aiTranslations[loc as "en" | "de" | "ru" | "ar"]?.tags?.find((t: any) => t.id === tagId);
+                            return {
+                                locale: loc,
+                                title: t?.name?.trim() || "",
+                            };
+                        }).filter((t) => t.title),
+                    };
+                });
+            };
+
+            setGeneralFeatures((prev) => extractFeatureTranslations(prev, "gen_"));
+            setSocialFeatures((prev) => extractFeatureTranslations(prev, "soc_"));
+
+            // Update PROMO/PAYMENT unit translations
+            setUnitTranslationsMap((prev) => {
+                const next = { ...prev };
+                for (const unit of projectUnits) {
+                    if (unit.detailType !== "PROMO" && unit.detailType !== "PAYMENT") continue;
+                    const tagId = `unit_${unit.id}`;
+                    const translations = (["en", "de", "ru"] as const)
+                        .map((loc) => {
+                            const t = aiTranslations[loc]?.tags?.find((t: any) => t.id === tagId);
+                            return { locale: loc, title: t?.name?.trim() || null };
+                        })
+                        .filter((t) => t.title) as { locale: string; title: string }[];
+                    if (translations.length > 0) {
+                        next[unit.id] = translations;
+                    }
+                }
+                return next;
+            });
+
+            // Update FAQ translations
+            setFaqTranslationsMap((prev) => {
+                const next = { ...prev };
+                for (const faq of faqs) {
+                    const translations = (["en", "de", "ru"] as const)
+                        .map((loc) => {
+                            const faqTranslation = aiTranslations[loc]?.faqs?.find((t: any) => t.id === faq.id);
+                            const question = faqTranslation?.question?.trim() || "";
+                            const answer = faqTranslation?.answer?.trim() || "";
+                            if (!question && !answer) return null;
+                            return { locale: loc, question, answer };
+                        })
+                        .filter((t) => t !== null) as { locale: string; question: string; answer: string }[];
+                    if (translations.length > 0) {
+                        next[faq.id] = translations;
+                    }
+                }
+                return next;
+            });
+
             setTranslationsLocked(true);
+            setLastTranslatedAt(new Date());
+            setTranslationSuccess(true);
+            setTimeout(() => setTranslationSuccess(false), 3000);
             setActiveLocale("en");
         } catch (errorValue) {
             setError(
@@ -1925,6 +2007,9 @@ export default function NewProjectForm({
                             icon: feature.icon || "Building2",
                             category:
                                 feature.category === "SOCIAL" ? "SOCIAL" : "GENERAL",
+                            translations: (feature.translations || [])
+                                .filter((t) => t.locale !== "tr")
+                                .map((t) => ({ locale: t.locale, title: t.title })),
                         };
                     })
                     .filter((item) => item.title.length > 0);
@@ -1935,6 +2020,7 @@ export default function NewProjectForm({
                         id: item.id,
                         title: item.title,
                         icon: item.icon,
+                        translations: item.translations,
                     }));
                 const socialRows = featureRows
                     .filter((item) => item.category === "SOCIAL")
@@ -1942,6 +2028,7 @@ export default function NewProjectForm({
                         id: item.id,
                         title: item.title,
                         icon: item.icon,
+                        translations: item.translations,
                     }));
 
                 const socialGalleryMedia = (project.customGalleries || []).flatMap(
@@ -1968,13 +2055,27 @@ export default function NewProjectForm({
                     })
                     .filter((item) => item.imageUrl || item.title);
                 const projectUnitRows = (project.projectUnits || [])
-                    .map((unit) => ({
-                        id: createRowId(),
-                        rooms: unit.rooms?.trim() || "",
-                        detailType: (unit.detailType === "PAYMENT" || unit.detailType === "PROMO" ? unit.detailType : "ROOM") as ProjectDetailType,
-                    }))
+                    .map((unit) => {
+                        const rowId = createRowId();
+                        return {
+                            id: rowId,
+                            originalId: unit.id,
+                            rooms: unit.rooms?.trim() || "",
+                            detailType: (unit.detailType === "PAYMENT" || unit.detailType === "PROMO" ? unit.detailType : "ROOM") as ProjectDetailType,
+                            _translations: (unit.translations || [])
+                                .filter((t) => t.locale !== "tr" && t.title)
+                                .map((t) => ({ locale: t.locale, title: t.title || "" })),
+                        };
+                    })
                     .filter((item) => item.rooms.length > 0);
+                const hydratedUnitTranslationsMap: Record<string, { locale: string; title: string }[]> = {};
+                for (const row of projectUnitRows) {
+                    if (row._translations.length > 0) {
+                        hydratedUnitTranslationsMap[row.id] = row._translations;
+                    }
+                }
 
+                const hydratedFaqTranslationsMap: Record<string, { locale: string; question: string; answer: string }[]> = {};
                 const faqRows = (project.faqs || [])
                     .map((faq) => {
                         const translation = getTurkishTranslation(faq.translations);
@@ -1982,8 +2083,15 @@ export default function NewProjectForm({
                         const question = translation.question?.trim() || "";
                         const answer = translation.answer?.trim() || "";
                         if (!question && !answer) return null;
+                        const rowId = createRowId();
+                        const nonTrTranslations = (faq.translations || [])
+                            .filter((t) => t.locale !== "tr" && (t.question || t.answer))
+                            .map((t) => ({ locale: t.locale, question: t.question || "", answer: t.answer || "" }));
+                        if (nonTrTranslations.length > 0) {
+                            hydratedFaqTranslationsMap[rowId] = nonTrTranslations;
+                        }
                         return {
-                            id: createRowId(),
+                            id: rowId,
                             question,
                             answer,
                         };
@@ -2042,7 +2150,8 @@ export default function NewProjectForm({
                         toUploadedDocument(item, `Belge ${index + 1}`)
                     )
                 );
-                setProjectUnits(projectUnitRows);
+                setProjectUnits(projectUnitRows.map(({ _translations, originalId, ...rest }) => rest));
+                setUnitTranslationsMap(hydratedUnitTranslationsMap);
                 setRoomOptions(
                     mergeRoomOptions(
                         [...DEFAULT_ROOM_OPTIONS],
@@ -2065,6 +2174,7 @@ export default function NewProjectForm({
                         ]
                 );
                 setFaqs(faqRows);
+                setFaqTranslationsMap(hydratedFaqTranslationsMap);
             } catch (errorValue) {
                 if (!active) return;
                 setError(
@@ -2343,13 +2453,19 @@ export default function NewProjectForm({
                 icon: item.icon,
                 category: "GENERAL",
                 order: index,
-                translations: [{ locale: "tr", title: item.title.trim() }],
+                translations: [
+                    { locale: "tr", title: item.title.trim() },
+                    ...(item.translations || []),
+                ],
             })),
             ...socialFeatures.map((item, index) => ({
                 icon: item.icon,
                 category: "SOCIAL",
                 order: index,
-                translations: [{ locale: "tr", title: item.title.trim() }],
+                translations: [
+                    { locale: "tr", title: item.title.trim() },
+                    ...(item.translations || []),
+                ],
             })),
         ].filter((item) => item.translations[0].title);
 
@@ -2378,32 +2494,41 @@ export default function NewProjectForm({
             }))
             .filter((item) => item.imageUrl && item.translations[0].title);
         const projectUnitsPayload = projectUnits
-            .map((item) => ({
-                rooms: item.rooms.trim(),
-                detailType: item.detailType,
-                area: null,
-                price: null,
-                mediaIds: [],
-                translations: [
-                    {
-                        locale: "tr",
-                        title: null,
-                    },
-                ],
-            }))
+            .map((item) => {
+                const extraTranslations = unitTranslationsMap[item.id] || [];
+                return {
+                    rooms: item.rooms.trim(),
+                    detailType: item.detailType,
+                    area: null,
+                    price: null,
+                    mediaIds: [],
+                    translations: [
+                        { locale: "tr", title: null },
+                        ...extraTranslations.map((t) => ({ locale: t.locale, title: t.title })),
+                    ],
+                };
+            })
             .filter((item) => item.rooms.length > 0);
 
         const faqPayload = faqs
-            .map((item, index) => ({
-                order: index,
-                translations: [
-                    {
-                        locale: "tr",
-                        question: item.question.trim(),
-                        answer: item.answer.trim(),
-                    },
-                ],
-            }))
+            .map((item, index) => {
+                const extraTranslations = faqTranslationsMap[item.id] || [];
+                return {
+                    order: index,
+                    translations: [
+                        {
+                            locale: "tr",
+                            question: item.question.trim(),
+                            answer: item.answer.trim(),
+                        },
+                        ...extraTranslations.map((t) => ({
+                            locale: t.locale,
+                            question: t.question,
+                            answer: t.answer,
+                        })),
+                    ],
+                };
+            })
             .filter(
                 (item) =>
                     item.translations[0].question.length > 0 &&
@@ -3032,25 +3157,51 @@ export default function NewProjectForm({
                                     Son Daireler
                                 </button>
                                 {translationsLocked ? (
-                                    LOCALES.map((locale) => (
+                                    <>
+                                        {LOCALES.map((locale) => (
+                                            <button
+                                                key={locale.code}
+                                                type="button"
+                                                onClick={() => setActiveLocale(locale.code)}
+                                                className={cn(
+                                                    "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+                                                    activeLocale === locale.code
+                                                        ? "bg-slate-900 text-white border-slate-900"
+                                                        : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                                                )}
+                                            >
+                                                {locale.code.toUpperCase()}
+                                            </button>
+                                        ))}
                                         <button
-                                            key={locale.code}
                                             type="button"
-                                            onClick={() => setActiveLocale(locale.code)}
+                                            onClick={() => handleTranslate({ force: true })}
+                                            disabled={isTranslating || isHydrating || isSaving || isUploading}
                                             className={cn(
-                                                "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
-                                                activeLocale === locale.code
-                                                    ? "bg-slate-900 text-white border-slate-900"
-                                                    : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                                                "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+                                                isTranslating
+                                                    ? "border-slate-200 text-slate-400 bg-slate-50"
+                                                    : "border-orange-200 text-orange-600 hover:bg-orange-50"
                                             )}
+                                            title="Çevirileri yeniden oluştur"
                                         >
-                                            {locale.code.toUpperCase()}
+                                            <RefreshCw className={cn("w-3.5 h-3.5", isTranslating && "animate-spin")} />
+                                            {isTranslating ? "Çeviriliyor..." : "Yenile"}
                                         </button>
-                                    ))
+                                        {translationSuccess && (
+                                            <span className="flex items-center gap-1 text-xs font-medium text-green-600 animate-in fade-in">
+                                                <Check className="w-3.5 h-3.5" />
+                                                Tamamlandı
+                                            </span>
+                                        )}
+                                        {lastTranslatedAt && !translationSuccess && (
+                                            <TranslationTimeAgo date={lastTranslatedAt} />
+                                        )}
+                                    </>
                                 ) : (
                                     <button
                                         type="button"
-                                        onClick={handleTranslate}
+                                        onClick={() => handleTranslate()}
                                         disabled={
                                             isHydrating ||
                                             isSaving ||

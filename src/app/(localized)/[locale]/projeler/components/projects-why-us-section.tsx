@@ -1,6 +1,9 @@
 import { ScrollRevealSection } from "@/components/ui/scroll-reveal-section";
+import { getProjectsPageCopy } from "../copy";
 
-export function ProjectsWhyUsSection() {
+export function ProjectsWhyUsSection({ locale }: { locale: string }) {
+    const copy = getProjectsPageCopy(locale);
+
     return (
         <ScrollRevealSection className="bg-gray-50 py-24">
             <div className="mx-auto max-w-7xl px-4 sm:px-6">
@@ -8,36 +11,19 @@ export function ProjectsWhyUsSection() {
                     <div className="reveal space-y-4">
                         <div className="mb-2 flex items-center gap-3 text-orange-500">
                             <span className="h-px w-8 bg-orange-500" />
-                            <span className="text-xs font-bold uppercase tracking-widest">
-                                Güven ve Kalite
-                            </span>
+                            <span className="text-xs font-bold uppercase tracking-widest">{copy.whyUsEyebrowLeft}</span>
                         </div>
-                        <h3 className="text-3xl font-bold text-gray-900">
-                            Neden Güzel İnşaat?
-                        </h3>
-                        <p className="text-lg leading-relaxed text-gray-600">
-                            Yüksek inşaat kalitesi, modern mimari ve zamanında teslimat
-                            prensibiyle güven inşa ediyoruz. Her projemizde deprem yönetmeliğine
-                            uygun, sürdürülebilir ve estetik çözümler sunarak yaşam alanlarınızı
-                            değerli kılıyoruz.
-                        </p>
+                        <h3 className="text-3xl font-bold text-gray-900">{copy.whyUsTitle}</h3>
+                        <p className="text-lg leading-relaxed text-gray-600">{copy.whyUsIntro}</p>
                     </div>
 
                     <div className="reveal space-y-4">
                         <div className="mb-2 flex items-center gap-3 text-orange-500">
                             <span className="h-px w-8 bg-orange-500" />
-                            <span className="text-xs font-bold uppercase tracking-widest">
-                                Lokasyon Avantajı
-                            </span>
+                            <span className="text-xs font-bold uppercase tracking-widest">{copy.whyUsEyebrowRight}</span>
                         </div>
-                        <h3 className="text-3xl font-bold text-gray-900">
-                            Neden Alanya?
-                        </h3>
-                        <p className="text-lg leading-relaxed text-gray-600">
-                            Akdeniz&apos;in incisi Alanya, hem yaşam kalitesi hem de yüksek yatırım
-                            potansiyeli ile eşsiz bir lokasyon sunar. Yılın 300 günü güneşli havası,
-                            eşsiz plajları ve gelişmiş altyapısıyla küresel bir çekim merkezidir.
-                        </p>
+                        <h3 className="text-3xl font-bold text-gray-900">{copy.locationTitle}</h3>
+                        <p className="text-lg leading-relaxed text-gray-600">{copy.locationIntro}</p>
                     </div>
                 </div>
             </div>

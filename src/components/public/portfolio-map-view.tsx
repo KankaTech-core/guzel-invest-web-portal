@@ -50,6 +50,7 @@ import {
     shouldIgnoreImageTapAfterSwipe,
     shouldSwipeImageCarousel,
 } from "@/lib/portfolio-image-gesture";
+import { getPortfolioCopy, type PublicLocale } from "@/lib/public-copy";
 import type { MapListing as LeafletMapListing } from "@/components/admin/listings-leaflet-map";
 
 type ListingStatusValue = "DRAFT" | "PUBLISHED" | "ARCHIVED" | "REMOVED";
@@ -181,10 +182,7 @@ const IMAGE_TAP_SWIPE_COOLDOWN_MS = 400;
 
 const propertyTypes = PROPERTY_TYPE_OPTIONS;
 
-const saleTypes = [
-    { value: "SALE", label: "Satılık" },
-    { value: "RENT", label: "Kiralık" },
-] as const;
+const saleTypes = ["SALE", "RENT"] as const;
 
 const roomOptions = [
     "1+0",
@@ -199,7 +197,9 @@ const roomOptions = [
     "8+",
 ] as const;
 
-const STATUS_UI: Record<
+const createStatusUi = (
+    labels: Record<"DRAFT" | "PUBLISHED" | "REMOVED" | "ARCHIVED", string>
+): Record<
     ListingStatusValue,
     {
         label: string;
@@ -208,36 +208,36 @@ const STATUS_UI: Record<
         markerText: string;
         markerRing: string;
     }
-> = {
+> => ({
     DRAFT: {
-        label: "Taslak",
+        label: labels.DRAFT,
         badge: "bg-amber-100 text-amber-700",
         markerBg: "#FBBF24",
         markerText: "#422006",
         markerRing: "rgba(251,191,36,0.5)",
     },
     PUBLISHED: {
-        label: "Yayında",
+        label: labels.PUBLISHED,
         badge: "bg-emerald-100 text-emerald-700",
         markerBg: "#10B981",
         markerText: "#FFFFFF",
         markerRing: "rgba(16,185,129,0.45)",
     },
     REMOVED: {
-        label: "Kaldırıldı",
+        label: labels.REMOVED,
         badge: "bg-rose-100 text-rose-700",
         markerBg: "#F43F5E",
         markerText: "#FFFFFF",
         markerRing: "rgba(244,63,94,0.45)",
     },
     ARCHIVED: {
-        label: "Arşiv",
+        label: labels.ARCHIVED,
         badge: "bg-gray-100 text-gray-600",
         markerBg: "#9CA3AF",
         markerText: "#FFFFFF",
         markerRing: "rgba(156,163,175,0.45)",
     },
-};
+});
 
 const FILTER_QUERY_KEYS = [
     "type",
@@ -418,6 +418,84 @@ function InlineRangeSlider({
 }
 
 export function PortfolioMapView({ locale }: { locale: string }) {
+    const copy = getPortfolioCopy(locale);
+    const localeKey =
+        locale === "en" || locale === "ru" || locale === "de" ? locale : "tr";
+    const uiTextByLocale: Record<
+        PublicLocale,
+        {
+            panelTitle: string;
+            apply: string;
+            projects: string;
+            searchCity: string;
+            searchDistrict: string;
+            searchNeighborhood: string;
+            groundFloor: string;
+            basement: string;
+            rooms: string;
+            bathroom: string;
+            orLabel: string;
+        }
+    > = {
+        tr: {
+            panelTitle: "Filtreler",
+            apply: "Uygula",
+            projects: "Projeler",
+            searchCity: "İl yazın",
+            searchDistrict: "İlçe yazın",
+            searchNeighborhood: "Mahalle yazın",
+            groundFloor: "Zemin",
+            basement: "Bodrum",
+            rooms: "oda",
+            bathroom: "banyo",
+            orLabel: "— VEYA —",
+        },
+        en: {
+            panelTitle: "Filters",
+            apply: "Apply",
+            projects: "Projects",
+            searchCity: "Type city",
+            searchDistrict: "Type district",
+            searchNeighborhood: "Type neighborhood",
+            groundFloor: "Ground floor",
+            basement: "Basement",
+            rooms: "rooms",
+            bathroom: "bathrooms",
+            orLabel: "— OR —",
+        },
+        ru: {
+            panelTitle: "Фильтры",
+            apply: "Применить",
+            projects: "Проекты",
+            searchCity: "Введите город",
+            searchDistrict: "Введите район",
+            searchNeighborhood: "Введите квартал",
+            groundFloor: "Первый этаж",
+            basement: "Подвал",
+            rooms: "комнат",
+            bathroom: "ванная",
+            orLabel: "— ИЛИ —",
+        },
+        de: {
+            panelTitle: "Filter",
+            apply: "Anwenden",
+            projects: "Projekte",
+            searchCity: "Stadt eingeben",
+            searchDistrict: "Bezirk eingeben",
+            searchNeighborhood: "Stadtteil eingeben",
+            groundFloor: "Erdgeschoss",
+            basement: "Keller",
+            rooms: "Zimmer",
+            bathroom: "Bad",
+            orLabel: "— ODER —",
+        },
+    };
+    const uiText = uiTextByLocale[localeKey];
+    const saleTypeOptions = [
+        { value: "SALE", label: copy.saleTypes.sale },
+        { value: "RENT", label: copy.saleTypes.rent },
+    ] as const;
+    const statusUi = createStatusUi(copy.statuses);
     const { convertPrice } = useCurrency();
     const router = useRouter();
     const pathname = usePathname();
@@ -602,7 +680,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                 if (!response.ok) {
                     const apiError = await parseApiErrorMessage(
                         response,
-                        "İlanlar yüklenemedi."
+                        copy.errors.loadListings
                     );
                     throw new Error(apiError);
                 }
@@ -612,14 +690,9 @@ export function PortfolioMapView({ locale }: { locale: string }) {
             } catch (fetchError) {
                 if (isAbortFetchError(fetchError)) return;
                 setError(
-                    getFriendlyFetchErrorMessage(
-                        fetchError,
-                        "İlanlar yüklenirken bir hata oluştu.",
-                        {
-                            networkMessage:
-                                "İlanlar yüklenirken bağlantı kesildi (Load failed). İnternet/proxy bağlantınızı kontrol edip tekrar deneyin.",
-                        }
-                    )
+                    getFriendlyFetchErrorMessage(fetchError, copy.errors.refreshListings, {
+                        networkMessage: copy.errors.refreshListingsNetwork,
+                    })
                 );
                 setListings([]);
             } finally {
@@ -633,7 +706,13 @@ export function PortfolioMapView({ locale }: { locale: string }) {
         return () => {
             controller.abort();
         };
-    }, [locale, searchKey]);
+    }, [
+        copy.errors.loadListings,
+        copy.errors.refreshListings,
+        copy.errors.refreshListingsNetwork,
+        locale,
+        searchKey,
+    ]);
 
     const portfolioHref = useMemo(() => {
         if (!searchKey) return `/${locale}/portfoy`;
@@ -1133,13 +1212,13 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                     listings={mapListings}
                     activeId={activeId}
                     onSelect={setActiveId}
-                    statusUi={STATUS_UI}
+                    statusUi={statusUi}
                     className="h-full w-full"
                 />
 
                 <div className="absolute left-4 top-4 z-[1200]">
                     <Link href={portfolioHref} className="btn btn-secondary btn-sm shadow-lg">
-                        Portföye Dön
+                        {copy.labels.backToPortfolio}
                     </Link>
                 </div>
 
@@ -1150,7 +1229,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/70 bg-white/95 px-3 text-sm font-semibold text-gray-700 shadow-lg backdrop-blur transition hover:bg-white"
                     >
                         <SlidersHorizontal className="h-4 w-4" />
-                        Filtre
+                        {copy.labels.filter}
                     </button>
                 </div>
 
@@ -1161,7 +1240,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                 type="button"
                                 onClick={() => setActiveId(null)}
                                 className="absolute right-3 top-3 z-20 inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-500 shadow-sm transition hover:bg-white md:hidden"
-                                aria-label="İlan kartını kapat"
+                                aria-label={copy.labels.listCardClose}
                             >
                                 <X className="h-4 w-4" />
                             </button>
@@ -1212,7 +1291,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                                         href={listingDetailHref}
                                                                         className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
                                                                     >
-                                                                        Hepsini Gör
+                                                                        {copy.labels.viewAll}
                                                                         <ChevronRight className="h-4 w-4" />
                                                                     </Link>
                                                                 </div>
@@ -1242,7 +1321,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                         </div>
                                     ) : (
                                         <div className="absolute inset-0 flex items-center justify-center text-sm font-medium text-gray-400">
-                                            Görsel yok
+                                                    {copy.labels.noImage}
                                         </div>
                                     )}
 
@@ -1260,7 +1339,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                     );
                                                 }}
                                                 className="inline-flex h-8 w-8 items-center justify-center text-slate-700 transition hover:bg-slate-100"
-                                                aria-label="Önceki görsel"
+                                                aria-label={copy.aria.previousImage}
                                             >
                                                 <ChevronLeft className="h-4 w-4" />
                                             </button>
@@ -1276,7 +1355,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                     );
                                                 }}
                                                 className="inline-flex h-8 w-8 items-center justify-center text-slate-700 transition hover:bg-slate-100"
-                                                aria-label="Sonraki görsel"
+                                                aria-label={copy.aria.nextImage}
                                             >
                                                 <ChevronRight className="h-4 w-4" />
                                             </button>
@@ -1299,12 +1378,12 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                 </span>
                                                 {activeListing.citizenshipEligible && (
                                                     <span className="rounded bg-green-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-green-700">
-                                                        Vatandaşlık
+                                                        {copy.labels.citizenship}
                                                     </span>
                                                 )}
                                                 {activeListing.residenceEligible && (
                                                     <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-blue-700">
-                                                        İkamet
+                                                        {copy.labels.residence}
                                                     </span>
                                                 )}
                                             </div>
@@ -1315,15 +1394,17 @@ export function PortfolioMapView({ locale }: { locale: string }) {
 
                                             <p className="mb-3 flex items-center gap-1 text-sm text-gray-400">
                                                 <MapPin className="h-3.5 w-3.5" />
-                                                {buildLocationLabel(activeListing) || "Konum belirtilmedi"}
+                                                {buildLocationLabel(activeListing) || copy.labels.noLocation}
                                             </p>
 
-                                            <p className="overflow-hidden text-sm text-gray-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] md:[display:block] md:overflow-visible md:[-webkit-line-clamp:unset]">
-                                                {truncateText(
-                                                    getListingDescription(activeListing, locale),
-                                                    190
-                                                )}
-                                            </p>
+                                            {hasLocaleTranslation(activeListing, locale) && (
+                                                <p className="overflow-hidden text-sm text-gray-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] md:[display:block] md:overflow-visible md:[-webkit-line-clamp:unset]">
+                                                    {truncateText(
+                                                        getListingDescription(activeListing, locale),
+                                                        190
+                                                    )}
+                                                </p>
+                                            )}
                                         </div>
 
                                         {activeListing.isProject ? (
@@ -1363,7 +1444,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                         <span className="text-sm font-semibold text-gray-900">
                                                             {activeListing.rooms || activeListing.bedrooms}
                                                         </span>
-                                                        <span className="text-xs text-gray-400">oda</span>
+                                                        <span className="text-xs text-gray-400">{uiText.rooms}</span>
                                                     </div>
                                                 )}
 
@@ -1372,7 +1453,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                         <span className="text-sm font-semibold text-gray-900">
                                                             {activeListing.bathrooms}
                                                         </span>
-                                                        <span className="text-xs text-gray-400">banyo</span>
+                                                        <span className="text-xs text-gray-400">{uiText.bathroom}</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -1407,7 +1488,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                     ))}
                                                 </div>
                                                 <span className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-orange-600 md:mt-4 md:gap-2 md:px-5 md:py-2.5 md:text-sm">
-                                                    Projeyi İncele
+                                                    {copy.labels.inspectProject}
                                                 </span>
                                             </div>
                                         ) : (
@@ -1424,7 +1505,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                     )}
                                                 </div>
                                                 <span className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800 md:mt-4 md:w-full md:gap-2 md:px-5 md:py-2.5 md:text-sm">
-                                                    İncele
+                                                    {copy.labels.inspect}
                                                     <span aria-hidden="true">{"->"}</span>
                                                 </span>
                                             </>
@@ -1439,7 +1520,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                 {!isLoading && mapListings.length === 0 && !error && (
                     <div className="absolute bottom-4 left-1/2 z-[1250] w-[92%] max-w-xl -translate-x-1/2">
                         <div className="rounded-xl border border-white/60 bg-white/90 px-4 py-3 text-sm text-gray-600 shadow">
-                            Haritada gösterilecek koordinatlı ilan bulunamadı.
+                            {copy.labels.mapNoCoordinates}
                         </div>
                     </div>
                 )}
@@ -1449,7 +1530,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                         <div className="rounded-xl border border-white/60 bg-white/92 px-5 py-3 shadow-lg">
                             <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
                                 <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
-                                İlanlar yükleniyor...
+                                {copy.labels.loadingListings}
                             </div>
                         </div>
                     </div>
@@ -1472,7 +1553,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
             >
                 <button
                     type="button"
-                    aria-label="Filtre panelini kapat"
+                        aria-label={copy.labels.drawerClose}
                     onClick={() => setIsFilterOpen(false)}
                     className={cn(
                         "absolute inset-0 bg-slate-900/45 transition-opacity duration-300",
@@ -1493,12 +1574,12 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                     <div className="border-b border-gray-200 px-5 pb-4 pt-2 md:py-4">
                         <span className="mx-auto mb-2 block h-1.5 w-12 rounded-full bg-gray-300 md:hidden" />
                         <div className="flex items-center justify-between">
-                            <h2 className="text-base font-semibold text-gray-900">Filtreler</h2>
+                            <h2 className="text-base font-semibold text-gray-900">{uiText.panelTitle}</h2>
                             <button
                                 type="button"
                                 onClick={() => setIsFilterOpen(false)}
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:bg-gray-50"
-                                aria-label="Kapat"
+                                aria-label={copy.labels.cardClose}
                             >
                                 <X className="h-4 w-4" />
                             </button>
@@ -1508,10 +1589,10 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                     <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
                         <div className="mb-6">
                             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Satış Tipi
+                                {copy.sections.listingType}
                             </h3>
                             <div className="grid grid-cols-2 gap-2">
-                                {saleTypes.map((item) => {
+                                {saleTypeOptions.map((item) => {
                                     const isActive = filters.saleType === item.value;
                                     return (
                                         <button
@@ -1590,14 +1671,14 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                             : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
                                     )}
                                 >
-                                    Projeler
+                                    {uiText.projects}
                                 </button>
                             </div>
                         </div>
 
                         <div className="mb-6">
                             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Emlak Tipi
+                                {copy.sections.propertyType}
                             </h3>
                             <div className="grid grid-cols-2 gap-2">
                                 {propertyTypes.map((item) => {
@@ -1616,7 +1697,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                 filters.onlyProjects && "opacity-50 cursor-not-allowed"
                                             )}
                                         >
-                                            {item.label}
+                                            {getPropertyTypeLabel(item.value, locale)}
                                         </button>
                                     );
                                 })}
@@ -1625,12 +1706,12 @@ export function PortfolioMapView({ locale }: { locale: string }) {
 
                         <div className="mb-6">
                             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Konum
+                                {copy.filters.location}
                             </h3>
                             <div className="space-y-2">
                                 <InlineDropdown
                                     options={[
-                                        { value: "", label: "Tüm Şehirler" },
+                                        { value: "", label: copy.filters.allCities },
                                         ...cityOptions.map((city) => ({
                                             value: city,
                                             label: city,
@@ -1645,12 +1726,12 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                             neighborhood: "",
                                         }))
                                     }
-                                    placeholder="Şehir seçin"
+                                    placeholder={copy.filters.cityPlaceholder}
                                 />
 
                                 <InlineDropdown
                                     options={[
-                                        { value: "", label: "Tüm İlçeler" },
+                                        { value: "", label: copy.filters.allDistricts },
                                         ...districtOptions.map((district) => ({
                                             value: district,
                                             label: district,
@@ -1664,13 +1745,13 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                             neighborhood: "",
                                         }))
                                     }
-                                    placeholder="İlçe seçin"
+                                    placeholder={copy.filters.districtPlaceholder}
                                     disabled={!filters.city}
                                 />
 
                                 <InlineDropdown
                                     options={[
-                                        { value: "", label: "Tüm Mahalleler" },
+                                        { value: "", label: copy.filters.allNeighborhoods },
                                         ...neighborhoodOptions.map((neighborhood) => ({
                                             value: neighborhood,
                                             label: neighborhood,
@@ -1683,7 +1764,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                             neighborhood,
                                         }))
                                     }
-                                    placeholder="Mahalle seçin"
+                                    placeholder={copy.filters.neighborhoodPlaceholder}
                                     disabled={!filters.city || !filters.district}
                                 />
                             </div>
@@ -1691,7 +1772,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
 
                         <div className="mb-6">
                             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                Fiyat Aralığı
+                                {copy.filters.priceRange}
                             </h3>
                             <InlineRangeSlider
                                 min={PRICE_MIN}
@@ -1732,7 +1813,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
 
                         <div className="mb-6">
                             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                m² Aralığı
+                                {copy.filters.areaRange}
                             </h3>
                             <InlineRangeSlider
                                 min={AREA_MIN}
@@ -1774,12 +1855,12 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                         {isLandFiltersVisible && (
                             <div className="mb-6">
                                 <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Arsa Detayları
+                                    {copy.filters.landDetails}
                                 </h3>
                                 <div className="space-y-2">
                                     <InlineDropdown
                                         options={[
-                                            { value: "", label: "İmar Durumu (Tümü)" },
+                                            { value: "", label: copy.filters.zoningAll },
                                             ...ZONING_STATUS_OPTIONS.map((option) => ({
                                                 value: option.value,
                                                 label: option.label,
@@ -1792,7 +1873,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                 zoningStatus,
                                             }))
                                         }
-                                        placeholder="İmar durumu seçin"
+                                        placeholder={copy.filters.zoningPlaceholder}
                                     />
 
                                     <input
@@ -1804,13 +1885,13 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                 parcelNo: event.target.value,
                                             }))
                                         }
-                                        placeholder="Ada / Parsel"
+                                        placeholder={copy.filters.parcelNoPlaceholder}
                                         className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
                                     />
 
                                     <div className="space-y-2 rounded-lg border border-gray-200 p-3">
                                         <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                            Emsal
+                                            {copy.filters.emsal}
                                         </h4>
                                         <InlineRangeSlider
                                             min={EMSAL_MIN}
@@ -1863,12 +1944,12 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                         {isCommercialFiltersVisible && (
                             <div className="mb-6">
                                 <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Ticari Detaylar
+                        {copy.filters.commercial}
                                 </h3>
                                 <div className="space-y-3">
                                     <div className="space-y-2 rounded-lg border border-gray-200 p-3">
                                         <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                            Zemin <span className="normal-case">(m²)</span>
+                                            {uiText.groundFloor} <span className="normal-case">(m²)</span>
                                         </h4>
                                         <InlineRangeSlider
                                             min={COMMERCIAL_AREA_MIN}
@@ -1915,7 +1996,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
 
                                     <div className="space-y-2 rounded-lg border border-gray-200 p-3">
                                         <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                            Bodrum <span className="normal-case">(m²)</span>
+                                            {uiText.basement} <span className="normal-case">(m²)</span>
                                         </h4>
                                         <InlineRangeSlider
                                             min={COMMERCIAL_AREA_MIN}
@@ -1966,7 +2047,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                         {isFarmFiltersVisible && (
                             <div className="mb-6">
                                 <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Çiftlik Detayları
+                                    {copy.filters.farmDetails}
                                 </h3>
                                 <div className="grid grid-cols-1 gap-2">
                                     <button
@@ -1987,7 +2068,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                 : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                                         )}
                                     >
-                                        Su Kaynağı Olanlar
+                                        {copy.filters.waterSource}
                                     </button>
                                     <button
                                         type="button"
@@ -2007,7 +2088,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                                                 : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                                         )}
                                     >
-                                        Meyve Ağacı Olanlar
+                                        {copy.filters.fruitTrees}
                                     </button>
                                 </div>
                             </div>
@@ -2016,7 +2097,7 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                         {isRoomsFilterVisible && (
                             <div className="mb-6">
                                 <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Oda Sayısı
+                                    {copy.filters.roomCount}
                                 </h3>
                                 <div className="grid grid-cols-4 gap-1.5">
                                     {roomOptions.map((room) => {
@@ -2048,14 +2129,14 @@ export function PortfolioMapView({ locale }: { locale: string }) {
                             onClick={resetFilters}
                             className="inline-flex w-1/2 items-center justify-center rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
                         >
-                            Temizle
+                            {copy.filters.clear}
                         </button>
                         <button
                             type="button"
                             onClick={applyFilters}
                             className="inline-flex w-1/2 items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-800"
                         >
-                            Uygula
+                            {uiText.apply}
                         </button>
                     </div>
                 </aside>
@@ -2112,7 +2193,7 @@ function parseMultiParam(params: URLSearchParams, key: string) {
 
 function readInitialFilters(searchParams: URLSearchParams): FiltersState {
     const validTypeValues = new Set<string>(propertyTypes.map((type) => type.value));
-    const validSaleTypeValues = new Set<string>(saleTypes.map((item) => item.value));
+    const validSaleTypeValues = new Set<string>(saleTypes);
     const validRoomValues = new Set(roomOptions);
 
     const rawTypes = parseMultiParam(searchParams, "type");
@@ -2191,7 +2272,11 @@ function getListingTitle(listing: Listing, locale: string) {
     const fallback = listing.translations.find(
         (translation) => translation.locale === "tr"
     );
-    return requested?.title || fallback?.title || "Başlık belirtilmedi";
+    return (
+        requested?.title ||
+        fallback?.title ||
+        getPortfolioCopy(locale).labels.missingTitle
+    );
 }
 
 function getListingDescription(listing: Listing, locale: string) {
@@ -2201,7 +2286,15 @@ function getListingDescription(listing: Listing, locale: string) {
     const fallback = listing.translations.find(
         (translation) => translation.locale === "tr"
     );
-    return requested?.description || fallback?.description || "Açıklama bulunamadı.";
+    return (
+        requested?.description ||
+        fallback?.description ||
+        getPortfolioCopy(locale).labels.missingDescription
+    );
+}
+
+function hasLocaleTranslation(listing: Listing, locale: string) {
+    return listing.translations.some((translation) => translation.locale === locale);
 }
 
 function normalizeCoordinate(value: Listing["latitude"]): number | null {

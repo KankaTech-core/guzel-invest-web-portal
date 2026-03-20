@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
     ArrowRight,
     Download,
@@ -55,13 +56,15 @@ export const MapAndCTA = ({
     videoUrl,
     videoTitle,
 }: MapAndCTAProps) => {
+    const t = useTranslations("projectDetail");
+    const galleryT = useTranslations("gallery");
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [isDocumentsModalOpen, setIsDocumentsModalOpen] = useState(false);
     const documentCta = getDocumentCta(documents);
     const mapGalleryItems: ListingGalleryItem[] = mapImages.map((item, index) => ({
         id: item.id,
         src: item.image,
-        alt: item.title || `Harita görseli ${index + 1}`,
+        alt: item.title || t("mapImageAlt", { index: index + 1 }),
     }));
     const mapSectionLayout = getMapSectionLayout({
         hasMapContent: visibility.map,
@@ -89,13 +92,13 @@ export const MapAndCTA = ({
     const actionCards = [
         {
             icon: Search,
-            title: "Diğer Projeleri Keşfet",
+            title: t("exploreOtherProjects"),
             href: buildProjectsPortfolioHref(locale),
             external: false,
         },
         {
             icon: Handshake,
-            title: "Proje Uzmanıyla Görüş",
+            title: t("talkToProjectExpert"),
             href: `/${locale}/iletisim`,
             external: false,
         },
@@ -115,7 +118,7 @@ export const MapAndCTA = ({
             : map?.mapsLink
                 ? {
                     icon: MapPin,
-                    title: "Projeyi Haritada Aç",
+                    title: t("openProjectOnMap"),
                     href: map.mapsLink,
                     external: true,
                 }
@@ -143,17 +146,16 @@ export const MapAndCTA = ({
                         <div className="relative z-10 flex flex-col items-start justify-between gap-8 lg:gap-10 xl:flex-row xl:items-center">
                             <div className="max-w-md flex-shrink-0">
                                 <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-400">
-                                    Proje Adımı
+                                    {t("projectStepEyebrow")}
                                 </span>
                                 <h2 className="mt-2 text-2xl font-bold text-white sm:text-3xl">
-                                    Bu Projeyi{" "}
+                                    {t("projectStepTitlePrefix")}{" "}
                                     <span className="bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent">
-                                        Detaylı İnceleyin
+                                        {t("projectStepTitleHighlight")}
                                     </span>
                                 </h2>
                                 <p className="mt-2 max-w-md text-sm text-gray-400">
-                                    Belgelere ulaşın, benzer projeleri karşılaştırın ve uzman
-                                    ekibimizle bir sonraki adımı planlayın.
+                                    {t("projectStepDescription")}
                                 </p>
                             </div>
 
@@ -224,7 +226,7 @@ export const MapAndCTA = ({
                 <div
                     role="dialog"
                     aria-modal="true"
-                    aria-label="Proje belgeleri"
+                    aria-label={t("projectDocumentsAria")}
                     className="fixed inset-0 z-[120] flex items-center justify-center bg-black/75 p-4"
                     onClick={() => setIsDocumentsModalOpen(false)}
                 >
@@ -235,17 +237,17 @@ export const MapAndCTA = ({
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <h3 className="text-xl font-bold text-gray-900">
-                                    Belgelere Gözat
+                                    {t("browseDocuments")}
                                 </h3>
                                 <p className="mt-1 text-sm text-gray-500">
-                                    İlgili belgeyi seçip ayrı ayrı indirebilirsiniz.
+                                    {t("browseDocumentsDescription")}
                                 </p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setIsDocumentsModalOpen(false)}
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition hover:border-orange-300 hover:text-orange-500"
-                                aria-label="Belge penceresini kapat"
+                                aria-label={t("closeDocuments")}
                             >
                                 <X className="h-4 w-4" />
                             </button>
@@ -261,11 +263,11 @@ export const MapAndCTA = ({
                                     className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 px-4 py-3 transition hover:border-orange-300 hover:bg-orange-50/40"
                                 >
                                     <span className="min-w-0 truncate text-sm font-semibold text-gray-800">
-                                        {document.name.trim() || `Belge ${index + 1}`}
+                                        {document.name.trim() || t("documentFallback", { index: index + 1 })}
                                     </span>
                                     <span className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">
                                         <Download className="h-3.5 w-3.5" />
-                                        İndir
+                                        {t("download")}
                                     </span>
                                 </a>
                             ))}
@@ -288,7 +290,7 @@ export const MapAndCTA = ({
                                 <div className="overflow-hidden rounded-[1.9rem] border border-gray-200 bg-white shadow-sm">
                                     <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5">
                                         <h2 className="text-2xl font-semibold text-[#111828]">
-                                            Harita
+                                            {t("map")}
                                         </h2>
                                         {map?.mapsLink ? (
                                             <a
@@ -298,7 +300,7 @@ export const MapAndCTA = ({
                                                 className="inline-flex items-center gap-2 rounded-full bg-[#ff6900] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#e85f00]"
                                             >
                                                 <MapPin className="h-4 w-4" />
-                                                Google Maps&apos;te Aç
+                                                {t("openInGoogleMaps")}
                                             </a>
                                         ) : null}
                                     </div>
@@ -313,7 +315,7 @@ export const MapAndCTA = ({
                                                     className="h-full w-full border-0"
                                                     loading="lazy"
                                                     referrerPolicy="no-referrer-when-downgrade"
-                                                    title="Proje konumu"
+                                                    title={t("projectLocation")}
                                                 />
                                             </div>
                                         </div>
@@ -322,7 +324,7 @@ export const MapAndCTA = ({
                                             <div
                                                 className={`${mapEmbedHeightClass} flex w-full items-center justify-center rounded-[1.8rem] bg-gray-100 text-sm text-gray-500`}
                                             >
-                                                Harita konumu mevcut değil
+                                                {t("mapUnavailable")}
                                             </div>
                                         </div>
                                     )}
@@ -333,7 +335,7 @@ export const MapAndCTA = ({
                                 <div className="overflow-hidden rounded-[1.9rem] border border-gray-200 bg-white shadow-sm">
                                     <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-5">
                                         <h3 className="text-2xl font-semibold text-[#111828]">
-                                            Harita Görselleri
+                                            {t("mapImages")}
                                         </h3>
                                     </div>
 
@@ -341,11 +343,11 @@ export const MapAndCTA = ({
                                         <div className="overflow-hidden rounded-[1.5rem]">
                                             <ListingDetailGallery
                                                 items={mapGalleryItems}
-                                                title="Harita Görselleri"
+                                                title={t("mapImages")}
                                                 layout="carousel"
-                                                galleryButtonLabel="Harita Galerisi"
+                                                galleryButtonLabel={t("mapGallery")}
                                                 showViewAllAsLastSlide
-                                                viewAllSlideLabel="Tümünü Gör"
+                                                viewAllSlideLabel={galleryT("viewAll")}
                                                 desktopHeightClass={mapEmbedHeightClass}
                                                 onRequestOpenGallery={(index) =>
                                                     dispatchOpenConnectedProjectGallery({
@@ -374,17 +376,17 @@ export const MapAndCTA = ({
                         <div className="flex items-end justify-between mb-12 pb-6 border-b border-gray-100">
                             <div>
                                 <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
-                                    SSS
+                                    {t("faqEyebrow")}
                                 </span>
                                 <h2 className="text-3xl font-bold text-gray-900 mt-2">
-                                    Sıkça Sorulan Sorular
+                                    {t("faqTitle")}
                                 </h2>
                             </div>
                             <a
                                 href={`/${locale}/iletisim`}
                                 className="hidden sm:inline-flex items-center gap-2 text-sm text-gray-500 hover:text-orange-500 transition-colors font-medium"
                             >
-                                Daha Fazla Soru?
+                                {t("moreQuestions")}
                                 <ArrowRight className="w-4 h-4" />
                             </a>
                         </div>
@@ -433,7 +435,7 @@ export const MapAndCTA = ({
                     <div className="mx-auto max-w-7xl px-4">
                         <div className="mb-12 flex items-center justify-between">
                             <h2 className="text-3xl font-bold text-gray-900">
-                                Diğer Projeler
+                                {t("otherProjects")}
                             </h2>
                         </div>
                         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
@@ -466,7 +468,7 @@ export const MapAndCTA = ({
                                         </p>
                                         <div className="flex items-center justify-between border-t border-gray-100 pt-4">
                                             <span className="text-sm font-semibold text-gray-700">
-                                                {project.roomSummary || "Detayları Gör"}
+                                                {project.roomSummary || t("viewDetails")}
                                             </span>
                                             <ArrowRight className="h-5 w-5 text-gray-300 transition-colors group-hover:text-orange-500" />
                                         </div>

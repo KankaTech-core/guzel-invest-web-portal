@@ -23,6 +23,8 @@ import {
     ExternalLink,
     Plus,
     Star,
+    RefreshCw,
+    Check,
 } from "lucide-react";
 import {
     DndContext,
@@ -62,6 +64,24 @@ import {
     CompanyOptionSelect,
     RoomOptionSelect // New component
 } from "./";
+
+function TranslationTimeAgo({ date }: { date: Date }) {
+    const [label, setLabel] = useState("");
+    useEffect(() => {
+        const update = () => {
+            const diff = Math.floor((Date.now() - date.getTime()) / 1000);
+            if (diff < 60) setLabel("az önce");
+            else if (diff < 3600) setLabel(`${Math.floor(diff / 60)} dk önce`);
+            else if (diff < 86400) setLabel(`${Math.floor(diff / 3600)} saat önce`);
+            else setLabel(`${Math.floor(diff / 86400)} gün önce`);
+        };
+        update();
+        const id = setInterval(update, 30_000);
+        return () => clearInterval(id);
+    }, [date]);
+    if (!label) return null;
+    return <span className="text-[10px] text-gray-400 whitespace-nowrap">{label}</span>;
+}
 
 interface ListingTranslation {
     id?: string;
@@ -868,6 +888,8 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
     const [isSaving, setIsSaving] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [isTranslating, setIsTranslating] = useState(false);
+    const [translationSuccess, setTranslationSuccess] = useState(false);
+    const [lastTranslatedAt, setLastTranslatedAt] = useState<Date | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]);
     const [isAiFillOpen, setIsAiFillOpen] = useState(false);
@@ -1642,8 +1664,9 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
         }));
     };
 
-    const handleTranslate = async () => {
-        if (isTranslating || translationsLocked) return;
+    const handleTranslate = async (options?: { force?: boolean }) => {
+        if (isTranslating) return;
+        if (!options?.force && translationsLocked) return;
 
         const trTranslation = formData.translations.find((t) => t.locale === "tr");
         const title = trTranslation?.title?.trim() ?? "";
@@ -1666,6 +1689,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                     description,
                     listingId: formData.id || null,
                     tags: selectedTags.map((tag) => ({ id: tag.id, name: tag.name })),
+                    force: options?.force || false,
                 }),
             });
 
@@ -1691,6 +1715,7 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
             const enTagEntries = buildTagTranslationEntries(translations.en?.tags);
             const deTagEntries = buildTagTranslationEntries(translations.de?.tags);
             const ruTagEntries = buildTagTranslationEntries(translations.ru?.tags);
+            const arTagEntries = buildTagTranslationEntries(translations.ar?.tags);
 
             setFormData((prev) => ({
                 ...prev,
@@ -1719,11 +1744,22 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                             features: mergeTagTranslationEntries(t.features, ruTagEntries),
                         };
                     }
+                    if (t.locale === "ar") {
+                        return {
+                            ...t,
+                            title: translations.ar?.title ?? t.title,
+                            description: translations.ar?.description ?? t.description,
+                            features: mergeTagTranslationEntries(t.features, arTagEntries),
+                        };
+                    }
                     return t;
                 }),
             }));
 
             setTranslationsLocked(true);
+            setLastTranslatedAt(new Date());
+            setTranslationSuccess(true);
+            setTimeout(() => setTranslationSuccess(false), 3000);
         } catch (err) {
             setError(
                 getFriendlyFetchErrorMessage(err, "Çeviri başarısız.", {
@@ -2555,26 +2591,52 @@ export function ListingForm({ listing, isNew = false }: ListingFormProps) {
                         </div>
                         <div className="ml-auto flex items-center gap-2">
                             {translationsLocked ? (
-                                LOCALES.map((locale) => (
+                                <>
+                                    {LOCALES.map((locale) => (
+                                        <button
+                                            key={locale.code}
+                                            type="button"
+                                            onClick={() => setActiveLocale(locale.code)}
+                                            className={cn(
+                                                "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+                                                activeLocale === locale.code
+                                                    ? "bg-gray-900 text-white border-gray-900"
+                                                    : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                                            )}
+                                            title={locale.label}
+                                        >
+                                            {locale.code.toUpperCase()}
+                                        </button>
+                                    ))}
                                     <button
-                                        key={locale.code}
                                         type="button"
-                                        onClick={() => setActiveLocale(locale.code)}
+                                        onClick={() => handleTranslate({ force: true })}
+                                        disabled={isTranslating}
                                         className={cn(
-                                            "px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
-                                            activeLocale === locale.code
-                                                ? "bg-gray-900 text-white border-gray-900"
-                                                : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                                            "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors",
+                                            isTranslating
+                                                ? "border-gray-200 text-gray-400 bg-gray-50"
+                                                : "border-orange-200 text-orange-600 hover:bg-orange-50"
                                         )}
-                                        title={locale.label}
+                                        title="Çevirileri yeniden oluştur"
                                     >
-                                        {locale.code.toUpperCase()}
+                                        <RefreshCw className={cn("w-3.5 h-3.5", isTranslating && "animate-spin")} />
+                                        {isTranslating ? "Çeviriliyor..." : "Yenile"}
                                     </button>
-                                ))
+                                    {translationSuccess && (
+                                        <span className="flex items-center gap-1 text-xs font-medium text-green-600 animate-in fade-in">
+                                            <Check className="w-3.5 h-3.5" />
+                                            Tamamlandı
+                                        </span>
+                                    )}
+                                    {lastTranslatedAt && !translationSuccess && (
+                                        <TranslationTimeAgo date={lastTranslatedAt} />
+                                    )}
+                                </>
                             ) : (
                                 <button
                                     type="button"
-                                    onClick={handleTranslate}
+                                    onClick={() => handleTranslate()}
                                     disabled={isTranslating}
                                     className={cn(
                                         "flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold border transition-colors",

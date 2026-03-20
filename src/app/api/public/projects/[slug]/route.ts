@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ListingStatus } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
+import {
+    getLocalizedFallbackLocales,
+    pickLocalizedEntry,
+} from "@/lib/public-content-localization";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +17,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         const { slug } = await params;
         const { searchParams } = new URL(request.url);
         const locale = searchParams.get("locale") || "tr";
-        const localeFallbacks = Array.from(new Set([locale, "tr"]));
+        const localeFallbacks = getLocalizedFallbackLocales(locale);
 
         const project = await prisma.listing.findFirst({
             where: {
@@ -109,7 +113,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             );
         }
 
-        return NextResponse.json({ project });
+        const translation = pickLocalizedEntry(project.translations, locale);
+
+        return NextResponse.json({
+            project: {
+                ...project,
+                translation,
+            },
+        });
     } catch (error) {
         console.error("Public project detail API error:", error);
         return NextResponse.json(

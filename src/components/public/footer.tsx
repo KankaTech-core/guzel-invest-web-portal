@@ -64,7 +64,9 @@ export function Footer({ locale }: { locale: string }) {
 
                     {/* Quick Links */}
                     <div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-6">Hızlı Menü</h3>
+                        <h3 className="text-lg font-bold text-gray-900 mb-6">
+                            {t("footer.quickLinks")}
+                        </h3>
                         <ul className="space-y-3">
                             <li>
                                 <Link
@@ -103,14 +105,16 @@ export function Footer({ locale }: { locale: string }) {
 
                     {/* Categories */}
                     <div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-6">İlan Kategorileri</h3>
+                        <h3 className="text-lg font-bold text-gray-900 mb-6">
+                            {t("footer.categories")}
+                        </h3>
                         <ul className="space-y-3">
                             <li>
                                 <Link
                                     href={`/${locale}/portfoy?type=VILLA`}
                                     className="text-gray-500 hover:text-orange-500 transition-colors"
                                 >
-                                    Villalar
+                                    {t("footer.villas")}
                                 </Link>
                             </li>
                             <li>
@@ -118,7 +122,7 @@ export function Footer({ locale }: { locale: string }) {
                                     href={`/${locale}/portfoy?type=APARTMENT`}
                                     className="text-gray-500 hover:text-orange-500 transition-colors"
                                 >
-                                    Daireler
+                                    {t("footer.apartments")}
                                 </Link>
                             </li>
                             <li>
@@ -126,7 +130,7 @@ export function Footer({ locale }: { locale: string }) {
                                     href={`/${locale}/portfoy?type=LAND`}
                                     className="text-gray-500 hover:text-orange-500 transition-colors"
                                 >
-                                    Arsalar
+                                    {t("footer.lands")}
                                 </Link>
                             </li>
                             <li>
@@ -134,7 +138,7 @@ export function Footer({ locale }: { locale: string }) {
                                     href={`/${locale}/portfoy?type=COMMERCIAL`}
                                     className="text-gray-500 hover:text-orange-500 transition-colors"
                                 >
-                                    Ticari Gayrimenkuller
+                                    {t("footer.commercialProperties")}
                                 </Link>
                             </li>
                         </ul>
@@ -142,7 +146,9 @@ export function Footer({ locale }: { locale: string }) {
 
                     {/* Contact */}
                     <div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-6">İletişim</h3>
+                        <h3 className="text-lg font-bold text-gray-900 mb-6">
+                            {t("footer.contact")}
+                        </h3>
                         <ul className="space-y-4">
                             <li className="flex gap-3">
                                 <MapPin className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
@@ -182,7 +188,7 @@ export function Footer({ locale }: { locale: string }) {
                         {t("footer.copyright")}
                     </p>
                     <p className="text-gray-400 text-sm text-center">
-                        Designed &amp; Developed by{" "}
+                        {t("footer.developedBy")}{" "}
                         <a
                             href="https://kankatech.com/"
                             target="_blank"
@@ -197,13 +203,19 @@ export function Footer({ locale }: { locale: string }) {
                             href={`/${locale}/gizlilik`}
                             className="text-gray-400 hover:text-orange-500 transition-colors"
                         >
-                            Gizlilik Politikası
+                            {t("footer.privacyPolicy")}
+                        </Link>
+                        <Link
+                            href={`/${locale}/cerez-politikasi`}
+                            className="text-gray-400 hover:text-orange-500 transition-colors"
+                        >
+                            {t("footer.cookiePolicy")}
                         </Link>
                         <Link
                             href={`/${locale}/kullanim-sartlari`}
                             className="text-gray-400 hover:text-orange-500 transition-colors"
                         >
-                            Kullanım Şartları
+                            {t("footer.termsOfUse")}
                         </Link>
                     </div>
                 </div>

@@ -25,6 +25,7 @@ import {
     getNextHomepageProjectSlideIndex,
     getPrevHomepageProjectSlideIndex,
 } from "@/lib/homepage-project-carousel";
+import { getHomepageCopy } from "@/lib/public-copy";
 import {
     Building2,
     Handshake,
@@ -47,13 +48,6 @@ import {
 } from "lucide-react";
 
 /* ─── data ─── */
-const propertyTypes = [
-    { value: "RESIDENTIAL", label: "Konut" },
-    { value: "LAND", label: "Arsa" },
-    { value: "COMMERCIAL_CLUSTER", label: "Ticari" },
-    { value: "VILLA", label: "Villa" },
-] as const;
-
 const searchTypeQueryMap: Record<string, string[]> = {
     RESIDENTIAL: ["APARTMENT", "VILLA", "PENTHOUSE"],
     COMMERCIAL_CLUSTER: ["COMMERCIAL", "OFFICE", "SHOP"],
@@ -165,68 +159,6 @@ const alanyaNeighborhoodOptions = [
     "Yeniköy",
     "Yeşilöz",
 ] as const;
-
-const categories = [
-    { type: "APARTMENT", label: "Konut", image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=280&fit=crop" },
-    { type: "LAND", label: "Arsa", image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=400&h=280&fit=crop" },
-    { type: "COMMERCIAL", label: "Ticari", image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=280&fit=crop" },
-    { type: "VILLA", label: "Villa", image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=280&fit=crop" },
-];
-
-const services = [
-    { icon: Handshake, titleKey: "service1Title", descKey: "service1Desc" },
-    { icon: BarChart3, titleKey: "service2Title", descKey: "service2Desc" },
-    { icon: CircleDollarSign, titleKey: "service3Title", descKey: "service3Desc" },
-    { icon: Globe, titleKey: "service4Title", descKey: "service4Desc" },
-    { icon: Settings, titleKey: "service5Title", descKey: "service5Desc" },
-    { icon: ShieldCheck, titleKey: "service6Title", descKey: "service6Desc" },
-];
-
-interface HomepageTestimonialItem {
-    name: string;
-    type: string;
-    quote: string;
-    image: string;
-    video: string | null;
-}
-
-const TESTIMONIALS_FALLBACK: HomepageTestimonialItem[] = [
-    {
-        name: "Ahmet & Elif Yılmaz",
-        type: "Villa · Kargıcak",
-        quote: "Güzel Invest ile hayalimizi gerçeğe dönüştürdük, sürecin her adımında yanımızdaydılar.",
-        image: "/images/testimonials/testimonial-1.png",
-        video: null,
-    },
-    {
-        name: "Mehmet Karaca",
-        type: "Yatırım · Mahmutlar",
-        quote: "Profesyonel yaklaşımları ve pazar bilgileri sayesinde doğru yatırım kararını verdim.",
-        image: "/images/testimonials/testimonial-2.png",
-        video: null,
-    },
-    {
-        name: "Demir Ailesi",
-        type: "Konut · Oba",
-        quote: "Aile olarak huzurla yaşayacağımız yuvamızı bulduk, tüm ekibe teşekkürler.",
-        image: "/images/testimonials/testimonial-3.png",
-        video: null,
-    },
-    {
-        name: "Canan & Emre Aksoy",
-        type: "Daire · Tosmur",
-        quote: "İlk evimizi alırken bizi adım adım yönlendirdiler, hiçbir sorumuzu cevapsız bırakmadılar.",
-        image: "/images/testimonials/testimonial-4.png",
-        video: null,
-    },
-    {
-        name: "Klaus Müller",
-        type: "Vatandaşlık · Kestel",
-        quote: "Türk vatandaşlığı sürecimi sorunsuz tamamladık, mülk yatırımımdan çok memnunum.",
-        image: "/images/testimonials/testimonial-5.png",
-        video: null,
-    },
-];
 
 const resolveEmbeddableTestimonialVideo = (value: string): string | null => {
     const input = value.trim();
@@ -364,32 +296,6 @@ type HomepageMobileCarouselSlide =
 
 type HomepageHeroVideo = ReturnType<typeof resolveHomepageHeroVideo>;
 
-const HERO_FALLBACK: HomepageHeroListing = {
-    id: "fallback",
-    slug: "",
-    saleType: "SALE",
-    type: "VILLA",
-    district: "Kargıcak",
-    rooms: "4+1",
-    area: 320,
-    seaView: true,
-    price: "485000",
-    currency: "EUR",
-    images: [],
-    title: "Kargıcak Premium Villa",
-};
-
-const PROJECT_FALLBACK: HomepageProject = {
-    id: "project-fallback",
-    slug: "",
-    district: "Alanya",
-    projectType: "Konut Projesi",
-    deliveryDate: null,
-    hasLastUnitsBanner: false,
-    title: "Alanya Yeni Yaşam Projesi",
-    images: [],
-};
-
 const HERO_VIDEO_FALLBACK = resolveHomepageHeroVideo(null);
 const HomepagePopupForm = dynamic(() =>
     import("@/components/public/homepage-popup-form").then(
@@ -409,6 +315,47 @@ export default function HomePage() {
     const router = useRouter();
     const params = useParams();
     const locale = params.locale as string;
+    const copy = getHomepageCopy(locale);
+    const propertyTypes = copy.propertyTypes;
+    const categories = copy.categories.items;
+    const serviceIconMap = {
+        Handshake,
+        BarChart3,
+        CircleDollarSign,
+        Globe,
+        Settings,
+        ShieldCheck,
+    } as const;
+    const services = copy.services.items.map((item) => ({
+        ...item,
+        icon: serviceIconMap[item.icon as keyof typeof serviceIconMap],
+    }));
+    const testimonialsFallback = copy.testimonials.items;
+    const projectFallback = copy.projectFallback;
+    const heroFallback: HomepageHeroListing = {
+        id: "fallback",
+        slug: "",
+        saleType: "SALE",
+        type: "VILLA",
+        district: "Kargıcak",
+        rooms: "4+1",
+        area: 320,
+        seaView: true,
+        price: "485000",
+        currency: "EUR",
+        images: [],
+        title: copy.hero.featuredListingAlt,
+    };
+    const homepageProjectFallback: HomepageProject = {
+        id: "project-fallback",
+        slug: "",
+        district: projectFallback.district,
+        projectType: projectFallback.projectType,
+        deliveryDate: null,
+        hasLastUnitsBanner: false,
+        title: projectFallback.title,
+        images: [],
+    };
 
     /* filter state */
     const [saleType, setSaleType] = useState<"SALE" | "RENT">("SALE");
@@ -416,15 +363,15 @@ export default function HomePage() {
     const [neighborhood, setNeighborhood] = useState("");
     const [openDropdown, setOpenDropdown] = useState<"propertyType" | "neighborhood" | null>(null);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
-    const [heroListings, setHeroListings] = useState<HomepageHeroListing[]>([HERO_FALLBACK]);
+    const [heroListings, setHeroListings] = useState<HomepageHeroListing[]>([heroFallback]);
     const [heroSlideIndex, setHeroSlideIndex] = useState(0);
-    const [heroProjects, setHeroProjects] = useState<HomepageProject[]>([PROJECT_FALLBACK]);
+    const [heroProjects, setHeroProjects] = useState<HomepageProject[]>([homepageProjectFallback]);
     const [projectSlideIndex, setProjectSlideIndex] = useState(0);
     const [mobileCarouselSlideIndex, setMobileCarouselSlideIndex] = useState(0);
     const [heroVideo, setHeroVideo] = useState<HomepageHeroVideo>(HERO_VIDEO_FALLBACK);
     const [heroAutoplayReadyUrl, setHeroAutoplayReadyUrl] = useState<string | null>(null);
     const [isHeroVideoModalOpen, setIsHeroVideoModalOpen] = useState(false);
-    const [testimonials, setTestimonials] = useState(TESTIMONIALS_FALLBACK);
+    const [testimonials, setTestimonials] = useState(testimonialsFallback);
     const [articles, setArticles] = useState<HomepageArticlePreview[]>([]);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isMobileSearchSticky, setIsMobileSearchSticky] = useState(false);
@@ -556,6 +503,20 @@ export default function HomePage() {
     useEffect(() => {
         let isMounted = true;
         const controller = new AbortController();
+        const fallbackListing: HomepageHeroListing = {
+            id: "fallback",
+            slug: "",
+            saleType: "SALE",
+            type: "VILLA",
+            district: "Kargıcak",
+            rooms: "4+1",
+            area: 320,
+            seaView: true,
+            price: "485000",
+            currency: "EUR",
+            images: [],
+            title: copy.hero.featuredListingAlt,
+        };
 
         const loadHomepageHeroListing = async () => {
             try {
@@ -575,13 +536,13 @@ export default function HomePage() {
                     ? data.listings
                     : [];
                 setHeroListings(
-                    incomingListings.length > 0 ? incomingListings : [HERO_FALLBACK]
+                    incomingListings.length > 0 ? incomingListings : [fallbackListing]
                 );
                 setHeroSlideIndex(0);
                 setMobileCarouselSlideIndex(0);
             } catch {
                 if (isMounted) {
-                    setHeroListings([HERO_FALLBACK]);
+                    setHeroListings([fallbackListing]);
                     setHeroSlideIndex(0);
                     setMobileCarouselSlideIndex(0);
                 }
@@ -594,7 +555,7 @@ export default function HomePage() {
             isMounted = false;
             controller.abort();
         };
-    }, [locale]);
+    }, [copy.hero.featuredListingAlt, locale]);
 
     useEffect(() => {
         let isMounted = true;
@@ -659,7 +620,7 @@ export default function HomePage() {
 
         const loadHomepageArticles = async () => {
             try {
-                const response = await fetch("/api/public/articles", {
+                const response = await fetch(`/api/public/articles?locale=${locale}`, {
                     signal: controller.signal,
                     cache: "no-store",
                 });
@@ -761,6 +722,16 @@ export default function HomePage() {
     useEffect(() => {
         let isMounted = true;
         const controller = new AbortController();
+        const fallbackProject: HomepageProject = {
+            id: "project-fallback",
+            slug: "",
+            district: projectFallback.district,
+            projectType: projectFallback.projectType,
+            deliveryDate: null,
+            hasLastUnitsBanner: false,
+            title: projectFallback.title,
+            images: [],
+        };
 
         const loadHomepageProjects = async () => {
             try {
@@ -842,13 +813,13 @@ export default function HomePage() {
                 setHeroProjects(
                     normalizedProjects.length > 0
                         ? normalizedProjects
-                        : [PROJECT_FALLBACK]
+                        : [fallbackProject]
                 );
                 setProjectSlideIndex(0);
                 setMobileCarouselSlideIndex(0);
             } catch {
                 if (isMounted) {
-                    setHeroProjects([PROJECT_FALLBACK]);
+                    setHeroProjects([fallbackProject]);
                     setProjectSlideIndex(0);
                     setMobileCarouselSlideIndex(0);
                 }
@@ -861,7 +832,7 @@ export default function HomePage() {
             isMounted = false;
             controller.abort();
         };
-    }, [locale]);
+    }, [locale, projectFallback.district, projectFallback.projectType, projectFallback.title]);
 
     const handleSearch = () => {
         const params = new URLSearchParams();
@@ -880,7 +851,7 @@ export default function HomePage() {
     };
 
     const safeHeroListings =
-        heroListings.length > 0 ? heroListings : [HERO_FALLBACK];
+        heroListings.length > 0 ? heroListings : [heroFallback];
     const getHeroImageUrl = (listing: HomepageHeroListing, index = 0) =>
         listing.images[index]
             ? getMediaUrl(listing.images[index])
@@ -900,7 +871,7 @@ export default function HomePage() {
     const activeHeroListing =
         activeHeroSlide?.kind === "listing" ? activeHeroSlide.listing : null;
     const safeHeroProjects =
-        heroProjects.length > 0 ? heroProjects : [PROJECT_FALLBACK];
+        heroProjects.length > 0 ? heroProjects : [homepageProjectFallback];
     const getProjectImageUrl = (project: HomepageProject, index = 0) =>
         project.images[index]
             ? getMediaUrl(project.images[index])
@@ -1150,16 +1121,16 @@ export default function HomePage() {
                         <div className="lg:col-span-5 pt-2 sm:pt-4 lg:pt-8">
                             <div className="reveal hidden lg:flex items-center justify-center lg:justify-start gap-2 bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm mb-6 lg:mb-6 w-fit mx-auto lg:mx-0">
                                 <Globe className="w-4 h-4" />
-                                Alanya Satış & Yatırım Merkezi
+                                {copy.hero.badge}
                             </div>
 
                             <h1 className="reveal text-5xl md:text-6xl leading-tight text-gray-900 mb-6 font-semibold text-center lg:text-left">
-                                Güzel Şehre<br />
-                                <span className="text-orange-500">Güzel</span> Projeler
+                                {copy.hero.title}<br />
+                                <span className="text-orange-500">{copy.hero.titleHighlight}</span> {copy.hero.titleEnd}
                             </h1>
 
                             <p className="reveal text-lg text-gray-500 mb-8 leading-relaxed max-w-md text-center lg:text-left mx-auto lg:mx-0">
-                                2001&apos;den bu yana Alanya&apos;da güvenilir gayrimenkul platformu. Satılık, kiralık mülkler ve profesyonel danışmanlık hizmetleriyle yanınızdayız.
+                                {copy.hero.subtitle}
                             </p>
 
                             {/* Mobile Mixed Slider (Projects + Listings) */}
@@ -1189,7 +1160,7 @@ export default function HomePage() {
                                                                     href={`/${locale}/portfoy`}
                                                                     className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-6 py-3 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
                                                                 >
-                                                                    Portföyü Gör
+                                                                    {copy.hero.portfolioCta}
                                                                     <ChevronRight className="h-4 w-4" />
                                                                 </Link>
                                                             </div>
@@ -1219,7 +1190,7 @@ export default function HomePage() {
                                                                 ) : null}
                                                                 <Image
                                                                     src={heroImageUrl}
-                                                                    alt={listing.title || "Featured Listing"}
+                                                                    alt={listing.title || copy.hero.featuredListingAlt}
                                                                     fill
                                                                     sizes="(max-width: 1023px) calc(100vw - 4rem), 100vw"
                                                                     className="h-full w-full object-cover"
@@ -1312,7 +1283,7 @@ export default function HomePage() {
                                                             ) : null}
                                                             <Image
                                                                 src={projectImageUrl}
-                                                                alt={project.title || "Featured Project"}
+                                                                alt={project.title || copy.hero.featuredProjectAlt}
                                                                 fill
                                                                 sizes="(max-width: 1023px) calc(100vw - 4rem), 100vw"
                                                                 priority={index === 0}
@@ -1330,7 +1301,7 @@ export default function HomePage() {
                                                                 {/* Badges Row - Smaller Text */}
                                                                 <div className="mb-2 flex items-center gap-2">
                                                                     <span className="rounded-md bg-orange-500 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white">
-                                                                        Proje
+                                                                        {copy.hero.projectSlideLabel}
                                                                     </span>
                                                                     {project.projectType ? (
                                                                         <span className="rounded-md bg-white/20 px-2.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-md">
@@ -1350,7 +1321,7 @@ export default function HomePage() {
                                                                     {project.deliveryDate ? (
                                                                         <>
                                                                             <span className="inline-block h-1 w-1 rounded-full bg-white/60" />
-                                                                            <span>Teslim: {project.deliveryDate}</span>
+                                                                            <span>{copy.hero.projectDeliveryPrefix}: {project.deliveryDate}</span>
                                                                         </>
                                                                     ) : null}
                                                                     <div className="ml-auto flex gap-2">
@@ -1446,20 +1417,17 @@ export default function HomePage() {
 
                             {/* Stats */}
                             <div className="reveal flex items-center gap-8 mt-12 pt-8 border-t border-gray-200">
-                                <div>
-                                    <p className="text-3xl font-semibold text-gray-900">300+</p>
-                                    <p className="text-sm text-gray-500">Mutlu Müşteri</p>
-                                </div>
-                                <div className="w-px h-12 bg-gray-200" />
-                                <div>
-                                    <p className="text-3xl font-semibold text-gray-900">20+</p>
-                                    <p className="text-sm text-gray-500">Yıllık Tecrübe</p>
-                                </div>
-                                <div className="w-px h-12 bg-gray-200" />
-                                <div>
-                                    <p className="text-3xl font-semibold text-gray-900">150+</p>
-                                    <p className="text-sm text-gray-500">Aktif İlan</p>
-                                </div>
+                                {copy.hero.stats.map((stat, index) => (
+                                    <div key={stat.label} className="contents">
+                                        <div>
+                                            <p className="text-3xl font-semibold text-gray-900">{stat.value}</p>
+                                            <p className="text-sm text-gray-500">{stat.label}</p>
+                                        </div>
+                                        {index < copy.hero.stats.length - 1 ? (
+                                            <div className="w-px h-12 bg-gray-200" />
+                                        ) : null}
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
@@ -1487,7 +1455,7 @@ export default function HomePage() {
                                                             href={`/${locale}/portfoy`}
                                                             className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-6 py-3 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
                                                         >
-                                                            Portföyü Gör
+                                                            {copy.hero.portfolioCta}
                                                             <ChevronRight className="h-4 w-4" />
                                                         </Link>
                                                     </div>
@@ -1513,7 +1481,7 @@ export default function HomePage() {
                                                 ) : null}
                                                 <Image
                                                     src={projectImageUrl}
-                                                    alt={project.title || "Featured Project"}
+                                                    alt={project.title || copy.hero.featuredProjectAlt}
                                                     fill
                                                     sizes="(min-width: 1280px) 853px, (min-width: 1024px) 66vw, 100vw"
                                                     priority={index === 0}
@@ -1537,7 +1505,7 @@ export default function HomePage() {
                                             <>
                                                 <div className="flex items-center gap-2 mb-3">
                                                     <span className="px-3 py-1 text-xs font-light text-white uppercase tracking-wider rounded-md bg-orange-500">
-                                                        Proje
+                                                        {copy.hero.projectSlideLabel}
                                                     </span>
                                                     {activeProject.projectType ? (
                                                         <span className="px-3 py-1 text-xs font-light text-white bg-white/20 backdrop-blur-md rounded-md">
@@ -1555,7 +1523,7 @@ export default function HomePage() {
                                                     {activeProject.deliveryDate ? (
                                                         <>
                                                             <div className="w-1 h-1 rounded-full bg-white/50" />
-                                                            <span>Teslim: {activeProject.deliveryDate}</span>
+                                                            <span>{copy.hero.projectDeliveryPrefix}: {activeProject.deliveryDate}</span>
                                                         </>
                                                     ) : null}
                                                 </div>
@@ -1615,9 +1583,9 @@ export default function HomePage() {
                                                                 href={`/${locale}/portfoy`}
                                                                 className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/25 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/35"
                                                             >
-                                                                Portföyü Gör
-                                                                <ChevronRight className="h-4 w-4" />
-                                                            </Link>
+                                                                {copy.hero.portfolioCta}
+                                                                    <ChevronRight className="h-4 w-4" />
+                                                                </Link>
                                                         </div>
                                                     </div>
                                                 );
@@ -1639,9 +1607,9 @@ export default function HomePage() {
                                                             title={listing.title}
                                                         />
                                                     ) : null}
-                                                    <Image
-                                                        src={heroImageUrl}
-                                                        alt={listing.title || "Featured Listing"}
+                                                <Image
+                                                    src={heroImageUrl}
+                                                    alt={listing.title || copy.hero.featuredListingAlt}
                                                         fill
                                                         sizes="(min-width: 1280px) 427px, (min-width: 1024px) 33vw, 100vw"
                                                         className="h-full w-full object-cover"
@@ -1762,7 +1730,7 @@ export default function HomePage() {
                                         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                                         <div className="pointer-events-none absolute bottom-3 left-3 inline-flex items-center gap-2 rounded-full border border-white/30 bg-black/45 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition-colors group-hover:bg-black/60">
                                             <Play className="h-3.5 w-3.5" />
-                                            Videoyu Büyüt
+                                            {th("enlargeVideo")}
                                         </div>
                                     </button>
                                 </div>
@@ -2123,7 +2091,7 @@ export default function HomePage() {
                                     <div className="relative h-48 overflow-hidden">
                                         <Image
                                             src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=700&h=400&fit=crop"
-                                            alt="Satılık & Kiralık Gayrimenkul"
+                                            alt={featured.title}
                                             fill
                                             sizes="(min-width: 1280px) 533px, (min-width: 1024px) 40vw, 100vw"
                                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -2143,12 +2111,12 @@ export default function HomePage() {
 
                                         {/* Title */}
                                         <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-orange-600 transition-colors">
-                                            {th(featured.titleKey)}
+                                            {featured.title}
                                         </h3>
 
                                         {/* Description */}
                                         <p className="text-sm text-gray-500 leading-relaxed mb-8 max-w-sm">
-                                            {th(featured.descKey)}
+                                            {featured.description}
                                         </p>
 
                                         {/* Trust data point */}
@@ -2212,12 +2180,12 @@ export default function HomePage() {
 
                                             {/* Title */}
                                             <h3 className="font-semibold text-gray-900 text-sm mb-1.5 group-hover:text-orange-600 transition-colors">
-                                                {th(svc.titleKey)}
+                                                {svc.title}
                                             </h3>
 
                                             {/* Description */}
                                             <p className="text-xs text-gray-400 leading-relaxed">
-                                                {th(svc.descKey)}
+                                                {svc.description}
                                             </p>
 
                                             {/* Hover arrow */}
@@ -2242,25 +2210,17 @@ export default function HomePage() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                         <div className="reveal">
                             <span className="text-xs text-orange-400 font-semibold uppercase tracking-wide">
-                                Lokasyon Analizi
+                                {copy.highlights.label}
                             </span>
                             <h2 className="text-3xl font-bold text-white mt-3 mb-6">
-                                Neden Alanya?
+                                {copy.highlights.title}
                             </h2>
                             <p className="text-gray-400 leading-relaxed mb-6">
-                                Alanya, güçlü turizm ekonomisi, yıl boyu yaşam imkanı ve uluslararası
-                                talep dengesiyle gayrimenkul yatırımında istikrarlı bir değer artışı
-                                sunar. Hem oturum hem de yatırım hedefleri için yüksek potansiyele
-                                sahip bir bölgedir.
+                                {copy.highlights.description}
                             </p>
 
                             <div className="grid grid-cols-2 gap-4 mb-8">
-                                {[
-                                    { value: "300+", label: "Güneşli gün/yıl" },
-                                    { value: "25°C", label: "Ortalama sıcaklık" },
-                                    { value: "8M+", label: "Üzerinde turist" },
-                                    { value: "110+", label: "Ülkeden yatırımcı" },
-                                ].map((stat) => (
+                                {copy.highlights.stats.map((stat) => (
                                     <div key={stat.label} className="bg-gray-800 rounded-lg p-4">
                                         <p className="text-2xl font-bold text-orange-500">{stat.value}</p>
                                         <p className="text-xs text-gray-500 mt-1">{stat.label}</p>
@@ -2272,7 +2232,7 @@ export default function HomePage() {
                                 href={`/${locale}/iletisim`}
                                 className="inline-flex items-center gap-2 rounded-lg bg-orange-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
                             >
-                                Daha Fazla Bilgi
+                                {copy.highlights.cta}
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                         </div>
@@ -2295,7 +2255,7 @@ export default function HomePage() {
                                     </div>
                                     <div>
                                         <p className="text-sm font-semibold text-gray-900">
-                                            Yatırım Getirisi
+                                            {copy.highlights.roiLabel}
                                         </p>
                                     </div>
                                 </div>
@@ -2320,10 +2280,10 @@ export default function HomePage() {
                     <div className="reveal flex items-end justify-between mb-12 pb-6 border-b border-gray-100">
                         <div>
                             <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
-                                Müşteri Deneyimleri
+                                {copy.testimonials.label}
                             </span>
                             <h2 className="text-3xl font-bold text-gray-900 mt-2">
-                                Sizden Gelenler
+                                {copy.testimonials.title}
                             </h2>
                         </div>
                         {/* Navigation Arrows */}
@@ -2408,16 +2368,16 @@ export default function HomePage() {
                     {/* Left – Title */}
                     <div className="flex-shrink-0">
                         <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-400">
-                            Harekete Geçin
+                            {copy.cta.label}
                         </span>
                         <h2 className="text-2xl sm:text-3xl font-bold text-white mt-2">
-                            Yatırıma{" "}
+                            {copy.cta.title}{" "}
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-orange-400">
-                                Hemen Başlayın
+                                {copy.cta.titleHighlight}
                             </span>
                         </h2>
                         <p className="text-gray-400 mt-2 text-sm max-w-md">
-                            Alanya&apos;daki fırsatları keşfedin, uzman ekibimizle tanışın.
+                            {copy.cta.description}
                         </p>
                     </div>
 
@@ -2425,9 +2385,9 @@ export default function HomePage() {
                     <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-px bg-gray-700/50 rounded-xl overflow-hidden flex-shrink-0">
                         {
                             [
-                                { icon: Search, title: "Portföyü Keşfet", href: `/${locale}/portfoy` },
-                                { icon: Handshake, title: "İletişime Geç", href: `/${locale}/iletisim` },
-                                { icon: Building2, title: "Satış Yap", onClick: () => window.dispatchEvent(new Event("open-homepage-popup")) },
+                                { icon: Search, title: copy.cta.portfolio, href: `/${locale}/portfoy` },
+                                { icon: Handshake, title: copy.cta.contact, href: `/${locale}/iletisim` },
+                                { icon: Building2, title: copy.cta.sell, onClick: () => window.dispatchEvent(new Event("open-homepage-popup")) },
                             ].map((card, idx) => {
                                 const CardIcon = card.icon;
                                 const cardContent = (
@@ -2481,49 +2441,24 @@ export default function HomePage() {
                     <div className="reveal flex items-end justify-between mb-12 pb-6 border-b border-gray-100">
                         <div>
                             <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-orange-500">
-                                SSS
+                                {copy.faq.label}
                             </span>
                             <h2 className="text-3xl font-bold text-gray-900 mt-2">
-                                Sıkça Sorulan Sorular
+                                {copy.faq.title}
                             </h2>
                         </div>
                         <Link
                             href={`/${locale}/iletisim`}
                             className="hidden sm:inline-flex items-center gap-2 text-sm text-gray-500 hover:text-orange-500 transition-colors font-medium"
                         >
-                            Daha Fazla Soru?
+                            {copy.faq.moreQuestions}
                             <ArrowRight className="w-4 h-4" />
                         </Link>
                     </div>
 
                     {/* FAQ Items */}
                     <div className="reveal-stagger grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-0">
-                        {[
-                            {
-                                q: "Yabancı uyruklu kişiler Türkiye'de mülk satın alabilir mi?",
-                                a: "Evet, birçok ülke vatandaşı Türkiye'de gayrimenkul satın alabilir. Askeri bölgeler dışında kalan alanlarda mülk edinme hakkına sahipsiniz. Ekibimiz tüm süreçte size rehberlik eder.",
-                            },
-                            {
-                                q: "Satın alma süreci ne kadar sürer?",
-                                a: "Tapu işlemleri genellikle 3-7 iş günü içinde tamamlanır. Tüm belgelerin hazırlanması ve onaylanması dahil süreç ortalama 2-4 hafta sürmektedir.",
-                            },
-                            {
-                                q: "Gayrimenkul yatırımıyla Türk vatandaşlığı alınabilir mi?",
-                                a: "Evet, 400.000 USD ve üzeri değerinde gayrimenkul yatırımı yaparak Türk vatandaşlığına başvurabilirsiniz. Mülkü 3 yıl boyunca satmama taahhüdü gerekmektedir.",
-                            },
-                            {
-                                q: "Mülk yönetimi hizmeti sunuyor musunuz?",
-                                a: "Evet, satın aldığınız mülkün kiralanması, bakımı ve aidat takibi gibi tüm yönetim süreçlerini sizin adınıza profesyonelce yürütüyoruz.",
-                            },
-                            {
-                                q: "Hangi ödeme yöntemlerini kabul ediyorsunuz?",
-                                a: "Banka havalesi, EFT ve uluslararası transfer kabul ediyoruz. Taksitli ödeme seçenekleri sunan projelerimiz de mevcuttur.",
-                            },
-                            {
-                                q: "Alanya'da en çok tercih edilen bölgeler hangileri?",
-                                a: "Mahmutlar, Kargıcak, Kestel, Oba ve Tosmur en popüler bölgeler arasındadır. Her bölge farklı avantajlar sunar; ekibimiz ihtiyaçlarınıza en uygun lokasyonu belirlemenize yardımcı olur.",
-                            },
-                        ].map((faq, idx) => (
+                        {copy.faq.items.map((faq, idx) => (
                             <div
                                 key={idx}
                                 className="reveal is-visible border-b border-gray-100"
@@ -2534,7 +2469,7 @@ export default function HomePage() {
                                     className="w-full flex items-center justify-between py-5 text-left group"
                                 >
                                     <span className="text-sm font-semibold text-gray-900 pr-4 group-hover:text-orange-600 transition-colors">
-                                        {faq.q}
+                                        {faq.question}
                                     </span>
                                     <div className="flex-shrink-0 w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center group-hover:border-orange-300 group-hover:text-orange-500 transition-colors">
                                         {openFaq === idx ? (
@@ -2550,7 +2485,7 @@ export default function HomePage() {
                                 >
                                     <div className="overflow-hidden">
                                         <p className="text-sm text-gray-400 leading-relaxed pb-5">
-                                            {faq.a}
+                                            {faq.answer}
                                         </p>
                                     </div>
                                 </div>

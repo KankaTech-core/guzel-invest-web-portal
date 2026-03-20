@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { useLocale } from "next-intl";
 import { cn } from "@/lib/utils";
 
 type PlayButtonPlacement = "center" | "corner";
@@ -19,6 +20,33 @@ interface StyledVideoPlayerProps {
     className?: string;
 }
 
+const MEDIA_CONTROL_COPY = {
+    tr: {
+        pause: "Videoyu durdur",
+        play: "Videoyu oynat",
+        unmute: "Sesi aç",
+        mute: "Sesi kapat",
+    },
+    en: {
+        pause: "Pause video",
+        play: "Play video",
+        unmute: "Unmute audio",
+        mute: "Mute audio",
+    },
+    ru: {
+        pause: "Остановить видео",
+        play: "Воспроизвести видео",
+        unmute: "Включить звук",
+        mute: "Выключить звук",
+    },
+    de: {
+        pause: "Video pausieren",
+        play: "Video abspielen",
+        unmute: "Ton einschalten",
+        mute: "Ton ausschalten",
+    },
+} as const;
+
 export function StyledVideoPlayer({
     src,
     title,
@@ -31,6 +59,10 @@ export function StyledVideoPlayer({
     showPlayButtonOnlyWhenPaused = false,
     className,
 }: StyledVideoPlayerProps) {
+    const locale = useLocale();
+    const normalizedLocale = locale.toLowerCase().split("-")[0] as keyof typeof MEDIA_CONTROL_COPY;
+    const controlCopy =
+        MEDIA_CONTROL_COPY[normalizedLocale] ?? MEDIA_CONTROL_COPY.tr;
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const [isPlaying, setIsPlaying] = useState(Boolean(autoPlay));
     const [isMuted, setIsMuted] = useState(Boolean(mutedByDefault));
@@ -116,7 +148,7 @@ export function StyledVideoPlayer({
                             ? "absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2"
                             : "absolute bottom-3 right-14 h-9 w-9"
                     )}
-                    aria-label={isPlaying ? "Videoyu durdur" : "Videoyu oynat"}
+                    aria-label={isPlaying ? controlCopy.pause : controlCopy.play}
                 >
                     {showPlayButtonOnlyWhenPaused ? (
                         <Play className={playButtonPlacement === "center" ? "h-6 w-6" : "h-4 w-4"} />
@@ -138,7 +170,7 @@ export function StyledVideoPlayer({
                     "absolute bottom-3 right-3 z-10 inline-flex items-center justify-center rounded-full border border-white/25 bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/60",
                     playButtonPlacement === "center" ? "h-9 w-9" : "h-9 w-9"
                 )}
-                aria-label={isMuted ? "Sesi aç" : "Sesi kapat"}
+                aria-label={isMuted ? controlCopy.unmute : controlCopy.mute}
             >
                 {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             </button>

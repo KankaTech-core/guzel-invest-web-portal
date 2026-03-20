@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { CountryCode } from "libphonenumber-js";
+import { useTranslations } from "next-intl";
 import { Input, Checkbox, Button } from "@/components/ui";
 import { PhoneInput } from "@/components/ui/phone-input";
 
@@ -15,7 +16,6 @@ const DEFAULT_COUNTRY_BY_LOCALE: Partial<Record<string, CountryCode>> = {
     en: "AE",
     de: "DE",
     ru: "RU",
-    ar: "AE",
 };
 
 function getDefaultCountryForLocale(locale?: string): CountryCode {
@@ -30,6 +30,8 @@ export const HeroContactForm = ({
     locale,
     projectSlug,
 }: HeroContactFormProps) => {
+    const t = useTranslations("leadForm");
+    const tp = useTranslations("projectDetail");
     const defaultPhoneCountry = getDefaultCountryForLocale(locale);
     const [formData, setFormData] = useState({
         name: "",
@@ -46,7 +48,7 @@ export const HeroContactForm = ({
     const hasPhoneValue = formData.phone.trim().length > 0;
     const phoneIsValid = /^\+\d{8,15}$/.test(formData.phone);
     const phoneError = hasPhoneValue && !phoneIsValid
-        ? "Geçerli bir telefon numarası girin."
+        ? t("invalidPhone")
         : undefined;
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -54,11 +56,11 @@ export const HeroContactForm = ({
         setSubmitError(null);
 
         if (!formData.acceptedTerms) {
-            alert("Lütfen koşulları kabul ettiğinizi onaylayın.");
+            alert(t("acceptTermsRequired"));
             return;
         }
         if (!phoneIsValid) {
-            alert("Lütfen geçerli bir telefon numarası girin.");
+            alert(t("invalidPhone"));
             return;
         }
 
@@ -84,7 +86,7 @@ export const HeroContactForm = ({
                     error?: string;
                 } | null;
                 throw new Error(
-                    body?.error || "Form gönderimi sırasında bir hata oluştu."
+                    body?.error || t("submitError")
                 );
             }
 
@@ -101,7 +103,7 @@ export const HeroContactForm = ({
             const message =
                 error instanceof Error
                     ? error.message
-                    : "Form gönderimi sırasında bir hata oluştu.";
+                    : t("submitError");
             setSubmitError(message);
         } finally {
             setIsSubmitting(false);
@@ -111,13 +113,13 @@ export const HeroContactForm = ({
     return (
         <div className="w-full [&_label]:!text-white/90 [&_.checkbox-label]:!text-white/90 [&_input]:!bg-white/10 [&_input]:!border-white/20 [&_input]:!text-white focus:[&_input]:!border-white/50 [&_input::placeholder]:!text-white/50 [&_.PhoneInputCountrySelectArrow]:!text-white/80">
             <h3 className="mb-6 text-2xl font-bold text-white text-center">
-                Bilgi Alın
+                {tp("heroFormTitle")}
             </h3>
 
             <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
                 <Input
-                    label="Adınız"
-                    placeholder="Adınızı girin"
+                    label={t("nameLabel")}
+                    placeholder={t("namePlaceholder")}
                     required
                     value={formData.name}
                     onChange={(e) =>
@@ -126,8 +128,8 @@ export const HeroContactForm = ({
                 />
 
                 <Input
-                    label="Soyadınız"
-                    placeholder="Soyadınızı girin"
+                    label={t("surnameLabel")}
+                    placeholder={t("surnamePlaceholder")}
                     required
                     value={formData.surname}
                     onChange={(e) =>
@@ -136,9 +138,9 @@ export const HeroContactForm = ({
                 />
 
                 <Input
-                    label="E-posta Adresiniz"
+                    label={t("emailLabel")}
                     type="email"
-                    placeholder="ornek@email.com"
+                    placeholder={t("emailPlaceholder")}
                     required
                     value={formData.email}
                     onChange={(e) =>
@@ -148,7 +150,7 @@ export const HeroContactForm = ({
 
                 <div>
                     <label className="mb-1.5 block text-sm font-medium text-white/90">
-                        Telefon Numaranız
+                        {t("phoneLabel")}
                     </label>
                     <div className="[&_.phone-input-wrapper]:!rounded-lg [&_.phone-input-wrapper]:!border-white/20 [&_.phone-input-wrapper]:!bg-white/10 [&_.phone-input-wrapper]:!px-3 [&_.phone-input-wrapper:focus-within]:!border-white/50 [&_.phone-input-country-btn]:!text-white [&_.phone-input-chevron]:!text-white/80 [&_.phone-input-code]:!text-white [&_.phone-input-divider]:!bg-white/20 [&_.phone-input-field]:!border-none [&_.phone-input-field]:!bg-transparent [&_.phone-input-field]:!px-2 [&_.phone-input-field]:!text-white [&_.phone-input-field]:!focus:ring-0 [&_.phone-input-field::placeholder]:!text-white/50">
                         <PhoneInput
@@ -168,7 +170,7 @@ export const HeroContactForm = ({
 
                 <div className="pt-2">
                     <Checkbox
-                        label="Kullanıcı metnini okudum, iletişim kurulmasını kabul ediyorum."
+                        label={t("termsCheckbox")}
                         checked={formData.acceptedTerms}
                         onChange={(checked) =>
                             setFormData({ ...formData, acceptedTerms: checked })
@@ -184,7 +186,7 @@ export const HeroContactForm = ({
                         disabled={!formData.acceptedTerms || isSubmitting}
                         loading={isSubmitting}
                     >
-                        {isSuccess ? "Gönderildi!" : "Gönder"}
+                        {isSuccess ? t("submittedWithBang") : t("submit")}
                     </Button>
                     {submitError && (
                         <p className="mt-2 text-sm text-center text-red-400">{submitError}</p>

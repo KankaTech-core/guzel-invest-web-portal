@@ -11,6 +11,7 @@ import { Footer } from "@/components/public/footer";
 import { FloatingSocialButtons } from "@/components/public/floating-social-buttons";
 import { NavbarHydrated } from "@/components/public/navbar-hydrated";
 import { AdminOverlayControls } from "@/components/public/admin-overlay-controls";
+import { CookieConsent } from "@/components/public/cookie-consent";
 import { VersionProvider } from "@/contexts/VersionContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { getSession } from "@/lib/auth";
@@ -22,17 +23,38 @@ const outfit = Outfit({
 });
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
-
-export const metadata: Metadata = {
-    title: "Güzel Invest | Alanya Gayrimenkul",
-    description:
-        "Alanya'da satılık villa, daire ve arsa. 2001'den beri güvenilir gayrimenkul danışmanlığı.",
-};
-
 type Props = {
     children: React.ReactNode;
     params: Promise<{ locale: string }>;
 };
+
+const localeMetadata: Record<string, Pick<Metadata, "title" | "description">> = {
+    tr: {
+        title: "Güzel Invest | Alanya Gayrimenkul",
+        description:
+            "Alanya'da satılık villa, daire ve arsa. 2001'den beri güvenilir gayrimenkul danışmanlığı.",
+    },
+    en: {
+        title: "Güzel Invest | Real Estate in Alanya",
+        description:
+            "Villas, apartments, land, and investment opportunities for sale in Alanya with trusted real estate guidance since 2001.",
+    },
+    ru: {
+        title: "Güzel Invest | Недвижимость в Аланье",
+        description:
+            "Виллы, квартиры, земельные участки и инвестиционные возможности в Аланье с надежным сопровождением с 2001 года.",
+    },
+    de: {
+        title: "Güzel Invest | Immobilien in Alanya",
+        description:
+            "Villen, Wohnungen, Grundstücke und Investitionsmöglichkeiten in Alanya mit verlässlicher Immobilienberatung seit 2001.",
+    },
+};
+
+export async function generateMetadata({ params }: Pick<Props, "params">): Promise<Metadata> {
+    const { locale } = await params;
+    return localeMetadata[locale] ?? localeMetadata.tr;
+}
 
 export default async function LocaleLayout({ children, params }: Props) {
     const { locale } = await params;
@@ -76,6 +98,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
                                 <main className="flex-1">{children}</main>
                                 <Footer locale={locale} />
                                 <FloatingSocialButtons />
+                                <CookieConsent />
                                 {isAdminUser ? <AdminOverlayControls /> : null}
                             </div>
                         </CurrencyProvider>
