@@ -666,9 +666,9 @@ export default function HomePage() {
                 const data = (await response.json()) as {
                     testimonials?: Array<{
                         id: string;
-                        name: string;
-                        quote: string;
-                        serviceName: string;
+                        name: string | null;
+                        quote: string | null;
+                        serviceName: string | null;
                         imageUrl: string | null;
                         videoUrl?: string | null;
                     }>;
@@ -679,9 +679,9 @@ export default function HomePage() {
                 if (incoming && incoming.length > 0) {
                     setTestimonials(
                         incoming.map((t) => ({
-                            name: t.name,
-                            type: t.serviceName,
-                            quote: t.quote,
+                            name: t.name ?? "",
+                            type: t.serviceName ?? "",
+                            quote: t.quote ?? "",
                             image: t.imageUrl
                                 ? getMediaUrl(t.imageUrl)
                                 : "/images/testimonials/testimonial-1.png",
@@ -2378,23 +2378,29 @@ export default function HomePage() {
                                 </div>
 
                                 {/* Content */}
+                                {(item.quote || item.name || item.type) && (
                                 <div className="p-5 flex-1 flex flex-col justify-between">
                                     {/* Quote */}
+                                    {item.quote && (
                                     <p className="text-sm text-gray-600 leading-relaxed mb-4">
                                         &ldquo;{item.quote}&rdquo;
                                     </p>
+                                    )}
 
                                     {/* Divider + Info */}
+                                    {(item.name || item.type) && (
                                     <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
                                         <div>
-                                            <p className="text-sm font-semibold text-gray-900">{item.name}</p>
-                                            <p className="text-[11px] text-gray-400 mt-0.5">{item.type}</p>
+                                            {item.name && <p className="text-sm font-semibold text-gray-900">{item.name}</p>}
+                                            {item.type && <p className="text-[11px] text-gray-400 mt-0.5">{item.type}</p>}
                                         </div>
                                         <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
                                             <Check className="w-4 h-4 text-white" />
                                         </div>
                                     </div>
+                                    )}
                                 </div>
+                                )}
                             </div>
                         ))}
                     </div>

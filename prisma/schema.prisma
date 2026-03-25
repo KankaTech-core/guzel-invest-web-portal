@@ -469,9 +469,9 @@ model ListingFAQTranslation {
 
 model Testimonial {
   id          String   @id @default(cuid())
-  name        String
-  quote       String
-  serviceName String
+  name        String?
+  quote       String?
+  serviceName String?
   imageUrl    String?
   videoUrl    String?
   order       Int      @default(0)

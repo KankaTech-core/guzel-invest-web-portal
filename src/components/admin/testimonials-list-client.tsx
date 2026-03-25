@@ -9,9 +9,9 @@ import { cn } from "@/lib/utils";
 
 interface Testimonial {
     id: string;
-    name: string;
-    quote: string;
-    serviceName: string;
+    name: string | null;
+    quote: string | null;
+    serviceName: string | null;
     imageUrl: string | null;
     videoUrl?: string | null;
     order: number;
@@ -143,7 +143,7 @@ export function TestimonialsListClient({
                                         <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-gray-100">
                                             <Image
                                                 src={`${minioBaseUrl}/guzel-invest/${testimonial.imageUrl}`}
-                                                alt={testimonial.name}
+                                                alt={testimonial.name ?? "Referans"}
                                                 fill
                                                 className="object-cover"
                                             />
@@ -151,20 +151,24 @@ export function TestimonialsListClient({
                                     ) : (
                                         <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
                                             <span className="text-sm font-semibold text-orange-600">
-                                                {testimonial.name.charAt(0).toUpperCase()}
+                                                {(testimonial.name ?? "?").charAt(0).toUpperCase()}
                                             </span>
                                         </div>
                                     )}
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className="text-sm font-bold text-gray-900">
-                                        {testimonial.name}
+                                        {testimonial.name ?? "—"}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-600 border border-orange-200">
-                                        {testimonial.serviceName}
-                                    </span>
+                                    {testimonial.serviceName ? (
+                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-600 border border-orange-200">
+                                            {testimonial.serviceName}
+                                        </span>
+                                    ) : (
+                                        <span className="text-sm text-gray-400">—</span>
+                                    )}
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex items-center justify-end gap-2">

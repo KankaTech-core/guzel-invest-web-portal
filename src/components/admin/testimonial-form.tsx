@@ -10,9 +10,9 @@ import { getMediaUrl } from "@/lib/utils";
 interface TestimonialFormProps {
     readonly testimonial?: {
         id: string;
-        name: string;
-        quote: string;
-        serviceName: string;
+        name: string | null;
+        quote: string | null;
+        serviceName: string | null;
         imageUrl: string | null;
         videoUrl?: string | null;
     };
@@ -180,9 +180,9 @@ export function TestimonialForm({ testimonial }: TestimonialFormProps) {
 
             try {
                 const body = {
-                    name,
-                    quote,
-                    serviceName,
+                    name: name.trim() || null,
+                    quote: quote.trim() || null,
+                    serviceName: serviceName.trim() || null,
                     imageUrl,
                     videoUrl: videoUrl.trim() || null,
                 };
@@ -255,7 +255,6 @@ export function TestimonialForm({ testimonial }: TestimonialFormProps) {
                                     onChange={(e) => setName(e.target.value)}
                                     className="input h-12"
                                     placeholder="Müşteri adı ve soyadı"
-                                    required
                                 />
                             </label>
                             <label className="flex flex-col gap-2">
@@ -268,7 +267,6 @@ export function TestimonialForm({ testimonial }: TestimonialFormProps) {
                                     onChange={(e) => setServiceName(e.target.value)}
                                     className="input h-12"
                                     placeholder="Örn: Konut Satışı, Kiralama"
-                                    required
                                 />
                             </label>
                         </div>
@@ -284,7 +282,6 @@ export function TestimonialForm({ testimonial }: TestimonialFormProps) {
                                 className="input resize-none p-4"
                                 placeholder="Müşterinizin deneyimini buraya aktarın..."
                                 rows={5}
-                                required
                             />
                         </label>
 

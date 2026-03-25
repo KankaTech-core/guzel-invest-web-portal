@@ -25,9 +25,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = (await request.json()) as {
-        name: string;
-        quote: string;
-        serviceName: string;
+        name?: string;
+        quote?: string;
+        serviceName?: string;
         imageUrl?: string;
         videoUrl?: string;
     };
@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
 
     const testimonial = await prisma.testimonial.create({
         data: {
-            name: body.name,
-            quote: body.quote,
-            serviceName: body.serviceName,
+            name: body.name || null,
+            quote: body.quote || null,
+            serviceName: body.serviceName || null,
             imageUrl: body.imageUrl || null,
             videoUrl: body.videoUrl || null,
             order: (maxOrder._max.order ?? -1) + 1,
