@@ -36,7 +36,7 @@ interface VisualsProps {
 }
 
 const BIG_SECTION_TITLE_CLASS =
-    "text-[clamp(1.9rem,4.2vw,3.65rem)] font-black uppercase leading-[1.1] tracking-[-0.01em] text-gray-900";
+    "text-[clamp(1.9rem,4.2vw,3.65rem)] font-black uppercase leading-[0.95] tracking-[-0.01em] text-gray-900 whitespace-pre-line";
 
 const buildGalleryItems = (
     images: string[],
@@ -308,7 +308,7 @@ function PeekingVisualSection({
     ) : null;
 
     const titleColumn = (
-        <div className="hidden w-[300px] shrink-0 md:flex md:flex-col md:gap-6">
+        <div className="hidden w-[380px] shrink-0 md:flex md:flex-col md:gap-6">
             <h2
                 className={`${BIG_SECTION_TITLE_CLASS} ${titleAlign === "right" ? "text-right" : ""}`}
             >
