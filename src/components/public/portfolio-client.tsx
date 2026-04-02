@@ -303,7 +303,7 @@ function InlineDropdown({
                 type="button"
                 disabled={disabled}
                 onClick={() => setIsOpen((previous) => !previous)}
-                className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm outline-none transition ring-orange-500 focus:ring-2 ${disabled
+                className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm outline-none transition ring-blue-400 focus:ring-2 ${disabled
                     ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                     : "cursor-pointer border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300"
                     }`}
@@ -841,6 +841,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             bathroom: string;
             perMonth: string;
             orLabel: string;
+            searchPlaceholder: string;
         }
     > = {
         tr: {
@@ -865,6 +866,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             bathroom: "banyo",
             perMonth: "/ ay",
             orLabel: "— VEYA —",
+            searchPlaceholder: "İlan ara...",
         },
         en: {
             panelTitle: "Filters",
@@ -888,6 +890,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             bathroom: "bathrooms",
             perMonth: "/ month",
             orLabel: "— OR —",
+            searchPlaceholder: "Search listings...",
         },
         ru: {
             panelTitle: "Фильтры",
@@ -911,6 +914,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             bathroom: "ванная",
             perMonth: "/ месяц",
             orLabel: "— ИЛИ —",
+            searchPlaceholder: "Поиск объявлений...",
         },
         de: {
             panelTitle: "Filter",
@@ -934,6 +938,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
             bathroom: "Bad",
             perMonth: "/ Monat",
             orLabel: "— ODER —",
+            searchPlaceholder: "Anzeigen suchen...",
         },
     };
     const uiText = uiTextByLocale[localeKey];
@@ -994,6 +999,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
     const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
     const [availableNeighborhoods, setAvailableNeighborhoods] = useState<string[]>([]);
     const [descriptionOverflowMap, setDescriptionOverflowMap] = useState<Record<string, boolean>>({});
+    const [searchQuery, setSearchQuery] = useState("");
 
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(false);
@@ -1623,6 +1629,19 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         [fallbackListings, hasActiveFilters, listings]
     );
 
+    const searchFilteredListings = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+        if (!query) return visibleListings;
+        return visibleListings.filter((listing) => {
+            const title = getListingTitle(listing, locale).toLowerCase();
+            const description = getListingDescription(listing, locale).toLowerCase();
+            return title.includes(query) || description.includes(query);
+        });
+    }, [visibleListings, searchQuery, locale]);
+
+    const showSearchNoResultsCard =
+        searchQuery.trim() !== "" && searchFilteredListings.length === 0 && !showNoResultsCard;
+
     useEffect(() => {
         if (!shouldFetchFallbackListings) {
             fallbackAbortRef.current?.abort();
@@ -1917,7 +1936,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
         setDescriptionOverflowMap((previous) => {
             const next: Record<string, boolean> = {};
 
-            visibleListings.forEach((listing) => {
+            searchFilteredListings.forEach((listing) => {
                 const element = descriptionRefs.current[listing.id];
                 next[listing.id] = Boolean(
                     element && element.scrollHeight - element.clientHeight > 1
@@ -1932,7 +1951,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
 
             return isSame ? previous : next;
         });
-    }, [visibleListings]);
+    }, [searchFilteredListings]);
 
     useEffect(() => {
         const rafId = window.requestAnimationFrame(() => {
@@ -2361,7 +2380,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         placeholder={uiText.minPrice}
                         min={PRICE_MIN}
                         max={PRICE_MAX}
-                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-blue-400 focus:ring-2"
                         style={monoStyle}
                     />
                     <input
@@ -2382,7 +2401,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         placeholder={uiText.maxPrice}
                         min={PRICE_MIN}
                         max={PRICE_MAX}
-                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-blue-400 focus:ring-2"
                         style={monoStyle}
                     />
                 </div>
@@ -2479,7 +2498,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         placeholder={copy.filters.min}
                         min={AREA_MIN}
                         max={AREA_MAX}
-                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-blue-400 focus:ring-2"
                         style={monoStyle}
                     />
                     <input
@@ -2500,7 +2519,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         placeholder={copy.filters.max}
                         min={AREA_MIN}
                         max={AREA_MAX}
-                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-blue-400 focus:ring-2"
                         style={monoStyle}
                     />
                 </div>
@@ -2537,7 +2556,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                             }))
                         }
                         placeholder={copy.filters.parcelNoPlaceholder}
-                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                        className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-blue-400 focus:ring-2"
                     />
                     <div className="space-y-2 rounded-lg border border-gray-200 p-3">
                         <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -2570,7 +2589,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 min={EMSAL_MIN}
                                 max={EMSAL_MAX}
                                 step={EMSAL_STEP}
-                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-blue-400 focus:ring-2"
                                 style={monoStyle}
                             />
                             <input
@@ -2599,7 +2618,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                 min={EMSAL_MIN}
                                 max={EMSAL_MAX}
                                 step={EMSAL_STEP}
-                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-blue-400 focus:ring-2"
                                 style={monoStyle}
                             />
                         </div>
@@ -2648,7 +2667,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                     placeholder="Min"
                                     min={COMMERCIAL_AREA_MIN}
                                     max={COMMERCIAL_AREA_MAX}
-                                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-blue-400 focus:ring-2"
                                     style={monoStyle}
                                 />
                                 <input
@@ -2681,7 +2700,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                     placeholder="Max"
                                     min={COMMERCIAL_AREA_MIN}
                                     max={COMMERCIAL_AREA_MAX}
-                                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-blue-400 focus:ring-2"
                                     style={monoStyle}
                                 />
                             </div>
@@ -2722,7 +2741,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                     placeholder="Min"
                                     min={COMMERCIAL_AREA_MIN}
                                     max={COMMERCIAL_AREA_MAX}
-                                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-blue-400 focus:ring-2"
                                     style={monoStyle}
                                 />
                                 <input
@@ -2755,7 +2774,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                                     placeholder="Max"
                                     min={COMMERCIAL_AREA_MIN}
                                     max={COMMERCIAL_AREA_MAX}
-                                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-orange-500 focus:ring-2"
+                                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none ring-blue-400 focus:ring-2"
                                     style={monoStyle}
                                 />
                             </div>
@@ -2904,6 +2923,26 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         {uiText.totalSuffix}
                     </div>
 
+                    <div className="relative mx-4 w-[520px]">
+                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder={uiText.searchPlaceholder}
+                            className="h-9 w-full rounded-lg bg-gray-100 pl-9 pr-9 text-sm text-gray-900 outline-none placeholder:text-gray-400"
+                        />
+                        {searchQuery && (
+                            <button
+                                type="button"
+                                onClick={() => setSearchQuery("")}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
+
                     <div className="flex items-center gap-2.5">
                         <Link
                             href={mapHref}
@@ -2944,8 +2983,8 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                 </div>
             </div>
 
-            <div className="mb-6 flex items-center justify-between gap-3 text-sm text-gray-500 lg:hidden">
-                <div>
+            <div className="mb-3 flex items-center gap-3 text-sm text-gray-500 lg:hidden">
+                <div className="whitespace-nowrap">
                     {copy.labels.totalResults}:{" "}
                     <span className="font-semibold text-gray-900" style={monoStyle}>
                         {resolvePortfolioResultCount({
@@ -2955,11 +2994,30 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                     </span>{" "}
                     {uiText.totalSuffix}
                 </div>
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder={uiText.searchPlaceholder}
+                        className="h-9 w-full rounded-lg bg-gray-100 pl-9 pr-9 text-sm text-gray-900 outline-none placeholder:text-gray-400"
+                    />
+                    {searchQuery && (
+                        <button
+                            type="button"
+                            onClick={() => setSearchQuery("")}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    )}
+                </div>
                 {hasActiveFilters && (
                     <button
                         type="button"
                         onClick={clearFilters}
-                        className="cursor-pointer text-xs font-semibold text-orange-500 transition hover:text-orange-600 lg:hidden"
+                        className="cursor-pointer whitespace-nowrap text-xs font-semibold text-orange-500 transition hover:text-orange-600 lg:hidden"
                     >
                         {copy.filters.clear}
                     </button>
@@ -2994,6 +3052,18 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         </div>
                     )}
 
+                    {showSearchNoResultsCard && (
+                        <div className="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
+                            <Search className="mx-auto h-8 w-8 text-gray-300" />
+                            <p className="mt-3 font-semibold text-gray-700">
+                                {copy.labels.noResults}
+                            </p>
+                            <p className="mt-1 text-sm text-gray-500">
+                                {uiText.noResultsHint}
+                            </p>
+                        </div>
+                    )}
+
                     {showDivider && (
                         <div className="flex items-center gap-3 py-1">
                             <span className="h-px flex-1 bg-gray-200" />
@@ -3004,7 +3074,7 @@ export function PortfolioClient({ locale }: PortfolioClientProps) {
                         </div>
                     )}
 
-                    {visibleListings.map((listing) => {
+                    {searchFilteredListings.map((listing) => {
                             const title = getListingTitle(listing, locale);
                             const description = getListingDescription(listing, locale);
                             const hasLocaleDescription = hasLocaleTranslation(listing, locale);

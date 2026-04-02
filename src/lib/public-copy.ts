@@ -215,7 +215,7 @@ const homepageCopyMap: Record<PublicLocale, HomepageCopy> = {
             subtitle:
                 "2001'den bu yana Alanya'da güvenilir gayrimenkul platformu. Satılık, kiralık mülkler ve profesyonel danışmanlık hizmetleriyle yanınızdayız.",
             stats: [
-                { value: "300+", label: "Mutlu Müşteri" },
+                { value: "5.000+", label: "Mutlu Müşteri" },
                 { value: "20+", label: "Yıllık Tecrübe" },
                 { value: "150+", label: "Aktif İlan" },
             ],
@@ -284,7 +284,7 @@ const homepageCopyMap: Record<PublicLocale, HomepageCopy> = {
                 { value: "300+", label: "Güneşli gün/yıl" },
                 { value: "25°C", label: "Ortalama sıcaklık" },
                 { value: "8M+", label: "Üzerinde turist" },
-                { value: "110+", label: "Ülkeden yatırımcı" },
+                { value: "20+", label: "Ülkeden yatırımcı" },
             ],
             cta: "Daha Fazla Bilgi",
             imageAlt: "Alanya Panorama",
@@ -392,7 +392,7 @@ const homepageCopyMap: Record<PublicLocale, HomepageCopy> = {
             subtitle:
                 "A trusted real estate platform in Alanya since 2001. We are by your side with properties for sale, rent, and professional consultancy services.",
             stats: [
-                { value: "300+", label: "Happy Clients" },
+                { value: "5.000+", label: "Happy Clients" },
                 { value: "20+", label: "Years of Experience" },
                 { value: "150+", label: "Active Listings" },
             ],
@@ -461,7 +461,7 @@ const homepageCopyMap: Record<PublicLocale, HomepageCopy> = {
                 { value: "300+", label: "Sunny days/year" },
                 { value: "25°C", label: "Average temperature" },
                 { value: "8M+", label: "Tourists over" },
-                { value: "110+", label: "Investor countries" },
+                { value: "20+", label: "Investor countries" },
             ],
             cta: "Learn More",
             imageAlt: "Alanya Panorama",
@@ -569,7 +569,7 @@ const homepageCopyMap: Record<PublicLocale, HomepageCopy> = {
             subtitle:
                 "Надежная платформа недвижимости в Аланье с 2001 года. Мы рядом с вами с объектами на продажу, в аренду и профессиональными консультациями.",
             stats: [
-                { value: "300+", label: "Довольных клиентов" },
+                { value: "5.000+", label: "Довольных клиентов" },
                 { value: "20+", label: "Лет опыта" },
                 { value: "150+", label: "Активных объявлений" },
             ],
@@ -638,7 +638,7 @@ const homepageCopyMap: Record<PublicLocale, HomepageCopy> = {
                 { value: "300+", label: "Солнечных дней/год" },
                 { value: "25°C", label: "Средняя температура" },
                 { value: "8M+", label: "Туристов" },
-                { value: "110+", label: "Стран инвесторов" },
+                { value: "20+", label: "Стран инвесторов" },
             ],
             cta: "Узнать больше",
             imageAlt: "Панорама Аланьи",
@@ -746,7 +746,7 @@ const homepageCopyMap: Record<PublicLocale, HomepageCopy> = {
             subtitle:
                 "Eine vertrauenswürdige Immobilienplattform in Alanya seit 2001. Wir begleiten Sie mit Kauf-, Miet- und professionellen Beratungsleistungen.",
             stats: [
-                { value: "300+", label: "Zufriedene Kunden" },
+                { value: "5.000+", label: "Zufriedene Kunden" },
                 { value: "20+", label: "Jahre Erfahrung" },
                 { value: "150+", label: "Aktive Inserate" },
             ],
@@ -815,7 +815,7 @@ const homepageCopyMap: Record<PublicLocale, HomepageCopy> = {
                 { value: "300+", label: "Sonnige Tage/Jahr" },
                 { value: "25°C", label: "Durchschnittstemperatur" },
                 { value: "8M+", label: "Touristen" },
-                { value: "110+", label: "Investor-Länder" },
+                { value: "20+", label: "Investor-Länder" },
             ],
             cta: "Mehr erfahren",
             imageAlt: "Panorama von Alanya",
