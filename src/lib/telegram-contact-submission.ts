@@ -85,11 +85,53 @@ const getAbortSignal = () => {
 const getErrorMessage = (error: unknown) =>
     error instanceof Error ? error.message : String(error);
 
+const extractField = (message: string, label: string): string => {
+    const regex = new RegExp(`${label}:\\s*([^|]*)`);
+    const match = message.match(regex);
+    return match ? match[1].trim() : "-";
+};
+
+function buildFacebookMessage(
+    submission: TelegramContactSubmission,
+    adminUrl: string | null
+) {
+    const fullName = formatFullName(submission) || submission.name.trim();
+    const phone = submission.phone?.trim() || "-";
+    const msg = submission.message || "";
+
+    const budget = extractField(msg, "Bütçe");
+    const purpose = extractField(msg, "Amaç");
+    const sellWhen = extractField(msg, "Ne Zaman");
+
+    const lines = [
+        "Yeni form bildirimi",
+        `Tip: ${getSourceLabel(submission.source)}`,
+        `Ad Soyad: ${fullName}`,
+        `Telefon: ${phone}`,
+        `Bütçe: ${budget}`,
+        `Amaç: ${purpose}`,
+        `Ne Zaman: ${sellWhen}`,
+        `Tarih: ${formatDateTime(submission.createdAt)}`,
+        `Kayit No: ${submission.id}`,
+    ];
+
+    if (adminUrl) {
+        lines.push(`Admin: ${adminUrl}`);
+    }
+
+    return lines.join("\n");
+}
+
 export function buildTelegramContactSubmissionMessage(
     submission: TelegramContactSubmission,
     options: BuildTelegramContactSubmissionMessageOptions = {}
 ) {
     const adminUrl = resolveAdminFormUrl(options.adminBaseUrl, submission.id);
+
+    if (submission.source === "facebook") {
+        return buildFacebookMessage(submission, adminUrl);
+    }
+
     const title = submission.projectTitle?.trim() || "-";
     const slugOrUrl = submission.projectSlug?.trim() || "-";
     const sku = submission.sku?.trim();
