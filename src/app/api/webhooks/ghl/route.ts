@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendTelegramContactSubmissionNotification } from "@/lib/telegram-contact-submission";
 
 export const dynamic = "force-dynamic";
 
@@ -63,12 +64,19 @@ export async function POST(request: NextRequest) {
         const phone = normalizeText(
             pick(payload.phone, custom.phone)
         );
+        const budget = normalizeText(pick(custom.budget));
+        const purpose = normalizeText(pick(custom.purpose));
+        const sellWhen = normalizeText(pick(custom.sell_when));
+
+        const messageParts = [
+            pick(custom.message, payload["Form Message"], payload.Message),
+        ];
+        if (budget) messageParts.push(`Bütçe: ${budget}`);
+        if (purpose) messageParts.push(`Amaç: ${purpose}`);
+        if (sellWhen) messageParts.push(`Ne Zaman: ${sellWhen}`);
+
         const message = normalizeText(
-            pick(
-                custom.message,
-                payload["Form Message"],
-                payload.Message
-            )
+            messageParts.filter(Boolean).join(" | ")
         );
 
         const submission = await prisma.contactSubmission.create({
@@ -90,6 +98,14 @@ export async function POST(request: NextRequest) {
             name: submission.name,
             source: submission.source,
         });
+
+        await sendTelegramContactSubmissionNotification(submission).catch(
+            (err) =>
+                console.error(
+                    "[ghl-webhook-incoming] Telegram notification error:",
+                    err
+                )
+        );
 
         return NextResponse.json(
             { success: true, id: submission.id },
