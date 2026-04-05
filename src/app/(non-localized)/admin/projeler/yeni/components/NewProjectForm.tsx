@@ -126,12 +126,16 @@ interface FaqRow {
     answer: string;
 }
 
+interface FloorPlanImage {
+    url: string;
+    mediaId: string | null;
+}
+
 interface FloorPlanRow {
     id: string;
     title: string;
     area: string;
-    imageUrl: string;
-    mediaId: string | null;
+    images: FloorPlanImage[];
 }
 
 type ProjectDetailType = "ROOM" | "PAYMENT" | "PROMO";
@@ -255,7 +259,8 @@ interface FloorPlanTranslationRecord {
 
 interface FloorPlanRecord {
     id: string;
-    imageUrl: string;
+    imageUrls?: string[];
+    imageUrl?: string;
     area?: string | null;
     translations?: FloorPlanTranslationRecord[];
 }
@@ -1115,8 +1120,7 @@ export default function NewProjectForm({
             id: createRowId(),
             title: "",
             area: "",
-            imageUrl: "",
-            mediaId: null,
+            images: [],
         },
     ]);
 
@@ -2045,15 +2049,15 @@ export default function NewProjectForm({
                 const floorPlanRows = (project.floorPlans || [])
                     .map((plan) => {
                         const translation = getTurkishTranslation(plan.translations);
+                        const urls = plan.imageUrls || (plan.imageUrl ? [plan.imageUrl] : []);
                         return {
                             id: createRowId(),
                             title: translation?.title || "",
                             area: plan.area || "",
-                            imageUrl: plan.imageUrl || "",
-                            mediaId: null,
+                            images: urls.filter(Boolean).map((url) => ({ url, mediaId: null })),
                         };
                     })
-                    .filter((item) => item.imageUrl || item.title);
+                    .filter((item) => item.images.length > 0 || item.title);
                 const projectUnitRows = (project.projectUnits || [])
                     .map((unit) => {
                         const rowId = createRowId();
@@ -2168,8 +2172,7 @@ export default function NewProjectForm({
                                 id: createRowId(),
                                 title: "",
                                 area: "",
-                                imageUrl: "",
-                                mediaId: null,
+                                images: [],
                             },
                         ]
                 );
@@ -2488,11 +2491,11 @@ export default function NewProjectForm({
 
         const floorPlanPayload = floorPlans
             .map((item) => ({
-                imageUrl: item.imageUrl.trim(),
+                imageUrls: item.images.map((img) => img.url.trim()).filter(Boolean),
                 area: item.area.trim() || null,
                 translations: [{ locale: "tr", title: item.title.trim() }],
             }))
-            .filter((item) => item.imageUrl && item.translations[0].title);
+            .filter((item) => item.imageUrls.length > 0 && item.translations[0].title);
         const projectUnitsPayload = projectUnits
             .map((item) => {
                 const extraTranslations = unitTranslationsMap[item.id] || [];
@@ -2865,24 +2868,38 @@ export default function NewProjectForm({
         if (files.length === 0) return;
 
         await handleImageUpload(
-            [files[0]],
+            files,
             (uploaded) => {
-                const item = uploaded[0];
-                if (!item) return;
+                const newImages = uploaded.map((item) => ({
+                    url: item.url,
+                    mediaId: item.id,
+                }));
+                if (newImages.length === 0) return;
 
                 setFloorPlans((prev) =>
                     prev.map((plan) =>
                         plan.id === floorPlanId
                             ? {
                                 ...plan,
-                                imageUrl: item.url,
-                                mediaId: item.id,
+                                images: [...plan.images, ...newImages],
                             }
                             : plan
                     )
                 );
-            },
-            { useFirstOnly: true }
+            }
+        );
+    };
+
+    const handleFloorPlanImageRemove = (floorPlanId: string, imageIndex: number) => {
+        setFloorPlans((prev) =>
+            prev.map((plan) =>
+                plan.id === floorPlanId
+                    ? {
+                        ...plan,
+                        images: plan.images.filter((_, i) => i !== imageIndex),
+                    }
+                    : plan
+            )
         );
     };
 
@@ -3983,24 +4000,40 @@ export default function NewProjectForm({
                                             </div>
 
                                             <UploadPanel
-                                                title="Kat planı görseli seçin"
-                                                subtitle="Tek görsel yükleyin"
+                                                title="Kat planı görselleri seçin"
+                                                subtitle="Birden fazla görsel yükleyebilirsiniz"
                                                 onFilesSelected={(files) =>
                                                     void handleFloorPlanImageUpload(plan.id, files)
                                                 }
-                                                multiple={false}
+                                                multiple
                                                 disabled={isSaving || isUploading}
                                                 compact
                                             />
 
-                                            {plan.imageUrl ? (
-                                                <div className="rounded-xl border border-slate-200 overflow-hidden max-w-sm">
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img
-                                                        src={getMediaUrl(plan.imageUrl)}
-                                                        alt=""
-                                                        className="w-full h-56 object-cover"
-                                                    />
+                                            {plan.images.length > 0 ? (
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                    {plan.images.map((img, imgIndex) => (
+                                                        <div
+                                                            key={`${img.url}-${imgIndex}`}
+                                                            className="relative rounded-xl border border-slate-200 overflow-hidden group"
+                                                        >
+                                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                            <img
+                                                                src={getMediaUrl(img.url)}
+                                                                alt=""
+                                                                className="w-full h-36 object-cover"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    handleFloorPlanImageRemove(plan.id, imgIndex)
+                                                                }
+                                                                className="absolute top-1.5 right-1.5 rounded-full bg-white/90 p-1 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-500"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             ) : (
                                                 <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
@@ -4021,8 +4054,7 @@ export default function NewProjectForm({
                                                     id: createRowId(),
                                                     title: "",
                                                     area: "",
-                                                    imageUrl: "",
-                                                    mediaId: null,
+                                                    images: [],
                                                 },
                                             ])
                                         }

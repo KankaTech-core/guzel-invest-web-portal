@@ -379,14 +379,18 @@ export async function getS1ProjectPageData({
             const floorPlanTranslation = pickLocalizedEntry(plan.translations, locale);
             const rawTitle = floorPlanTranslation?.title?.trim() || plan.area?.trim() || "";
             const title = rawTitle ? translateFeature(rawTitle, locale) : "";
-            if (!title || !plan.imageUrl?.trim()) {
+            const images = (plan.imageUrls || [])
+                .map((url) => url?.trim())
+                .filter((url): url is string => Boolean(url))
+                .map(getMediaUrl);
+            if (!title || images.length === 0) {
                 return null;
             }
             return {
                 id: plan.id,
                 title,
                 area: plan.area?.trim() || null,
-                image: getMediaUrl(plan.imageUrl),
+                images,
             };
         })
         .filter(isPresent);

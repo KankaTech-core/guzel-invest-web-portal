@@ -57,7 +57,7 @@ export interface S1FloorPlanItem {
     id: string;
     title: string;
     area?: string | null;
-    image: string;
+    images: string[];
 }
 
 export interface S1FloorPlansData {

@@ -426,7 +426,7 @@ model ProjectUnitTranslation {
 model FloorPlan {
   id           String                 @id @default(cuid())
   listingId    String
-  imageUrl     String
+  imageUrls    String[]
   area         String?
   listing      Listing                @relation(fields: [listingId], references: [id], onDelete: Cascade)
   translations FloorPlanTranslation[]

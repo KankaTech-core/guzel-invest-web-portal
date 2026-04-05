@@ -69,7 +69,7 @@ const ProjectUnitSchema = z.object({
 });
 
 const FloorPlanSchema = z.object({
-    imageUrl: z.string().optional(),
+    imageUrls: z.array(z.string()).optional(),
     area: z.string().nullable().optional(),
     translations: z.array(
         z.object({
@@ -331,13 +331,15 @@ async function replaceFloorPlans(
     await tx.floorPlan.deleteMany({ where: { listingId } });
 
     for (const item of plans) {
-        const imageUrl = normalizeProjectText(item.imageUrl);
-        if (!imageUrl) continue;
+        const imageUrls = (item.imageUrls || [])
+            .map((url) => normalizeProjectText(url))
+            .filter((url): url is string => Boolean(url));
+        if (imageUrls.length === 0) continue;
 
         const plan = await tx.floorPlan.create({
             data: {
                 listingId,
-                imageUrl,
+                imageUrls,
                 area: normalizeProjectText(item.area || ""),
             },
         });

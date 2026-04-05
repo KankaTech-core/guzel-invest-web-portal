@@ -83,7 +83,7 @@ test("shows optional sections when enough content is provided", () => {
                     id: "fp1",
                     title: "2+1",
                     area: "110 m2",
-                    image: "https://example.com/floor.jpg",
+                    images: ["https://example.com/floor.jpg"],
                 },
             ],
         },

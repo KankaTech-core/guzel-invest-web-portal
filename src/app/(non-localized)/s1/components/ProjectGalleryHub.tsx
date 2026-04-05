@@ -116,11 +116,15 @@ export const ProjectGalleryHub = ({
             : [];
 
         const floorPlanItems = visibility.floorPlans
-            ? (floorPlans?.plans || []).map((plan, index) => ({
-                  id: plan.id,
-                  src: plan.image,
-                  alt: plan.title || t("floorPlanAlt", { index: index + 1 }),
-              }))
+            ? (floorPlans?.plans || []).flatMap((plan, planIndex) =>
+                  plan.images.map((image, imgIndex) => ({
+                      id: `${plan.id}-${imgIndex}`,
+                      src: image,
+                      alt:
+                          plan.title ||
+                          t("floorPlanAlt", { index: planIndex + 1 }),
+                  }))
+              )
             : [];
 
         const customItems = visibility.customGalleries

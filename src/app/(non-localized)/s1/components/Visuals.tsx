@@ -599,42 +599,53 @@ export const Visuals = ({
                 <section className="bg-white py-24">
                     <div className="mx-auto flex max-w-7xl flex-col gap-16 px-4 lg:flex-row">
                         <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:w-2/3">
-                            {floorPlans.plans.map((plan, planIndex) => (
-                                <div
-                                    key={plan.id}
-                                    className="rounded-3xl border border-gray-100 bg-gray-50 p-6"
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            dispatchOpenConnectedProjectGallery({
-                                                key: "floor",
-                                                index: planIndex,
-                                            })
-                                        }
-                                        className="relative mb-4 block h-64 w-full cursor-pointer overflow-hidden rounded-xl group"
-                                        title={t("openFloorPlan", { title: plan.title })}
-                                        aria-label={t("openFloorPlan", { title: plan.title })}
+                            {floorPlans.plans.map((plan, planIndex) => {
+                                const galleryOffset = floorPlans.plans
+                                    .slice(0, planIndex)
+                                    .reduce((sum, p) => sum + p.images.length, 0);
+                                return (
+                                    <div
+                                        key={plan.id}
+                                        className="rounded-3xl border border-gray-100 bg-gray-50 p-6"
                                     >
-                                        <Image
-                                            src={plan.image}
-                                            alt={plan.title}
-                                            fill
-                                            loading="lazy"
-                                            className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                                            sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
-                                        />
-                                    </button>
-                                    <div className="flex items-center justify-between gap-4 text-gray-900">
-                                        <span className="font-bold">{plan.title}</span>
-                                        {plan.area ? (
-                                            <span className="text-sm text-gray-500">
-                                                {plan.area}
-                                            </span>
-                                        ) : null}
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                dispatchOpenConnectedProjectGallery({
+                                                    key: "floor",
+                                                    index: galleryOffset,
+                                                })
+                                            }
+                                            className="relative mb-4 block h-64 w-full cursor-pointer overflow-hidden rounded-xl group"
+                                            title={t("openFloorPlan", { title: plan.title })}
+                                            aria-label={t("openFloorPlan", { title: plan.title })}
+                                        >
+                                            <Image
+                                                src={plan.images[0]}
+                                                alt={plan.title}
+                                                fill
+                                                loading="lazy"
+                                                className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                                                sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
+                                            />
+                                            {plan.images.length > 1 && (
+                                                <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-xs font-medium text-white">
+                                                    <Images className="h-3.5 w-3.5" />
+                                                    {plan.images.length}
+                                                </span>
+                                            )}
+                                        </button>
+                                        <div className="flex items-center justify-between gap-4 text-gray-900">
+                                            <span className="font-bold">{plan.title}</span>
+                                            {plan.area ? (
+                                                <span className="text-sm text-gray-500">
+                                                    {plan.area}
+                                                </span>
+                                            ) : null}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         <div className="flex flex-col justify-center lg:w-1/3">
                             <h2 className="mb-6 text-4xl font-black text-gray-900">

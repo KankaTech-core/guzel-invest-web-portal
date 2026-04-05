@@ -434,6 +434,7 @@ const parseProjectUnits = (row: Record<string, string>) =>
 const parseProjectFloorPlans = (row: Record<string, string>) =>
     parseJsonCell<
         Array<{
+            imageUrls?: string[];
             imageUrl?: string;
             area?: string | null;
             translations?: Array<{ locale?: string; title?: string }>;
@@ -688,13 +689,15 @@ const replaceProjectDetails = async (
     await tx.floorPlan.deleteMany({ where: { listingId } });
 
     for (const floorPlan of floorPlans) {
-        const imageUrl = normalizeStoredMediaPath(floorPlan.imageUrl || "");
-        if (!imageUrl) continue;
+        const imageUrls = (floorPlan.imageUrls || (floorPlan.imageUrl ? [floorPlan.imageUrl] : []))
+            .map((url: string) => normalizeStoredMediaPath(url || ""))
+            .filter(Boolean);
+        if (imageUrls.length === 0) continue;
 
         const createdFloorPlan = await tx.floorPlan.create({
             data: {
                 listingId,
-                imageUrl,
+                imageUrls,
                 area: normalizeProjectText(floorPlan.area || ""),
             },
             select: { id: true },
