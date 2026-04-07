@@ -18,6 +18,11 @@ const getSourceLabel = (source: string) => {
     return source;
 };
 
+const extractAdContent = (message: string): string | null => {
+    const match = message.match(/Reklam:\s*([^|]*)/);
+    return match ? match[1].trim() || null : null;
+};
+
 const getMessagePreview = (message: string, maxLength = 88) => {
     const normalized = message.trim().replace(/\s+/g, " ");
     if (normalized.length <= maxLength) {
@@ -107,6 +112,9 @@ export default async function AdminFormsPage() {
                                                 </div>
                                                 {form.projectSlug && (
                                                     <div className="text-xs text-gray-500">{form.projectSlug}</div>
+                                                )}
+                                                {form.source === "facebook" && extractAdContent(form.message) && (
+                                                    <div className="text-xs text-gray-500">Reklam: {extractAdContent(form.message)}</div>
                                                 )}
                                             </Link>
                                         </td>

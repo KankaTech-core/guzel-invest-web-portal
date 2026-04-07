@@ -15,7 +15,13 @@ const getSourceLabel = (source: string) => {
     if (source === "listing-form") return "İlan Formu";
     if (source === "website") return "İletişim Formu";
     if (source === "homepage-popup") return "Daireni Sat Formu";
+    if (source === "facebook") return "Facebook Formu";
     return source;
+};
+
+const extractAdContent = (message: string): string | null => {
+    const match = message.match(/Reklam:\s*([^|]*)/);
+    return match ? match[1].trim() || null : null;
 };
 
 interface AdminFormDetailPageProps {
@@ -109,6 +115,9 @@ export default async function AdminFormDetailPage({ params }: AdminFormDetailPag
                         </p>
                         {form.projectSlug ? (
                             <p className="text-xs text-gray-500">{form.projectSlug}</p>
+                        ) : null}
+                        {form.source === "facebook" && extractAdContent(form.message) ? (
+                            <p className="mt-1 text-xs text-gray-500">Reklam: {extractAdContent(form.message)}</p>
                         ) : null}
                     </div>
                     <div>
