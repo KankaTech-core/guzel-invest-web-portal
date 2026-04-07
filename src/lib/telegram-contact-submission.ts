@@ -99,6 +99,7 @@ function buildFacebookMessage(
     const phone = submission.phone?.trim() || "-";
     const msg = submission.message || "";
 
+    const adContent = extractField(msg, "Reklam");
     const budget = extractField(msg, "Bütçe");
     const purpose = extractField(msg, "Amaç");
     const sellWhen = extractField(msg, "Ne Zaman");
@@ -106,6 +107,7 @@ function buildFacebookMessage(
     const lines = [
         "Yeni form bildirimi",
         `Tip: ${getSourceLabel(submission.source)}`,
+        ...(adContent !== "-" ? [`Reklam: ${adContent}`] : []),
         `Ad Soyad: ${fullName}`,
         `Telefon: ${phone}`,
         `Bütçe: ${budget}`,

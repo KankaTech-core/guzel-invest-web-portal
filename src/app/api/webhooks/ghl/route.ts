@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
         const phone = normalizeText(
             pick(payload.phone, custom.phone)
         );
+        const utmContent = normalizeText(pick(custom.utm_content));
         const budget = normalizeText(pick(custom.budget));
         const purpose = normalizeText(pick(custom.purpose));
         const sellWhen = normalizeText(pick(custom.sell_when));
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
         const messageParts = [
             pick(custom.message, payload["Form Message"], payload.Message),
         ];
+        if (utmContent) messageParts.push(`Reklam: ${utmContent}`);
         if (budget) messageParts.push(`Bütçe: ${budget}`);
         if (purpose) messageParts.push(`Amaç: ${purpose}`);
         if (sellWhen) messageParts.push(`Ne Zaman: ${sellWhen}`);
