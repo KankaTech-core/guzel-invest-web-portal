@@ -99,7 +99,8 @@ function buildFacebookMessage(
     const phone = submission.phone?.trim() || "-";
     const msg = submission.message || "";
 
-    const adContent = extractField(msg, "Reklam");
+    const adContentMatch = msg.match(/Reklam:\s*(.*?)(?:\s*\|\s*(?:Bütçe|Amaç|Ne Zaman):|$)/);
+    const adContent = adContentMatch ? adContentMatch[1].trim() : "-";
     const budget = extractField(msg, "Bütçe");
     const purpose = extractField(msg, "Amaç");
     const sellWhen = extractField(msg, "Ne Zaman");

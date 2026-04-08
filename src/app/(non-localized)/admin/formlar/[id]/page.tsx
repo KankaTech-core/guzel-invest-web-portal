@@ -20,7 +20,7 @@ const getSourceLabel = (source: string) => {
 };
 
 const extractAdContent = (message: string): string | null => {
-    const match = message.match(/Reklam:\s*([^|]*)/);
+    const match = message.match(/Reklam:\s*(.*?)(?:\s*\|\s*(?:Bütçe|Amaç|Ne Zaman):|$)/);
     return match ? match[1].trim() || null : null;
 };
 
